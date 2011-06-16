@@ -11,6 +11,7 @@ import com.google.gwt.core.client.GWT;
 import com.google.gwt.core.client.JavaScriptObject;
 import com.google.gwt.core.client.JsArray;
 import com.google.gwt.dom.client.Document;
+import com.google.gwt.dom.client.Style;
 import com.google.gwt.dom.client.Style.Unit;
 import com.google.gwt.event.dom.client.KeyCodes;
 import com.google.gwt.event.dom.client.KeyDownEvent;
@@ -119,8 +120,7 @@ public class Smasogur implements EntryPoint {
 		return 0;
 	}-*/;
 	
-	Element	fblogin;
-	public void loginButton() {
+	public com.google.gwt.dom.client.Element loginButton() {
 		//<fb:login-button show-faces="true" width="200" max-rows="1"></fb:login-button>
 		
 		com.google.gwt.dom.client.Element elem = Document.get().createElement("fb:login-button");
@@ -131,9 +131,8 @@ public class Smasogur implements EntryPoint {
 		elem.setAttribute("max-rows", "1");
 		//elem.setAttribute("href",Window.Location.getHref());
 		elem.setId("fblogin");
-		fblogin.appendChild( elem );
 		
-		uid = checkLoginStatus();
+		return elem;
 	}
 	
 	Label status;
@@ -142,16 +141,34 @@ public class Smasogur implements EntryPoint {
 		if( status != null ) status.setText( statusStr );
 	}
 	
+	public void setUserId( String val ) {
+		uid = val;
+	}
+	
 	public native String checkLoginStatus() /*-{
-		$wnd.FB.getLoginStatus( function(response) {
-			$wnd.FB.XFBML.parse();
-			if (response.session) {
-				return response.session.uid;
-			} else {
-				return "";
-			    //$wnd.FB.login();
+		var ths = this;
+		$wnd.fbAsyncInit = function() {
+	    	$wnd.FB.init({appId: '205279482582', status: true, cookie: true, xfbml: true});
+	    	
+	    	try {
+				$wnd.FB.getLoginStatus( function(response) {
+					$wnd.console.log( "inside login response" );
+					try {
+						$wnd.FB.XFBML.parse();
+						if (response.session) {
+							ths.@org.simmi.client.Smasogur::setUserId(Ljava/lang/String;)( response.session.uid );
+						} else {
+							ths.@org.simmi.client.Smasogur::setUserId(Ljava/lang/String;)( "" );
+						}
+					} catch( e ) {
+						$wnd.console.log( e );
+					}
+					$wnd.console.log( "past login response" );
+				});
+			} catch( e ) {
+				$wnd.console.log( e );
 			}
-		});
+	  	};
 	}-*/;
 	
 	public native void deleteSaga( int r ) /*-{
@@ -258,14 +275,20 @@ public class Smasogur implements EntryPoint {
 	List<Saga>	sogur;
 	FocusPanel	focuspanel;
 	public void onModuleLoad() {
-		final RootPanel module = RootPanel.get("module");
+		final RootPanel module = RootPanel.get();
+		
+		Style rootstyle = module.getElement().getStyle();
+		rootstyle.setMargin(0.0, Unit.PX);
+		rootstyle.setPadding(0.0, Unit.PX);
+		
   	  	final VerticalPanel vp = new VerticalPanel();
+  	  	vp.setSize("100%", "100%");
   	  	
 	  	Window.addResizeHandler( new ResizeHandler() {
 	  		@Override
 			public void onResize(ResizeEvent event) {
 				module.setSize(event.getWidth()+"px", event.getHeight()+"px");
-				vp.setSize(event.getWidth()+"px", (event.getHeight())+"px");
+				//vp.setSize(event.getWidth()+"px", (event.getHeight())+"px");
 				//if( focuspanel != null ) focuspanel.setWidth("1024");
 			}
 	  	});
@@ -338,7 +361,6 @@ public class Smasogur implements EntryPoint {
 						}
 						data.setValue(r, 3, smasaga.getGradeNum());
 						
-						
 						data.setValue( r, 4, smasaga.getLove() );
 						data.setValue( r, 5, smasaga.getHorror() );
 						data.setValue( r, 6, smasaga.getScience() );
@@ -394,7 +416,6 @@ public class Smasogur implements EntryPoint {
 	    	  
 	    	  SimplePanel log = new SimplePanel();
 	    	  //log.setSize("100px", "100px");
-	    	  fblogin = log.getElement();
 	    	  //fblogin.getStyle().setBackgroundColor("#00ffcc");
 	    	  
 	    	  HorizontalPanel	hp = new HorizontalPanel();
@@ -428,9 +449,17 @@ public class Smasogur implements EntryPoint {
 	    	  int w = Window.getClientWidth();
 	    	  int h = Window.getClientHeight();
 	    	  module.setSize(w+"px", h+"px");
-	    	  vp.setSize(w+"px", (h)+"px");
 	    	  
-	    	  loginButton();
+	    	  com.google.gwt.dom.client.Element elem = loginButton();
+	    	  Element fblogin = log.getElement();
+	    	  fblogin.appendChild( elem );
+	    	  
+	    	  checkLoginStatus();
+	    	  elem = Document.get().createElement("script");
+	  		  elem.setAttribute("async", "true");
+	  	 	  elem.setAttribute("src", "http://connect.facebook.net/en_US/all.js" );
+	  		  Document.get().getElementById("fb-root").appendChild( elem );
+	    	  //205279482582
 	    	  
 	    	  module.insert( vp, 0 );
 	      }

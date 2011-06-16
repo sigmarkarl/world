@@ -39,54 +39,48 @@ public class Smasaga implements EntryPoint {
 	private final SmasagaSubserviceAsync 	smasagaService = GWT.create(SmasagaSubservice.class);
 
 	public native void loginStatus() /*-{
-		var s = this;
-		$wnd.FB.getLoginStatus( function(response) {
-			if (response.session) {
-				s.@org.simmi.smasaga.client.Smasaga::login(Ljava/lang/String;)( response.session.uid );
-			} else {
-			    s.@org.simmi.smasaga.client.Smasaga::login(Ljava/lang/String;)( "" );
+		var ths = this;
+		$wnd.fbAsyncInit = function() {
+	    	$wnd.FB.init({appId: '205279482582', status: true, cookie: true, xfbml: true});
+	    	
+	    	try {
+				$wnd.FB.getLoginStatus( function(response) {
+					try {
+						$wnd.FB.XFBML.parse();
+						if (response.session) {
+							ths.@org.simmi.smasaga.client.Smasaga::setUserId(Ljava/lang/String;)( response.session.uid );
+						} else {
+							ths.@org.simmi.smasaga.client.Smasaga::setUserId(Ljava/lang/String;)( "" );
+						}
+					} catch( e ) {
+						$wnd.console.log( e );
+					}
+					$wnd.console.log( "past login response" );
+				});
+			} catch( e ) {
+				$wnd.console.log( e );
 			}
-		});
+	  	};
+		
+		//var s = this;
+		//$wnd.FB.getLoginStatus( function(response) {
+		//	if (response.session) {
+		//		s.@org.simmi.smasaga.client.Smasaga::login(Ljava/lang/String;)( response.session.uid );
+		//	} else {
+		//	    s.@org.simmi.smasaga.client.Smasaga::login(Ljava/lang/String;)( "" );
+		//	}
+		//});
 	}-*/;
 	
-	public native void fbRender() /*-{
-		try {
-			$wnd.FB.XFBML.parse();
-		} catch( e ) {
-			$wnd.console.log( e );
-		}
-	}-*/;
-	
-	Element	panni;
-	Element	commi;
 	AsyncCallback<Subsaga> asaga;
 	private String uid = null;
 	private String keystr = null; 
-	public void login( String uid ) {
+	public void setUserId( String uid ) {
 		this.uid = uid;
 		
 		//Element erm = Document.get().getElementById("ok");
-		com.google.gwt.dom.client.Element elem = Document.get().createElement("fb:like");
-		elem.setAttribute("width", "200");
-		elem.setAttribute("layout", "standard");
-		elem.setAttribute("font", "arial");
-		elem.setAttribute("href",Window.Location.getHref());
-		elem.setId("fblike");
-		panni.appendChild( elem );
-		
-		elem = Document.get().createElement("fb:comments");
-		elem.setAttribute("width", "500");
-		elem.setAttribute("layout", "standard");
-		elem.setAttribute("num_posts", "2");
-		elem.setAttribute("font", "arial");
-		elem.setAttribute("href",Window.Location.getHref());
-		elem.setId("fbcomments");
-		commi.appendChild( elem );
-		
 		//<fb:comments href="http://smasogurnar.appspot.com/Smasaga.jsp?smasaga=agtzbWFzb2d1cm5hcnIPCxIHc21hc2FnYRirwwEM" num_posts="2" width="500"></fb:comments>
 		//RootPanel fbroot = RootPanel.get("fb-root");
-		
-		fbRender();
 		
 		//<fb:comments href="http://smasogurnar.appspot.com/Smasaga.jsp?smasaga=agtzbWFzb2d1cm5hcnIPCxIHc21hc2FnYRirwwEM" num_posts="2" width="500"></fb:comments>
 		smasagaService.getShortstory( keystr, asaga );
@@ -101,21 +95,21 @@ public class Smasaga implements EntryPoint {
 		int urlind = urlstr.indexOf('=');
 		keystr = urlstr.substring(urlind+1);
 		
-		final RootPanel rootPanel = RootPanel.get("module");
+		final RootPanel rootPanel = RootPanel.get();
 		final VerticalPanel	vp = new VerticalPanel();
+		vp.setSize("100%", "100%");
 		vp.setHorizontalAlignment( VerticalPanel.ALIGN_CENTER );
 		vp.setVerticalAlignment( VerticalPanel.ALIGN_MIDDLE );
 		
 		int w = Window.getClientWidth();
 		int h = Window.getClientHeight();
 		rootPanel.setSize(w+"px", h+"px");
-		vp.setSize(w+"px", (h)+"px");
 		
 		Window.addResizeHandler( new ResizeHandler() {
 			@Override
 			public void onResize(ResizeEvent event) {
 				rootPanel.setSize(event.getWidth()+"px", event.getHeight()+"px");
-				vp.setSize(event.getWidth()+"px", (event.getHeight())+"px");
+				//vp.setSize(event.getWidth()+"px", (event.getHeight())+"px");
 			}
 		});
 		
@@ -224,7 +218,6 @@ public class Smasaga implements EntryPoint {
 		inputvp.add( umsogntext );
 		
 		SimplePanel	fbcompanel = new SimplePanel();
-		commi = fbcompanel.getElement();
 		
 		HorizontalPanel	umcom = new HorizontalPanel();
 		umcom.setSpacing( 10 );
@@ -243,7 +236,6 @@ public class Smasaga implements EntryPoint {
 		discl.add( html );
 		
 		SimplePanel	span = new SimplePanel();
-		panni = span.getElement();
 		discl.add( span );
 		
 		subvp.add( discl );
@@ -470,6 +462,28 @@ public class Smasaga implements EntryPoint {
 		adventure.addClickHandler( clickHandler );
 		poem.addClickHandler( clickHandler );
 		tobecontine.addClickHandler( clickHandler );
+		
+		com.google.gwt.dom.client.Element elem = Document.get().createElement("fb:like");
+		elem.setAttribute("width", "200");
+		elem.setAttribute("layout", "standard");
+		elem.setAttribute("font", "arial");
+		elem.setAttribute("href",Window.Location.getHref());
+		elem.setId("fblike");
+		span.getElement().appendChild( elem );
+		
+		elem = Document.get().createElement("fb:comments");
+		elem.setAttribute("width", "500");
+		elem.setAttribute("layout", "standard");
+		elem.setAttribute("num_posts", "2");
+		elem.setAttribute("font", "arial");
+		elem.setAttribute("href",Window.Location.getHref());
+		elem.setId("fbcomments");
+		fbcompanel.getElement().appendChild( elem );
+		
+  	  	elem = Document.get().createElement("script");
+		elem.setAttribute("async", "true");
+	 	elem.setAttribute("src", "http://connect.facebook.net/en_US/all.js" );
+		Document.get().getElementById("fb-root").appendChild( elem );
 		
 		rootPanel.insert( vp, 0 );
 	}

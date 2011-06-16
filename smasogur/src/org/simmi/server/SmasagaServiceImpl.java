@@ -79,6 +79,10 @@ public class SmasagaServiceImpl extends RemoteServiceServlet implements SmasagaS
 			smasaga.setTruestory( truestory == null ? false : (Boolean)truestory );
 			Object adventure = e.getProperty("adventure");
 			smasaga.setAdventure( adventure == null ? false : (Boolean)adventure );
+			Object poem = e.getProperty("poem");
+			smasaga.setPoem( poem == null ? false : (Boolean)poem );
+			Object tobecontinued = e.getProperty("continue");
+			smasaga.setContinue( tobecontinued == null ? false : (Boolean)tobecontinued );
 			
 			String sagaKey = KeyFactory.keyToString(e.getKey());
 			sagaMap.put( sagaKey, smasaga );

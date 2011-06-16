@@ -60,10 +60,6 @@
 		<!-- OPTIONAL: include this if you want history support -->
 		<iframe id="__gwt_historyFrame" style="width:0;height:0;border:0"></iframe>
 		<div id="fb-root"></div>
-     	<script src="http://connect.facebook.net/en_US/all.js#appId=205279482582&amp;xfbml=1"></script>
-     	<div id="module">
-     		<!--fb:like href="http://127.0.0.1/Smasaga.jsp?smasaga=<keystr>" width="250" height="80"/ -->
-     	</div>
 	</body>
 	<%
 		} else {
