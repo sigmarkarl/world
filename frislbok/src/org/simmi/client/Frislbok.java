@@ -12,6 +12,7 @@ import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
 import com.google.gwt.event.logical.shared.ResizeEvent;
 import com.google.gwt.event.logical.shared.ResizeHandler;
+import com.google.gwt.i18n.client.DateTimeFormat;
 import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.rpc.AsyncCallback;
 import com.google.gwt.user.client.ui.Anchor;
@@ -168,6 +169,7 @@ public class Frislbok implements EntryPoint {
 		elem.setAttribute("width", "200");
 		elem.setAttribute("show-faces", "true");
 		elem.setAttribute("max-rows", "1");
+		elem.setAttribute("perms", "user_birthday,friends_birthday,user_relationships,friends_relationships" );
 		elem.setId("fblogin");
 		
 		return elem;
@@ -215,11 +217,26 @@ public class Frislbok implements EntryPoint {
 		int sex = person.getGender();
 		if( sex == 1 ) maleButton.setValue( true );
 		else if( sex == 2 ) femaleButton.setValue( true );
+		
+		String facebookUsername = person.getFacebookUsername();
+		if( facebookUsername != null ) {
+			facebookAnchor.setEnabled( true );
+			facebookAnchor.setHref( "http://www.facebook.com/"+facebookUsername );
+		} else {
+			facebookAnchor.setEnabled( false );
+		}
 	}
 	
-	public void newCurrentPerson( String name, String dateOfBirth, String gender ) {		
+	public void newCurrentPerson( String name, String dateOfBirth, String gender, String mother, String motherid ) {	
 		//Person person = new Person( name, dateOfBirth, gender );
-		Person person = new Person( name, new Date(), 0 );
+		
+		int sex = 0;
+		if( "male".equals(gender) ) sex = 1;
+		if( "female".equals(gender) ) sex = 2;
+
+		Date date = DateTimeFormat.getFormat("MM/DD/YYYY").parse(dateOfBirth);
+		
+		Person person = new Person( name, date, sex );
 		person.setFacebookid( uid );
 		person.setFbwriter( uid );
 		
@@ -243,10 +260,33 @@ public class Frislbok implements EntryPoint {
 		$wnd.FB.api(
 			{
 				method: 'fql.query',
-				query: 'SELECT name, birthday, sex FROM user WHERE uid='+uid
+				query: 'SELECT name, birthday_date, sex, family FROM user WHERE uid='+uid
 			},
 			function(response) {
-				ths.@org.simmi.client.Frislbok::newCurrentPerson(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)( response[0].name, response[0].birthdate, response[0].gender );
+				var personName = response[0].name;
+				var personBirthDay = response[0].birthday_date;
+				var personGender = response[0].sex;
+				var personFamily = response[0].family;
+				$wnd.console.log( personFamily );
+				$wnd.FB.api(
+					{
+						method: 'fql.query',
+						query: 'SELECT uid, name, birthday, relationship FROM family WHERE profile_id='+uid
+					},
+					function(response2) {
+						var mother;
+						var motherid;
+						for( ind in response2 ) {
+							var resp = response2[ind];
+							$wnd.console.log( resp );
+							if( resp.relationship == 'mother' ) {
+								mother = resp.name;
+								motherid = resp.uid;
+							}
+						}
+						ths.@org.simmi.client.Frislbok::newCurrentPerson(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)( personName, personBirthDay, personGender, mother, motherid );
+					}
+				);
 			}
 		);
 	}-*/;
@@ -280,6 +320,7 @@ public class Frislbok implements EntryPoint {
 	DateBox			dateBox;
 	RadioButton		maleButton;
 	RadioButton		femaleButton;
+	Anchor			facebookAnchor;
 	public void onModuleLoad() {
 		final RootPanel root = RootPanel.get();
 		
@@ -354,9 +395,14 @@ public class Frislbok implements EntryPoint {
 		
 		subvp.add( personPanel );
 		
+		Label		commentLabel = new Label("Nánar:");
 		TextArea	commentText = new TextArea();
-		commentText.setSize("500px", "100px");
+		commentText.setSize("400px", "50px");
+		subvp.add( commentLabel );
 		subvp.add( commentText );
+		
+		facebookAnchor = new Anchor("Facebook");
+		subvp.add( facebookAnchor );
 		
 		HorizontalPanel	childrenPanel = new HorizontalPanel();
 		childrenPanel.setSpacing( 10 );

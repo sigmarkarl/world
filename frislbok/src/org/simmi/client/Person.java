@@ -12,6 +12,7 @@ public class Person implements Serializable {
 	String	comment;
 	String	key;
 	String	facebookid;
+	String	facebookusername;
 	String	fbwriter;
 	
 	public String getFacebookid() {
@@ -20,6 +21,14 @@ public class Person implements Serializable {
 
 	public void setFacebookid(String facebookid) {
 		this.facebookid = facebookid;
+	}
+	
+	public String getFacebookUsername() {
+		return facebookusername;
+	}
+
+	public void setFacebookUsername(String facebookusername) {
+		this.facebookusername = facebookusername;
 	}
 
 	public String getFbwriter() {

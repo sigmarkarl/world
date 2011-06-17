@@ -461,7 +461,7 @@ public class Smasogur implements EntryPoint {
 	  		  Document.get().getElementById("fb-root").appendChild( elem );
 	    	  //205279482582
 	    	  
-	    	  module.insert( vp, 0 );
+	    	  module.add( vp );
 	      }
 	    };
 	    VisualizationUtils.loadVisualizationApi(onLoadCallback, Table.PACKAGE);

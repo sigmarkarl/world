@@ -41,12 +41,14 @@ public class FrislbokServiceImpl extends RemoteServiceServlet implements Frislbo
 			String	comment = (String)e.getProperty("comment");
 			String	fatherKey = (String)e.getProperty("father");
 			String	motherKey = (String)e.getProperty("mother");
+			String	fbuser = (String)e.getProperty("fbuser");
 			String	fbwriter = (String)e.getProperty("fbwriter");
 			
 			retPerson = new Person( name, dateOfBirth, gender.intValue() );
 			retPerson.setComment( comment );
 			retPerson.setKey( KeyFactory.keyToString(e.getKey()) );
 			retPerson.setFacebookid( uid );
+			retPerson.setFacebookUsername( fbuser );
 			retPerson.setFbwriter( fbwriter );
 			
 			return retPerson;
@@ -120,6 +122,7 @@ public class FrislbokServiceImpl extends RemoteServiceServlet implements Frislbo
 		e.setProperty("gender", person.getGender());
 		e.setProperty("fbwriter", person.getFbwriter());
 		e.setProperty("facebookid", person.getFacebookid());
+		e.setProperty("facebookusername", person.getFacebookUsername());
 		e.setProperty("comment", person.getComment());
 		datastore.put( e );
 		

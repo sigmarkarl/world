@@ -7,6 +7,8 @@ import java.util.List;
 import com.google.gwt.core.client.EntryPoint;
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.dom.client.Document;
+import com.google.gwt.dom.client.Style;
+import com.google.gwt.dom.client.Style.Unit;
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
 import com.google.gwt.event.dom.client.KeyCodes;
@@ -96,6 +98,10 @@ public class Smasaga implements EntryPoint {
 		keystr = urlstr.substring(urlind+1);
 		
 		final RootPanel rootPanel = RootPanel.get();
+		Style rootstyle = rootPanel.getElement().getStyle();
+		rootstyle.setMargin(0.0, Unit.PX);
+		rootstyle.setPadding(0.0, Unit.PX);
+		
 		final VerticalPanel	vp = new VerticalPanel();
 		vp.setSize("100%", "100%");
 		vp.setHorizontalAlignment( VerticalPanel.ALIGN_CENTER );
@@ -485,6 +491,6 @@ public class Smasaga implements EntryPoint {
 	 	elem.setAttribute("src", "http://connect.facebook.net/en_US/all.js" );
 		Document.get().getElementById("fb-root").appendChild( elem );
 		
-		rootPanel.insert( vp, 0 );
+		rootPanel.add( vp );
 	}
 }
