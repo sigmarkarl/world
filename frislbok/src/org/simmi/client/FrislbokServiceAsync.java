@@ -14,4 +14,6 @@ public interface FrislbokServiceAsync {
 
 	void savePerson(Person person, AsyncCallback<String> callback);
 
+	void savePersonArray(Person[] persons, AsyncCallback<String> callback);
+
 }

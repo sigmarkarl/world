@@ -24,4 +24,5 @@ public interface FrislbokService extends RemoteService {
 	//public Person[] fetchFromKeySet( Set<Key> keyset );
 	public Person[] fetchFromKeyStringArray(String[] keys);
 	public String savePerson( Person person );
+	public String savePersonArray( Person[] persons );
 }

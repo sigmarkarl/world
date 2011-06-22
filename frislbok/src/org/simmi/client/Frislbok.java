@@ -1,9 +1,12 @@
 package org.simmi.client;
 
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 import com.google.gwt.core.client.EntryPoint;
 import com.google.gwt.core.client.GWT;
+import com.google.gwt.core.client.JsArrayMixed;
 import com.google.gwt.dom.client.Document;
 import com.google.gwt.dom.client.Element;
 import com.google.gwt.dom.client.Style;
@@ -13,10 +16,14 @@ import com.google.gwt.event.dom.client.ClickHandler;
 import com.google.gwt.event.logical.shared.ResizeEvent;
 import com.google.gwt.event.logical.shared.ResizeHandler;
 import com.google.gwt.i18n.client.DateTimeFormat;
+import com.google.gwt.json.client.JSONNumber;
+import com.google.gwt.json.client.JSONObject;
+import com.google.gwt.json.client.JSONString;
 import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.rpc.AsyncCallback;
 import com.google.gwt.user.client.ui.Anchor;
 import com.google.gwt.user.client.ui.Grid;
+import com.google.gwt.user.client.ui.HTML;
 import com.google.gwt.user.client.ui.HTMLTable.CellFormatter;
 import com.google.gwt.user.client.ui.HorizontalPanel;
 import com.google.gwt.user.client.ui.Label;
@@ -206,9 +213,10 @@ public class Frislbok implements EntryPoint {
 		$wnd.console.log( "past login check" );
 	}-*/;
 	
+	int		fbCount = 0;
 	Person	currentPerson;
 	public void setCurrentPerson( Person person ) {
-		Window.alert( person.getName() + " " + person.getDateOfBirth() + " " + person.getGender() );
+		//Window.alert( person.getName() + " " + person.getDateOfBirth() + " " + person.getGender() );
 		
 		currentPerson = person;
 		
@@ -225,20 +233,150 @@ public class Frislbok implements EntryPoint {
 		} else {
 			facebookAnchor.setEnabled( false );
 		}
+		
+		Person mother = person.getMother();
+		if( mother == null ) {
+			motherAnchor.setText("Skrá");
+			motherAnchor.setHref("");
+		} else {
+			String motherName = mother.getName();
+			motherAnchor.setText( motherName != null && motherName.length() > 0 ? motherName : "Nafnlaus" );
+			motherAnchor.setHref( mother.getKey() );
+		}
+		
+		Person father = person.getFather();
+		if( father == null ) {
+			fatherAnchor.setText("Skrá");
+			fatherAnchor.setHref("");
+		} else {
+			String fatherName = father.getName();
+			fatherAnchor.setText( fatherName != null && fatherName.length() > 0 ? fatherName : "Nafnlaus" );
+			fatherAnchor.setHref( father.getKey() );
+		}
 	}
 	
-	public void newCurrentPerson( String name, String dateOfBirth, String gender, String mother, String motherid ) {	
+	Person	currentMother;
+	public void setCurrentMother( Person mother ) {
+		Window.alert( mother.getName() + " " + mother.getDateOfBirth() + " " + mother.getGender() );
+		
+		currentMother = mother;
+		
+		/*personName.setText( mother.getName() );
+		dateBox.setValue( mother.getDateOfBirth() );
+		int sex = mother.getGender();
+		if( sex == 1 ) maleButton.setValue( true );
+		else if( sex == 2 ) femaleButton.setValue( true );
+		
+		String facebookUsername = mother.getFacebookUsername();
+		if( facebookUsername != null ) {
+			facebookAnchor.setEnabled( true );
+			facebookAnchor.setHref( "http://www.facebook.com/"+facebookUsername );
+		} else {
+			facebookAnchor.setEnabled( false );
+		}*/
+	}
+	
+	Person	currentFather;
+	public void setCurrentFather( Person father ) {
+		//Window.alert( mother.getName() + " " + mother.getDateOfBirth() + " " + mother.getGender() );
+		
+		currentFather = father;
+		
+		/*personName.setText( .getName() );
+		dateBox.setValue( mother.getDateOfBirth() );
+		int sex = mother.getGender();
+		if( sex == 1 ) maleButton.setValue( true );
+		else if( sex == 2 ) femaleButton.setValue( true );
+		
+		String facebookUsername = mother.getFacebookUsername();
+		if( facebookUsername != null ) {
+			facebookAnchor.setEnabled( true );
+			facebookAnchor.setHref( "http://www.facebook.com/"+facebookUsername );
+		} else {
+			facebookAnchor.setEnabled( false );
+		}*/
+	}
+	
+	Map<String,Person>	fbuidPerson = new HashMap<String,Person>();
+	public void newCurrentPerson( String puid, String username, String name, String dateOfBirth, String gender, JsArrayMixed family ) {	
 		//Person person = new Person( name, dateOfBirth, gender );
 		
 		int sex = 0;
 		if( "male".equals(gender) ) sex = 1;
 		if( "female".equals(gender) ) sex = 2;
 
-		Date date = DateTimeFormat.getFormat("MM/DD/YYYY").parse(dateOfBirth);
+		Date date = DateTimeFormat.getFormat("MM/dd/yyyy").parse(dateOfBirth);
 		
-		Person person = new Person( name, date, sex );
-		person.setFacebookid( uid );
+		final Person person;
+		if( fbuidPerson.containsKey(puid) ) {
+			person = fbuidPerson.get( puid );
+			person.setName( name );
+			person.setDateOfBirth( date );
+			person.setGender( sex );
+		} else {
+			person = new Person( name, date, sex );
+			fbuidPerson.put(puid, person);
+		}
+		person.setFacebookid( puid );
+		person.setFacebookUsername( username );
 		person.setFbwriter( uid );
+		
+		for( int i = 0; i < family.length(); i++ ) {
+			JSONObject		jsonObj = new JSONObject( family.getObject(i) );
+			JSONString 		rel = jsonObj.get("relationship").isString();
+			
+			if( rel != null ) {
+				String relationship = rel.stringValue();
+				if( "parent".equals( relationship ) ) {
+					
+				} else if( "father".equals( relationship ) ) {
+					
+				} else if( "mother".equals( relationship ) ) {
+					if( person.mother == null ) {
+						person.mother = new Person();
+						person.mother.setFbwriter(uid);
+						person.mother.children.add( person );
+						JSONString motherid = jsonObj.get("uid").isString();
+						if( motherid != null ) {
+							String motherfbid = motherid.stringValue();
+							fbuidPerson.put( motherfbid, person.mother );
+							person.mother.setFacebookid( motherfbid );
+							fbFetch( "("+motherfbid+")" );
+						} else {
+							JSONString jName = jsonObj.get("name").isString();
+							JSONString jDate = jsonObj.get("birthday").isString();
+							
+							if( jName != null ) person.mother.setName( jName.stringValue() );
+							if( jDate != null ) {
+								Date birthday = DateTimeFormat.getFormat("MM/dd/yyyy").parse( jDate.stringValue() );
+								person.mother.setDateOfBirth( birthday );
+							}
+						}
+					}
+				} else if( "child".equals( relationship ) ) {
+					
+				} else if( "son".equals( relationship ) ) {
+					
+				} else if( "daughter".equals( relationship ) ) {
+					
+				} else if( "sibling".equals( relationship ) ) {
+					
+				} else if( "sister".equals( relationship ) ) {
+					
+				} else if( "brother".equals( relationship ) ) {
+					
+				}
+			}
+		}
+		fbCount++;
+		
+		/*if( fatherid != null ) {
+			Person fatherPerson = new Person();
+			fatherPerson.setFacebookid( fatherid );
+			fatherPerson.setFbwriter( uid );
+		}*/
+		
+		//frislbokService
 		
 		frislbokService.savePerson( person, new AsyncCallback<String>() {
 			@Override
@@ -248,48 +386,218 @@ public class Frislbok implements EntryPoint {
 
 			@Override
 			public void onSuccess(String result) {
-				
+				person.setKey( result );
 			}
 		});
 		
-		setCurrentPerson( person );
+		if( fbCount == fbuidPerson.size() ) {
+			setCurrentPerson( fbuidPerson.get(uid) );
+			
+			Person[] persons = fbuidPerson.values().toArray( new Person[0] );
+			frislbokService.savePersonArray( persons, new AsyncCallback<String>() {
+				@Override
+				public void onFailure(Throwable caught) {
+					
+				}
+
+				@Override
+				public void onSuccess(String result) {
+					
+				}
+			});
+		}
+		
+		/*if( uid.equals(person.getFacebookid()) ) setCurrentPerson( person );
+		else {
+			Person vip = fbuidPerson.get( uid );
+			if( vip.mother != null && motherAnchor.getText().equals("Skrá") ) {
+				motherAnchor.setText( vip.mother.getName() );
+				motherAnchor.setHref( vip.mother.getKey() );
+			}
+			if( vip.father != null && fatherAnchor.getText().equals("Skrá") ) {
+				fatherAnchor.setText( vip.father.getName() );
+				fatherAnchor.setHref( vip.father.getKey() );
+			}
+		}*/
 	}
 	
-	public native void fbFetch( String uid ) /*-{
+	public native void fbFetch( String uids ) /*-{
 		var ths = this;
+		var qStr = 'SELECT name, birthday_date, sex, username, family, uid FROM user WHERE uid in '+uids;
+		//$wnd.alert( qStr );
+		
 		$wnd.FB.api(
 			{
 				method: 'fql.query',
-				query: 'SELECT name, birthday_date, sex, family FROM user WHERE uid='+uid
+				query: qStr
 			},
 			function(response) {
-				var personName = response[0].name;
-				var personBirthDay = response[0].birthday_date;
-				var personGender = response[0].sex;
-				var personFamily = response[0].family;
-				$wnd.console.log( personFamily );
-				$wnd.FB.api(
-					{
-						method: 'fql.query',
-						query: 'SELECT uid, name, birthday, relationship FROM family WHERE profile_id='+uid
-					},
-					function(response2) {
-						var mother;
-						var motherid;
-						for( ind in response2 ) {
-							var resp = response2[ind];
-							$wnd.console.log( resp );
-							if( resp.relationship == 'mother' ) {
-								mother = resp.name;
-								motherid = resp.uid;
-							}
+				for( ind in response ) {
+					//$wnd.alert( ind );
+					//$wnd.alert( response[ind] );
+					
+					var personName = response[ind].name;
+					var personBirthDay = response[ind].birthday_date;
+					var personGender = response[ind].sex;
+					var personFamily = response[ind].family;
+					var username = response[ind].username;
+					var uid = response[ind].uid;
+					$wnd.console.log( personFamily );
+					$wnd.FB.api(
+						{
+							method: 'fql.query',
+							query: 'SELECT uid, name, birthday, relationship FROM family WHERE profile_id = '+uid
+						},
+						function(response2) {
+							ths.@org.simmi.client.Frislbok::newCurrentPerson(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/google/gwt/core/client/JsArrayMixed;)
+								( uid, username, personName, personBirthDay, personGender, response2 );
 						}
-						ths.@org.simmi.client.Frislbok::newCurrentPerson(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)( personName, personBirthDay, personGender, mother, motherid );
-					}
-				);
+					);
+				}
 			}
 		);
 	}-*/;
+	
+	public native void fbFetchPersonInfo( String uids ) /*-{
+	var ths = this;
+	var qStr = 'SELECT name, birthday_date, sex, username, family, uid FROM user WHERE uid in '+uids;
+	
+	$wnd.FB.api(
+		{
+			method: 'fql.query',
+			query: qStr
+		},
+		function(response) {
+			ths.@org.simmi.client.Frislbok::parsePersonInfo(Lcom/google/gwt/core/client/JsArrayMixed;)( response );
+		}
+	);
+}-*/;
+	
+	public native void fbFetchFamilyInfo( String uids ) /*-{
+		var ths = this;
+		var qStr = 'SELECT profile_id, uid, name, birthday, relationship FROM family WHERE profile_id = '+uids
+	
+		$wnd.FB.api(
+			{
+				method: 'fql.query',
+				query: qStr
+			},
+			function(response) {
+				ths.@org.simmi.client.Frislbok::parseFamilyInfo(Lcom/google/gwt/core/client/JsArrayMixed;)( response );
+			}
+		);
+	}-*/;
+	
+	public void parsePersonInfo( JsArrayMixed response ) {
+		for( int i = 0; i < response.length(); i++ ) {
+			JSONObject		jsonObj = new JSONObject( response.getObject(i) );
+			JSONString 		name = jsonObj.get("name").isString();
+			JSONString 		birthday = jsonObj.get("birthday_date").isString();
+			JSONNumber 		sex = jsonObj.get("sex").isNumber();
+			JSONString 		username = jsonObj.get("username").isString();
+			JSONString 		uid = jsonObj.get("uid").isString();
+			
+			String 	fbuid = uid.stringValue();
+			Person	person;
+			if( fbuidPerson.containsKey(fbuid) ) {
+				person = fbuidPerson.get(fbuid);
+			} else {
+				person = new Person();
+				fbuidPerson.put(fbuid, person);
+			}
+			
+			if( name != null ) person.setName( name.stringValue() );
+			if( sex != null ) person.setGender( (int)sex.doubleValue() );
+			if( birthday != null ) {
+				Date date = DateTimeFormat.getFormat("MM/dd/yyyy").parse( birthday.stringValue() );
+				person.setDateOfBirth( date );
+			}
+			if( username != null ) {
+				person.setFacebookUsername( username.stringValue() );
+			}
+			person.setFacebookid( fbuid );
+		}
+	}
+	
+	public void parseFamilyInfo( JsArrayMixed response ) {
+		for( int i = 0; i < response.length(); i++ ) {
+			JSONObject		jsonObj = new JSONObject( response.getObject(i) );
+			JSONString 		pro = jsonObj.get("profile_id").isString();
+			JSONString 		uid = jsonObj.get("uid").isString();
+			JSONString 		name = jsonObj.get("name").isString();
+			JSONString 		birthday = jsonObj.get("birthday").isString();
+			JSONString 		rel = jsonObj.get("relationship").isString();
+			
+			String 	fbuid = pro.stringValue();
+			Person	person;
+			if( fbuidPerson.containsKey(fbuid) ) {
+				person = fbuidPerson.get(fbuid);
+			} else {
+				person = new Person();
+				fbuidPerson.put(fbuid, person);
+			}
+			
+			String relationship = rel.stringValue();
+			if( "parent".equals( relationship ) ) {
+				
+			} else if( "father".equals( relationship ) ) {
+				Person p;
+				if( person.father == null ) {
+					if( uid != null ) {
+						String fatherid = uid.stringValue();
+						if( fbuidPerson.containsKey(fatherid) ) {
+							p = fbuidPerson.get( fatherid );
+						} else {
+							p = new Person();
+							fbuidPerson.put( fatherid, p );
+							p.setFacebookid( fatherid );
+						}
+					} else {
+						p = new Person();
+						
+						if( name != null ) p.setName( name.stringValue() );
+						if( birthday != null ) {
+							Date date = DateTimeFormat.getFormat("MM/dd/yyyy").parse( birthday.stringValue() );
+							p.setDateOfBirth( date );
+						}
+					}				
+					person.setFather( p );
+				} else {
+					p = person.father;
+				}
+				p.setFbwriter( fbuid );
+			} else if( "mother".equals( relationship ) ) {
+				if( person.mother == null ) {
+					person.mother = new Person();
+					if( uid != null ) {
+						String motherid = uid.stringValue();
+						fbuidPerson.put( motherid, person.mother );
+						person.mother.setFacebookid( motherid );
+					} else {
+						if( name != null ) person.mother.setName( name.stringValue() );
+						if( birthday != null ) {
+							Date date = DateTimeFormat.getFormat("MM/dd/yyyy").parse( birthday.stringValue() );
+							person.mother.setDateOfBirth( date );
+						}
+					}
+					person.mother.setFbwriter( fbuid );
+					person.mother.addChild( person );
+				}
+			} else if( "child".equals( relationship ) ) {
+				
+			} else if( "son".equals( relationship ) ) {
+				
+			} else if( "daughter".equals( relationship ) ) {
+				
+			} else if( "sibling".equals( relationship ) ) {
+				
+			} else if( "sister".equals( relationship ) ) {
+				
+			} else if( "brother".equals( relationship ) ) {
+				
+			}
+		}
+	}
 	
 	public void setUserId( String val ) {
 		uid = val;
@@ -299,7 +607,8 @@ public class Frislbok implements EntryPoint {
 				@Override
 				public void onSuccess(Person result) {
 					if( result == null ) {
-						fbFetch( uid );
+						fbCount++;
+						fbFetch( "("+uid+")" );
 					} else {
 						setCurrentPerson( result );
 					}
@@ -321,6 +630,9 @@ public class Frislbok implements EntryPoint {
 	RadioButton		maleButton;
 	RadioButton		femaleButton;
 	Anchor			facebookAnchor;
+	Anchor			fatherAnchor;
+	Anchor			motherAnchor;
+	VerticalPanel	sibanchors;
 	public void onModuleLoad() {
 		final RootPanel root = RootPanel.get();
 		
@@ -359,9 +671,9 @@ public class Frislbok implements EntryPoint {
 		HorizontalPanel	parentPanel = new HorizontalPanel();
 		parentPanel.setSpacing( 10 );
 		Label	fatherLabel = new Label("Faðir:");
-		Anchor	fatherAnchor = new Anchor("Srká");
+		fatherAnchor = new Anchor("Srká");
 		Label	motherLabel = new Label("Móðir:");
-		Anchor	motherAnchor = new Anchor("Skrá");
+		motherAnchor = new Anchor("Skrá");
 		
 		fatherAnchor.addClickHandler( new ClickHandler() {
 			@Override
@@ -395,14 +707,29 @@ public class Frislbok implements EntryPoint {
 		
 		subvp.add( personPanel );
 		
+		HorizontalPanel	detail = new HorizontalPanel();
+		detail.setHorizontalAlignment( HorizontalPanel.ALIGN_CENTER );
+		detail.setVerticalAlignment(HorizontalPanel.ALIGN_MIDDLE );
+		detail.setSpacing( 10 );
+		
 		Label		commentLabel = new Label("Nánar:");
 		TextArea	commentText = new TextArea();
 		commentText.setSize("400px", "50px");
-		subvp.add( commentLabel );
-		subvp.add( commentText );
+		detail.add( commentLabel );
+		detail.add( commentText );
 		
 		facebookAnchor = new Anchor("Facebook");
-		subvp.add( facebookAnchor );
+		detail.add( facebookAnchor );
+		
+		subvp.add( detail );
+		
+		HorizontalPanel	sibpanel = new HorizontalPanel();
+		sibpanel.setSpacing( 10 );
+		sibpanel.add( new HTML("Systkini:") );
+		
+		sibanchors = new VerticalPanel();
+		sibanchors.setSpacing( 10 );
+		sibpanel.add( sibanchors );
 		
 		HorizontalPanel	childrenPanel = new HorizontalPanel();
 		childrenPanel.setSpacing( 10 );

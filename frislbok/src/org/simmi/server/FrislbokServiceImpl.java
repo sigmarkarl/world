@@ -124,7 +124,30 @@ public class FrislbokServiceImpl extends RemoteServiceServlet implements Frislbo
 		e.setProperty("facebookid", person.getFacebookid());
 		e.setProperty("facebookusername", person.getFacebookUsername());
 		e.setProperty("comment", person.getComment());
+		
+		Person father = person.getFather();
+		if( father != null && father.getKey() != null ) e.setProperty( "father", father.getKey() );
+		Person mother = person.getMother();
+		if( mother != null && mother.getKey() != null ) e.setProperty( "mother", mother.getKey() );
+		
+		Set<String>	childIds = new HashSet<String>();
+		for( Person child : person.getChildren() ) childIds.add( child.getKey() );
+		e.setProperty("children", childIds);
+		
+		Set<String>	sibIds = new HashSet<String>();
+		for( Person sibling : person.getSiblings() ) sibIds.add( sibling.getKey() );
+		e.setProperty("siblings", sibIds);
+
 		datastore.put( e );
+		
+		return KeyFactory.keyToString( e.getKey() );
+	}
+
+	@Override
+	public String savePersonArray(Person[] persons) {
+		for( Person person : persons ) {
+			savePerson( person );
+		}
 		
 		return null;
 	}
