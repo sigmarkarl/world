@@ -26,13 +26,14 @@ public class FrislbokServiceImpl extends RemoteServiceServlet implements Frislbo
 
 	@Override
 	public Person fetchFromFacebookId(String uid) {
+		Person retPerson = null;
+		
 		DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
 		Query query = new Query("person");
 		query.addFilter("facebookid", FilterOperator.EQUAL, uid);
 		PreparedQuery pq = datastore.prepare( query );
 		List<Entity> personEntities = pq.asList( FetchOptions.Builder.withDefaults() );
 		
-		Person retPerson = null;
 		if( personEntities.size() > 0 ) {
 			Entity 	e = personEntities.get(0);
 			String 	name = (String)e.getProperty("name");

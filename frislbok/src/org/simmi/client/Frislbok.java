@@ -1,8 +1,12 @@
 package org.simmi.client;
 
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import com.google.gwt.core.client.EntryPoint;
 import com.google.gwt.core.client.GWT;
@@ -19,6 +23,7 @@ import com.google.gwt.i18n.client.DateTimeFormat;
 import com.google.gwt.json.client.JSONNumber;
 import com.google.gwt.json.client.JSONObject;
 import com.google.gwt.json.client.JSONString;
+import com.google.gwt.user.client.Timer;
 import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.rpc.AsyncCallback;
 import com.google.gwt.user.client.ui.Anchor;
@@ -57,7 +62,6 @@ public class Frislbok implements EntryPoint {
 	 */
 	private final GreetingServiceAsync greetingService = GWT.create(GreetingService.class);
 	private final FrislbokServiceAsync frislbokService = GWT.create(FrislbokService.class);
-	
 
 	public class DatePickerWithYearSelector extends DatePicker {
 		public DatePickerWithYearSelector() {
@@ -195,7 +199,32 @@ public class Frislbok implements EntryPoint {
 					try {
 						$wnd.FB.XFBML.parse();
 						if (response.session) {
-							ths.@org.simmi.client.Frislbok::setUserId(Ljava/lang/String;)( response.session.uid );
+							//ths.@org.simmi.client.Frislbok::setUserId(Ljava/lang/String;)( response.session.uid );
+							//$wnd.FB.
+							var uid = response.session.uid;
+							var qStr = 'SELECT uid2 FROM friend WHERE uid1 = '+uid;
+							//$wnd.alert( qStr );
+							
+							$wnd.FB.api(
+								{
+									method: 'fql.query',
+									query: qStr
+								},
+								function(response) {
+									//var uids = uid;
+									var uids = '('+uid;
+									for( ind in response ) {
+										uids += ','+response[ind].uid2;
+										//break;
+									}
+									uids += ')';
+									
+									//ths.@org.simmi.client.Frislbok::fbFetchPersonInfo(Ljava/lang/String;)( uids );
+									//ths.@org.simmi.client.Frislbok::fbFetchFamilyInfo(Ljava/lang/String;)( uids );
+									
+									ths.@org.simmi.client.Frislbok::setUids(Ljava/lang/String;)( uids );
+								}
+							);
 						} else {
 							ths.@org.simmi.client.Frislbok::setUserId(Ljava/lang/String;)( "" );
 						    //$wnd.FB.login();
@@ -212,6 +241,52 @@ public class Frislbok implements EntryPoint {
 		
 		$wnd.console.log( "past login check" );
 	}-*/;
+	
+	String 		uids = null;
+	Set<String>	uidset = new HashSet<String>();
+	Set<String>	runuids = new HashSet<String>();
+	String		tobeuids = null;
+	public void setUids( String uids ) {
+		this.uids = uids;
+		
+		List<String> uidList = Arrays.asList( uids.substring(1, uids.length()-1).split(",") );
+		uidset.addAll( uidList );
+		
+		tobeuids = "("+uidList.get(0)+")";
+		//fbFetchPersonInfo( uids );
+		//fbFetchFamilyInfo( uids );
+		
+		Timer timer = new Timer() {
+			public void run() {
+				if( tobeuids != null ) {
+					String localuids = tobeuids;
+					tobeuids = null;
+					
+					List<String> uidList = Arrays.asList( localuids.substring(1, localuids.length()-1).split(",") );
+					runuids.addAll( uidList );
+					
+					fbFetchPersonInfo( localuids );
+					fbFetchFamilyInfo( localuids );
+				} else if( runuids.size() == uidset.size() ) {
+					saveFbPersons();
+					this.cancel();
+				} else {
+					String localuids = "(";
+					int i = 0;
+					for( String uid : uidset ) {
+						if( !runuids.contains(uid) ) {
+							if( localuids.length() == 1 ) localuids += uid;
+							else localuids += "," + uid;
+						}
+						if( ++i > 10 ) break;
+					}
+					localuids += ")";
+					tobeuids = localuids;
+				}
+			}
+		};
+		timer.scheduleRepeating(12000);
+	}
 	
 	int		fbCount = 0;
 	Person	currentPerson;
@@ -459,36 +534,46 @@ public class Frislbok implements EntryPoint {
 	}-*/;
 	
 	public native void fbFetchPersonInfo( String uids ) /*-{
-	var ths = this;
-	var qStr = 'SELECT name, birthday_date, sex, username, family, uid FROM user WHERE uid in '+uids;
-	
-	$wnd.FB.api(
-		{
-			method: 'fql.query',
-			query: qStr
-		},
-		function(response) {
-			ths.@org.simmi.client.Frislbok::parsePersonInfo(Lcom/google/gwt/core/client/JsArrayMixed;)( response );
-		}
-	);
-}-*/;
-	
-	public native void fbFetchFamilyInfo( String uids ) /*-{
 		var ths = this;
-		var qStr = 'SELECT profile_id, uid, name, birthday, relationship FROM family WHERE profile_id = '+uids
-	
+		var qStr = 'SELECT name, birthday_date, sex, username, family, uid FROM user WHERE uid in '+uids;
+		
+		$wnd.console.log('sim ' + uids);
 		$wnd.FB.api(
 			{
 				method: 'fql.query',
 				query: qStr
 			},
 			function(response) {
+				$wnd.console.log('resp');
+				ths.@org.simmi.client.Frislbok::parsePersonInfo(Lcom/google/gwt/core/client/JsArrayMixed;)( response );
+			}
+		);
+	}-*/;
+	
+	public native void fbFetchFamilyInfo( String uids ) /*-{
+		var ths = this;
+		var qStr = 'SELECT profile_id, uid, name, birthday, relationship FROM family WHERE profile_id in '+uids
+		
+		$wnd.console.log('ok');
+		$wnd.FB.api(
+			{
+				method: 'fql.query',
+				query: qStr
+			},
+			function(response) {
+				$wnd.console.log('onse');
 				ths.@org.simmi.client.Frislbok::parseFamilyInfo(Lcom/google/gwt/core/client/JsArrayMixed;)( response );
 			}
 		);
 	}-*/;
 	
+	public native void console( String msg ) /*-{
+		$wnd.console.log( msg );
+	}-*/;
+	
+	boolean done = false;
 	public void parsePersonInfo( JsArrayMixed response ) {
+		console( "presplen: "+response.length() );
 		for( int i = 0; i < response.length(); i++ ) {
 			JSONObject		jsonObj = new JSONObject( response.getObject(i) );
 			JSONString 		name = jsonObj.get("name").isString();
@@ -517,9 +602,14 @@ public class Frislbok implements EntryPoint {
 			}
 			person.setFacebookid( fbuid );
 		}
+		
+		/*if( done ) {
+			saveFbPersons();
+		} else done = true;*/
 	}
 	
 	public void parseFamilyInfo( JsArrayMixed response ) {
+		console( "fresplen: "+response.length() );
 		for( int i = 0; i < response.length(); i++ ) {
 			JSONObject		jsonObj = new JSONObject( response.getObject(i) );
 			JSONString 		pro = jsonObj.get("profile_id").isString();
@@ -565,24 +655,35 @@ public class Frislbok implements EntryPoint {
 				} else {
 					p = person.father;
 				}
+				p.setGender( 1 );
 				p.setFbwriter( fbuid );
 			} else if( "mother".equals( relationship ) ) {
+				Person p;
 				if( person.mother == null ) {
-					person.mother = new Person();
 					if( uid != null ) {
 						String motherid = uid.stringValue();
-						fbuidPerson.put( motherid, person.mother );
-						person.mother.setFacebookid( motherid );
+						if( fbuidPerson.containsKey(motherid) ) {
+							p = fbuidPerson.get( motherid );
+						} else {
+							p = new Person();
+							fbuidPerson.put( motherid, p );
+							p.setFacebookid( motherid );
+						}
 					} else {
-						if( name != null ) person.mother.setName( name.stringValue() );
+						p = new Person();
+						
+						if( name != null ) p.setName( name.stringValue() );
 						if( birthday != null ) {
 							Date date = DateTimeFormat.getFormat("MM/dd/yyyy").parse( birthday.stringValue() );
-							person.mother.setDateOfBirth( date );
+							p.setDateOfBirth( date );
 						}
-					}
-					person.mother.setFbwriter( fbuid );
-					person.mother.addChild( person );
+					}				
+					person.setMother( p );
+				} else {
+					p = person.mother;
 				}
+				p.setGender( 2 );
+				p.setFbwriter( fbuid );
 			} else if( "child".equals( relationship ) ) {
 				
 			} else if( "son".equals( relationship ) ) {
@@ -594,9 +695,53 @@ public class Frislbok implements EntryPoint {
 			} else if( "sister".equals( relationship ) ) {
 				
 			} else if( "brother".equals( relationship ) ) {
-				
+				Person p;
+				if( uid != null ) {
+					String brotherid = uid.stringValue();
+					if( fbuidPerson.containsKey(brotherid) ) {
+						p = fbuidPerson.get( brotherid );
+					} else {
+						p = new Person();
+						fbuidPerson.put( brotherid, p );
+						p.setFacebookid( brotherid );
+					}
+				} else {
+					p = new Person();
+					
+					if( name != null ) p.setName( name.stringValue() );
+					if( birthday != null ) {
+						Date date = DateTimeFormat.getFormat("MM/dd/yyyy").parse( birthday.stringValue() );
+						p.setDateOfBirth( date );
+					}
+				}
+				p.setGender(1);
+				person.addSibling( p );
 			}
 		}
+		
+		/*if( done ) {
+			saveFbPersons();
+		} else done = true;*/
+	}
+	
+	public void saveFbPersons() {
+		int i = 0;
+		Person[] persons = new Person[fbuidPerson.size()];
+		for( String fbuid : fbuidPerson.keySet() ) {
+			persons[i++] = fbuidPerson.get(fbuid);
+		}
+		
+		frislbokService.savePersonArray(persons, new AsyncCallback<String>() {
+			@Override
+			public void onFailure(Throwable caught) {
+				
+			}
+
+			@Override
+			public void onSuccess(String result) {
+				
+			}
+		});
 	}
 	
 	public void setUserId( String val ) {
@@ -762,6 +907,7 @@ public class Frislbok implements EntryPoint {
 		subvp.add( fbpanel );
 		
 		checkLoginStatus();
+		
 		Element e = Document.get().createElement("script");
 		e.setAttribute("async", "true");
 		e.setAttribute("src", "http://connect.facebook.net/en_US/all.js" );
