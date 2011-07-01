@@ -22,7 +22,11 @@ import com.google.gwt.event.logical.shared.ResizeHandler;
 import com.google.gwt.user.client.Random;
 import com.google.gwt.user.client.Timer;
 import com.google.gwt.user.client.Window;
+import com.google.gwt.user.client.ui.Anchor;
+import com.google.gwt.user.client.ui.HTML;
+import com.google.gwt.user.client.ui.HorizontalPanel;
 import com.google.gwt.user.client.ui.RootPanel;
+import com.google.gwt.user.client.ui.VerticalPanel;
 
 /**
  * Entry point classes define <code>onModuleLoad()</code>.
@@ -45,6 +49,9 @@ public class Webworm implements EntryPoint, KeyDownHandler, KeyUpHandler {
 	double 	appley;
 	double	appler = 16.0;
 	public int setApple( Context2d context ) {
+		int w = context.getCanvas().getWidth();
+		int h = context.getCanvas().getHeight();
+		
 		applex = Random.nextDouble()*(w-appler*2.0)+appler;
 		appley = Random.nextDouble()*(h-appler*2.0)+appler;
 		
@@ -78,6 +85,8 @@ public class Webworm implements EntryPoint, KeyDownHandler, KeyUpHandler {
 		
 		int		left;
 		int		right;
+		int		leftv;
+		int		rightv;
 		
 		List<Double>	xs;
 		List<Double>	ys;
@@ -85,7 +94,7 @@ public class Webworm implements EntryPoint, KeyDownHandler, KeyUpHandler {
 		int 	i;
 		int		l;
 		
-		public Worm( String c, int left, int right ) {
+		public Worm( String c, int left, int right, int leftv, int rightv ) {
 			r = 5.0;
 			a = Math.PI/2.0;
 			s = 7.0;
@@ -96,13 +105,17 @@ public class Webworm implements EntryPoint, KeyDownHandler, KeyUpHandler {
 			xs = new ArrayList<Double>();
 			ys = new ArrayList<Double>();
 			
+			int w = cv.getCoordinateSpaceWidth();
+			int h = cv.getCoordinateSpaceHeight();
 			double x = w/2.0;
-			double y = h-20.0;
+			double y = h-10.0;
 			xs.add(x);
 			ys.add(y);
 			
 			this.left = left;
 			this.right = right;
+			this.leftv = leftv;
+			this.rightv = rightv;
 		}
 		
 		public void advance( Context2d context ) {			
@@ -115,11 +128,11 @@ public class Webworm implements EntryPoint, KeyDownHandler, KeyUpHandler {
 					double ty = ys.remove( (i+1)%ys.size() );
 					draw( context, tx, ty, r+1.0, "#000000", "#000000" );
 				} else {
-					if( keyset.contains( left ) ) {
+					if( keyset.contains( left ) || keyset.contains( leftv ) ) {
 						a += Math.PI/16.0;
 					}
 					
-					if( keyset.contains( right ) ) {
+					if( keyset.contains( right ) || keyset.contains( rightv ) ) {
 						a -= Math.PI/16.0;
 					}
 					
@@ -146,7 +159,7 @@ public class Webworm implements EntryPoint, KeyDownHandler, KeyUpHandler {
 						context.beginPath();
 						context.setFillStyle("#000000");
 						context.setStrokeStyle("#000000");
-						context.arc(applex, appley, appler-4.0, 0, 2.0*Math.PI);
+						context.arc(applex, appley, appler-2.0, 0, 2.0*Math.PI);
 						context.fill();
 						context.stroke();
 						context.closePath();
@@ -161,8 +174,12 @@ public class Webworm implements EntryPoint, KeyDownHandler, KeyUpHandler {
 					int red = id.getRedAt(0, 0);
 					int green = id.getGreenAt(0, 0);
 					
-					if( blue != 0 || green != 0 || red != 0 ) l = 0;
-					else {
+					int wbound = cv.getCoordinateSpaceWidth();
+					int hbound = cv.getCoordinateSpaceHeight();
+					
+					if( blue != 0 || green != 0 || red != 0 || x < 0 || y < 0 || x >= wbound || y >= hbound ) {
+						l = 0;
+					} else {
 						draw( context, x, y, r, c, "#111111" );
 					}
 				}
@@ -189,14 +206,16 @@ public class Webworm implements EntryPoint, KeyDownHandler, KeyUpHandler {
 	};
 	
 	public void updateCoordinates( Canvas cv, boolean init ) {
+		final Context2d context = cv.getContext2d();
 		if( init ) {
-			cv.setWidth( w+"px" );
-			cv.setHeight( h+"px" );
-			cv.setCoordinateSpaceWidth( w );
-			cv.setCoordinateSpaceHeight( h );
+			context.getCanvas().setWidth( w-2 );
+			context.getCanvas().setHeight( h-30 );
+			//cv.setWidth( w+"px" );
+			//cv.setHeight( h+"px" );
+			cv.setCoordinateSpaceWidth( context.getCanvas().getWidth() );
+			cv.setCoordinateSpaceHeight( context.getCanvas().getHeight() );
 		}
 		
-		final Context2d context = cv.getContext2d();
 		context.setFillStyle("#000000");
 		context.fillRect(0, 0, cv.getCoordinateSpaceWidth(), cv.getCoordinateSpaceHeight());
 		
@@ -209,8 +228,12 @@ public class Webworm implements EntryPoint, KeyDownHandler, KeyUpHandler {
 				w.draw( context, x, y, w.r, w.c, "#111111" );
 			}
 		}
-		setApple( context );
+		if( !init ) setApple( context );
 	}
+	
+	public native void console( String s ) /*-{
+		$wnd.console.log( s );
+	}-*/;
 
 	int			w, h;
 	Canvas		cv;
@@ -222,16 +245,29 @@ public class Webworm implements EntryPoint, KeyDownHandler, KeyUpHandler {
 		
 		st.setMargin(0.0, Unit.PX);
 		st.setPadding(0.0, Unit.PX);
+		st.setBorderWidth(0.0, Unit.PX);
+		st.setBackgroundColor("#222222");
+		
+		
+		final VerticalPanel	vp = new VerticalPanel();
+		vp.setHorizontalAlignment( VerticalPanel.ALIGN_CENTER );
+		vp.setVerticalAlignment( VerticalPanel.ALIGN_MIDDLE );
+		st = vp.getElement().getStyle();
+		st.setBackgroundColor( "#222222" );
 		
 		//FocusPanel	fp = new FocusPanel();
 		//fp.setWidth( "100%" );
 		//fp.setHeight( "100%" );
 		cv = Canvas.createIfSupported();
 		st = cv.getElement().getStyle();
-		//st.setMargin(0.0, Unit.PX);
-		//st.setPadding(0.0, Unit.PX);
-		//cv.setWidth( "100%" );
-		//cv.setHeight( "100%" );
+		st.setMargin(0.0, Unit.PX);
+		st.setPadding(0.0, Unit.PX);
+		st.setBorderWidth(0.0, Unit.PX);
+		cv.setWidth("100%");
+		cv.setHeight("100%");
+		
+		vp.setWidth( "100%" );
+		vp.setHeight( "100%" );
 		//fp.add( cv );
 		
 		worms = new HashSet<Worm>();
@@ -239,6 +275,8 @@ public class Webworm implements EntryPoint, KeyDownHandler, KeyUpHandler {
 		h = Window.getClientHeight();
 		rp.setWidth( w+"px" );
 		rp.setHeight( h+"px" );
+		//w = Window.getClientWidth();
+		//h = Window.getClientHeight();
 		updateCoordinates( cv, true );
 		Window.addResizeHandler( new ResizeHandler() {
 			@Override
@@ -247,6 +285,10 @@ public class Webworm implements EntryPoint, KeyDownHandler, KeyUpHandler {
 				h = event.getHeight();
 				rp.setWidth( w+"px" );
 				rp.setHeight( h+"px" );
+				
+				//console( w + " " + Window.getClientWidth() + " " + h + " " + Window.getClientHeight() );
+				//rp.setWidth( (w-100)+"px" );
+				//rp.setHeight( (h-100)+"px" );
 				updateCoordinates( cv, true );
 			}
 		});
@@ -268,7 +310,28 @@ public class Webworm implements EntryPoint, KeyDownHandler, KeyUpHandler {
 		cv.addKeyUpHandler( this );
 		
 		cv.setFocus( true );
-		rp.add( cv );
+		
+		HorizontalPanel	hp = new HorizontalPanel();
+		hp.setVerticalAlignment( HorizontalPanel.ALIGN_MIDDLE );
+		hp.setHorizontalAlignment( HorizontalPanel.ALIGN_CENTER );
+		hp.setHeight("25px");
+		
+		Anchor contact = new Anchor("huldaeggerts@gmail.com");
+		contact.setHref("mailto:huldaeggerts@gmail.com");
+		hp.add( contact );
+		hp.add( new HTML(" | ") );
+		Anchor smas = new Anchor("smasogur.is");
+		smas.setHref("http://smasogur.is");
+		hp.add( smas );
+		hp.add( new HTML(" | ") );
+		Anchor fast = new Anchor("fasteignaverd.appspot.com");
+		fast.setHref("fasteignaverd.appspot.com");
+		hp.add( fast );
+		
+		vp.add( cv );
+		vp.add( hp );
+		
+		rp.add( vp );
 	}
 	
 	Set<Integer>	keyset = new HashSet<Integer>();
@@ -280,25 +343,50 @@ public class Webworm implements EntryPoint, KeyDownHandler, KeyUpHandler {
 
 	@Override
 	public void onKeyDown(KeyDownEvent event) {
-		if( event.getNativeEvent().getKeyCode() == ' ' ) {
+		int keycode = event.getNativeKeyCode();
+		if( keycode == ' ' ) {
 			pause = !pause;
-		} else if( event.getNativeEvent().getKeyCode() == KeyCodes.KEY_ESCAPE ) {
+		} else if( keycode == KeyCodes.KEY_ESCAPE ) {
 			timer.cancel();
 			worms.clear();
-		} else if( event.getNativeEvent().getKeyCode() == KeyCodes.KEY_ENTER ) {
+		} else if( keycode == KeyCodes.KEY_ENTER ) {
 			int ws = worms.size();
 			if( ws == 0 ) {
-				worms.add( new Worm("#00ff00", KeyCodes.KEY_LEFT, KeyCodes.KEY_RIGHT) );
+				worms.add( new Worm("#00ff00", KeyCodes.KEY_LEFT, KeyCodes.KEY_RIGHT, KeyCodes.KEY_LEFT, KeyCodes.KEY_RIGHT ) );
 				updateCoordinates(cv, false);
 				
 				if( timer != null ) {
 					timer.scheduleRepeating( 50 );
 				}
 			}
-			else if( ws == 1 ) worms.add( new Worm("#0000ff", 'z', 'x') );
-			else worms.add( new Worm("#ff0000", ',', '.') );
+			else if( ws == 1 ) {
+				Worm w = null;
+				for( Worm ww : worms ) {
+					w = ww;
+					break;
+				}
+				if( w.c.equals("#00ff00") ) worms.add( new Worm("#0000ff", 'z', 'x', 'Z', 'X') );
+				else worms.add( new Worm("#00ff00", KeyCodes.KEY_LEFT, KeyCodes.KEY_RIGHT, KeyCodes.KEY_LEFT, KeyCodes.KEY_RIGHT) );
+			} else {
+				Worm w1 = null;
+				Worm w2 = null;
+				for( Worm ww : worms ) {
+					if( w1 == null ) w1 = ww;
+					else {
+						w2 = ww;
+						break;
+					}
+				}
+				if( (w1.c.equals("#00ff00") && w2.c.equals("#ff0000")) || (w2.c.equals("#00ff00") && w1.c.equals("#ff0000")) ) {
+					worms.add( new Worm("#0000ff", 'z', 'x', 'Z', 'X') );
+				} else if( (w1.c.equals("#0000ff") && w2.c.equals("#ff0000")) || (w2.c.equals("#0000ff") && w1.c.equals("#ff0000")) ) {
+					worms.add( new Worm("#00ff00", KeyCodes.KEY_LEFT, KeyCodes.KEY_RIGHT, KeyCodes.KEY_LEFT, KeyCodes.KEY_RIGHT) );
+				} else {
+					worms.add( new Worm("#ff0000", 'n', 'm', 'N', 'M') );
+				}
+			}
 		} else {
-			keyset.add( event.getNativeKeyCode() );
+			keyset.add( keycode );
 		}
 	}
 }
