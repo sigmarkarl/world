@@ -16,23 +16,32 @@ import com.google.gwt.dom.client.Element;
 import com.google.gwt.dom.client.InputElement;
 import com.google.gwt.dom.client.Style;
 import com.google.gwt.dom.client.Style.Unit;
+import com.google.gwt.event.dom.client.ClickEvent;
+import com.google.gwt.event.dom.client.ClickHandler;
 import com.google.gwt.event.dom.client.KeyCodes;
 import com.google.gwt.event.dom.client.KeyDownEvent;
 import com.google.gwt.event.dom.client.KeyDownHandler;
 import com.google.gwt.event.dom.client.KeyUpEvent;
 import com.google.gwt.event.dom.client.KeyUpHandler;
+import com.google.gwt.event.logical.shared.CloseEvent;
+import com.google.gwt.event.logical.shared.CloseHandler;
 import com.google.gwt.event.logical.shared.ResizeEvent;
 import com.google.gwt.event.logical.shared.ResizeHandler;
 import com.google.gwt.user.client.Random;
 import com.google.gwt.user.client.Timer;
 import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.ui.Anchor;
+import com.google.gwt.user.client.ui.Button;
+import com.google.gwt.user.client.ui.CheckBox;
+import com.google.gwt.user.client.ui.DialogBox;
+import com.google.gwt.user.client.ui.FlexTable;
 import com.google.gwt.user.client.ui.FormPanel;
 import com.google.gwt.user.client.ui.HTML;
 import com.google.gwt.user.client.ui.Hidden;
 import com.google.gwt.user.client.ui.HorizontalPanel;
 import com.google.gwt.user.client.ui.Image;
 import com.google.gwt.user.client.ui.Label;
+import com.google.gwt.user.client.ui.PopupPanel;
 import com.google.gwt.user.client.ui.RootPanel;
 import com.google.gwt.user.client.ui.SimplePanel;
 import com.google.gwt.user.client.ui.TextBox;
@@ -353,6 +362,44 @@ public class Webworm implements EntryPoint, KeyDownHandler, KeyUpHandler {
 	public void setUserId( String val ) {
 		uid = val;
 	}
+	
+	public void addSuperPower( FlexTable table, String html, int row ) {
+		table.setHTML(row, 0, html);
+		table.setHTML(row, 1, "$5");
+		CheckBox	lorcheck = new CheckBox();
+		table.setWidget(row, 2, lorcheck);
+		
+		FormPanel	form = new FormPanel();
+		form.setAction( "https://www.paypal.com/cgi-bin/webscr" );
+		form.setMethod( FormPanel.METHOD_POST );
+		
+		HorizontalPanel	holder = new HorizontalPanel();
+		holder.setVerticalAlignment( HorizontalPanel.ALIGN_MIDDLE );
+		holder.setHorizontalAlignment( HorizontalPanel.ALIGN_CENTER );
+		
+		Hidden 		cmd = new Hidden("cmd", "_s-xclick");
+		Hidden		hosted_button_id = new Hidden("hosted_button_id", "5GSE569LBQRN4");
+		Image		img = new Image( "https://www.paypalobjects.com/en_US/i/scr/pixel.gif" );
+		img.setAltText("");
+		img.setWidth("1");
+		img.setHeight("1");
+		
+		InputElement iel = Document.get().createImageInputElement();
+		iel.setName("submit");
+		iel.setSrc( "https://www.paypalobjects.com/en_US/i/btn/btn_cart_SM.gif" );
+		iel.setAlt( "PayPal - The safer, easier way to pay online!" );
+		
+		SimplePanel	imageinput = new SimplePanel();
+		imageinput.getElement().appendChild( iel );
+		
+		holder.add( cmd );
+		holder.add( hosted_button_id );
+		holder.add( imageinput );
+		holder.add( img );
+		
+		form.add( holder );
+		table.setWidget(row, 3, form);
+	}
 
 	int				w, h;
 	Canvas			cv;
@@ -455,11 +502,58 @@ public class Webworm implements EntryPoint, KeyDownHandler, KeyUpHandler {
 		//hp.setHeight("10px");
 		hp.setSpacing( 5 );
 		
+		Button	power = new Button("Super powers");
+		power.addClickHandler( new ClickHandler() {
+			@Override
+			public void onClick(ClickEvent event) {
+				if( false ) { //uid == null || uid.length() == 0 ) {
+					DialogBox	dbox = new DialogBox( true, true );
+					dbox.setText("Super powers");
+					dbox.addCloseHandler( new CloseHandler<PopupPanel>() {
+						@Override
+						public void onClose(CloseEvent<PopupPanel> event) {
+							//pause = 
+						}
+					});
+					
+					HTML html = new HTML("You must be logged into facebook to enable super powers");
+					dbox.add( html );
+					dbox.center();
+				} else {
+					DialogBox	dbox = new DialogBox( true, true );
+					dbox.setText("Super powers");
+					
+					/*<form target="paypal" action="https://www.paypal.com/cgi-bin/webscr" method="post">
+					<input type="hidden" name="cmd" value="_s-xclick">
+					<input type="hidden" name="hosted_button_id" value="5GSE569LBQRN4">
+					<input type="image" src="https://www.paypalobjects.com/en_US/i/btn/btn_cart_SM.gif" border="0" name="submit" alt="PayPal - The safer, easier way to pay online!">
+					<img alt="" border="0" src="https://www.paypalobjects.com/en_US/i/scr/pixel.gif" width="1" height="1">
+					</form>*/
+					
+					FlexTable table = new FlexTable();
+					addSuperPower( table, "<b>Lorentz contraction</b><br>As a stationary observer watching your worm in a 3D wormkowski space, you experience a relativistic length contraction in the direction of the worm movement", 0 );
+					addSuperPower( table, "<b>Quantum teleportation</b><br>As your worm exists in information space it is subject to the law of entanglement-assisted teleportation resulting in the ability to travel through the walls", 1 );					
+					addSuperPower( table, "<b>Critical angle</b><br>Your worm is able to make more steep turns", 2 );
+					addSuperPower( table, "<b>Reflection</b><br>If the angle of impact is large enough, your worm will deflect from the walls", 3 );
+					addSuperPower( table, "<b>Luck</b><br>Like the apple that fell on Newtons head, the apples seem to fall closer to the mouth the worm, defying statistical laws", 4 );
+					addSuperPower( table, "<b>Dietary pill</b><br>Eat more, grow less!", 5 );
+					addSuperPower( table, "<b>Extra life</b><br>Get one chance of passing through if hitting a worm", 6 );
+					dbox.add( table );
+
+					dbox.center();
+				}
+			}
+		});
+		hp.add( power );
+		
+		HTML html = new HTML("|");
+		hp.add( html );
+		
 		Anchor contact = new Anchor("huldaeggerts@gmail.com");
 		contact.setHref("mailto:huldaeggerts@gmail.com");
 		hp.add( contact );
 		
-		HTML html = new HTML("|");
+		html = new HTML("|");
 		hp.add( html );
 		
 		Anchor smas = new Anchor("smasogur.is");
