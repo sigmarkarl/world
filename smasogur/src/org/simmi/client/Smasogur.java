@@ -11,6 +11,7 @@ import com.google.gwt.core.client.GWT;
 import com.google.gwt.core.client.JavaScriptObject;
 import com.google.gwt.core.client.JsArray;
 import com.google.gwt.dom.client.Document;
+import com.google.gwt.dom.client.NodeList;
 import com.google.gwt.dom.client.Style;
 import com.google.gwt.dom.client.Style.Unit;
 import com.google.gwt.event.dom.client.KeyCodes;
@@ -148,7 +149,7 @@ public class Smasogur implements EntryPoint {
 	public native String checkLoginStatus() /*-{
 		var ths = this;
 		$wnd.fbAsyncInit = function() {
-	    	$wnd.FB.init({appId: '205279482582', status: true, cookie: true, xfbml: true});
+	    	$wnd.FB.init({appId: '179166572124315', status: true, cookie: true, xfbml: true});
 	    	
 	    	try {
 				$wnd.FB.getLoginStatus( function(response) {
@@ -188,6 +189,10 @@ public class Smasogur implements EntryPoint {
 		} catch( e ) {
 			$wnd.console.log( e );
 		}
+	}-*/;
+	
+	public native void gplusgo() /*-{
+		$wnd.gapi.plusone.go();
 	}-*/;
 	
 	public void delete( String uid, int r ) {
@@ -274,6 +279,7 @@ public class Smasogur implements EntryPoint {
 	Options		options;
 	List<Saga>	sogur;
 	FocusPanel	focuspanel;
+	String 		fbuid = null;
 	public void onModuleLoad() {
 		final RootPanel module = RootPanel.get();
 		
@@ -284,10 +290,30 @@ public class Smasogur implements EntryPoint {
   	  	final VerticalPanel vp = new VerticalPanel();
   	  	vp.setSize("100%", "100%");
   	  	
+		NodeList<com.google.gwt.dom.client.Element> nl = Document.get().getElementsByTagName("meta");
+		int i;
+		for( i = 0; i < nl.getLength(); i++ ) {
+			com.google.gwt.dom.client.Element e = nl.getItem(i);
+			String prop = e.getAttribute("property");
+			if( prop.equals("erm") ) {
+				//setUserId( e.getAttribute("content") );
+				fbuid = e.getAttribute("content");
+				break;
+			}
+		}
+		
+		int w = Window.getClientWidth();
+		int h = Window.getClientHeight();
+		if( fbuid == null ) module.setSize(w+"px", h+"px");
+		else module.setWidth("758px");
+		
 	  	Window.addResizeHandler( new ResizeHandler() {
 	  		@Override
 			public void onResize(ResizeEvent event) {
-				module.setSize(event.getWidth()+"px", event.getHeight()+"px");
+	  			int w = event.getWidth();
+	  			int h = event.getHeight();
+				if( fbuid == null ) module.setSize(w+"px", h+"px");
+				else module.setWidth("758px");
 				//vp.setSize(event.getWidth()+"px", (event.getHeight())+"px");
 				//if( focuspanel != null ) focuspanel.setWidth("1024");
 			}
@@ -297,7 +323,7 @@ public class Smasogur implements EntryPoint {
 	      public void run() {
 	    	  data = DataTable.create();
 	    	  
-	    	  data.addColumn( ColumnType.STRING, "Nafn");
+	    	  /*data.addColumn( ColumnType.STRING, "Nafn");
 	    	  data.addColumn( ColumnType.STRING, "Höfundur");
 	    	  data.addColumn( ColumnType.STRING, "Einkunn");
 	    	  data.addColumn( ColumnType.NUMBER, "Umsagnir");
@@ -315,18 +341,39 @@ public class Smasogur implements EntryPoint {
 	    	  data.addColumn( ColumnType.BOOLEAN, "Glæpa");
 	    	  data.addColumn( ColumnType.BOOLEAN, "Ævintýra");
 	    	  data.addColumn( ColumnType.BOOLEAN, "Ljóð");
-	    	  data.addColumn( ColumnType.BOOLEAN, "Framhald");
+	    	  data.addColumn( ColumnType.BOOLEAN, "Framhald");*/
+	    	  
+	    	  data.addColumn( ColumnType.STRING, "Name");
+	    	  data.addColumn( ColumnType.STRING, "Author");
+	    	  data.addColumn( ColumnType.STRING, "Grade");
+	    	  data.addColumn( ColumnType.NUMBER, "Comments");
+	    	  data.addColumn( ColumnType.BOOLEAN, "Love");
+	    	  data.addColumn( ColumnType.BOOLEAN, "Horror");
+	    	  data.addColumn( ColumnType.BOOLEAN, "Science");
+	    	  data.addColumn( ColumnType.BOOLEAN, "Children");
+	    	  data.addColumn( ColumnType.BOOLEAN, "Adoles");
+	    	  data.addColumn( ColumnType.BOOLEAN, "Historic");
+	    	  data.addColumn( ColumnType.BOOLEAN, "True");
+	    	  data.addColumn( ColumnType.BOOLEAN, "Erotic");
+	    	  data.addColumn( ColumnType.BOOLEAN, "Comedy");
+	    	  data.addColumn( ColumnType.BOOLEAN, "Tragedy");
+	    	  data.addColumn( ColumnType.BOOLEAN, "Supernat");
+	    	  data.addColumn( ColumnType.BOOLEAN, "Pulp");
+	    	  data.addColumn( ColumnType.BOOLEAN, "Fairytail");
+	    	  data.addColumn( ColumnType.BOOLEAN, "Poem");
+	    	  data.addColumn( ColumnType.BOOLEAN, "Tobecont");
 	    	  
 	    	  options = Options.create();
-	    	  options.setWidth("1024px");
-	    	  options.setHeight("600px");
+	    	  if( fbuid != null ) options.setWidth("758px");
+	    	  else options.setWidth("100%");
+	    	  options.setHeight("480px");
 	    	  options.setAllowHtml( true );
 	    	  
 	    	  view = DataView.create( data );
 	    	  table = new Table( view, options );
 	    	  
 	    	  focuspanel = new FocusPanel( table );
-	    	  focuspanel.setWidth("1024px");
+	    	  focuspanel.setWidth("100%");
 	    	  
 	    	  focuspanel.addKeyDownHandler( new KeyDownHandler() {
 				@Override
@@ -399,10 +446,30 @@ public class Smasogur implements EntryPoint {
 	    	  subvp.setVerticalAlignment( VerticalPanel.ALIGN_MIDDLE );
 	    	  subvp.setHorizontalAlignment( VerticalPanel.ALIGN_CENTER );
 	    	  
-	    	  HTML html = new HTML();
-	    	  html.setText( "Dragðu skrána með smásögunni þinni í töfluna. Ef þú ert logguð/loggaður inná facebook er réttur höfundur skráður. Þú getur valið höfundarnafn, nafnið á raunverulegum höfundi þarf ekki að vera valið" );
-	    	  html.setWidth("1024px");
+	    	  final HTML html = new HTML();
+	    	  //html.setText( "Dragðu skrána með smásögunni þinni í töfluna. <br>Ef þú ert logguð/loggaður inná facebook er réttur höfundur skráður. <br>Þú getur valið höfundarnafn, nafnið á raunverulegum höfundi þarf ekki að vera valið" );
+	    	  html.setHTML( "Drag-drop the file containing you short story into the table. <br>" +
+	    	  		"If you are logged into facebook, you are registered as the author. <br>" +
+	    	  		"You can choose you own authorname, it doesn't have to be your real name" );
+	    	  html.setWidth("100%");
 	    	  html.getElement().getStyle().setMargin(20.0, Unit.PX);
+	    	  
+	    	  HTML title = new HTML("<h2>Shortstories<h2/>");
+	    	  subvp.add( title );
+	    	  HTML subtitle = new HTML("<h4>Brought to you by The Basement At 5 o'Clock reading club<h4/>");
+	    	  subvp.add( subtitle );
+	    	  
+	    	  SimplePanel log = new SimplePanel();
+	    	  SimplePanel gug = new SimplePanel();
+	    	  com.google.gwt.dom.client.Element plus = Document.get().createElement("g:plusone");
+	  		  plus.setAttribute("size", "small");
+	    	  gug.getElement().appendChild( plus );
+	  		  
+	    	  HorizontalPanel	sharehp = new HorizontalPanel();
+	    	  sharehp.add( log );
+	    	  sharehp.add( gug );
+	    	  subvp.add( sharehp );
+	    	  
 	    	  subvp.add( html );
 	    	  subvp.add( focuspanel );
 	    	  
@@ -412,9 +479,8 @@ public class Smasogur implements EntryPoint {
 	    	  fast.setHref("http://fasteignaverd.appspot.com");
 	    	  Anchor	conn = new Anchor( "http://webconnectron.appspot.com" );
 	    	  conn.setHref("http://webconnectron.appspot.com");
-	    	  HTML		kjall = new HTML("Kjallarinn klukkan fimm ehf.");
+	    	  //HTML		kjall = new HTML("Kjallarinn klukkan fimm ehf.");
 	    	  
-	    	  SimplePanel log = new SimplePanel();
 	    	  //log.setSize("100px", "100px");
 	    	  //fblogin.getStyle().setBackgroundColor("#00ffcc");
 	    	  
@@ -423,8 +489,8 @@ public class Smasogur implements EntryPoint {
 	    	  hp.add( a );
 	    	  hp.add( fast );
 	    	  hp.add( conn );
-	    	  hp.add( kjall );
-	    	  hp.add( log );
+	    	  //hp.add( kjall );
+	    	  //hp.add( log );
 	    	  
 	    	  //String html = "<fb:login-button show-faces=\"true\" width=\"200\" max-rows=\"1\"></fb:login-button>";
 	    	  /*Element el = DOM.createElement( "fb:login-button" );
@@ -446,10 +512,6 @@ public class Smasogur implements EntryPoint {
 	    	  
 	    	  vp.add( subvp );
 	    	  
-	    	  int w = Window.getClientWidth();
-	    	  int h = Window.getClientHeight();
-	    	  module.setSize(w+"px", h+"px");
-	    	  
 	    	  com.google.gwt.dom.client.Element elem = loginButton();
 	    	  Element fblogin = log.getElement();
 	    	  fblogin.appendChild( elem );
@@ -462,6 +524,8 @@ public class Smasogur implements EntryPoint {
 	    	  //205279482582
 	    	  
 	    	  module.add( vp );
+	    	  
+	    	  gplusgo();
 	      }
 	    };
 	    VisualizationUtils.loadVisualizationApi(onLoadCallback, Table.PACKAGE);

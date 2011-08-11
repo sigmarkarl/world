@@ -14,7 +14,7 @@
 		<%
 		String name = null;
 		String keystr = request.getParameter("smasaga");
-		if( keystr != null ) {		
+		if( keystr != null ) {
 				DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
 				Key key = KeyFactory.stringToKey( keystr );
 				Entity e = datastore.get( key );

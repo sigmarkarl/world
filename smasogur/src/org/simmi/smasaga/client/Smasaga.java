@@ -43,7 +43,7 @@ public class Smasaga implements EntryPoint {
 	public native void loginStatus() /*-{
 		var ths = this;
 		$wnd.fbAsyncInit = function() {
-	    	$wnd.FB.init({appId: '205279482582', status: true, cookie: true, xfbml: true});
+	    	$wnd.FB.init({appId: '179166572124315', status: true, cookie: true, xfbml: true});
 	    	
 	    	try {
 				$wnd.FB.getLoginStatus( function(response) {
@@ -111,18 +111,36 @@ public class Smasaga implements EntryPoint {
 		int h = Window.getClientHeight();
 		rootPanel.setSize(w+"px", h+"px");
 		
+		final Grid	grid = new Grid(3, 5);
+		int nw = 1024;
+		/*if( w >= 1024 ) nw = 1024;
+		if( w > 758 ) nw = w;
+		else nw = 758;*/ 
+		grid.setWidth(nw+"px");
+		
+		final VerticalPanel subvp = new VerticalPanel();
+		subvp.setHorizontalAlignment( VerticalPanel.ALIGN_CENTER );
+		subvp.setVerticalAlignment( VerticalPanel.ALIGN_MIDDLE );
+		
 		Window.addResizeHandler( new ResizeHandler() {
 			@Override
 			public void onResize(ResizeEvent event) {
-				rootPanel.setSize(event.getWidth()+"px", event.getHeight()+"px");
+				int w = event.getWidth();
+				int h = event.getHeight();
+				rootPanel.setSize(w+"px", h+"px");
+				
+				int nw = 1024;
+				/*if( w >= 1024 ) nw = 1024;
+				if( w > 758 ) nw = w;
+				else nw = 758;*/ 
+				
+				grid.setWidth(nw+"px");
+				subvp.setSize(nw+"px", "600px");
 				//vp.setSize(event.getWidth()+"px", (event.getHeight())+"px");
 			}
 		});
 		
-		Grid	grid = new Grid(3, 5);
-		grid.setWidth("1024px");
-		
-		final CheckBox love = new CheckBox("Ástarsaga");
+		/*final CheckBox love = new CheckBox("Ástarsaga");
 		final CheckBox horror = new CheckBox("Hryllingur");
 		final CheckBox child = new CheckBox("Barnasaga");
 		final CheckBox adolescent = new CheckBox("Unglingasaga");
@@ -136,7 +154,23 @@ public class Smasaga implements EntryPoint {
 		final CheckBox criminal = new CheckBox("Glæpasaga");
 		final CheckBox adventure = new CheckBox("Ævintýri");
 		final CheckBox poem = new CheckBox("Ljóð");
-		final CheckBox tobecontine = new CheckBox("Framhaldssaga");
+		final CheckBox tobecontine = new CheckBox("Framhaldssaga");*/
+		
+		final CheckBox love = new CheckBox("Love story");
+		final CheckBox horror = new CheckBox("Horror story");
+		final CheckBox child = new CheckBox("Children story");
+		final CheckBox adolescent = new CheckBox("Story for adolescents");
+		final CheckBox tragedy = new CheckBox("Tragedy");
+		final CheckBox comedy = new CheckBox("Comedy");
+		final CheckBox science = new CheckBox("Science fiction");
+		final CheckBox supernatural = new CheckBox("Supernatural");
+		final CheckBox historical = new CheckBox("Historical");
+		final CheckBox truestory = new CheckBox("True story");
+		final CheckBox erotik = new CheckBox("Erotic");
+		final CheckBox criminal = new CheckBox("Pulp fiction");
+		final CheckBox adventure = new CheckBox("Fairy tai");
+		final CheckBox poem = new CheckBox("Poem");
+		final CheckBox tobecontine = new CheckBox("To be continued");
 		
 		grid.setWidget(0, 0, love);
 		grid.setWidget(0, 1, horror);
@@ -156,10 +190,11 @@ public class Smasaga implements EntryPoint {
 		
 		HorizontalPanel	hp = new HorizontalPanel();
 		hp.setSpacing(10);
-		Label 	nameLabel = new Label("Nafn:");
+		Label 	nameLabel = new Label("Name:");
 		final TextBox	name = new TextBox();
 		name.setWidth("360px");
-		Label 	authorLabel = new Label("Höfundarnafn:");
+		//Label 	authorLabel = new Label("Höfundarnafn:");
+		Label 	authorLabel = new Label("Authorname:");
 		final TextBox	author = new TextBox();
 		author.setWidth("360px");
 		hp.add( nameLabel );
@@ -167,35 +202,40 @@ public class Smasaga implements EntryPoint {
 		hp.add( authorLabel );
 		hp.add( author );
 		
-		VerticalPanel subvp = new VerticalPanel();
-		subvp.setHorizontalAlignment( VerticalPanel.ALIGN_CENTER );
-		subvp.setVerticalAlignment( VerticalPanel.ALIGN_MIDDLE );
-		
-		subvp.setSize("1024px", "600px");
+		subvp.setSize(nw+"px", "600px");
 		
 		final Anchor	anchor = new Anchor("Link");
 		subvp.add( anchor );
 		subvp.add( hp );
-		subvp.add( new Label("Veldu það sem við á") );
+		//subvp.add( new Label("Veldu það sem við á") );
+		subvp.add( new Label("Select what is relevant") );
 		subvp.add( grid );
 		
 		VerticalPanel inputvp = new VerticalPanel();
 		inputvp.setHorizontalAlignment( VerticalPanel.ALIGN_CENTER );
 		
-		inputvp.add( new Label("Úrdráttur") );
+		//inputvp.add( new Label("Úrdráttur") );
+		inputvp.add( new Label("Summary") );
 		final TextArea urdrattur = new TextArea();
 		urdrattur.setSize("512px", "100px");
 		inputvp.add( urdrattur );
 		
 		HorizontalPanel	umsogn = new HorizontalPanel();
 		umsogn.setSpacing( 2 );
-		final RadioButton	rusl = new RadioButton("Grade", "Rusl");
+		/*final RadioButton	rusl = new RadioButton("Grade", "Rusl");
 		final RadioButton	vont = new RadioButton("Grade", "Mjög lélegt");
 		final RadioButton	slaemt = new RadioButton("Grade", "Frekar lélegt");
 		final RadioButton	sleppur = new RadioButton("Grade", "Sleppur");
 		final RadioButton	saemi = new RadioButton("Grade", "Frekar gott");
 		final RadioButton	gott = new RadioButton("Grade", "Mjög gott");
-		final RadioButton	snilld = new RadioButton("Grade", "Snilld");
+		final RadioButton	snilld = new RadioButton("Grade", "Snilld");*/
+		final RadioButton	rusl = new RadioButton("Grade", "Crap");
+		final RadioButton	vont = new RadioButton("Grade", "Very bad");
+		final RadioButton	slaemt = new RadioButton("Grade", "Below average");
+		final RadioButton	sleppur = new RadioButton("Grade", "Ok");
+		final RadioButton	saemi = new RadioButton("Grade", "Above average");
+		final RadioButton	gott = new RadioButton("Grade", "Very good");
+		final RadioButton	snilld = new RadioButton("Grade", "Masterpiece");
 		umsogn.add(rusl);
 		umsogn.add(vont);
 		umsogn.add(slaemt);
@@ -210,7 +250,7 @@ public class Smasaga implements EntryPoint {
 		
 		HorizontalPanel	umh = new HorizontalPanel();
 		umh.setSpacing( 10 );
-		final Label umlab = new Label("Umsögn");
+		final Label umlab = new Label("Comment");
 		final Button	leftButt = new Button("<");
 		final Button	rightButt = new Button(">");
 		
@@ -235,10 +275,10 @@ public class Smasaga implements EntryPoint {
 		HorizontalPanel	discl = new HorizontalPanel();
 		//discl.setHeight("30px");
 		discl.setSpacing(10);
-		Anchor back = new Anchor("Upphafssíða");
+		Anchor back = new Anchor("Front page");
 		back.setHref("/");
 		discl.add( back );
-		HTML html = new HTML("Kjallarinn klukkan fimm ehf.");
+		HTML html = new HTML("The Basement at 5 o'Clock");
 		discl.add( html );
 		
 		SimplePanel	span = new SimplePanel();
@@ -355,7 +395,7 @@ public class Smasaga implements EntryPoint {
 				}
 				
 				Einkunn enk = einkunnList.get(currentGrade);
-				umlab.setText("Umsögn ("+(currentGrade+1)+" af "+einkunnList.size()+")");
+				umlab.setText("Comment ("+(currentGrade+1)+" of "+einkunnList.size()+")");
 				if( enk.grade != -1 ) {
 					buttons[(int)enk.grade].setValue( true );
 					umsogntext.setText( enk.getComment() );
@@ -368,7 +408,7 @@ public class Smasaga implements EntryPoint {
 						currentGrade = (currentGrade-1)%einkunnList.size();
 						
 						Einkunn enk = einkunnList.get(currentGrade);
-						umlab.setText("Umsögn ("+(currentGrade+1)+" af "+einkunnList.size()+")");
+						umlab.setText("Comment ("+(currentGrade+1)+" of "+einkunnList.size()+")");
 						if( enk.grade != -1 ) {
 							buttons[(int)enk.grade].setValue( true );
 						}
@@ -393,7 +433,7 @@ public class Smasaga implements EntryPoint {
 						currentGrade = (currentGrade+1)%einkunnList.size();
 						
 						Einkunn enk = einkunnList.get(currentGrade);
-						umlab.setText("Umsögn ("+(currentGrade+1)+" af "+einkunnList.size()+")");
+						umlab.setText("Comment ("+(currentGrade+1)+" of "+einkunnList.size()+")");
 						if( enk.grade != -1 ) {
 							buttons[(int)enk.grade].setValue( true );
 						}
