@@ -645,7 +645,7 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 	}-*/;
 	
 	public native void fbInit( String login ) /*-{
-		var ths = this;		
+		var ths = this;
 		$wnd.fbAsyncInit = function() {
 	    	$wnd.FB.init({appId: '215097581865564', status: true, cookie: true, xfbml: true});
 	    	
