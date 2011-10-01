@@ -1,4 +1,5 @@
 package org.simmi.client;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -58,7 +59,6 @@ import com.google.gwt.user.client.ui.RootPanel;
 import com.google.gwt.user.client.ui.SimplePanel;
 import com.google.gwt.user.client.ui.TextBox;
 import com.google.gwt.user.client.ui.VerticalPanel;
-
 
 /**
  * Entry point classes define <code>onModuleLoad()</code>.
@@ -143,7 +143,7 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 	
 	public void makeHighScore( String name, final int score ) {
 		DialogBox	db = new DialogBox();
-		db.setText("Congratulations, you have the all time highscore!<br>おめでとう、高得点を持っている ("+score+")");
+		db.setText("Congratulations, you have the all time highscore! ("+score+")");
 		final TextBox		tb = new TextBox();
 		tb.setWidth("400px");
 		tb.setText( name );
@@ -553,8 +553,8 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 	public void updateCoordinates( Canvas cv, boolean init ) {
 		final Context2d context = cv.getContext2d();
 		if( init ) {
-			context.getCanvas().setWidth( w-2 );
-			context.getCanvas().setHeight( h-35 );
+			context.getCanvas().setWidth( w );
+			context.getCanvas().setHeight( h-30 );
 			//cv.setWidth( w+"px" );
 			//cv.setHeight( h+"px" );
 			cv.setCoordinateSpaceWidth( context.getCanvas().getWidth() );
@@ -816,6 +816,8 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 	HTML			infohtml;
 	int				delay;
 	public void onModuleLoad() {
+		Window.enableScrolling( false );
+		
 		final RootPanel		rp = RootPanel.get();
 		Style				st = rp.getElement().getStyle();
 		
@@ -943,7 +945,7 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 			public void onClick(ClickEvent event) {
 				if( uid == null || uid.length() == 0 ) {
 					DialogBox	dbox = new DialogBox( true, true );
-					dbox.setText("Superpowers スーパーパワー");
+					dbox.setText("Superpowers"); //スーパーパワー");
 					dbox.addCloseHandler( new CloseHandler<PopupPanel>() {
 						@Override
 						public void onClose(CloseEvent<PopupPanel> event) {
@@ -951,12 +953,12 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 						}
 					});
 					
-					HTML html = new HTML("You must be logged into facebook to enable Superpowers<br>あなたは、スーパーパワーを有効にするためにFacebookにログインする必要があります。");
+					HTML html = new HTML("You must be logged into facebook to enable Superpowers");
 					dbox.add( html );
 					dbox.center();
 				} else {
 					DialogBox	dbox = new DialogBox( true, true );
-					dbox.setText("Superpowers スーパーパワー");
+					dbox.setText("Superpowers"); //スーパーパワー");
 					
 					/*<form target="paypal" action="https://www.paypal.com/cgi-bin/webscr" method="post">
 					<input type="hidden" name="cmd" value="_s-xclick">
@@ -1083,14 +1085,14 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 					};
 					
 					FlexTable table = new FlexTable();
-					addSuperPower( table, lorcon, "$5", "<b>Lorentz contraction ローレンツ短縮</b><br>As a stationary observer watching your worm in a 3D wormkowski space, you experience a relativistic length contraction in the direction of the worm movement", 0, "5GSE569LBQRN4", lorconHandler, powerset.contains("lorcon") ? "" : null );
-					addSuperPower( table, quatel, "$4", "<b>Quantum teleportation 量子テレポーテーション</b><br>As your worm exists in information space it is subject to the law of entanglement-assisted teleportation resulting in the ability to travel through the walls", 1, "RZEJDBKH4VHJ2", quatelHandler, powerset.contains("quatel") ? "" : null );					
-					addSuperPower( table, criang, "$3", "<b>Critical angle 臨界角</b><br>Your worm is able to make more steep turns", 2, "DGR8KG2HZVPVG", criangHandler, powerset.contains("criang") ? "" : null );
-					addSuperPower( table, deflec, "$3", "<b>Deflection たわみ</b><br>If the angle of impact is small enough, your worm will deflect from the walls", 3, "X3LQBSTXA686A", deflecHandler, "" );
-					addSuperPower( table, luck, "$2", "<b>Luck 運</b><br>Like the apple that fell on Newtons head, the apples seem to fall closer to the mouth the worm, defying statistical laws", 4, "W8FC3N9EJBEQL", luckHandler, powerset.contains("luck") ? "" : "Out of stock" );
-					addSuperPower( table, dipill, "$6", "<b>Diet pill 痩せ薬</b><br>Eat more, grow less!", 5, "CT6VST75J8Q6J", dipillHandler, powerset.contains("dipill") ? "" : null );
-					addSuperPower( table, extlif, "$1", "<b>Extra life 余分な生活</b><br>Get one chance of passing through if hitting a worm", 6, "93ULNAMGHQ9VS", extlifHandler, powerset.contains("extlif") ? "" : null );
-					addSuperPower( table, mondes, "$1", "<b>Ad Monolith destroyer モノリス駆逐艦</b><br>If you could just get rid of the monolith from the film 2001: A Space Odyssey and make the film understandable. Besides, it probably just contained ads anyways", 7, "GTDHG7AXUUWWE", mondesHandler, powerset.contains("mondes") ? "" : null );
+					addSuperPower( table, lorcon, "$5", "<b>Lorentz contraction</b><br>As a stationary observer watching your worm in a 3D wormkowski space, you experience a relativistic length contraction in the direction of the worm movement", 0, "5GSE569LBQRN4", lorconHandler, powerset.contains("lorcon") ? "" : null );
+					addSuperPower( table, quatel, "$4", "<b>Quantum teleportation</b><br>As your worm exists in information space it is subject to the law of entanglement-assisted teleportation resulting in the ability to travel through the walls", 1, "RZEJDBKH4VHJ2", quatelHandler, powerset.contains("quatel") ? "" : null );					
+					addSuperPower( table, criang, "$3", "<b>Critical angle</b><br>Your worm is able to make more steep turns", 2, "DGR8KG2HZVPVG", criangHandler, powerset.contains("criang") ? "" : null );
+					addSuperPower( table, deflec, "$3", "<b>Deflection</b><br>If the angle of impact is small enough, your worm will deflect from the walls", 3, "X3LQBSTXA686A", deflecHandler, "" );
+					addSuperPower( table, luck, "$2", "<b>Luck</b><br>Like the apple that fell on Newtons head, the apples seem to fall closer to the mouth the worm, defying statistical laws", 4, "W8FC3N9EJBEQL", luckHandler, powerset.contains("luck") ? "" : "Out of stock" );
+					addSuperPower( table, dipill, "$6", "<b>Diet pill</b><br>Eat more, grow less!", 5, "CT6VST75J8Q6J", dipillHandler, powerset.contains("dipill") ? "" : null );
+					addSuperPower( table, extlif, "$1", "<b>Extra life</b><br>Get one chance of passing through if hitting a worm", 6, "93ULNAMGHQ9VS", extlifHandler, powerset.contains("extlif") ? "" : null );
+					addSuperPower( table, mondes, "$1", "<b>Ad Monolith destroyer</b><br>If you could just get rid of the monolith from the film 2001: A Space Odyssey and make the film understandable. Besides, it probably just contained ads anyways", 7, "GTDHG7AXUUWWE", mondesHandler, powerset.contains("mondes") ? "" : null );
 					dbox.add( table );
 
 					dbox.center();
@@ -1166,7 +1168,7 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 		hscore.setHorizontalAlignment( HorizontalPanel.ALIGN_CENTER );
 		hscore.setWidth("160px");
 		
-		Label timelabel = new Label("Time タイム:");
+		Label timelabel = new Label("Time:");
 		timelabel.getElement().getStyle().setColor("#eeeeee");
 		
 		HorizontalPanel	coverpanel = new HorizontalPanel();
@@ -1247,7 +1249,10 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 				popup.setPopupPosition(0, (h-600)/2);
 				popup.setPixelSize(156, 594);
 				
-				if( h >= 720 ) popup.show();
+				if( h >= 720 ) {
+					popup.show();
+					popup.setSize(156+"px", 594+"px");
+				}
 				
 				/*popup.setPopupPositionAndShow( new PositionCallback() {
 					@Override
