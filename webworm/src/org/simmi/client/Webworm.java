@@ -1107,6 +1107,13 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 		<img alt="" border="0" src="https://www.paypalobjects.com/en_US/i/scr/pixel.gif" width="1" height="1">
 		</form>*/
 		
+		/*<form action="https://www.paypal.com/cgi-bin/webscr" method="post">
+		<input type="hidden" name="cmd" value="_s-xclick">
+		<input type="hidden" name="hosted_button_id" value="8245UZK73CU5U">
+		<input type="image" src="https://www.paypalobjects.com/en_US/i/btn/btn_donate_SM.gif" border="0" name="submit" alt="PayPal - The safer, easier way to pay online!">
+		<img alt="" border="0" src="https://www.paypalobjects.com/en_US/i/scr/pixel.gif" width="1" height="1">
+		</form>*/
+		
 		FormPanel	form = new FormPanel();
 		form.setAction( "https://www.paypal.com/cgi-bin/webscr" );
 		form.setMethod( FormPanel.METHOD_POST );
@@ -1116,7 +1123,7 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 		holder.setHorizontalAlignment( HorizontalPanel.ALIGN_CENTER );
 		
 		Hidden 		cmd = new Hidden("cmd", "_s-xclick");
-		Hidden		hosted_button_id = new Hidden("hosted_button_id", "L4TC92APSZDHW");
+		Hidden		hosted_button_id = new Hidden("hosted_button_id", "8245UZK73CU5U");
 		Image		img = new Image( "https://www.paypalobjects.com/en_US/i/scr/pixel.gif" );
 		img.setAltText("");
 		img.setWidth("1");
