@@ -744,7 +744,7 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 		greetingService.
 	}*/
 	
-	public void addSuperPower( FlexTable table, boolean selected, String cost, String html, int row, String id, ValueChangeHandler<Boolean> handler, String status ) {
+	public void addSuperPower( FlexTable table, Element form, boolean selected, String cost, String html, int row, String id, ValueChangeHandler<Boolean> handler, String status ) {
 		table.setHTML(row, 0, html);
 		table.setText(row, 1, cost);
 		
@@ -758,7 +758,7 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 				table.setWidget(row, 2, check);
 			}
 		} else {
-			FormPanel	form = new FormPanel();
+			/*FormPanel	form = new FormPanel();
 			form.setAction( "https://www.paypal.com/cgi-bin/webscr" );
 			form.setMethod( FormPanel.METHOD_POST );
 			
@@ -790,8 +790,10 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 			holder.add( imageinput );
 			holder.add( img );
 			
-			form.add( holder );
-			table.setWidget(row, 2, form);
+			form.add( holder );*/
+			SimplePanel	sp = new SimplePanel();
+			sp.getElement().appendChild( form );
+			table.setWidget(row, 2, sp);
 		}
 	}
 	
@@ -817,6 +819,26 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 	int				delay;
 	public void onModuleLoad() {
 		Window.enableScrolling( false );
+		
+		final Element donateEl = Document.get().getElementById("donate");
+		donateEl.removeFromParent();
+		
+		final Element mondesEl = Document.get().getElementById("mondes");
+		mondesEl.removeFromParent();
+		final Element lorconEl = Document.get().getElementById("lorcon");
+		lorconEl.removeFromParent();
+		final Element luckEl = Document.get().getElementById("luck");
+		luckEl.removeFromParent();
+		final Element quatelEl = Document.get().getElementById("quatel");
+		quatelEl.removeFromParent();
+		final Element criangEl = Document.get().getElementById("criang");
+		criangEl.removeFromParent();
+		final Element deflecEl = Document.get().getElementById("deflec");
+		deflecEl.removeFromParent();
+		final Element dipillEl = Document.get().getElementById("dipill");
+		dipillEl.removeFromParent();
+		final Element extlifEl = Document.get().getElementById("extlif");
+		extlifEl.removeFromParent();
 		
 		final RootPanel		rp = RootPanel.get();
 		Style				st = rp.getElement().getStyle();
@@ -1085,14 +1107,14 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 					};
 					
 					FlexTable table = new FlexTable();
-					addSuperPower( table, lorcon, "$5", "<b>Lorentz contraction</b><br>As a stationary observer watching your worm in a 3D wormkowski space, you experience a relativistic length contraction in the direction of the worm movement", 0, "5GSE569LBQRN4", lorconHandler, powerset.contains("lorcon") ? "" : null );
-					addSuperPower( table, quatel, "$4", "<b>Quantum teleportation</b><br>As your worm exists in information space it is subject to the law of entanglement-assisted teleportation resulting in the ability to travel through the walls", 1, "RZEJDBKH4VHJ2", quatelHandler, powerset.contains("quatel") ? "" : null );					
-					addSuperPower( table, criang, "$3", "<b>Critical angle</b><br>Your worm is able to make more steep turns", 2, "DGR8KG2HZVPVG", criangHandler, powerset.contains("criang") ? "" : null );
-					addSuperPower( table, deflec, "$3", "<b>Deflection</b><br>If the angle of impact is small enough, your worm will deflect from the walls", 3, "X3LQBSTXA686A", deflecHandler, "" );
-					addSuperPower( table, luck, "$2", "<b>Luck</b><br>Like the apple that fell on Newtons head, the apples seem to fall closer to the mouth the worm, defying statistical laws", 4, "W8FC3N9EJBEQL", luckHandler, powerset.contains("luck") ? "" : "Out of stock" );
-					addSuperPower( table, dipill, "$6", "<b>Diet pill</b><br>Eat more, grow less!", 5, "CT6VST75J8Q6J", dipillHandler, powerset.contains("dipill") ? "" : null );
-					addSuperPower( table, extlif, "$1", "<b>Extra life</b><br>Get one chance of passing through if hitting a worm", 6, "93ULNAMGHQ9VS", extlifHandler, powerset.contains("extlif") ? "" : null );
-					addSuperPower( table, mondes, "$1", "<b>Ad Monolith destroyer</b><br>If you could just get rid of the monolith from the film 2001: A Space Odyssey and make the film understandable. Besides, it probably just contained ads anyways", 7, "GTDHG7AXUUWWE", mondesHandler, powerset.contains("mondes") ? "" : null );
+					addSuperPower( table, lorconEl, lorcon, "$5", "<b>Lorentz contraction</b><br>As a stationary observer watching your worm in a 3D wormkowski space, you experience a relativistic length contraction in the direction of the worm movement", 0, "5GSE569LBQRN4", lorconHandler, powerset.contains("lorcon") ? "" : null );
+					addSuperPower( table, quatelEl, quatel, "$4", "<b>Quantum teleportation</b><br>As your worm exists in information space it is subject to the law of entanglement-assisted teleportation resulting in the ability to travel through the walls", 1, "RZEJDBKH4VHJ2", quatelHandler, powerset.contains("quatel") ? "" : null );					
+					addSuperPower( table, criangEl, criang, "$3", "<b>Critical angle</b><br>Your worm is able to make more steep turns", 2, "DGR8KG2HZVPVG", criangHandler, powerset.contains("criang") ? "" : null );
+					addSuperPower( table, deflecEl, deflec, "$3", "<b>Deflection</b><br>If the angle of impact is small enough, your worm will deflect from the walls", 3, "X3LQBSTXA686A", deflecHandler, "" );
+					addSuperPower( table, luckEl, luck, "$2", "<b>Luck</b><br>Like the apple that fell on Newtons head, the apples seem to fall closer to the mouth the worm, defying statistical laws", 4, "W8FC3N9EJBEQL", luckHandler, powerset.contains("luck") ? "" : "Out of stock" );
+					addSuperPower( table, dipillEl, dipill, "$6", "<b>Diet pill</b><br>Eat more, grow less!", 5, "CT6VST75J8Q6J", dipillHandler, powerset.contains("dipill") ? "" : null );
+					addSuperPower( table, extlifEl, extlif, "$1", "<b>Extra life</b><br>Get one chance of passing through if hitting a worm", 6, "93ULNAMGHQ9VS", extlifHandler, powerset.contains("extlif") ? "" : null );
+					addSuperPower( table, mondesEl, mondes, "$1", "<b>Ad Monolith destroyer</b><br>If you could just get rid of the monolith from the film 2001: A Space Odyssey and make the film understandable. Besides, it probably just contained ads anyways", 7, "GTDHG7AXUUWWE", mondesHandler, powerset.contains("mondes") ? "" : null );
 					dbox.add( table );
 
 					dbox.center();
@@ -1114,7 +1136,7 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 		<img alt="" border="0" src="https://www.paypalobjects.com/en_US/i/scr/pixel.gif" width="1" height="1">
 		</form>*/
 		
-		FormPanel	form = new FormPanel();
+		/*FormPanel	form = new FormPanel();
 		form.setAction( "https://www.paypal.com/cgi-bin/webscr" );
 		form.setMethod( FormPanel.METHOD_POST );
 		
@@ -1141,8 +1163,7 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 		holder.add( hosted_button_id );
 		holder.add( imageinput );
 		holder.add( img );
-		
-		form.add( holder );
+		form.add( holder );*/
 		
 		greetingService.highScore(null, uid, 0, 0, 0, "", "", new AsyncCallback<String>() {
 			@Override
@@ -1208,6 +1229,9 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 		
 		sp = new SimplePanel();
 		splus = new SimplePanel();
+		
+		SimplePanel	form = new SimplePanel();
+		form.getElement().appendChild( donateEl );
 		
 		hp.add( sp );
 		hp.add( power );
@@ -1289,6 +1313,7 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 		//hsp.add( splus );
 		
 		//coverpanel.add( hsp );
+		//coverpanel.add( form );
 		coverpanel.add( hscore );
 		coverpanel.add( timepanel );
 		
