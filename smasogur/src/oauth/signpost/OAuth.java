@@ -73,8 +73,7 @@ public class OAuth {
      */
     public static final String OUT_OF_BAND = "oob";
 
-    private static final PercentEscaper percentEncoder = new PercentEscaper(
-            "-._~", false);
+    private static final PercentEscaper percentEncoder = new PercentEscaper("-._~", false);
 
     public static String percentEncode(String s) {
         if (s == null) {
