@@ -417,13 +417,14 @@ public class Webfasta implements EntryPoint {
 		int count = 0;
 		val = new ArrayList<Sequence>();// split.length-1 );
 		
-		int r = indexOf( content, '>', 0);
+		//content.indexOf(ch)
+		int r = content.indexOf('>'); //indexOf( content, '>', 0);
 		//String seqname = "mu";//content.substring(r+1, i);
 		//int k = content.indexOf('>', i);
 		while( r != -1 ) {
-			int i = indexOf( content, '\n', r+1);
+			int i = content.indexOf('\n', r+1); //indexOf( content, '\n', r+1);
 			//String seqname = content.substring(r+1, i);
-			int k = indexOf( content, '>', i+1);
+			int k = content.indexOf('>', i+1); //indexOf( content, '>', i+1);
 			//for( int r = 0; r < split.length-1; r++ ) {
 				//String s = split[r+1];
 			
