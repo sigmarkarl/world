@@ -1,6 +1,7 @@
 package org.simmi.client;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -13,7 +14,6 @@ import com.google.gwt.core.client.EntryPoint;
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.core.client.JavaScriptObject;
 import com.google.gwt.core.client.JsArrayInteger;
-import com.google.gwt.dom.client.CanvasElement;
 import com.google.gwt.dom.client.DataTransfer;
 import com.google.gwt.dom.client.Node;
 import com.google.gwt.dom.client.NodeList;
@@ -76,6 +76,10 @@ public class Webfasta implements EntryPoint {
 	 */
 	private final GreetingServiceAsync greetingService = GWT.create(GreetingService.class);
     
+	Canvas				canvas;
+	Canvas				tcanvas;
+	Canvas				ocanvas;
+	
     Context2d 			context;
     Context2d			tcontext;
     Context2d 			ocontext;
@@ -302,7 +306,7 @@ public class Webfasta implements EntryPoint {
 		int		stop;
 	};
 	
-	class Sequence {
+	class Sequence implements Comparable<Sequence> {
 		int namestart;
 		int nameend;
 		int seqstart;
@@ -350,11 +354,16 @@ public class Webfasta implements EntryPoint {
 			return seqstop-seqstart;
 			//return seq.length();
 		}
+
+		@Override
+		public int compareTo(Sequence o) {
+			return length()-o.length();
+		}
 		
 		/*String				name;
 		String				seq;
 		int[]				aInd;
-		List<Annotation>	aList;*/	
+		List<Annotation>	aList;*/
 	};
 	
 	public native int indexOf( String jso, char val, int start ) /*-{
@@ -502,64 +511,66 @@ public class Webfasta implements EntryPoint {
 	int basewidth = 10;
 	public void draw( int xstartLocal, int ystartLocal ) {
 		if( val != null ) {			
-			CanvasElement canvas = context.getCanvas();
-			CanvasElement ocanvas = ocontext.getCanvas();
-			CanvasElement tcanvas = tcontext.getCanvas();
-			
 			context.setFillStyle("#222222");
+			
+			int cw = canvas.getCoordinateSpaceWidth();
+			int ch = canvas.getCoordinateSpaceHeight();
+			
+			int tcw = tcanvas.getCoordinateSpaceWidth();
+			//int tch = tcanvas.getCoordinateSpaceHeight();
 			
 			int ax = Math.abs(xstartLocal-prevx);
 			int ay = Math.abs(ystartLocal-prevy);
-						
-			if( ay < canvas.getHeight()/2 && ax < canvas.getWidth()/2 ) {
-				int h = canvas.getHeight()-ay;
-				int w = canvas.getWidth()-ax;
+			
+			if( ay < ch/2 && ax < cw/2 ) {
+				int h = ch-ay-baseheight;
+				int w = cw-ax;
 				int xuno = Math.max(0,xstartLocal-prevx);
 				int xduo = Math.max(0,prevx-xstartLocal);
 				int yuno = Math.max(0,ystartLocal-prevy);
 				int yduo = Math.max(0,prevy-ystartLocal);
-				context.drawImage(canvas, xuno, yuno, w, h, xduo, yduo, w, h);
+				context.drawImage(context.getCanvas(), xuno, yuno+baseheight, w, h, xduo, yduo+baseheight, w, h);
+				tcontext.drawImage(tcontext.getCanvas(), 0, yuno+baseheight, tcw, h, 0, yduo+baseheight, tcw, h);
 				if( xuno > xduo ) {
 					if( yuno > yduo ) {
-						drawSection( xstartLocal, ystartLocal, 0, h, w, ay, tcanvas.getWidth(), tcanvas.getHeight() );
-						drawSection( xstartLocal, ystartLocal, w, 0, ax, h, tcanvas.getWidth(), tcanvas.getHeight() );
-						drawSection( xstartLocal, ystartLocal, w, h, ax, ay, tcanvas.getWidth(), tcanvas.getHeight() ); //, "#0000ff" );
+						drawSection( xstartLocal, ystartLocal, 0, h, w, ay );
+						drawSection( xstartLocal, ystartLocal, w, 0, ax, h );
+						drawSection( xstartLocal, ystartLocal, w, h, ax, ay ); //, "#0000ff" );
+						drawTable( ystartLocal, h, ay );
 					} else {
-						drawSection( xstartLocal, ystartLocal, 0, 0, w, ay, tcanvas.getWidth(), tcanvas.getHeight() );
-						drawSection( xstartLocal, ystartLocal, w, ay, ax, h, tcanvas.getWidth(), tcanvas.getHeight() );
-						drawSection( xstartLocal, ystartLocal, w, 0, ax, ay, tcanvas.getWidth(), tcanvas.getHeight() );
+						drawSection( xstartLocal, ystartLocal, 0, 0, w, ay );
+						drawSection( xstartLocal, ystartLocal, w, ay, ax, h );
+						drawSection( xstartLocal, ystartLocal, w, 0, ax, ay );
+						drawTable( ystartLocal, 0, ay );
 					}
 				} else {
 					if( yuno > yduo ) {
-						drawSection( xstartLocal, ystartLocal, 0, 0, ax, h, tcanvas.getWidth(), tcanvas.getHeight() );
-						drawSection( xstartLocal, ystartLocal, ax, h, w, ay, tcanvas.getWidth(), tcanvas.getHeight() );
-						drawSection( xstartLocal, ystartLocal, 0, h, ax, ay, tcanvas.getWidth(), tcanvas.getHeight() );
+						drawSection( xstartLocal, ystartLocal, 0, 0, ax, h );
+						drawSection( xstartLocal, ystartLocal, ax, h, w, ay );
+						drawSection( xstartLocal, ystartLocal, 0, h, ax, ay );
+						drawTable( ystartLocal, h, ay );
 					} else {
-						drawSection( xstartLocal, ystartLocal, ax, 0, w, ay, tcanvas.getWidth(), tcanvas.getHeight() );
-						drawSection( xstartLocal, ystartLocal, 0, ay, ax, h, tcanvas.getWidth(), tcanvas.getHeight() );
-						drawSection( xstartLocal, ystartLocal, 0, 0, ax, ay, tcanvas.getWidth(), tcanvas.getHeight() );
+						drawSection( xstartLocal, ystartLocal, ax, 0, w, ay );
+						drawSection( xstartLocal, ystartLocal, 0, ay, ax, h );
+						drawSection( xstartLocal, ystartLocal, 0, 0, ax, ay );
+						drawTable( ystartLocal, 0, ay );
 					}
 				}
 			} else {
-				drawSection( xstartLocal, ystartLocal, 0, 0, canvas.getWidth(), canvas.getHeight(), tcanvas.getWidth(), tcanvas.getHeight() );
+				drawSection( xstartLocal, ystartLocal, 0, 0, cw, ch );
+				drawTable( ystartLocal, 0, ch );
 			}
 			
-			tcontext.setFillStyle("#EEEEEE");
-			tcontext.fillRect(0.0, 0.0, tcanvas.getWidth(), 20.0);
-			tcontext.setFillStyle("#222222");
-			tcontext.fillText("Name", 3.0, 20.0-5.0);
-			tcontext.fillText("Length", tcanvas.getWidth()-40, 20.0-5.0);
-			
 			context.setFillStyle("#EEEEEE");
-			context.fillRect(0, 0, canvas.getWidth(), 20.0);
+			context.fillRect(0, 0, cw, 20.0);
 			context.setFillStyle("#111111");
-			for( int x = xstartLocal; x < xstartLocal+canvas.getWidth(); x+=basewidth ) {
+			for( int x = xstartLocal; x < xstartLocal+cw; x+=basewidth ) {
 				int val = 3;
 				if( (x/basewidth)%basewidth == 0 ) val = 7;
 				else if( (x/10)%10 == 5 ) val = 5;
 				context.fillRect( (x-xstartLocal), baseheight-val, 1, val );
 			}
-			for( int x = xstartLocal; x < xstartLocal+canvas.getWidth(); x+=100 ) {
+			for( int x = xstartLocal; x < xstartLocal+cw; x+=100 ) {
 				context.fillText( ""+(x/basewidth), (x-xstartLocal), baseheight-7 );
 			}
 			
@@ -611,11 +622,47 @@ public class Webfasta implements EntryPoint {
 		}
 	}
 	
-	public void drawSection( int xstartLocal, int ystartLocal, int xloc, int yloc, int canvasWidth, int canvasHeight, int tcanvasWidth, int tcanvasHeight ) {
-		drawSection( xstartLocal, ystartLocal, xloc, yloc, canvasWidth, canvasHeight, tcanvasWidth, tcanvasHeight, "#eeeeee" );
+	public void drawTable( int ystartLocal, int yloc, int canvasHeight ) {
+		int tcw = tcanvas.getCoordinateSpaceWidth();
+		//int tch = tcanvas.getCoordinateSpaceHeight();
+		
+		int ys = Math.max( 0, ((ystartLocal+yloc)/baseheight)*baseheight );
+		int ye = Math.min( ((ystartLocal+yloc+canvasHeight)/baseheight+1)*baseheight, val.size()*baseheight );
+		
+		//int ymax = Math.min( ystartLocal+tch, val.size()*baseheight );
+		
+		tcontext.setFillStyle("#ffffff");
+		tcontext.fillRect(0, ys-ystartLocal+baseheight, tcw, ye-ys);
+		tcontext.setFillStyle("#111111");
+		for( int y = ys; y < ye; y+=baseheight ) {
+			int i = y/baseheight;
+			int yy = i*baseheight;
+			Sequence seq = val.get(i);
+			tcontext.fillText( seq.toString(), 3.0, yy+2.0*baseheight-3.0-ystartLocal );
+		}
+		
+		tcontext.setFillStyle("#ffffff");
+		tcontext.fillRect(tcw-45, ys-ystartLocal+baseheight, 45, ye-ys);
+		tcontext.setFillStyle("#111111");
+		for( int y = ys; y < ye; y+=baseheight ) {
+			int i = y/baseheight;
+			int yy = i*baseheight;
+			Sequence seq = val.get(i);
+			tcontext.fillText( seq.length()+"", tcw-40.0, yy+2.0*baseheight-3.0-ystartLocal );
+		}
+		
+		tcontext.setFillStyle("#EEEEEE");
+		tcontext.fillRect(0.0, 0.0, tcw, 20.0);
+		tcontext.setFillStyle("#222222");
+		tcontext.fillText("Name", 3.0, 20.0-5.0);
+		tcontext.fillText("Length", tcw-40, 20.0-5.0);
 	}
 	
-	public void drawSection( int xstartLocal, int ystartLocal, int xloc, int yloc, int canvasWidth, int canvasHeight, int tcanvasWidth, int tcanvasHeight, String strcolor ) {
+	public void drawSection( int xstartLocal, int ystartLocal, int xloc, int yloc, int canvasWidth, int canvasHeight ) {
+		drawSection( xstartLocal, ystartLocal, xloc, yloc, canvasWidth, canvasHeight, "#eeeeee" );
+	}
+	
+	public void drawSection( int xstartLocal, int ystartLocal, int xloc, int yloc, int canvasWidth, int canvasHeight, String strcolor ) {
 		Set<Integer>	selset = new HashSet<Integer>();
 		
 		context.setFillStyle(strcolor);
@@ -625,15 +672,12 @@ public class Webfasta implements EntryPoint {
 		//context.clearRect(0, 0, canvas.getWidth(), canvas.getHeight());
 		//for( int y = 0; y < Math.min( val.length, canvas.getHeight()/10 ); y++ ) {
 		
-		tcontext.clearRect(0, 0, tcanvasWidth, tcanvasHeight);
+		int xs = Math.max( 0, ((xstartLocal+xloc)/basewidth)*basewidth );
+		int ys = Math.max( 0, ((ystartLocal+yloc)/baseheight)*baseheight );
+		int xe = ((xstartLocal+xloc+canvasWidth)/basewidth+1)*basewidth;
+		int ye = Math.min( ((ystartLocal+yloc+canvasHeight)/baseheight+1)*baseheight, val.size()*baseheight );
 		
-		int xs = Math.max( 0, xstartLocal+xloc-basewidth );
-		int ys = Math.max( 0, ystartLocal+yloc-baseheight );
-		int xe = xstartLocal+xloc+canvasWidth+2*basewidth;
-		int ye = Math.min( ystartLocal+yloc+canvasHeight+2*baseheight, val.size()*baseheight );
-		
-		context.fillRect( ((xloc-basewidth)/basewidth)*basewidth, ((yloc-baseheight)/baseheight)*baseheight, 
-				((canvasWidth+2*basewidth)/basewidth+1)*basewidth, ((canvasHeight+2*baseheight)/baseheight+1)*baseheight );
+		context.fillRect( xs-xstartLocal, ys-ystartLocal+baseheight, xe-xs, ye-ys );
 		
 		context.setFillStyle("#222222");
 		for( int y = ys; y < ye; y+=baseheight ) {
@@ -647,9 +691,6 @@ public class Webfasta implements EntryPoint {
 				context.fillRect(0, ystartLocal, canvasWidth, baseheight );
 				context.setFillStyle("#222222");
 			}
-			
-			tcontext.fillText( seq.toString(), 3.0, yy+2.0*baseheight-3.0-ystart );
-			tcontext.fillText( seq.length()+"", tcanvasWidth-40.0, yy+2.0*baseheight-3.0-ystartLocal );
 			
 			for( int x = xs; x < Math.min( seq.length()*basewidth, xe ); x+=basewidth ) {
 				int k = x/basewidth;
@@ -971,7 +1012,23 @@ public class Webfasta implements EntryPoint {
 			}
 		});
 		
-		final Canvas canvas = Canvas.createIfSupported();
+		tcanvas.addMouseDownHandler( new MouseDownHandler() {
+			@Override
+			public void onMouseDown(MouseDownEvent event) {
+				int x = event.getX();
+				int y = event.getY();
+				
+				if( y < baseheight) {
+					if( x < tcanvas.getCoordinateSpaceWidth() - 40 ) {
+						
+					} else {
+						Collections.sort( val );
+					}
+				}
+			}
+		});
+		
+		canvas = Canvas.createIfSupported();
 		canvas.addMouseDownHandler( new MouseDownHandler() {
 			@Override
 			public void onMouseDown(MouseDownEvent event) {
@@ -988,8 +1045,21 @@ public class Webfasta implements EntryPoint {
 					int x = event.getX();
 					int y = event.getY();
 					
-					int xstart = Math.max( 0, Math.min( max, Webfasta.this.xstart + (mousex-x) ) );
-					int ystart = Math.max( 0, Math.min( val.size()*baseheight, Webfasta.this.ystart + (mousey-y) ) );
+					int xmin1 = max;
+					int xmin2 = Webfasta.this.xstart + (mousex-x);
+					int xstart = Math.max( 0, Math.min( xmin1, xmin2 ) );
+					
+					if( xmin2 > xmin1 ) {
+						mousex = mousex+(xmin1-xmin2);
+					}
+					
+					int ymin1 = val.size()*baseheight-canvas.getCoordinateSpaceHeight();
+					int ymin2 = Webfasta.this.ystart + (mousey-y);
+					int ystart = Math.max( 0, Math.min( ymin1, ymin2 ) );
+					
+					if( ymin2 > ymin1 ) {
+						mousey = mousey+(ymin1-ymin2);
+					}
 					
 					draw( xstart, ystart );
 				}
@@ -1046,7 +1116,6 @@ public class Webfasta implements EntryPoint {
 				}
 			}
 		});
-		
 		
 		MenuBar vpopup = new MenuBar( true );
 		vpopup.addItem( "Goto", new Command() {
@@ -1269,7 +1338,7 @@ public class Webfasta implements EntryPoint {
 		ocontext = overview.getContext2d();
 		ocontext.setFillStyle("#0000ff");
 		
-		final Canvas tcanvas = Canvas.createIfSupported();
+		tcanvas = Canvas.createIfSupported();
 		tcontext = tcanvas.getContext2d();
 		
 		tableresize.addResizeHandler( new ResizeHandler() {
