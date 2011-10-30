@@ -84,7 +84,7 @@ public class Webfasta implements EntryPoint {
     Context2d			tcontext;
     Context2d 			ocontext;
     
-    String				content = "";    
+    StringBuilder		content = null;
 	
 	/*public void stuff() {
 		canvas = Canvas.createIfSupported();
@@ -306,6 +306,7 @@ public class Webfasta implements EntryPoint {
 		int		stop;
 	};
 	
+	static int sortcol = 0;
 	class Sequence implements Comparable<Sequence> {
 		int namestart;
 		int nameend;
@@ -357,7 +358,7 @@ public class Webfasta implements EntryPoint {
 
 		@Override
 		public int compareTo(Sequence o) {
-			return length()-o.length();
+			return sortcol == 0 ? toString().compareTo(o.toString()) : length()-o.length();
 		}
 		
 		/*String				name;
@@ -374,13 +375,13 @@ public class Webfasta implements EntryPoint {
 		prevx = Integer.MAX_VALUE;
 		prevy = Integer.MAX_VALUE;
 		
-		this.content = cont;
+		this.content = new StringBuilder( cont );
 		this.max = max;
-		console( ""+val.size() );
 		
 		//val = val.subList(0, 1000);
 		
 		initTable( 0 );
+		draw( 0, 0 );
 	}
 	
 	public void initTable( int append ) {
@@ -413,9 +414,10 @@ public class Webfasta implements EntryPoint {
 	Map<String,Sequence>	seqmap = new HashMap<String,Sequence>();
 	int						max = 0;
 	public void fileLoaded( String cont, int append ) {
-		this.content = cont;//.replace("\n", "");
+		this.content = new StringBuilder(cont);//.replace("\n", "");
 		seqmap.clear();
 		max = 0;
+				
 		if( append == 0 ) {
 		//	data = DataTable.create();
 	    //	data.addColumn(ColumnType.STRING, "Name");
@@ -427,13 +429,13 @@ public class Webfasta implements EntryPoint {
 		val = new ArrayList<Sequence>();// split.length-1 );
 		
 		//content.indexOf(ch)
-		int r = content.indexOf('>'); //indexOf( content, '>', 0);
+		int r = content.indexOf(">"); //indexOf( content, '>', 0);
 		//String seqname = "mu";//content.substring(r+1, i);
 		//int k = content.indexOf('>', i);
 		while( r != -1 ) {
-			int i = content.indexOf('\n', r+1); //indexOf( content, '\n', r+1);
+			int i = content.indexOf("\n", r+1); //indexOf( content, '\n', r+1);
 			//String seqname = content.substring(r+1, i);
-			int k = content.indexOf('>', i+1); //indexOf( content, '>', i+1);
+			int k = content.indexOf(">", i+1); //indexOf( content, '>', i+1);
 			//for( int r = 0; r < split.length-1; r++ ) {
 				//String s = split[r+1];
 			
@@ -450,7 +452,17 @@ public class Webfasta implements EntryPoint {
 				//String seqstr = subseq;//.replace("\n", "");
 				
 			int n = k == -1 ? content.length() : k-1;
-			Sequence seq = new Sequence( r+1, i, i+1, n ); //new Sequence(seqname,seqstr);
+			
+			int m = 0;
+			for( int u = i+1; u < n; u++ ) {
+				if( content.charAt(u) == '\n' ) {
+					m++;
+				} else {
+					content.setCharAt(u-m, content.charAt(u));
+				}
+			}
+			
+			Sequence seq = new Sequence( r+1, i, i+1, n-m ); //new Sequence(seqname,seqstr);
 			int seqlen = n-i-1;
 			//int seqlen = seqstr.length();
 			//seqmap.put( seqname, seq );
@@ -514,7 +526,7 @@ public class Webfasta implements EntryPoint {
 			context.setFillStyle("#222222");
 			
 			int cw = canvas.getCoordinateSpaceWidth();
-			int ch = canvas.getCoordinateSpaceHeight();
+			int ch = canvas.getCoordinateSpaceHeight()-baseheight;
 			
 			int tcw = tcanvas.getCoordinateSpaceWidth();
 			//int tch = tcanvas.getCoordinateSpaceHeight();
@@ -523,7 +535,7 @@ public class Webfasta implements EntryPoint {
 			int ay = Math.abs(ystartLocal-prevy);
 			
 			if( ay < ch/2 && ax < cw/2 ) {
-				int h = ch-ay-baseheight;
+				int h = ch-ay;
 				int w = cw-ax;
 				int xuno = Math.max(0,xstartLocal-prevx);
 				int xduo = Math.max(0,prevx-xstartLocal);
@@ -757,41 +769,63 @@ public class Webfasta implements EntryPoint {
 		var files = dataTransfer.files;
 		var count = files.length;
 		
-		$wnd.console.log("erm1");
 		if(count > 0) {
-			$wnd.console.log("erm");
 			var file = files[0];
 			var reader = new FileReader();
 			reader.onload = function(e) {
 				var res = e.target.result;
 				
-				var r = res.indexOf( '>' );
+				$wnd.console.log('erm');
+				
+				var r = 0;
+				//res.indexOf( '>' );
+				while( res[r] != '>' ) r++;
+				
 				var count = 0;
 				var max = 0;
 				//String seqname = "mu";//content.substring(r+1, i);
 				//int k = content.indexOf('>', i);
 				while( r != -1 ) {
-					var i = res.indexOf( '\n', r+1);
+					var i = r+1;
+					//res.indexOf( '\n', r+1);
+					while( res[i] != '\n' ) i++;
+					
 					//String seqname = content.substring(r+1, i);
-					var k = res.indexOf( '>', i+1);
+					var k = i+1;
+					//res.indexOf( '>', i+1);
+					while( res[k] != '>' ) k++;
+					
 					//for( int r = 0; r < split.length-1; r++ ) {
 					//String s = split[r+1];
 						
 					var n = k == -1 ? res.length : k-1;
 					//Sequence seq = new Sequence( r+1, i, i+1, n ); //new Sequence(seqname,seqstr);
 					var seqlen = n-i-1;
-					s.@org.simmi.client.Webfasta::addSequence(IIII)( r+1, i, i+1, n );
+					
+					m = 0;
+					for( u = i+1; u < n; u++ ) {
+						//if( res[u] == '\n' ) {
+						//	m++;
+						//} else {
+						//	res[u-m] = res[u];
+						//}
+						res[u] = 'O';
+					}
+					
+					s.@org.simmi.client.Webfasta::addSequence(IIII)( r+1, i, i+1, n-m );
 					if( seqlen > max ) max = seqlen;
 					count += 1;
 					
 					r = k;
 				}
 				
+				$wnd.console.log('er2');
+
 				s.@org.simmi.client.Webfasta::fileLoad(Ljava/lang/String;I)( res, max );
 				//s.@org.simmi.client.Webfasta::fileLoaded(Ljava/lang/String;I)( res, 0 );
 			};
-			//reader.readAsArrayBuffer( file );			
-			reader.readAsText( file );
+			reader.readAsArrayBuffer( file );			
+			//reader.readAsText( file );
 		} else {
 			var res = evt.dataTransfer.getData("Text");
 			//$wnd.alert(evt.dataTransfer.effectAllowed);
@@ -1012,22 +1046,6 @@ public class Webfasta implements EntryPoint {
 			}
 		});
 		
-		tcanvas.addMouseDownHandler( new MouseDownHandler() {
-			@Override
-			public void onMouseDown(MouseDownEvent event) {
-				int x = event.getX();
-				int y = event.getY();
-				
-				if( y < baseheight) {
-					if( x < tcanvas.getCoordinateSpaceWidth() - 40 ) {
-						
-					} else {
-						Collections.sort( val );
-					}
-				}
-			}
-		});
-		
 		canvas = Canvas.createIfSupported();
 		canvas.addMouseDownHandler( new MouseDownHandler() {
 			@Override
@@ -1101,7 +1119,7 @@ public class Webfasta implements EntryPoint {
 				} else if( kc == KeyCodes.KEY_HOME ) {
 					ystart = 0;
 				} else if( kc == KeyCodes.KEY_END ) {
-					ystart = Math.max( 0, val.size()*baseheight-canvas.getOffsetWidth() );
+					ystart = Math.max( 0, val.size()*baseheight-canvas.getOffsetHeight() );
 				}
 				
 				if( !running ) {
@@ -1341,6 +1359,45 @@ public class Webfasta implements EntryPoint {
 		tcanvas = Canvas.createIfSupported();
 		tcontext = tcanvas.getContext2d();
 		
+		tcanvas.addMouseDownHandler( new MouseDownHandler() {
+			List<Integer>	sortlist = new ArrayList<Integer>();
+			
+			@Override
+			public void onMouseDown(MouseDownEvent event) {
+				int x = event.getX();
+				int y = event.getY();
+				
+				if( y < baseheight) {
+					if( x < tcanvas.getCoordinateSpaceWidth() - 40 ) {
+						sortcol = 0;
+						if( sortlist.size() == 0 ) sortlist.add(0);
+						
+						if( sortlist.get(0) <= 0 ) {
+							Collections.sort( val );
+							sortlist.set(0, 1);
+						} else {
+							Collections.sort( val, Collections.reverseOrder() );
+							sortlist.set(0, -1);
+						}
+					} else {
+						sortcol = 1;
+						if( sortlist.size() == 0 ) sortlist.add(0);
+						if( sortlist.size() == 1 ) sortlist.add(0);
+						
+						if( sortlist.get(1) <= 0 ) {
+							Collections.sort( val );
+							sortlist.set(1, 1);
+						} else {
+							Collections.sort( val, Collections.reverseOrder() );
+							sortlist.set(1, -1);
+						}
+					}
+					prevx = Integer.MAX_VALUE;
+					prevy = Integer.MAX_VALUE;
+					draw( 0, 0 );
+				}
+			}
+		});		
 		tableresize.addResizeHandler( new ResizeHandler() {
 			@Override
 			public void onResize(ResizeEvent event) {
