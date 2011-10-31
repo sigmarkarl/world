@@ -48,6 +48,11 @@ import com.google.gwt.event.dom.client.MouseUpEvent;
 import com.google.gwt.event.dom.client.MouseUpHandler;
 import com.google.gwt.event.logical.shared.ResizeEvent;
 import com.google.gwt.event.logical.shared.ResizeHandler;
+import com.google.gwt.gears.client.Factory;
+import com.google.gwt.gears.client.blob.Blob;
+import com.google.gwt.gears.client.desktop.Desktop;
+import com.google.gwt.gears.client.desktop.File;
+import com.google.gwt.gears.client.desktop.OpenFilesHandler;
 import com.google.gwt.user.client.Command;
 import com.google.gwt.user.client.Element;
 import com.google.gwt.user.client.Timer;
@@ -84,7 +89,7 @@ public class Webfasta implements EntryPoint {
     Context2d			tcontext;
     Context2d 			ocontext;
     
-    StringBuilder		content = null;
+    String				content = null;
 	
 	/*public void stuff() {
 		canvas = Canvas.createIfSupported();
@@ -258,34 +263,35 @@ public class Webfasta implements EntryPoint {
 		
 	}-*/;
 	
-	public native String handleFiles( Element ie, int append ) /*-{		
-		$wnd.console.log('dcw');
-		var hthis = this;
-		file = ie.files[0];
-		var reader = new FileReader();
-		reader.onload = function(e) {
-			hthis.@org.simmi.client.Webfasta::fileLoaded(Ljava/lang/String;I)(e.target.result, append);
-		};
-		reader.onerror = function(evt) {
-      		$wnd.console.log("error", evt);
-      		switch(evt.target.error.code) {
-		      case evt.target.error.NOT_FOUND_ERR:
-		        alert('File Not Found!');
-		        break;
-		      case evt.target.error.NOT_READABLE_ERR:
-		        alert('File is not readable');
-		        break;
-		      case evt.target.error.ABORT_ERR:
-		        alert('erm');
-		        break; // noop
-		      default:
-		        alert('An error occurred reading this file.');
-		    };
-      		//$wnd.console.log(e.getMessage());
-    	};
-    	$wnd.console.log('befreadastext');
-		reader.readAsText( file, "utf8" );
-		$wnd.console.log('afterreadastext');
+	public native JavaScriptObject handleFiles( Element ie, int append ) /*-{
+		return ie.files[0];
+		
+//		var hthis = this;
+//		file = ie.files[0];
+//		var reader = new FileReader();
+//		reader.onload = function(e) {
+//			hthis.@org.simmi.client.Webfasta::fileLoaded(Ljava/lang/String;I)(e.target.result, append);
+//		};
+//		reader.onerror = function(evt) {
+//      		$wnd.console.log("error", evt);
+//      		switch(evt.target.error.code) {
+//		      case evt.target.error.NOT_FOUND_ERR:
+//		        alert('File Not Found!');
+//		        break;
+//		      case evt.target.error.NOT_READABLE_ERR:
+//		        alert('File is not readable');
+//		        break;
+//		      case evt.target.error.ABORT_ERR:
+//		        alert('erm');
+//		        break; // noop
+//		      default:
+//		        alert('An error occurred reading this file.');
+//		    };
+//      		//$wnd.console.log(e.getMessage());
+//    	};
+//    	$wnd.console.log('befreadastext');
+//		reader.readAsText( file, "utf8" );
+//		$wnd.console.log('afterreadastext');
 	}-*/;
 	
 	public native void console( String str ) /*-{
@@ -375,7 +381,7 @@ public class Webfasta implements EntryPoint {
 		prevx = Integer.MAX_VALUE;
 		prevy = Integer.MAX_VALUE;
 		
-		this.content = new StringBuilder( cont );
+		this.content = cont;
 		this.max = max;
 		
 		//val = val.subList(0, 1000);
@@ -414,7 +420,9 @@ public class Webfasta implements EntryPoint {
 	Map<String,Sequence>	seqmap = new HashMap<String,Sequence>();
 	int						max = 0;
 	public void fileLoaded( String cont, int append ) {
-		this.content = new StringBuilder(cont);//.replace("\n", "");
+		console( "er "+cont.length() );
+		
+		this.content = cont;//.replace("\n", "");
 		seqmap.clear();
 		max = 0;
 				
@@ -454,13 +462,13 @@ public class Webfasta implements EntryPoint {
 			int n = k == -1 ? content.length() : k-1;
 			
 			int m = 0;
-			for( int u = i+1; u < n; u++ ) {
+			/*for( int u = i+1; u < n; u++ ) {
 				if( content.charAt(u) == '\n' ) {
 					m++;
 				} else {
 					content.setCharAt(u-m, content.charAt(u));
 				}
-			}
+			}*/
 			
 			Sequence seq = new Sequence( r+1, i, i+1, n-m ); //new Sequence(seqname,seqstr);
 			int seqlen = n-i-1;
@@ -542,7 +550,7 @@ public class Webfasta implements EntryPoint {
 				int yuno = Math.max(0,ystartLocal-prevy);
 				int yduo = Math.max(0,prevy-ystartLocal);
 				context.drawImage(context.getCanvas(), xuno, yuno+baseheight, w, h, xduo, yduo+baseheight, w, h);
-				tcontext.drawImage(tcontext.getCanvas(), 0, yuno+baseheight, tcw, h, 0, yduo+baseheight, tcw, h);
+				/*tcontext.drawImage(tcontext.getCanvas(), 0, yuno+baseheight, tcw, h, 0, yduo+baseheight, tcw, h);
 				if( xuno > xduo ) {
 					if( yuno > yduo ) {
 						drawSection( xstartLocal, ystartLocal, 0, h, w, ay );
@@ -567,7 +575,7 @@ public class Webfasta implements EntryPoint {
 						drawSection( xstartLocal, ystartLocal, 0, 0, ax, ay );
 						drawTable( ystartLocal, 0, ay );
 					}
-				}
+				}*/
 			} else {
 				drawSection( xstartLocal, ystartLocal, 0, 0, cw, ch );
 				drawTable( ystartLocal, 0, ch );
@@ -753,8 +761,32 @@ public class Webfasta implements EntryPoint {
 		file.addChangeHandler( new ChangeHandler() {
 			@Override
 			public void onChange(ChangeEvent event) {
-				handleFiles( file.getElement(), append );
-				db.hide();
+				try {
+					console("ss");
+					Desktop dt = Factory.getInstance().createDesktop();
+					console("before");
+					dt.openFiles(new OpenFilesHandler() {
+						public void onOpenFiles(OpenFilesEvent oevent) {
+							console("erm");
+							
+							File[] files = oevent.getFiles();
+							File file = files[0];
+							
+							console("toff");
+							Blob data = file.getBlob();
+
+							console( "" + data.getLength() );
+							
+							byte[] bb = data.getBytes();
+							console("toff");
+							//Webfasta.this.content = new String( bb );
+							fileLoaded( new String(bb), 0 );
+						}
+					}, true);
+					console("after");
+				} catch (Exception ex){
+					Window.alert(ex.toString());
+				}
 			}
 		});
 		
@@ -774,12 +806,18 @@ public class Webfasta implements EntryPoint {
 			var reader = new FileReader();
 			reader.onload = function(e) {
 				var res = e.target.result;
-				
-				$wnd.console.log('erm');
+				var view = new Uint8Array( res );
 				
 				var r = 0;
 				//res.indexOf( '>' );
-				while( res[r] != '>' ) r++;
+				while( r < view.length && view[r] != '>' ) {
+					r++;
+					
+					if( r % 10000 == 0 ) $wnd.console.log( r );
+				}
+				
+				if( r == view.length ) r = -1;
+				$wnd.console.log( view.length );
 				
 				var count = 0;
 				var max = 0;
@@ -788,17 +826,18 @@ public class Webfasta implements EntryPoint {
 				while( r != -1 ) {
 					var i = r+1;
 					//res.indexOf( '\n', r+1);
-					while( res[i] != '\n' ) i++;
+					while( i < view.length && view[i] != '\n' ) i++;
 					
 					//String seqname = content.substring(r+1, i);
 					var k = i+1;
 					//res.indexOf( '>', i+1);
-					while( res[k] != '>' ) k++;
+					while( k < view.length && view[k] != '>' ) k++;
+					if( k == view.length ) k = -1;
 					
 					//for( int r = 0; r < split.length-1; r++ ) {
 					//String s = split[r+1];
 						
-					var n = k == -1 ? res.length : k-1;
+					var n = k == -1 ? view.length : k-1;
 					//Sequence seq = new Sequence( r+1, i, i+1, n ); //new Sequence(seqname,seqstr);
 					var seqlen = n-i-1;
 					
@@ -809,10 +848,10 @@ public class Webfasta implements EntryPoint {
 						//} else {
 						//	res[u-m] = res[u];
 						//}
-						res[u] = 'O';
+						view[u] = 'O';
 					}
 					
-					s.@org.simmi.client.Webfasta::addSequence(IIII)( r+1, i, i+1, n-m );
+					//s.@org.simmi.client.Webfasta::addSequence(IIII)( r+1, i, i+1, n-m );
 					if( seqlen > max ) max = seqlen;
 					count += 1;
 					
@@ -821,10 +860,17 @@ public class Webfasta implements EntryPoint {
 				
 				$wnd.console.log('er2');
 
-				s.@org.simmi.client.Webfasta::fileLoad(Ljava/lang/String;I)( res, max );
-				//s.@org.simmi.client.Webfasta::fileLoaded(Ljava/lang/String;I)( res, 0 );
+				var blobBuilder = new BlobBuilder();
+				blobBuilder.append( res );
+				reader = new FileReader();
+				reader.onload = function(e) {
+					var res2 = e.target.result;
+					s.@org.simmi.client.Webfasta::fileLoaded(Ljava/lang/String;I)( res2, 0 );
+				}
+				reader.readAsArrayBuffer( blobBuilder.getBlob() );
+				//s.@org.simmi.client.Webfasta::fileLoad(Ljava/lang/String;I)( view, max );
 			};
-			reader.readAsArrayBuffer( file );			
+			reader.readAsArrayBuffer( file );
 			//reader.readAsText( file );
 		} else {
 			var res = evt.dataTransfer.getData("Text");
@@ -924,7 +970,6 @@ public class Webfasta implements EntryPoint {
 		//HorizontalPanel	hpanel = new HorizontalPanel();
 		//hpanel.setHorizontalAlignment( HorizontalPanel.ALIGN_CENTER );
 		//hpanel.setWidth("100%");
-		
 		int height = Math.max( 1000, Window.getClientHeight() );
 		//int height = RootPanel.get().getOffsetHeight();
 		//hpanel.setHeight(Math.max(1000, height)+"px");
@@ -933,7 +978,37 @@ public class Webfasta implements EntryPoint {
 		popup.addItem("Open", new Command() {
 			@Override
 			public void execute() {
-				stuff( 0 );
+				try {
+					Factory f = Factory.getInstance();
+					if( f != null ) {
+						console("11");
+						Desktop dt = f.createDesktop();
+						console("before");
+						dt.openFiles(new OpenFilesHandler() {
+							public void onOpenFiles(OpenFilesEvent oevent) {
+								console("erm");
+								
+								File[] files = oevent.getFiles();
+								File file = files[0];
+								
+								console("toff");
+								Blob data = file.getBlob();
+		
+								console( "" + data.getLength() );
+								
+								byte[] bb = data.getBytes();
+								console("toff");
+								//Webfasta.this.content = new String( bb );
+								fileLoaded( new String(bb), 0 );
+							}
+						}, true);
+						console("after");
+					}
+				} catch (Exception ex){
+					Window.alert(ex.toString());
+				}
+				
+				//stuff( 0 );
 				
 				//db.hide();
 				
@@ -1254,7 +1329,9 @@ public class Webfasta implements EntryPoint {
 			@Override
 			public void onDrop(DropEvent event) {
 				DataTransfer dt = event.getDataTransfer();
-				transferData( dt );				
+				//dt.getData(format)
+				//File f = new File();
+				transferData( dt );
 			}
 		});
 		//dropTarget( context.getCanvas() );
