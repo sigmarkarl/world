@@ -1,9 +1,13 @@
 package org.simmi;
 
+import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.Graphics;
+import java.awt.Graphics2D;
 import java.awt.Rectangle;
+import java.awt.RenderingHints;
 import java.awt.Window;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.Transferable;
@@ -22,10 +26,13 @@ import javax.swing.JFrame;
 import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
 import javax.swing.JTable;
+import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 import javax.swing.TransferHandler;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
+import javax.swing.event.RowSorterEvent;
+import javax.swing.event.RowSorterListener;
 import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
 import javax.swing.table.TableModel;
@@ -37,27 +44,69 @@ public class JavaFasta extends JApplet {
 	 */
 	private static final long serialVersionUID = 1L;
 
-	public class FastaView extends JComponent {
-		List<Sequence>	lseq;
-		int				max = 0;
-		int				rh;
-		
-		public FastaView( List<Sequence> lseq, int rh ) {
-			this.lseq = lseq;
-			this.rh = rh;
+	public class Ruler extends JComponent {
+		public Ruler() {
+			super();
 		}
 		
 		public void paintComponent( Graphics g ) {
 			super.paintComponent( g );
 			
-			Rectangle r = g.getClipBounds();
+			Graphics2D g2 = (Graphics2D)g;
+			g2.setRenderingHint( RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON );
+			
+			int h = this.getHeight();
+			Rectangle r = g2.getClipBounds();
+			
+			for( int x = r.x/10; x < (r.x+r.width)/10+1; x++ ) {
+				int xx = x*10;
+				if( x % 10 == 0 ) {
+					g.drawLine(xx+4, h-6, xx+4, h);
+					g.drawString( x+"", xx, h-6);
+				} else if( x % 5 == 0 ) {
+					g.drawLine(xx+4, h-6, xx+4, h);
+				} else {
+					g.drawLine(xx+4, h-4, xx+4, h);
+				}
+			}
+		}
+		
+		/**
+		 * 
+		 */
+		private static final long serialVersionUID = 1L;
+		
+	};
+	
+	public class FastaView extends JComponent {
+		Ruler			ruler;
+		JTable			table;
+		List<Sequence>	lseq;
+		int				max = 0;
+		int				rh;
+		
+		public FastaView( List<Sequence> lseq, int rh, Ruler ruler, JTable table ) {
+			this.lseq = lseq;
+			this.rh = rh;
+			this.ruler = ruler;
+			this.table = table;
+		}
+		
+		public void paintComponent( Graphics g ) {
+			super.paintComponent( g );
+			
+			Graphics2D g2 = (Graphics2D)g;
+			g2.setRenderingHint( RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON );
+			
+			Rectangle r = g2.getClipBounds();
 			
 			int xmin = r.x/10;
 			int xmax = Math.min( (r.x+r.width)/10+1, max );
 			for( int y = r.y/rh; y < Math.min( (r.y+r.height)/rh+1, lseq.size() ); y++ ) {
-				Sequence seq = lseq.get(y);
+				int i = table.convertRowIndexToModel( y );
+				Sequence seq = lseq.get( i );
 				for( int x = Math.max(seq.start, xmin); x < Math.min(seq.getEnd(), xmax); x++ ) {
-					g.drawString(seq.charAt(x), x*10, y*rh);
+					g.drawString(seq.charAt(x), x*10, y*rh+rh-2);
 				}
 			}
 		}
@@ -74,6 +123,9 @@ public class JavaFasta extends JApplet {
 			
 			this.setPreferredSize( new Dimension(w,h) );
 			this.setSize(w, h);
+			
+			ruler.setPreferredSize( new Dimension(w, 20) );
+			ruler.setSize(w, 20);
 		}
 		
 		/**
@@ -141,10 +193,11 @@ public class JavaFasta extends JApplet {
 			frame.setResizable(true);
 		}
 
-		
 		final List<Sequence>	lseq = new ArrayList<Sequence>();
 		final JTable			table = new JTable();
-		final FastaView 		c = new FastaView( lseq, table.getRowHeight() );
+		table.setAutoCreateRowSorter( true );
+		final Ruler ruler = new Ruler();
+		final FastaView 		c = new FastaView( lseq, table.getRowHeight(), ruler, table );
 		
 		final DataFlavor df = DataFlavor.getTextPlainUnicodeFlavor();
 		final String charset = df.getParameter("charset");
@@ -200,7 +253,7 @@ public class JavaFasta extends JApplet {
 						while( line != null ) {
 							if( line.startsWith(">") ) {
 								if( s != null ) {
-									if( s.getLength() > max ) max = s.getLength();
+									if( s.getEnd() > max ) max = s.getEnd();
 								}
 								s = new Sequence( line.substring(1) );
 								lseq.add( s );
@@ -289,13 +342,37 @@ public class JavaFasta extends JApplet {
 			}
 		});
 		
-		JScrollPane	tablescroll = new JScrollPane( table );
+		table.getRowSorter().addRowSorterListener( new RowSorterListener() {
+			@Override
+			public void sorterChanged(RowSorterEvent e) {
+				c.repaint();
+			}
+		});
+		
 		JSplitPane	splitpane = new JSplitPane();
-		tablescroll.setTransferHandler( th );
+		splitpane.setBackground( Color.white );
 		
 		JScrollPane	fastascroll = new JScrollPane( c );
+		fastascroll.setBackground( Color.white );
+		fastascroll.getViewport().setBackground( Color.white );
+		fastascroll.setRowHeaderView( table );
+		fastascroll.setColumnHeaderView( ruler );
 		
-		splitpane.setLeftComponent( tablescroll );
+		JScrollPane	tablescroll = new JScrollPane();
+		tablescroll.setViewport( fastascroll.getRowHeader() );
+		tablescroll.setHorizontalScrollBarPolicy( JScrollPane.HORIZONTAL_SCROLLBAR_NEVER );
+		tablescroll.setVerticalScrollBarPolicy( JScrollPane.VERTICAL_SCROLLBAR_NEVER );
+		tablescroll.setBackground( Color.white );
+		tablescroll.getViewport().setBackground( Color.white );
+		tablescroll.setTransferHandler( th );
+		
+		JTextField	textfield = new JTextField();
+		JComponent tablecomp = new JComponent() { private static final long serialVersionUID = 1L; };
+		tablecomp.setLayout( new BorderLayout() );
+		tablecomp.add( tablescroll );
+		tablecomp.add( textfield, BorderLayout.SOUTH );
+		
+		splitpane.setLeftComponent( tablecomp );
 		splitpane.setRightComponent( fastascroll );
 		
 		cnt.add( splitpane );

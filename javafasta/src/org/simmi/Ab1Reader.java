@@ -67,7 +67,7 @@ public class Ab1Reader {
 	
 	public static void main(String[] args) {
 		try {
-			File f = new File( "/home/sigmar/peter/5833_Peter Panthermus 2127/B02_a1_O_Peter_a1_.R_A10P1771_2011-04-15.ab1" );
+			File f = new File( "/home/horfrae/peter/5833_Peter Panthermus 2127/B02_a1_O_Peter_a1_.R_A10P1771_2011-04-15.ab1" );
 			ByteBuffer bb = ByteBuffer.allocate( (int)f.length() );
 			FileInputStream fis = new FileInputStream( f );
 			int r = fis.read( bb.array() );
