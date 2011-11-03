@@ -48,11 +48,6 @@ import com.google.gwt.event.dom.client.MouseUpEvent;
 import com.google.gwt.event.dom.client.MouseUpHandler;
 import com.google.gwt.event.logical.shared.ResizeEvent;
 import com.google.gwt.event.logical.shared.ResizeHandler;
-import com.google.gwt.gears.client.Factory;
-import com.google.gwt.gears.client.blob.Blob;
-import com.google.gwt.gears.client.desktop.Desktop;
-import com.google.gwt.gears.client.desktop.File;
-import com.google.gwt.gears.client.desktop.OpenFilesHandler;
 import com.google.gwt.user.client.Command;
 import com.google.gwt.user.client.Element;
 import com.google.gwt.user.client.Timer;
@@ -761,7 +756,7 @@ public class Webfasta implements EntryPoint {
 		file.addChangeHandler( new ChangeHandler() {
 			@Override
 			public void onChange(ChangeEvent event) {
-				try {
+				/*try {
 					console("ss");
 					Desktop dt = Factory.getInstance().createDesktop();
 					console("before");
@@ -786,7 +781,7 @@ public class Webfasta implements EntryPoint {
 					console("after");
 				} catch (Exception ex){
 					Window.alert(ex.toString());
-				}
+				}*/
 			}
 		});
 		
@@ -978,7 +973,7 @@ public class Webfasta implements EntryPoint {
 		popup.addItem("Open", new Command() {
 			@Override
 			public void execute() {
-				try {
+				/*try {
 					Factory f = Factory.getInstance();
 					if( f != null ) {
 						console("11");
@@ -1006,7 +1001,7 @@ public class Webfasta implements EntryPoint {
 					}
 				} catch (Exception ex){
 					Window.alert(ex.toString());
-				}
+				}*/
 				
 				//stuff( 0 );
 				

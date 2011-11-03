@@ -2,6 +2,7 @@ package org.simmi.server;
 
 import org.simmi.client.GreetingService;
 import org.simmi.shared.FieldVerifier;
+
 import com.google.gwt.user.server.rpc.RemoteServiceServlet;
 
 /**

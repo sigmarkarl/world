@@ -12,17 +12,36 @@ import java.awt.Window;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.Transferable;
 import java.awt.datatransfer.UnsupportedFlavorException;
+import java.awt.event.ActionEvent;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
+import javax.jnlp.FileContents;
+import javax.jnlp.FileOpenService;
+import javax.jnlp.FileSaveService;
+import javax.jnlp.ServiceManager;
+import javax.jnlp.UnavailableServiceException;
+import javax.swing.AbstractAction;
 import javax.swing.JApplet;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
+import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
 import javax.swing.JTable;
@@ -36,6 +55,8 @@ import javax.swing.event.RowSorterListener;
 import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
 import javax.swing.table.TableModel;
+
+import netscape.javascript.JSObject;
 
 public class JavaFasta extends JApplet {
 
@@ -169,6 +190,148 @@ public class JavaFasta extends JApplet {
 		}
 	}
 	
+	public void openFiles() {
+		FileOpenService fos; 
+
+	    try { 
+	        fos = (FileOpenService)ServiceManager.lookup("javax.jnlp.FileOpenService"); 
+	    } catch (UnavailableServiceException e) {
+	        fos = null; 
+	    }
+	    
+	    if (fos != null) {
+	        try {
+	            FileContents[] fcs = fos.openMultiFileDialog(null, null);
+	            for( FileContents fc : fcs ) {
+	            	String name = fc.getName();
+	            	if( name.endsWith(".ab1") || name.endsWith(".abi") ) addAbiSequence( name, fc.getInputStream() );
+	            	else {
+	            		Sequence s = null;
+						BufferedReader	br = new BufferedReader( new InputStreamReader( fc.getInputStream() ) );
+						String line = br.readLine();
+						while( line != null ) {
+							if( line.startsWith(">") ) {
+								if( s != null ) {
+									if( s.getEnd() > max ) max = s.getEnd();
+								}
+								s = new Sequence( line.substring(1) );
+								lseq.add( s );
+							} else if( s != null ) {
+								s.append( line );
+							}
+							line = br.readLine();
+						}
+						br.close();
+						
+						if( s != null ) {
+							if( s.getLength() > max ) max = s.getLength();
+						}
+	            	}
+	            }
+	        } catch (Exception e) { 
+	        	console( e.getMessage() );
+	        } 
+	    }
+	    updateView();
+	}
+	
+	public void exportFasta( JTable table, List<Sequence> lseq ) throws IOException, UnavailableServiceException {
+		 FileSaveService fss = null;
+         FileContents fileContents = null;
+         ByteArrayOutputStream baos = new ByteArrayOutputStream();
+         OutputStreamWriter	osw = new OutputStreamWriter( baos );
+    	 
+    	 int[] rr = table.getSelectedRows();
+    	 for( int r : rr ) {
+    		 int i = table.convertRowIndexToModel( r );
+    		 Sequence seq = lseq.get(i);
+    		 osw.write( ">" + seq.name + "\n" );
+    		 int val = 0;
+    		 while( val < seq.getLength() ) {
+    			 osw.write( seq.sb.substring(val, Math.min( seq.getLength(), val+70 )) + "\n" );
+    			 val += 70;
+    		 }
+    	 }
+    	 osw.close();
+    	 baos.close();
+
+    	 fss = (FileSaveService)ServiceManager.lookup("javax.jnlp.FileSaveService");
+         if (fss != null) {
+        	 ByteArrayInputStream bais = new ByteArrayInputStream( baos.toByteArray() );
+             fileContents = fss.saveFileDialog(null, null, bais, "export.fasta");
+             bais.close();
+             OutputStream os = fileContents.getOutputStream(true);
+             os.write( baos.toByteArray() );
+             os.close();
+         }
+
+         /*if (fileContents != null) {
+             try {
+            	 OutputStream os = fileContents.getOutputStream( true );
+            	 OutputStreamWriter	osw = new OutputStreamWriter( os );
+            	 
+            	 int[] rr = table.getSelectedRows();
+            	 for( int r : rr ) {
+            		 int i = table.convertRowIndexToModel( r );
+            		 Sequence seq = lseq.get(i);
+            		 osw.write( ">" + seq.name + "\n" );
+            		 int val = 0;
+            		 while( val < seq.getLength() ) {
+            			 osw.write( seq.sb.substring(val, Math.min( seq.getLength(), val+70 )) + "\n" );
+            			 val += 70;
+            		 }
+            	 }
+             } catch (IOException exc) {
+            	 exc.printStackTrace();
+             }
+         }*/
+	}
+	
+	public void console( String str ) {
+		JSObject jso = JSObject.getWindow(this);
+		JSObject console = (JSObject)jso.getMember("console");
+		console.call("log", new Object[] {str});
+	}
+	
+	List<Sequence>	lseq;
+	JTable			table;
+	FastaView		c;
+	int				max = 0;
+	
+	public byte[] getByteArray( int len ) {
+		return new byte[ len ];
+	}
+	
+	public void addAbiSequence( String name, InputStream is ) {
+		Ab1Reader abi = new Ab1Reader( is );
+		Sequence s = new Sequence( name );
+		s.append( abi.getSequence() );
+		lseq.add( s );
+		
+		if( s.getLength() > max ) max = s.getLength();
+	}
+	
+	public void addAbiSequence( String name, byte[] bts, int len ) {
+		//byte[] ba = bts.getBytes();
+		console( "in "+bts.length );
+		ByteBuffer bb = ByteBuffer.wrap( bts );
+		try {
+			Ab1Reader abi = new Ab1Reader( bb );
+			Sequence s = new Sequence( name );
+			s.append( abi.getSequence() );
+			lseq.add( s );
+			
+			if( s.getLength() > max ) max = s.getLength();
+		} catch( Exception e ) {
+			console( e.getMessage() );
+		}
+	}
+	
+	public void updateView() {
+		table.tableChanged( new TableModelEvent( table.getModel() ) );
+		c.updateCoords( max );
+	}
+	
 	public void init() {
 		initGui( this );
 	}
@@ -193,11 +356,11 @@ public class JavaFasta extends JApplet {
 			frame.setResizable(true);
 		}
 
-		final List<Sequence>	lseq = new ArrayList<Sequence>();
-		final JTable			table = new JTable();
+		lseq = new ArrayList<Sequence>();
+		table = new JTable();
 		table.setAutoCreateRowSorter( true );
 		final Ruler ruler = new Ruler();
-		final FastaView 		c = new FastaView( lseq, table.getRowHeight(), ruler, table );
+		c = new FastaView( lseq, table.getRowHeight(), ruler, table );
 		
 		final DataFlavor df = DataFlavor.getTextPlainUnicodeFlavor();
 		final String charset = df.getParameter("charset");
@@ -241,41 +404,58 @@ public class JavaFasta extends JApplet {
 
 			public boolean importData(TransferHandler.TransferSupport support) {
 				try {
-					Object obj = support.getTransferable().getTransferData( DataFlavor.javaFileListFlavor );
-					//InputStream is = (InputStream)obj;
-					List<File>	lfile = (List<File>)obj;
-					
-					int max = c.getMax();
-					for( File f : lfile ) {				
-						Sequence s = null;
-						BufferedReader	br = new BufferedReader( new FileReader( f ) );
-						String line = br.readLine();
-						while( line != null ) {
-							if( line.startsWith(">") ) {
-								if( s != null ) {
-									if( s.getEnd() > max ) max = s.getEnd();
-								}
-								s = new Sequence( line.substring(1) );
-								lseq.add( s );
-							} else if( s != null ) {
-								s.append( line );
-							}
-							line = br.readLine();
-						}
-						br.close();
-						
-						if( s != null ) {
-							if( s.getLength() > max ) max = s.getLength();
-						}				
+					DataFlavor[] dfs = support.getDataFlavors();
+					for( DataFlavor df : dfs ) {
+						System.err.println( df );
 					}
 					
-					table.tableChanged( new TableModelEvent( table.getModel() ) );
-					c.updateCoords( max );
-					
-					/*byte[] bb = new byte[2048];
-					int r = is.read(bb);
-					
-					//importFromText( new String(bb,0,r) );*/
+					if( support.isDataFlavorSupported( DataFlavor.javaFileListFlavor ) ) {
+						Object obj = support.getTransferable().getTransferData( DataFlavor.javaFileListFlavor );
+						//InputStream is = (InputStream)obj;
+						List<File>	lfile = (List<File>)obj;
+						
+						max = c.getMax();
+						for( File f : lfile ) {
+							if( f.getName().endsWith(".ab1") ) {
+								int flen = (int)f.length();
+								ByteBuffer bb = ByteBuffer.allocate( flen );
+								FileInputStream fis = new FileInputStream( f );
+								fis.read( bb.array() );
+								Ab1Reader abi = new Ab1Reader( bb );
+								Sequence s = new Sequence( f.getName() );
+								s.append( abi.getSequence() );
+								lseq.add( s );
+								
+								if( s.getLength() > max ) max = s.getLength();
+								
+								bb.clear();
+							} else {
+								Sequence s = null;
+								BufferedReader	br = new BufferedReader( new FileReader( f ) );
+								String line = br.readLine();
+								while( line != null ) {
+									if( line.startsWith(">") ) {
+										if( s != null ) {
+											if( s.getEnd() > max ) max = s.getEnd();
+										}
+										s = new Sequence( line.substring(1) );
+										lseq.add( s );
+									} else if( s != null ) {
+										s.append( line );
+									}
+									line = br.readLine();
+								}
+								br.close();
+								
+								if( s != null ) {
+									if( s.getLength() > max ) max = s.getLength();
+								}
+							}
+						}
+						
+						table.tableChanged( new TableModelEvent( table.getModel() ) );
+						c.updateCoords( max );
+					}
 				} catch (UnsupportedFlavorException e) {
 					e.printStackTrace();
 				} catch (IOException e) {
@@ -375,7 +555,69 @@ public class JavaFasta extends JApplet {
 		splitpane.setLeftComponent( tablecomp );
 		splitpane.setRightComponent( fastascroll );
 		
+		JPopupMenu	popup = new JPopupMenu();
+		popup.add( new AbstractAction("Open") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				openFiles();
+			}
+		});
+		popup.add( new AbstractAction("Export") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				try {
+					exportFasta( table, lseq );
+				} catch (IOException e1) {
+					e1.printStackTrace();
+				} catch (UnavailableServiceException e1) {
+					e1.printStackTrace();
+				}
+			}
+		});
+		table.setComponentPopupMenu( popup );
+		tablescroll.setComponentPopupMenu( popup );
+		
+		table.addKeyListener( new KeyListener() {
+			@Override
+			public void keyTyped(KeyEvent e) {
+				// TODO Auto-generated method stub
+				
+			}
+			
+			@Override
+			public void keyReleased(KeyEvent e) {
+				// TODO Auto-generated method stub
+				
+			}
+			
+			@Override
+			public void keyPressed(KeyEvent e) {
+				if( e.getKeyCode() == KeyEvent.VK_DELETE ) {
+					Set<Sequence>	delset = new HashSet<Sequence>();
+					int[] rr = table.getSelectedRows();
+					for( int r : rr ) {
+						int i = table.convertRowIndexToModel(r);
+						delset.add( lseq.get(i) );
+					}
+					lseq.removeAll( delset );
+					
+					max = checkMax();
+					table.tableChanged( new TableModelEvent( table.getModel() ) );
+				}
+			}
+		});
+		
 		cnt.add( splitpane );
+	}
+	
+	public int checkMax() {
+		int max = 0;
+		
+		for( Sequence s : lseq ) {
+			if( s.getEnd() > max ) max = s.getEnd();
+		}
+		
+		return max;
 	}
 	
 	public static void main(String[] args) {
