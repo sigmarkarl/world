@@ -1,0 +1,76 @@
+<!doctype html>
+<!-- The DOCTYPE declaration above will set the    -->
+<!-- browser's rendering engine into               -->
+<!-- "Standards Mode". Replacing this declaration  -->
+<!-- with a "Quirks Mode" doctype may lead to some -->
+<!-- differences in layout.                        -->
+
+<html>
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+
+    <!--                                                               -->
+    <!-- Consider inlining CSS to reduce the number of requested files -->
+    <!--                                                               -->
+    <link type="text/css" rel="stylesheet" href="Webfasta.css">
+
+    <!--                                           -->
+    <!-- Any title is fine                         -->
+    <!--                                           -->
+    <title>Web Application Starter Project</title>
+    
+    <!--                                           -->
+    <!-- This script loads your compiled module.   -->
+    <!-- If you add any GWT meta tags, they must   -->
+    <!-- be added before this line.                -->
+    <!--                                           -->
+    <script src="deployJava.js"></script>
+    <script type="text/javascript" language="javascript" src="org.simmi.Javafasta/org.simmi.Javafasta.nocache.js"></script>
+    
+    <script>
+    transData = function( dataTransfer ) {
+    	var files = dataTransfer.files;
+		var count = files.length;
+		var jf = document.getElementById('javafasta');
+		
+		check = 0;
+		for( i = 0; i < count; i++ ) {
+			var file = files[i];
+			var reader = new FileReader();
+			reader.onload = function(e) {
+				var res = e.target.result;
+				//var view = new Int8Array( res );
+				jf.addAbiSequence( file.name, res, 7 );
+				//check += 1;
+				//if( check == count ) {
+				//	console.log('sudd');
+				//	jf.updateView();
+				//}
+			};
+			reader.readAsBinaryString( file );
+		}
+	}
+    </script>
+  </head>
+
+  <!--                                           -->
+  <!-- The body can have arbitrary html, or      -->
+  <!-- you can leave the body empty if you want  -->
+  <!-- to create a completely dynamic UI.        -->
+  <!--                                           -->
+  <body>
+    <!-- RECOMMENDED if your web app will not function without JavaScript enabled -->
+    <noscript>
+      <div style="width: 22em; position: absolute; left: 50%; margin-left: -11em; color: red; background-color: white; border: 1px solid red; padding: 4px; font-family: sans-serif">
+        Your web browser must have JavaScript enabled
+        in order for this application to display correctly.
+      </div>
+    </noscript>
+    
+    <script type="text/javascript" language="javascript">
+    	var attributes = { codebase:'http://webfasta.appspot.com/', code:'org.simmi.JavaFasta', width:'100%', height:'100%', id:'javafasta', name:'javafasta' };
+      	var parameters = { jnlp_href:'javafasta.jnlp' };
+      	deployJava.runApplet(attributes, parameters, '1.7');
+	</script>
+  </body>
+</html>
