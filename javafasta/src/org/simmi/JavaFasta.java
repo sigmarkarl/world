@@ -15,6 +15,9 @@ import java.awt.datatransfer.UnsupportedFlavorException;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseMotionListener;
+import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -28,9 +31,12 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 
 import javax.jnlp.FileContents;
 import javax.jnlp.FileOpenService;
@@ -66,8 +72,42 @@ public class JavaFasta extends JApplet {
 	private static final long serialVersionUID = 1L;
 
 	public class Ruler extends JComponent {
+		int x;
+		
 		public Ruler() {
 			super();
+			
+			final JPopupMenu	popup = new JPopupMenu();
+			popup.add( new AbstractAction("Start here") {
+				@Override
+				public void actionPerformed(ActionEvent e) {					
+					int xval = x/10;
+					int[] rr = table.getSelectedRows();
+					for( int r : rr ) {
+						int i = table.convertRowIndexToModel( r );
+						Sequence s = lseq.get(i);
+						s.setStart( xval );
+					}
+					
+					max = checkMax();		
+					c.repaint();
+					overview.reval();
+					overview.repaint();
+					updateView();
+				}
+			});
+			this.setComponentPopupMenu( popup );
+			
+			this.addMouseMotionListener( new MouseMotionListener() {
+				
+				@Override
+				public void mouseMoved(MouseEvent e) {
+					x = e.getX();
+				}
+				
+				@Override
+				public void mouseDragged(MouseEvent e) {}
+			});
 		}
 		
 		public void paintComponent( Graphics g ) {
@@ -96,7 +136,40 @@ public class JavaFasta extends JApplet {
 		 * 
 		 */
 		private static final long serialVersionUID = 1L;
+	};
+	
+	public class Overview extends JComponent {
+		BufferedImage	bi;
 		
+		public Overview() {
+			super();
+		}
+		
+		public void reval() {			
+			Graphics bg = bi.getGraphics();
+			bg.setColor( Color.white );
+			bg.fillRect(0, 0, bi.getWidth(), bi.getHeight());
+			bg.setColor( Color.green );
+			for( int r = 0; r < table.getRowCount(); r++ ) {
+				int i = table.convertRowIndexToModel(r);
+				Sequence s = lseq.get(i);
+				
+				int x = (s.getStart()*bi.getWidth())/max;
+				int y = (r*bi.getHeight())/lseq.size();
+				bg.fillRect( x, y, Math.max(1, (s.getLength()*bi.getWidth())/max), Math.max(1, (bi.getHeight())/lseq.size()) );
+			}
+		}
+		
+		public void paintComponent( Graphics g ) {
+			super.paintComponent( g );
+			
+			if( bi == null || bi.getWidth() != this.getWidth() || bi.getHeight() != this.getHeight() ) {
+				bi = new BufferedImage( this.getWidth(), this.getHeight(), BufferedImage.TYPE_INT_ARGB );
+				reval();
+			}
+			
+			g.drawImage(bi, 0, 0, this);
+		}
 	};
 	
 	public class FastaView extends JComponent {
@@ -127,7 +200,7 @@ public class JavaFasta extends JApplet {
 				int i = table.convertRowIndexToModel( y );
 				Sequence seq = lseq.get( i );
 				for( int x = Math.max(seq.start, xmin); x < Math.min(seq.getEnd(), xmax); x++ ) {
-					g.drawString(seq.charAt(x), x*10, y*rh+rh-2);
+					g.drawString( Character.toString( seq.charAt(x) ), x*10, y*rh+rh-2);
 				}
 			}
 		}
@@ -160,6 +233,7 @@ public class JavaFasta extends JApplet {
 		String 			name;
 		StringBuilder 	sb = new StringBuilder();
 		int				start = 0;
+		int				revcomp = 0;
 		
 		public Sequence( String name ) {
 			this.name = name;
@@ -173,12 +247,16 @@ public class JavaFasta extends JApplet {
 			sb.append( str );
 		}
 		
-		public String charAt( int i ) {
-			return Character.toString( sb.charAt( i-start ) );
+		public char charAt( int i ) {
+			return sb.charAt( i-start );
 		}
 		
 		public int getLength() {
 			return sb.length();
+		}
+		
+		public void setStart( int start ) {
+			this.start = start;
 		}
 		
 		public int getStart() {
@@ -187,6 +265,10 @@ public class JavaFasta extends JApplet {
 		
 		public int getEnd() {
 			return start+sb.length();
+		}
+		
+		public int getRevComp() {
+			return revcomp;
 		}
 	}
 	
@@ -296,6 +378,7 @@ public class JavaFasta extends JApplet {
 	List<Sequence>	lseq;
 	JTable			table;
 	FastaView		c;
+	Overview		overview;
 	int				max = 0;
 	
 	public byte[] getByteArray( int len ) {
@@ -473,13 +556,15 @@ public class JavaFasta extends JApplet {
 
 			@Override
 			public int getColumnCount() {
-				return 2;
+				return 4;
 			}
 
 			@Override
 			public String getColumnName(int columnIndex) {
 				if( columnIndex == 0 ) return "Name";
 				else if( columnIndex == 1 ) return "Length";
+				else if( columnIndex == 2 ) return "Start";
+				else if( columnIndex == 3 ) return "RevComp";
 				return null;
 			}
 
@@ -487,6 +572,8 @@ public class JavaFasta extends JApplet {
 			public Class<?> getColumnClass(int columnIndex) {
 				if( columnIndex == 0 ) return String.class;
 				else if( columnIndex == 1 ) return Integer.class;
+				else if( columnIndex == 2 ) return Integer.class;
+				else if( columnIndex == 3 ) return Integer.class;
 				return null;
 			}
 
@@ -500,6 +587,8 @@ public class JavaFasta extends JApplet {
 				Sequence seq = lseq.get( rowIndex );
 				if( columnIndex == 0 ) return seq.getName();
 				else if( columnIndex == 1 ) return seq.getLength();
+				else if( columnIndex == 2 ) return seq.getStart();
+				else if( columnIndex == 3 ) return seq.getRevComp();
 				return null;
 			}
 
@@ -526,6 +615,8 @@ public class JavaFasta extends JApplet {
 			@Override
 			public void sorterChanged(RowSorterEvent e) {
 				c.repaint();
+				overview.reval();
+				overview.repaint();
 			}
 		});
 		
@@ -556,6 +647,124 @@ public class JavaFasta extends JApplet {
 		splitpane.setRightComponent( fastascroll );
 		
 		JPopupMenu	popup = new JPopupMenu();
+		popup.add( new AbstractAction("Join") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				int[] rr = table.getSelectedRows();
+				Set<Sequence>	remseq = new HashSet<Sequence>();
+				for( int r : rr ) {
+					int i = table.convertRowIndexToModel(r);
+					Sequence seq = lseq.get(i);
+					remseq.add( seq );
+				}
+				
+				Sequence newseq = new Sequence("newseq");
+				int start = Integer.MAX_VALUE;
+				int end = 0;
+				for( Sequence s : remseq ) {
+					if( s.getStart() < start ) start = s.getStart();
+					if( s.getEnd() > end ) end = s.getEnd();
+				}
+				
+				newseq.setStart( start );
+				Set<Character>	charset = new TreeSet<Character>();
+				for( int i = start; i < end; i++ ) {
+					for( Sequence s : remseq ) {
+						charset.add( Character.toUpperCase(s.charAt(i)) );
+					}
+					
+					if( charset.size() == 1 ) newseq.sb.append( charset.iterator().next() );
+					else if( charset.size() == 2 ) {
+						if( charset.contains('A') || charset.contains('a') ) {
+							
+						}
+						newseq.sb.append( charset.iterator().next() );
+					} else if( charset.size() == 3 ) {
+						newseq.sb.append( charset.iterator().next() );
+					} else newseq.sb.append( 'N' );
+					
+					
+					charset.clear();
+				}
+				
+				lseq.removeAll( remseq );
+				lseq.add( newseq );
+			}
+		});
+		popup.addSeparator();
+		popup.add( new AbstractAction("Reverse") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				int[] rr = table.getSelectedRows();
+				for( int r : rr ) {
+					table.convertRowIndexToModel( r );
+					Sequence seq = lseq.get( r );
+					StringBuilder	sb = seq.sb;
+					for( int i = 0; i < seq.getLength()/2; i++ ) {
+						char c = sb.charAt(i);
+						sb.setCharAt( i, sb.charAt(seq.getLength()-1-i) );
+						sb.setCharAt( seq.getLength()-1-i, c );
+					}
+					if( seq.revcomp == 1 ) {
+						seq.name = seq.name.substring(0, seq.name.length()-8);
+						seq.revcomp = 0;
+					} else if( seq.revcomp == 3 ) {
+						seq.name = seq.name.substring(0, seq.name.length()-18)+"_compliment";
+						seq.revcomp = 2;
+					} else if( seq.revcomp == 2 ) {
+						seq.name = seq.name.substring(0, seq.name.length()-11)+"_reversecompliment";
+						seq.revcomp = 3;
+					} else {
+						seq.name = seq.name+"_reverse";
+						seq.revcomp = 1;
+					}
+				}
+				c.repaint();
+				table.tableChanged( new TableModelEvent( table.getModel() ) );
+			}
+		});
+		
+		final Map<Character,Character>	complimentMap = new HashMap<Character,Character>();
+		complimentMap.put( 'A', 'T' );
+		complimentMap.put( 'T', 'A' );
+		complimentMap.put( 'G', 'C' );
+		complimentMap.put( 'C', 'G' );
+		complimentMap.put( 'a', 't' );
+		complimentMap.put( 't', 'a' );
+		complimentMap.put( 'g', 'c' );
+		complimentMap.put( 'c', 'g' );
+		
+		popup.add( new AbstractAction("Compliment") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				int[] rr = table.getSelectedRows();
+				for( int r : rr ) {
+					table.convertRowIndexToModel( r );
+					Sequence seq = lseq.get( r );
+					StringBuilder	sb = seq.sb;
+					for( int i = 0; i < seq.getLength(); i++ ) {
+						char c = sb.charAt(i);
+						sb.setCharAt( i, complimentMap.get(c) );
+					}
+					if( seq.revcomp == 1 ) {
+						seq.name = seq.name.substring(0, seq.name.length()-8)+"_reversecompliment";
+						seq.revcomp = 3;
+					} else if( seq.revcomp == 3 ) {
+						seq.name = seq.name.substring(0, seq.name.length()-18)+"_reverse";
+						seq.revcomp = 1;
+					} else if( seq.revcomp == 2 ) {
+						seq.name = seq.name.substring(0, seq.name.length()-11);
+						seq.revcomp = 0;
+					} else {
+						seq.name = seq.name+"_compliment";
+						seq.revcomp = 2;
+					}
+				}
+				c.repaint();
+				table.tableChanged( new TableModelEvent( table.getModel() ) );
+			}
+		});
+		popup.addSeparator();
 		popup.add( new AbstractAction("Open") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -579,10 +788,7 @@ public class JavaFasta extends JApplet {
 		
 		table.addKeyListener( new KeyListener() {
 			@Override
-			public void keyTyped(KeyEvent e) {
-				// TODO Auto-generated method stub
-				
-			}
+			public void keyTyped(KeyEvent e) {}
 			
 			@Override
 			public void keyReleased(KeyEvent e) {
@@ -607,7 +813,12 @@ public class JavaFasta extends JApplet {
 			}
 		});
 		
-		cnt.add( splitpane );
+		overview = new Overview();
+		JSplitPane	overviewsplit = new JSplitPane( JSplitPane.VERTICAL_SPLIT );
+		overviewsplit.setTopComponent( splitpane );
+		overviewsplit.setBottomComponent( overview );
+		
+		cnt.add( overviewsplit );
 	}
 	
 	public int checkMax() {
