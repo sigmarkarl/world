@@ -39,7 +39,6 @@ public class Javafasta implements EntryPoint {
 				rp.setSize(w+"px", h+"px");
 			}
 		});
-		
 		Window.enableScrolling( false );
 		
 		/*fp.addDragHandler( new DragHandler() {
