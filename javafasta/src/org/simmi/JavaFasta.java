@@ -248,7 +248,12 @@ public class JavaFasta extends JApplet {
 		}
 		
 		public char charAt( int i ) {
-			return sb.charAt( i-start );
+			int ind = i-start;
+			if( ind >= 0 && ind < sb.length() ) {
+				return sb.charAt( ind );
+			}
+			
+			return '-';
 		}
 		
 		public int getLength() {
@@ -670,10 +675,12 @@ public class JavaFasta extends JApplet {
 				Set<Character>	charset = new TreeSet<Character>();
 				for( int i = start; i < end; i++ ) {
 					for( Sequence s : remseq ) {
-						charset.add( Character.toUpperCase(s.charAt(i)) );
+						char c = s.charAt(i);
+						if( c != '-' ) charset.add( Character.toUpperCase(c) );
 					}
 					
-					if( charset.size() == 1 ) newseq.sb.append( charset.iterator().next() );
+					if( charset.size() == 0 ) newseq.sb.append('-');
+					else if( charset.size() == 1 ) newseq.sb.append( charset.iterator().next() );
 					else if( charset.size() == 2 ) {
 						if( charset.contains('A') || charset.contains('a') ) {
 							
@@ -689,6 +696,11 @@ public class JavaFasta extends JApplet {
 				
 				lseq.removeAll( remseq );
 				lseq.add( newseq );
+				
+				table.tableChanged( new TableModelEvent(table.getModel()) );
+				c.repaint();
+				overview.reval();
+				overview.repaint();
 			}
 		});
 		popup.addSeparator();
