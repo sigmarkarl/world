@@ -84,7 +84,7 @@ public class Webfasta implements EntryPoint {
     Context2d			tcontext;
     Context2d 			ocontext;
     
-    StringBuilder		content = null;
+    StringBuilder				content = null;
 	
 	/*public void stuff() {
 		canvas = Canvas.createIfSupported();
@@ -458,7 +458,7 @@ public class Webfasta implements EntryPoint {
 				if( content.charAt(u) == '\n' ) {
 					m++;
 				} else {
-					content.setCharAt(u-m, content.charAt(u));
+					//content.setCharAt(u-m, content.charAt(u));
 				}
 			}
 			
@@ -775,11 +775,20 @@ public class Webfasta implements EntryPoint {
 			reader.onload = function(e) {
 				var res = e.target.result;
 				
+				view = new Uint8Array( res );
+				
 				$wnd.console.log('erm');
+				$wnd.console.log( view );
 				
 				var r = 0;
 				//res.indexOf( '>' );
-				while( res[r] != '>' ) r++;
+				while( view[r] != '>' ) {
+					r++;
+					
+					$wnd.console.log( r );
+				}
+				
+				$wnd.console.log( r );
 				
 				var count = 0;
 				var max = 0;
@@ -788,17 +797,17 @@ public class Webfasta implements EntryPoint {
 				while( r != -1 ) {
 					var i = r+1;
 					//res.indexOf( '\n', r+1);
-					while( res[i] != '\n' ) i++;
+					while( view[i] != '\n' ) i++;
 					
 					//String seqname = content.substring(r+1, i);
 					var k = i+1;
 					//res.indexOf( '>', i+1);
-					while( res[k] != '>' ) k++;
+					while( view[k] != '>' ) k++;
 					
 					//for( int r = 0; r < split.length-1; r++ ) {
 					//String s = split[r+1];
 						
-					var n = k == -1 ? res.length : k-1;
+					var n = k == -1 ? view.length : k-1;
 					//Sequence seq = new Sequence( r+1, i, i+1, n ); //new Sequence(seqname,seqstr);
 					var seqlen = n-i-1;
 					
@@ -809,7 +818,7 @@ public class Webfasta implements EntryPoint {
 						//} else {
 						//	res[u-m] = res[u];
 						//}
-						res[u] = 'O';
+						view[u] = 'O';
 					}
 					
 					s.@org.simmi.client.Webfasta::addSequence(IIII)( r+1, i, i+1, n-m );
