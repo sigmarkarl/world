@@ -24,7 +24,33 @@
     <!-- If you add any GWT meta tags, they must   -->
     <!-- be added before this line.                -->
     <!--                                           -->
-    <script type="text/javascript" language="javascript" src="webfasta/webfasta.nocache.js"></script>
+    <script src="deployJava.js"></script>
+    <script type="text/javascript" language="javascript" src="org.simmi.Javafasta/org.simmi.Javafasta.nocache.js"></script>
+    
+    <script>
+    transData = function( dataTransfer ) {
+    	var files = dataTransfer.files;
+		var count = files.length;
+		var jf = document.getElementById('javafasta');
+		
+		check = 0;
+		for( i = 0; i < count; i++ ) {
+			var file = files[i];
+			var reader = new FileReader();
+			reader.onload = function(e) {
+				var res = e.target.result;
+				//var view = new Int8Array( res );
+				jf.addAbiSequence( file.name, res, 7 );
+				//check += 1;
+				//if( check == count ) {
+				//	console.log('sudd');
+				//	jf.updateView();
+				//}
+			};
+			reader.readAsBinaryString( file );
+		}
+	}
+    </script>
   </head>
 
   <!--                                           -->
@@ -33,10 +59,6 @@
   <!-- to create a completely dynamic UI.        -->
   <!--                                           -->
   <body>
-
-    <!-- OPTIONAL: include this if you want history support -->
-    <iframe src="javascript:''" id="__gwt_historyFrame" tabIndex='-1' style="position:absolute;width:0;height:0;border:0"></iframe>
-    
     <!-- RECOMMENDED if your web app will not function without JavaScript enabled -->
     <noscript>
       <div style="width: 22em; position: absolute; left: 50%; margin-left: -11em; color: red; background-color: white; border: 1px solid red; padding: 4px; font-family: sans-serif">
@@ -45,6 +67,10 @@
       </div>
     </noscript>
     
-    <iframe src="https://docs.google.com/spreadsheet/embeddedform?formkey=dDVyLVNzUmFRUzZiRHBRTEJkWGRBb3c6MQ&ifq" width="760" height="843" frameborder="0" marginheight="0" marginwidth="0">Loading...</iframe>
+    <script type="text/javascript" language="javascript">
+    	var attributes = { codebase:'http://webfasta.appspot.com/', code:'org.simmi.JavaFasta', width:'100%', height:'100%', id:'javafasta', name:'javafasta' };
+      	var parameters = { jnlp_href:'javafasta.jnlp' };
+      	deployJava.runApplet(attributes, parameters, '1.7');
+	</script>
   </body>
 </html>

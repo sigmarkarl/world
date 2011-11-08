@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jnlp spec="1.0+" codebase="http://webfasta.appspot.com/" href="javafasta.jnlp">
+<information>
+  <title>JavaFasta</title>
+  <vendor>Huldufolk ehf.</vendor>
+  <homepage href="http://webfasta.appspot.com" />
+  <description>Java fasta viewer</description>
+  <shortcut online="true">
+      <desktop />
+  </shortcut>
+</information>
+<offline-allowed/>
+<resources>
+  <j2se version="1.7" />
+  <jar href="javafasta.jar"/>
+</resources>
+<applet-desc 
+	name="JavaFasta"
+	main-class="org.simmi.JavaFasta"
+	width="1280"
+	height="800"> 
+<param name="draggable" value="true"/>
+</applet-desc>
+</jnlp>
