@@ -461,7 +461,7 @@ public class Webfasta implements EntryPoint {
 				if( content.charAt(u) == '\n' ) {
 					m++;
 				} else {
-					content.setCharAt(u-m, content.charAt(u));
+					//content.setCharAt(u-m, content.charAt(u));
 				}
 			}*/
 			
@@ -801,6 +801,23 @@ public class Webfasta implements EntryPoint {
 			var reader = new FileReader();
 			reader.onload = function(e) {
 				var res = e.target.result;
+<<<<<<< HEAD
+				
+				view = new Uint8Array( res );
+				
+				$wnd.console.log('erm');
+				$wnd.console.log( view );
+				
+				var r = 0;
+				//res.indexOf( '>' );
+				while( view[r] != '>' ) {
+					r++;
+					
+					$wnd.console.log( r );
+				}
+				
+				$wnd.console.log( r );
+=======
 				var view = new Uint8Array( res );
 				
 				var r = 0;
@@ -813,6 +830,7 @@ public class Webfasta implements EntryPoint {
 				
 				if( r == view.length ) r = -1;
 				$wnd.console.log( view.length );
+>>>>>>> 09860f110d84b9cfb61df75000155e978b5129be
 				
 				var count = 0;
 				var max = 0;
@@ -821,13 +839,21 @@ public class Webfasta implements EntryPoint {
 				while( r != -1 ) {
 					var i = r+1;
 					//res.indexOf( '\n', r+1);
+<<<<<<< HEAD
+					while( view[i] != '\n' ) i++;
+=======
 					while( i < view.length && view[i] != '\n' ) i++;
+>>>>>>> 09860f110d84b9cfb61df75000155e978b5129be
 					
 					//String seqname = content.substring(r+1, i);
 					var k = i+1;
 					//res.indexOf( '>', i+1);
+<<<<<<< HEAD
+					while( view[k] != '>' ) k++;
+=======
 					while( k < view.length && view[k] != '>' ) k++;
 					if( k == view.length ) k = -1;
+>>>>>>> 09860f110d84b9cfb61df75000155e978b5129be
 					
 					//for( int r = 0; r < split.length-1; r++ ) {
 					//String s = split[r+1];
