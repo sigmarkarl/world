@@ -20,8 +20,8 @@ import javax.crypto.spec.SecretKeySpec;
 
 import oauth.signpost.OAuth;
 
-import org.simmi.client.Saga;
 import org.simmi.client.SmasagaService;
+import org.simmi.shared.Saga;
 
 import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.DatastoreServiceFactory;
@@ -237,7 +237,7 @@ public class SmasagaServiceImpl extends RemoteServiceServlet implements SmasagaS
 			String tokensecret = json.get("oauth_secret");
             String baseurl = "api-content.getdropbox.com";
 			//String baseurl = "localhost:8899";
-            String target = "http://"+baseurl+"/0/files/dropbox/Public";
+            String target = "https://"+baseurl+"/0/files/dropbox/Public";
             dropboxSave( target, tokenkey, tokensecret, fname, contents );
         } catch (Exception e) {
             e.printStackTrace();

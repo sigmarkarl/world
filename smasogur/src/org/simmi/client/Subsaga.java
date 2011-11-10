@@ -2,37 +2,33 @@ package org.simmi.client;
 
 import java.io.Serializable;
 
-public class Saga implements Serializable {
+public class Subsaga implements Serializable {
 
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = 1L;
 
-	public Saga() {
+	public Subsaga() {
 		
 	}
 	
-	public Saga( String nafn, String tegund, String hofundur, String hofundarnafn, String url ) {
+	public Subsaga( String nafn, String tegund, String hofundur, String hofundarnafn, String url ) {
 		this.nafn = nafn;
 		this.tegund = tegund;
 		this.hofundur = hofundur;
 		this.hofundarnafn = hofundarnafn;
 		this.url = url;
-		
-		this.gradeSum = 0;
-		this.gradeNum = 0;
 	}
 	
 	private String		nafn;
+	private String		urdrattur;
 	private String		tegund;
 	private String		hofundur;
 	private String		hofundarnafn;
 	private String		url;
 	private String		key;
-	
-	int					gradeSum;
-	int					gradeNum;
+	private Einkunn[]	grades;
 	
 	private boolean				love;
 	private boolean				horror;
@@ -50,28 +46,20 @@ public class Saga implements Serializable {
 	private boolean				poem;
 	private boolean				tobecontinued;
 	
+	public Einkunn[] getGrades() {
+		return grades;
+	}
+	
+	public void setGrades( Einkunn[] grades ) {
+		this.grades = grades;
+	}
+	
 	public String getKey() {
 		return key;
 	}
 	
 	public void setKey( String key ) {
 		this.key = key;
-	}
-	
-	public int getGradeSum() {
-		return gradeSum;
-	}
-	
-	public void setGradeSum( int gradeSum ) {
-		this.gradeSum = gradeSum;
-	}
-	
-	public int getGradeNum() {
-		return gradeNum;
-	}
-	
-	public void setGradeNum( int gradeNum ) {
-		this.gradeNum = gradeNum;
 	}
 	
 	public String getName() {
@@ -82,13 +70,13 @@ public class Saga implements Serializable {
 		return tegund;
 	}
 	
-	/*public String getSummary() {
+	public String getSummary() {
 		return urdrattur;
 	}
 	
 	public void setSummary( String summary ) {
 		this.urdrattur = summary;
-	}*/
+	}
 	
 	public String getAuthor() {
 		return hofundur;

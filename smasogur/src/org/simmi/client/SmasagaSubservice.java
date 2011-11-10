@@ -1,4 +1,4 @@
-package org.simmi.smasaga.client;
+package org.simmi.client;
 
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.user.client.rpc.RemoteService;

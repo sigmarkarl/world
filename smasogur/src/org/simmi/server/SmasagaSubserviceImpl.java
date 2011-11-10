@@ -1,10 +1,10 @@
-package org.simmi.smasaga.server;
+package org.simmi.server;
 
 import java.util.List;
 
-import org.simmi.smasaga.client.Einkunn;
-import org.simmi.smasaga.client.SmasagaSubservice;
-import org.simmi.smasaga.client.Subsaga;
+import org.simmi.client.Einkunn;
+import org.simmi.client.SmasagaSubservice;
+import org.simmi.client.Subsaga;
 
 import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.DatastoreServiceFactory;

@@ -1,5 +1,7 @@
 package org.simmi.client;
 
+import org.simmi.shared.Saga;
+
 import com.google.gwt.user.client.rpc.AsyncCallback;
 
 public interface SmasagaServiceAsync {

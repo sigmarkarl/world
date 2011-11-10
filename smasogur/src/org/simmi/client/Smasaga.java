@@ -1,4 +1,4 @@
-package org.simmi.smasaga.client;
+package org.simmi.client;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -50,9 +50,9 @@ public class Smasaga implements EntryPoint {
 					try {
 						$wnd.FB.XFBML.parse();
 						if (response.session) {
-							ths.@org.simmi.smasaga.client.Smasaga::setUserId(Ljava/lang/String;)( response.session.uid );
+							ths.@org.simmi.client.Smasaga::setUserId(Ljava/lang/String;)( response.session.uid );
 						} else {
-							ths.@org.simmi.smasaga.client.Smasaga::setUserId(Ljava/lang/String;)( "" );
+							ths.@org.simmi.client.Smasaga::setUserId(Ljava/lang/String;)( "" );
 						}
 					} catch( e ) {
 						$wnd.console.log( e );

@@ -27,8 +27,6 @@ import java.util.Map;
 
 import oauth.signpost.http.HttpParameters;
 
-import com.google.appengine.repackaged.com.google.common.base.PercentEscaper;
-
 public class OAuth {
 
     public static final String VERSION_1_0 = "1.0";

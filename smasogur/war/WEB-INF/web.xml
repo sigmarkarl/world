@@ -30,7 +30,7 @@
   </servlet-mapping>
   <servlet>
   	<servlet-name>SmasagaSubservice</servlet-name>
-  	<servlet-class>org.simmi.smasaga.server.SmasagaSubserviceImpl</servlet-class>
+  	<servlet-class>org.simmi.server.SmasagaSubserviceImpl</servlet-class>
   </servlet>
   <servlet-mapping>
   	<servlet-name>SmasagaSubservice</servlet-name>

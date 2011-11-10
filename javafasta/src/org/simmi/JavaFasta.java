@@ -447,111 +447,13 @@ public class JavaFasta extends JApplet {
 		lseq = new ArrayList<Sequence>();
 		table = new JTable();
 		table.setAutoCreateRowSorter( true );
+		
+		table.setDragEnabled( true );
+		
 		final Ruler ruler = new Ruler();
 		c = new FastaView( lseq, table.getRowHeight(), ruler, table );
 		
-		final DataFlavor df = DataFlavor.getTextPlainUnicodeFlavor();
-		final String charset = df.getParameter("charset");
-		final Transferable transferable = new Transferable() {
-			@Override
-			public Object getTransferData(DataFlavor arg0) throws UnsupportedFlavorException, IOException {
-				String ret = "";//makeCopyString();
-				//return arg0.getReaderForText( this );
-				return new ByteArrayInputStream( ret.getBytes( charset ) );
-				//return ret;
-			}
-
-			@Override
-			public DataFlavor[] getTransferDataFlavors() {
-				return new DataFlavor[] { df };
-			}
-
-			@Override
-			public boolean isDataFlavorSupported(DataFlavor arg0) {
-				if( arg0.equals(df) ) {
-					return true;
-				}
-				return false;
-			}
-		};
-
-		TransferHandler th = new TransferHandler() {
-			private static final long serialVersionUID = 1L;
-			
-			public int getSourceActions(JComponent c) {
-				return TransferHandler.COPY_OR_MOVE;
-			}
-
-			public boolean canImport(TransferHandler.TransferSupport support) {
-				return true;
-			}
-
-			protected Transferable createTransferable(JComponent c) {
-				return transferable;
-			}
-
-			public boolean importData(TransferHandler.TransferSupport support) {
-				try {
-					DataFlavor[] dfs = support.getDataFlavors();
-					for( DataFlavor df : dfs ) {
-						System.err.println( df );
-					}
-					
-					if( support.isDataFlavorSupported( DataFlavor.javaFileListFlavor ) ) {
-						Object obj = support.getTransferable().getTransferData( DataFlavor.javaFileListFlavor );
-						//InputStream is = (InputStream)obj;
-						List<File>	lfile = (List<File>)obj;
-						
-						max = c.getMax();
-						for( File f : lfile ) {
-							if( f.getName().endsWith(".ab1") ) {
-								int flen = (int)f.length();
-								ByteBuffer bb = ByteBuffer.allocate( flen );
-								FileInputStream fis = new FileInputStream( f );
-								fis.read( bb.array() );
-								Ab1Reader abi = new Ab1Reader( bb );
-								Sequence s = new Sequence( f.getName() );
-								s.append( abi.getSequence() );
-								lseq.add( s );
-								
-								if( s.getLength() > max ) max = s.getLength();
-								
-								bb.clear();
-							} else {
-								Sequence s = null;
-								BufferedReader	br = new BufferedReader( new FileReader( f ) );
-								String line = br.readLine();
-								while( line != null ) {
-									if( line.startsWith(">") ) {
-										if( s != null ) {
-											if( s.getEnd() > max ) max = s.getEnd();
-										}
-										s = new Sequence( line.substring(1) );
-										lseq.add( s );
-									} else if( s != null ) {
-										s.append( line );
-									}
-									line = br.readLine();
-								}
-								br.close();
-								
-								if( s != null ) {
-									if( s.getLength() > max ) max = s.getLength();
-								}
-							}
-						}
-						
-						table.tableChanged( new TableModelEvent( table.getModel() ) );
-						c.updateCoords( max );
-					}
-				} catch (UnsupportedFlavorException e) {
-					e.printStackTrace();
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-				return false;
-			}
-		};
+		//final DataFlavor df = DataFlavor.getTextPlainUnicodeFlavor();
 		
 		table.setModel( new TableModel() {
 			@Override
@@ -640,7 +542,132 @@ public class JavaFasta extends JApplet {
 		tablescroll.setVerticalScrollBarPolicy( JScrollPane.VERTICAL_SCROLLBAR_NEVER );
 		tablescroll.setBackground( Color.white );
 		tablescroll.getViewport().setBackground( Color.white );
-		tablescroll.setTransferHandler( th );
+		
+		try {
+			final DataFlavor df = new DataFlavor( DataFlavor.javaJVMLocalObjectMimeType );
+			final String charset = df.getParameter("charset");
+			final Transferable transferable = new Transferable() {
+				@Override
+				public Object getTransferData(DataFlavor arg0) throws UnsupportedFlavorException, IOException {
+					if( arg0.equals( df ) ) {
+						int[] rr = table.getSelectedRows();
+						List<Sequence>	selseq = new ArrayList<Sequence>( rr.length );
+						for( int r : rr ) {
+							int i = table.convertRowIndexToModel(r);
+							selseq.add( lseq.get(i) );
+						}
+						return selseq.toArray( new Sequence[selseq.size()] );
+					} else {
+						String ret = "";//makeCopyString();
+						//return arg0.getReaderForText( this );
+						return new ByteArrayInputStream( ret.getBytes( charset ) );
+					}
+					//return ret;
+				}
+
+				@Override
+				public DataFlavor[] getTransferDataFlavors() {
+					return new DataFlavor[] { df };
+				}
+
+				@Override
+				public boolean isDataFlavorSupported(DataFlavor arg0) {
+					if( arg0.equals(df) ) {
+						return true;
+					}
+					return false;
+				}
+			};
+			
+			TransferHandler th = new TransferHandler() {
+				private static final long serialVersionUID = 1L;
+				
+				public int getSourceActions(JComponent c) {
+					return TransferHandler.COPY_OR_MOVE;
+				}
+
+				public boolean canImport(TransferHandler.TransferSupport support) {
+					return true;
+				}
+
+				protected Transferable createTransferable(JComponent c) {
+					return transferable;
+				}
+
+				public boolean importData(TransferHandler.TransferSupport support) {
+					try {
+						DataFlavor[] dfs = support.getDataFlavors();
+						for( DataFlavor df : dfs ) {
+							System.err.println( df );
+						}
+						
+						if( support.isDataFlavorSupported( DataFlavor.javaFileListFlavor ) ) {
+							Object obj = support.getTransferable().getTransferData( DataFlavor.javaFileListFlavor );
+							//InputStream is = (InputStream)obj;
+							List<File>	lfile = (List<File>)obj;
+							
+							max = c.getMax();
+							for( File f : lfile ) {
+								if( f.getName().endsWith(".ab1") ) {
+									int flen = (int)f.length();
+									ByteBuffer bb = ByteBuffer.allocate( flen );
+									FileInputStream fis = new FileInputStream( f );
+									fis.read( bb.array() );
+									Ab1Reader abi = new Ab1Reader( bb );
+									Sequence s = new Sequence( f.getName() );
+									s.append( abi.getSequence() );
+									lseq.add( s );
+									
+									if( s.getLength() > max ) max = s.getLength();
+									
+									bb.clear();
+								} else {
+									Sequence s = null;
+									BufferedReader	br = new BufferedReader( new FileReader( f ) );
+									String line = br.readLine();
+									while( line != null ) {
+										if( line.startsWith(">") ) {
+											if( s != null ) {
+												if( s.getEnd() > max ) max = s.getEnd();
+											}
+											s = new Sequence( line.substring(1) );
+											lseq.add( s );
+										} else if( s != null ) {
+											s.append( line );
+										}
+										line = br.readLine();
+									}
+									br.close();
+									
+									if( s != null ) {
+										if( s.getLength() > max ) max = s.getLength();
+									}
+								}
+							}
+							
+							table.tableChanged( new TableModelEvent( table.getModel() ) );
+							c.updateCoords( max );
+							
+							return true;
+						} else if( support.isDataFlavorSupported( df ) ) {
+							Object obj = support.getTransferable().getTransferData( df );
+							Sequence[]	seqs = (Sequence[])obj;
+							
+							return true;
+						}
+					} catch (UnsupportedFlavorException e) {
+						e.printStackTrace();
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+					return false;
+				}
+			};
+			tablescroll.setTransferHandler( th );
+			table.setTransferHandler( th );
+		} catch (ClassNotFoundException e2) {
+			e2.printStackTrace();
+		}
 		
 		JTextField	textfield = new JTextField();
 		JComponent tablecomp = new JComponent() { private static final long serialVersionUID = 1L; };
@@ -709,8 +736,8 @@ public class JavaFasta extends JApplet {
 			public void actionPerformed(ActionEvent e) {
 				int[] rr = table.getSelectedRows();
 				for( int r : rr ) {
-					table.convertRowIndexToModel( r );
-					Sequence seq = lseq.get( r );
+					int k = table.convertRowIndexToModel( r );
+					Sequence seq = lseq.get( k );
 					StringBuilder	sb = seq.sb;
 					for( int i = 0; i < seq.getLength()/2; i++ ) {
 						char c = sb.charAt(i);
@@ -751,8 +778,8 @@ public class JavaFasta extends JApplet {
 			public void actionPerformed(ActionEvent e) {
 				int[] rr = table.getSelectedRows();
 				for( int r : rr ) {
-					table.convertRowIndexToModel( r );
-					Sequence seq = lseq.get( r );
+					int k = table.convertRowIndexToModel( r );
+					Sequence seq = lseq.get( k );
 					StringBuilder	sb = seq.sb;
 					for( int i = 0; i < seq.getLength(); i++ ) {
 						char c = sb.charAt(i);
