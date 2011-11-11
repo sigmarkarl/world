@@ -6,6 +6,7 @@ import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.RenderingHints;
 import java.awt.Window;
@@ -61,6 +62,7 @@ import javax.swing.event.RowSorterListener;
 import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
 import javax.swing.table.TableModel;
+import javax.swing.table.TableRowSorter;
 
 import netscape.javascript.JSObject;
 
@@ -89,13 +91,85 @@ public class JavaFasta extends JApplet {
 						s.setStart( xval );
 					}
 					
-					max = checkMax();		
+					checkMaxMin();		
 					c.repaint();
 					overview.reval();
 					overview.repaint();
 					updateView();
 				}
 			});
+			popup.add( new AbstractAction("End here") {
+				@Override
+				public void actionPerformed(ActionEvent e) {					
+					int xval = x/10;
+					int[] rr = table.getSelectedRows();
+					for( int r : rr ) {
+						int i = table.convertRowIndexToModel( r );
+						Sequence s = lseq.get(i);
+						s.setEnd( xval );
+					}
+					
+					checkMaxMin();		
+					c.repaint();
+					overview.reval();
+					overview.repaint();
+					updateView();
+				}
+			});
+			popup.addSeparator();
+			popup.add( new AbstractAction("Move here") {
+				@Override
+				public void actionPerformed(ActionEvent e) {					
+					int xval = x/10;
+					int[] rr = table.getSelectedRows();
+					
+					int min = Integer.MAX_VALUE;
+					for( int r : rr ) {
+						int i = table.convertRowIndexToModel( r );
+						Sequence s = lseq.get(i);
+						if( s.getStart() < min ) min = s.getStart();
+					}
+					
+					for( int r : rr ) {
+						int i = table.convertRowIndexToModel( r );
+						Sequence s = lseq.get(i);
+						s.setStart( xval+(s.getStart()-min) );
+					}
+					
+					checkMaxMin();		
+					c.repaint();
+					overview.reval();
+					overview.repaint();
+					updateView();
+				}
+			});
+			popup.add( new AbstractAction("Move end here") {
+				@Override
+				public void actionPerformed(ActionEvent e) {					
+					int xval = x/10;
+					int[] rr = table.getSelectedRows();
+					
+					int max = 0;
+					for( int r : rr ) {
+						int i = table.convertRowIndexToModel( r );
+						Sequence s = lseq.get(i);
+						if( s.getEnd() > max ) max = s.getEnd();
+					}
+					
+					for( int r : rr ) {
+						int i = table.convertRowIndexToModel( r );
+						Sequence s = lseq.get(i);
+						s.setEnd( xval-(max-s.getEnd()) );
+					}
+					
+					checkMaxMin();		
+					c.repaint();
+					overview.reval();
+					overview.repaint();
+					updateView();
+				}
+			});
+			
 			this.setComponentPopupMenu( popup );
 			
 			this.addMouseMotionListener( new MouseMotionListener() {
@@ -154,9 +228,9 @@ public class JavaFasta extends JApplet {
 				int i = table.convertRowIndexToModel(r);
 				Sequence s = lseq.get(i);
 				
-				int x = (s.getStart()*bi.getWidth())/max;
+				int x = (s.getStart()*bi.getWidth())/(max-min);
 				int y = (r*bi.getHeight())/lseq.size();
-				bg.fillRect( x, y, Math.max(1, (s.getLength()*bi.getWidth())/max), Math.max(1, (bi.getHeight())/lseq.size()) );
+				bg.fillRect( x, y, Math.max(1, (s.getLength()*bi.getWidth())/(max-min)), Math.max(1, (bi.getHeight())/lseq.size()) );
 			}
 		}
 		
@@ -175,12 +249,10 @@ public class JavaFasta extends JApplet {
 	public class FastaView extends JComponent {
 		Ruler			ruler;
 		JTable			table;
-		List<Sequence>	lseq;
 		int				max = 0;
 		int				rh;
 		
-		public FastaView( List<Sequence> lseq, int rh, Ruler ruler, JTable table ) {
-			this.lseq = lseq;
+		public FastaView( int rh, Ruler ruler, JTable table ) {
 			this.rh = rh;
 			this.ruler = ruler;
 			this.table = table;
@@ -262,6 +334,10 @@ public class JavaFasta extends JApplet {
 		
 		public void setStart( int start ) {
 			this.start = start;
+		}
+		
+		public void setEnd( int end ) {
+			this.start = end-sb.length();
 		}
 		
 		public int getStart() {
@@ -380,11 +456,12 @@ public class JavaFasta extends JApplet {
 		console.call("log", new Object[] {str});
 	}
 	
-	List<Sequence>	lseq;
+	ArrayList<Sequence>	lseq;
 	JTable			table;
 	FastaView		c;
 	Overview		overview;
 	int				max = 0;
+	int				min = 0;
 	
 	public byte[] getByteArray( int len ) {
 		return new byte[ len ];
@@ -424,6 +501,7 @@ public class JavaFasta extends JApplet {
 		initGui( this );
 	}
 	
+	int[]	currentRowSelection;
 	public void initGui( Container cnt ) {
 		final String lof = "com.sun.java.swing.plaf.nimbus.NimbusLookAndFeel";
 		try {
@@ -451,7 +529,7 @@ public class JavaFasta extends JApplet {
 		table.setDragEnabled( true );
 		
 		final Ruler ruler = new Ruler();
-		c = new FastaView( lseq, table.getRowHeight(), ruler, table );
+		c = new FastaView( table.getRowHeight(), ruler, table );
 		
 		//final DataFlavor df = DataFlavor.getTextPlainUnicodeFlavor();
 		
@@ -548,15 +626,15 @@ public class JavaFasta extends JApplet {
 			final String charset = df.getParameter("charset");
 			final Transferable transferable = new Transferable() {
 				@Override
-				public Object getTransferData(DataFlavor arg0) throws UnsupportedFlavorException, IOException {
+				public Object getTransferData(DataFlavor arg0) throws UnsupportedFlavorException, IOException {					
 					if( arg0.equals( df ) ) {
-						int[] rr = table.getSelectedRows();
+						int[] rr = currentRowSelection; //table.getSelectedRows();
 						List<Sequence>	selseq = new ArrayList<Sequence>( rr.length );
 						for( int r : rr ) {
 							int i = table.convertRowIndexToModel(r);
 							selseq.add( lseq.get(i) );
 						}
-						return selseq.toArray( new Sequence[selseq.size()] );
+						return selseq;
 					} else {
 						String ret = "";//makeCopyString();
 						//return arg0.getReaderForText( this );
@@ -586,20 +664,19 @@ public class JavaFasta extends JApplet {
 					return TransferHandler.COPY_OR_MOVE;
 				}
 
-				public boolean canImport(TransferHandler.TransferSupport support) {
+				public boolean canImport(TransferHandler.TransferSupport support) {					
 					return true;
 				}
 
 				protected Transferable createTransferable(JComponent c) {
+					currentRowSelection = table.getSelectedRows();
+					
 					return transferable;
 				}
 
 				public boolean importData(TransferHandler.TransferSupport support) {
 					try {
-						DataFlavor[] dfs = support.getDataFlavors();
-						for( DataFlavor df : dfs ) {
-							System.err.println( df );
-						}
+						System.err.println( table.getSelectedRows().length );
 						
 						if( support.isDataFlavorSupported( DataFlavor.javaFileListFlavor ) ) {
 							Object obj = support.getTransferable().getTransferData( DataFlavor.javaFileListFlavor );
@@ -649,9 +726,31 @@ public class JavaFasta extends JApplet {
 							c.updateCoords( max );
 							
 							return true;
-						} else if( support.isDataFlavorSupported( df ) ) {
+						} else if( support.isDataFlavorSupported( df ) ) {							
 							Object obj = support.getTransferable().getTransferData( df );
-							Sequence[]	seqs = (Sequence[])obj;
+							ArrayList<Sequence>	seqs = (ArrayList<Sequence>)obj;
+							
+							ArrayList<Sequence> newlist = new ArrayList<Sequence>( lseq.size() );
+							for( int r = 0; r < table.getRowCount(); r++ ) {
+								int i = table.convertRowIndexToModel(r);
+								newlist.add( lseq.get(i) );
+							}
+							lseq.clear();
+							lseq = newlist;
+							
+							Point p = support.getDropLocation().getDropPoint();
+							int k = table.rowAtPoint( p );
+							
+							lseq.removeAll( seqs );
+							for( Sequence s : seqs ) {
+								lseq.add(k++, s);
+							}
+							
+							TableRowSorter<TableModel>	trs = (TableRowSorter<TableModel>)table.getRowSorter();
+							trs.setSortKeys( null );
+							
+							table.tableChanged( new TableModelEvent(table.getModel()) );
+							c.repaint();
 							
 							return true;
 						}
@@ -846,7 +945,7 @@ public class JavaFasta extends JApplet {
 					}
 					lseq.removeAll( delset );
 					
-					max = checkMax();
+					checkMaxMin();
 					table.tableChanged( new TableModelEvent( table.getModel() ) );
 				}
 			}
@@ -860,14 +959,22 @@ public class JavaFasta extends JApplet {
 		cnt.add( overviewsplit );
 	}
 	
-	public int checkMax() {
-		int max = 0;
+	public void checkMaxMin() {
+		int lmin = Integer.MAX_VALUE;
+		int lmax = 0;
 		
 		for( Sequence s : lseq ) {
-			if( s.getEnd() > max ) max = s.getEnd();
+			if( s.getEnd() > lmax ) lmax = s.getEnd();
+			if( s.getStart() < lmin ) lmin = s.getStart();
 		}
 		
-		return max;
+		if( lmin < min ) min = lmin;
+		if( lmax > max ) max = lmax;
+		
+		if( lmin < min || lmax > max ) {	
+			table.tableChanged( new TableModelEvent(table.getModel()) );
+			c.repaint();
+		}
 	}
 	
 	public static void main(String[] args) {

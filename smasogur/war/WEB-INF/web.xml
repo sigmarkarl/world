@@ -34,7 +34,7 @@
   </servlet>
   <servlet-mapping>
   	<servlet-name>SmasagaSubservice</servlet-name>
-  	<url-pattern>/org.simmi.smasaga.Smasaga/SmasagaSubservice</url-pattern>
+  	<url-pattern>/org.simmi.Smasaga/SmasagaSubservice</url-pattern>
   </servlet-mapping>
 
 </web-app>

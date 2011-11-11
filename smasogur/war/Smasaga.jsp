@@ -48,7 +48,7 @@
 		<!-- If you add any GWT meta tags, they must   -->
 		<!-- be added before this line.                -->
 		<!--                                           -->
-		<script language="javascript" src="org.simmi.smasaga.Smasaga/org.simmi.smasaga.Smasaga.nocache.js"></script>
+		<script language="javascript" src="org.simmi.Smasaga/org.simmi.Smasaga.nocache.js"></script>
 	</head>
 
 	<!--                                           -->
