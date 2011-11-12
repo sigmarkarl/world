@@ -195,10 +195,11 @@ public class JavaFasta extends JApplet {
 			
 			for( int x = r.x/10; x < (r.x+r.width)/10+1; x++ ) {
 				int xx = x*10;
-				if( x % 10 == 0 ) {
+				int xm = x+min;
+				if( xm % 10 == 0 ) {
 					g.drawLine(xx+4, h-6, xx+4, h);
-					g.drawString( x+"", xx, h-6);
-				} else if( x % 5 == 0 ) {
+					g.drawString( xm+"", xx, h-6);
+				} else if( xm % 5 == 0 ) {
 					g.drawLine(xx+4, h-6, xx+4, h);
 				} else {
 					g.drawLine(xx+4, h-4, xx+4, h);
@@ -249,7 +250,6 @@ public class JavaFasta extends JApplet {
 	public class FastaView extends JComponent {
 		Ruler			ruler;
 		JTable			table;
-		int				max = 0;
 		int				rh;
 		
 		public FastaView( int rh, Ruler ruler, JTable table ) {
@@ -267,24 +267,18 @@ public class JavaFasta extends JApplet {
 			Rectangle r = g2.getClipBounds();
 			
 			int xmin = r.x/10;
-			int xmax = Math.min( (r.x+r.width)/10+1, max );
+			int xmax = Math.min( (r.x+r.width)/10+1, max-min );
 			for( int y = r.y/rh; y < Math.min( (r.y+r.height)/rh+1, lseq.size() ); y++ ) {
 				int i = table.convertRowIndexToModel( y );
 				Sequence seq = lseq.get( i );
-				for( int x = Math.max(seq.start, xmin); x < Math.min(seq.getEnd(), xmax); x++ ) {
-					g.drawString( Character.toString( seq.charAt(x) ), x*10, y*rh+rh-2);
+				for( int x = Math.max(seq.getStart()-min, xmin); x < Math.min(seq.getEnd()-min, xmax); x++ ) {
+					g.drawString( Character.toString( seq.charAt(x+min) ), x*10, y*rh+rh-2);
 				}
 			}
 		}
 		
-		public int getMax() {
-			return max;
-		}
-		
-		public void updateCoords( int max ) {
-			this.max = Math.max( this.max, max );
-			
-			int w = max*10;
+		public void updateCoords() {
+			int w = (max-min)*10;
 			int h = lseq.size()*16;
 			
 			this.setPreferredSize( new Dimension(w,h) );
@@ -494,7 +488,7 @@ public class JavaFasta extends JApplet {
 	
 	public void updateView() {
 		table.tableChanged( new TableModelEvent( table.getModel() ) );
-		c.updateCoords( max );
+		c.updateCoords();
 	}
 	
 	public void init() {
@@ -683,7 +677,6 @@ public class JavaFasta extends JApplet {
 							//InputStream is = (InputStream)obj;
 							List<File>	lfile = (List<File>)obj;
 							
-							max = c.getMax();
 							for( File f : lfile ) {
 								if( f.getName().endsWith(".ab1") ) {
 									int flen = (int)f.length();
@@ -723,7 +716,7 @@ public class JavaFasta extends JApplet {
 							}
 							
 							table.tableChanged( new TableModelEvent( table.getModel() ) );
-							c.updateCoords( max );
+							c.updateCoords();
 							
 							return true;
 						} else if( support.isDataFlavorSupported( df ) ) {							
