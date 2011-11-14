@@ -101,7 +101,7 @@ public class JavaFasta extends JApplet {
 			});
 			popup.add( new AbstractAction("End here") {
 				@Override
-				public void actionPerformed(ActionEvent e) {					
+				public void actionPerformed(ActionEvent e) {
 					int xval = x/10;
 					int[] rr = table.getSelectedRows();
 					for( int r : rr ) {
@@ -304,6 +304,7 @@ public class JavaFasta extends JApplet {
 		
 		public Sequence( String name ) {
 			this.name = name;
+			mseq.put( name, this );
 		}
 		
 		public String getName() {
@@ -451,7 +452,8 @@ public class JavaFasta extends JApplet {
 		console.call("log", new Object[] {str});
 	}
 	
-	ArrayList<Sequence>	lseq;
+	Map<String,Sequence>	mseq;
+	ArrayList<Sequence>		lseq;
 	JTable			table;
 	FastaView		c;
 	Overview		overview;
@@ -519,6 +521,7 @@ public class JavaFasta extends JApplet {
 		}
 
 		lseq = new ArrayList<Sequence>();
+		mseq = new HashMap<String,Sequence>();
 		table = new JTable();
 		table.setAutoCreateRowSorter( true );
 		
@@ -729,7 +732,8 @@ public class JavaFasta extends JApplet {
 							List<File>	lfile = (List<File>)obj;
 							
 							for( File f : lfile ) {
-								if( f.getName().endsWith(".ab1") ) {
+								String fname = f.getName();
+								if( fname.endsWith(".ab1") ) {
 									int flen = (int)f.length();
 									ByteBuffer bb = ByteBuffer.allocate( flen );
 									FileInputStream fis = new FileInputStream( f );
@@ -742,6 +746,44 @@ public class JavaFasta extends JApplet {
 									if( s.getLength() > max ) max = s.getLength();
 									
 									bb.clear();
+								} else if( fname.endsWith(".blastout") ) {
+									FileReader fr = new FileReader( f );
+									BufferedReader br = new BufferedReader( fr );
+									String line = br.readLine();
+									String query;
+									int k = 0;
+									while( line != null ) {
+										if( line.startsWith( "Query=" ) ) {
+											query = line.substring(7);
+											if( mseq.containsKey( query ) ) {
+												Sequence seq = mseq.get( query );
+												lseq.remove( seq );
+												lseq.add(k++, seq);
+											}
+										} else if( line.startsWith(">") ) {
+											String val = line.split("[\t ]+")[1];
+											line = br.readLine();
+											while( !line.startsWith("Query=") ) {
+												String trim = line.trim();
+												if( trim.startsWith("Score") ) {
+													String end = trim.substring(trim.length()-3);
+													if( end.equals("0.0") ) {
+														if( mseq.containsKey( val ) ) {
+															Sequence seq = mseq.get( val );
+															lseq.remove( seq );
+															lseq.add(k++, seq);
+														}
+													} else break;
+												}
+											}
+											continue;
+										}
+										
+										line = br.readLine();
+									}
+									br.close();
+									
+									updateView();
 								} else {
 									Sequence s = null;
 									BufferedReader	br = new BufferedReader( new FileReader( f ) );
