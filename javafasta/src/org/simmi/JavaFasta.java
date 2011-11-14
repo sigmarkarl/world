@@ -328,12 +328,21 @@ public class JavaFasta extends JApplet {
 			return sb.length();
 		}
 		
+		public void boundsCheck() {
+			if( start < min ) min = start;
+			if( start+sb.length() > max ) max = start+sb.length();
+		}
+		
 		public void setStart( int start ) {
 			this.start = start;
+			
+			boundsCheck();
 		}
 		
 		public void setEnd( int end ) {
 			this.start = end-sb.length();
+			
+			boundsCheck();
 		}
 		
 		public int getStart() {
@@ -757,25 +766,65 @@ public class JavaFasta extends JApplet {
 											query = line.substring(7);
 											if( mseq.containsKey( query ) ) {
 												Sequence seq = mseq.get( query );
-												lseq.remove( seq );
-												lseq.add(k++, seq);
+												if( lseq.indexOf( seq ) >= k ) {
+													lseq.remove( seq );
+													lseq.add(k++, seq);
+												}
 											}
 										} else if( line.startsWith(">") ) {
-											String val = line.split("[\t ]+")[1];
+											int qstart = -1;
+											int qstop = 0;
+											int sstart = -1;
+											int sstop = 0;
+											
+											String val = line.substring(2);//line.split("[\t ]+")[1];
 											line = br.readLine();
-											while( !line.startsWith("Query=") ) {
+											Sequence seq = null;
+											while( !line.startsWith(">") && !line.startsWith("Query=") ) {
 												String trim = line.trim();
 												if( trim.startsWith("Score") ) {
 													String end = trim.substring(trim.length()-3);
 													if( end.equals("0.0") ) {
 														if( mseq.containsKey( val ) ) {
-															Sequence seq = mseq.get( val );
-															lseq.remove( seq );
-															lseq.add(k++, seq);
+															seq = mseq.get( val );
+															if( lseq.indexOf( seq ) >= k ) {
+																lseq.remove( seq );
+																lseq.add(k++, seq);
+															} else seq = null;
 														}
-													} else break;
+													} else {
+														break;
+													}
+												} else if( trim.startsWith("Query") ) {
+													int li = trim.lastIndexOf(' ');
+													int qtmp = Integer.parseInt( trim.substring( li+1 ) );
+													qstop = qtmp;
+													if( qstart == -1 ) {
+														qtmp = Integer.parseInt( trim.split("[ ]+")[1] );
+														qstart = qtmp;
+													}
+												} else if( trim.startsWith("Sbjct") ) {
+													int li = trim.lastIndexOf(' ');
+													int stmp = Integer.parseInt( trim.substring( li+1 ) );
+													sstop = stmp;
+													if( sstart == -1 ) {
+														stmp = Integer.parseInt( trim.split("[ ]+")[1] );
+														sstart = stmp;
+													}
+												}
+												line = br.readLine();
+											}
+											
+											if( seq != null ) {
+												if( sstart > sstop ) {
+													seq.revcomp = 2;
+													int sval = qstart-(seq.getLength()-sstart+1);
+													seq.setStart( sval );
+												} else {
+													seq.setStart( qstart-sstart );
 												}
 											}
+											
 											continue;
 										}
 										
