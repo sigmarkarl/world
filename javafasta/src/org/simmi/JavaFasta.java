@@ -17,6 +17,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
@@ -496,6 +497,7 @@ public class JavaFasta extends JApplet {
 	}
 	
 	int[]	currentRowSelection;
+	Point	p;
 	public void initGui( Container cnt ) {
 		final String lof = "com.sun.java.swing.plaf.nimbus.NimbusLookAndFeel";
 		try {
@@ -524,6 +526,55 @@ public class JavaFasta extends JApplet {
 		
 		final Ruler ruler = new Ruler();
 		c = new FastaView( table.getRowHeight(), ruler, table );
+		
+		c.addMouseListener( new MouseListener() {
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				// TODO Auto-generated method stub
+				
+			}
+
+			@Override
+			public void mousePressed(MouseEvent e) {
+				p = e.getPoint();
+			}
+
+			@Override
+			public void mouseReleased(MouseEvent e) {
+				// TODO Auto-generated method stub
+				
+			}
+
+			@Override
+			public void mouseEntered(MouseEvent e) {
+				// TODO Auto-generated method stub
+				
+			}
+
+			@Override
+			public void mouseExited(MouseEvent e) {
+				// TODO Auto-generated method stub
+				
+			}
+		});
+		
+		c.addMouseMotionListener( new MouseMotionListener() {
+			@Override
+			public void mouseDragged(MouseEvent e) {
+				Point np = e.getPoint();
+				
+				Rectangle r = c.getVisibleRect();
+				r.translate(p.x-np.x, p.y-np.y);
+				c.scrollRectToVisible( r );
+				
+				p = np;
+			}
+
+			@Override
+			public void mouseMoved(MouseEvent e) {
+				
+			}
+		});
 		
 		//final DataFlavor df = DataFlavor.getTextPlainUnicodeFlavor();
 		
