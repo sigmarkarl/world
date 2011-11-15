@@ -776,10 +776,12 @@ public class JavaFasta extends JApplet {
 									Map<String,Integer>	hitmap = new HashMap<String,Integer>();
 									while( line != null ) {
 										if( line.startsWith(">") ) {
+											System.err.println( line );
+											
 											String val = line.substring(2);
 											
 											line = br.readLine();
-											while( !line.startsWith(">") && !line.startsWith("Query=") ) {
+											while( line != null && !line.startsWith(">") && !line.startsWith("Query=") ) {
 												String trim = line.trim();
 												if( trim.startsWith("Score") ) {
 													String end = trim.substring(trim.length()-3);
