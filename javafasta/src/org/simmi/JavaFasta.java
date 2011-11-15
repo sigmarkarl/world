@@ -780,7 +780,13 @@ public class JavaFasta extends JApplet {
 															if( lseq.indexOf( seq ) >= k ) {
 																lseq.remove( seq );
 																lseq.add(k++, seq);
-															} else seq = null;
+															} else {
+																if( tseq != null ) {
+																	//tseq.setStart(start);
+																}
+																
+																seq = null;
+															}
 														}
 													} else {
 														break;
