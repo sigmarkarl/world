@@ -230,7 +230,7 @@ public class JavaFasta extends JApplet {
 				int i = table.convertRowIndexToModel(r);
 				Sequence s = lseq.get(i);
 				
-				int x = (s.getStart()*bi.getWidth())/(max-min);
+				int x = ((s.getStart()-min)*bi.getWidth())/(max-min);
 				int y = (r*bi.getHeight())/lseq.size();
 				bg.fillRect( x, y, Math.max(1, (s.getLength()*bi.getWidth())/(max-min)), Math.max(1, (bi.getHeight())/lseq.size()) );
 			}
@@ -541,10 +541,7 @@ public class JavaFasta extends JApplet {
 		
 		c.addMouseListener( new MouseListener() {
 			@Override
-			public void mouseClicked(MouseEvent e) {
-				// TODO Auto-generated method stub
-				
-			}
+			public void mouseClicked(MouseEvent e) {}
 
 			@Override
 			public void mousePressed(MouseEvent e) {
@@ -552,22 +549,13 @@ public class JavaFasta extends JApplet {
 			}
 
 			@Override
-			public void mouseReleased(MouseEvent e) {
-				// TODO Auto-generated method stub
-				
-			}
+			public void mouseReleased(MouseEvent e) {}
 
 			@Override
-			public void mouseEntered(MouseEvent e) {
-				// TODO Auto-generated method stub
-				
-			}
+			public void mouseEntered(MouseEvent e) {}
 
 			@Override
-			public void mouseExited(MouseEvent e) {
-				// TODO Auto-generated method stub
-				
-			}
+			public void mouseExited(MouseEvent e) {}
 		});
 		
 		c.addMouseMotionListener( new MouseMotionListener() {
@@ -760,6 +748,7 @@ public class JavaFasta extends JApplet {
 									BufferedReader br = new BufferedReader( fr );
 									String line = br.readLine();
 									String query;
+									Sequence tseq;
 									int k = 0;
 									while( line != null ) {
 										if( line.startsWith( "Query=" ) ) {
@@ -767,6 +756,7 @@ public class JavaFasta extends JApplet {
 											if( mseq.containsKey( query ) ) {
 												Sequence seq = mseq.get( query );
 												if( lseq.indexOf( seq ) >= k ) {
+													tseq = seq;
 													lseq.remove( seq );
 													lseq.add(k++, seq);
 												}
@@ -1059,6 +1049,35 @@ public class JavaFasta extends JApplet {
 		table.setComponentPopupMenu( popup );
 		tablescroll.setComponentPopupMenu( popup );
 		
+		table.addMouseListener( new MouseListener() {
+			@Override
+			public void mouseClicked(MouseEvent e) {}
+
+			@Override
+			public void mousePressed(MouseEvent e) {
+				if( e.getClickCount() == 2 ) {
+					int r = table.getSelectedRow();
+					int i = table.convertRowIndexToModel( r );
+					Sequence s = lseq.get( i );
+					
+					Rectangle rect = table.getVisibleRect();
+					if( rect.x == (s.getStart()-min)*10 ) {
+						rect.x = (s.getEnd()-min)*10-rect.width;
+					} else rect.x = (s.getStart()-min)*10;
+					table.scrollRectToVisible( rect );
+				}
+			}
+
+			@Override
+			public void mouseReleased(MouseEvent e) {}
+
+			@Override
+			public void mouseEntered(MouseEvent e) {}
+
+			@Override
+			public void mouseExited(MouseEvent e) {}
+			
+		});
 		table.addKeyListener( new KeyListener() {
 			@Override
 			public void keyTyped(KeyEvent e) {}
