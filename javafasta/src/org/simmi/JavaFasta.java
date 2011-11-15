@@ -3,6 +3,7 @@ package org.simmi;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Container;
+import java.awt.Desktop;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
@@ -25,6 +26,8 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -48,6 +51,7 @@ import javax.jnlp.UnavailableServiceException;
 import javax.swing.AbstractAction;
 import javax.swing.JApplet;
 import javax.swing.JComponent;
+import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
@@ -84,7 +88,7 @@ public class JavaFasta extends JApplet {
 			popup.add( new AbstractAction("Start here") {
 				@Override
 				public void actionPerformed(ActionEvent e) {					
-					int xval = x/10;
+					int xval = x/10+min;
 					int[] rr = table.getSelectedRows();
 					for( int r : rr ) {
 						int i = table.convertRowIndexToModel( r );
@@ -102,7 +106,7 @@ public class JavaFasta extends JApplet {
 			popup.add( new AbstractAction("End here") {
 				@Override
 				public void actionPerformed(ActionEvent e) {
-					int xval = x/10;
+					int xval = x/10+min;
 					int[] rr = table.getSelectedRows();
 					for( int r : rr ) {
 						int i = table.convertRowIndexToModel( r );
@@ -358,7 +362,33 @@ public class JavaFasta extends JApplet {
 		}
 	}
 	
-	public void openFiles() {
+	public void importFile( String name, InputStream is ) throws IOException {
+		if( name.endsWith(".ab1") || name.endsWith(".abi") ) addAbiSequence( name, is );
+    	else {
+    		Sequence s = null;
+			BufferedReader	br = new BufferedReader( new InputStreamReader( is ) );
+			String line = br.readLine();
+			while( line != null ) {
+				if( line.startsWith(">") ) {
+					if( s != null ) {
+						if( s.getEnd() > max ) max = s.getEnd();
+					}
+					s = new Sequence( line.substring(1) );
+					lseq.add( s );
+				} else if( s != null ) {
+					s.append( line );
+				}
+				line = br.readLine();
+			}
+			br.close();
+			
+			if( s != null ) {
+				if( s.getLength() > max ) max = s.getLength();
+			}
+    	}
+	}
+	
+	public void openFiles() throws IOException {
 		FileOpenService fos; 
 
 	    try { 
@@ -368,37 +398,17 @@ public class JavaFasta extends JApplet {
 	    }
 	    
 	    if (fos != null) {
-	        try {
-	            FileContents[] fcs = fos.openMultiFileDialog(null, null);
-	            for( FileContents fc : fcs ) {
-	            	String name = fc.getName();
-	            	if( name.endsWith(".ab1") || name.endsWith(".abi") ) addAbiSequence( name, fc.getInputStream() );
-	            	else {
-	            		Sequence s = null;
-						BufferedReader	br = new BufferedReader( new InputStreamReader( fc.getInputStream() ) );
-						String line = br.readLine();
-						while( line != null ) {
-							if( line.startsWith(">") ) {
-								if( s != null ) {
-									if( s.getEnd() > max ) max = s.getEnd();
-								}
-								s = new Sequence( line.substring(1) );
-								lseq.add( s );
-							} else if( s != null ) {
-								s.append( line );
-							}
-							line = br.readLine();
-						}
-						br.close();
-						
-						if( s != null ) {
-							if( s.getLength() > max ) max = s.getLength();
-						}
-	            	}
-	            }
-	        } catch (Exception e) { 
-	        	console( e.getMessage() );
-	        } 
+	        FileContents[] fcs = fos.openMultiFileDialog(null, null);
+            for( FileContents fc : fcs ) {
+            	String name = fc.getName();
+            	importFile( name, fc.getInputStream() );
+            }
+	    } else {
+	    	JFileChooser	jfc = new JFileChooser();
+	    	if( jfc.showOpenDialog( JavaFasta.this ) == JFileChooser.APPROVE_OPTION ) {
+	    		File f = jfc.getSelectedFile();
+	    		importFile( f.getName(), new FileInputStream(f) );
+	    	}
 	    }
 	    updateView();
 	}
@@ -423,7 +433,12 @@ public class JavaFasta extends JApplet {
     	 osw.close();
     	 baos.close();
 
-    	 fss = (FileSaveService)ServiceManager.lookup("javax.jnlp.FileSaveService");
+    	 try {
+    		 fss = (FileSaveService)ServiceManager.lookup("javax.jnlp.FileSaveService");
+    	 } catch( UnavailableServiceException e ) {
+    		 fss = null;
+    	 }
+    	 
          if (fss != null) {
         	 ByteArrayInputStream bais = new ByteArrayInputStream( baos.toByteArray() );
              fileContents = fss.saveFileDialog(null, null, bais, "export.fasta");
@@ -431,6 +446,16 @@ public class JavaFasta extends JApplet {
              OutputStream os = fileContents.getOutputStream(true);
              os.write( baos.toByteArray() );
              os.close();
+         } else {
+        	 JFileChooser jfc = new JFileChooser();
+        	 if( jfc.showSaveDialog( JavaFasta.this ) == JFileChooser.APPROVE_OPTION ) {
+        		 File f = jfc.getSelectedFile();
+        		 FileOutputStream fos = new FileOutputStream( f );
+        		 fos.write( baos.toByteArray() );
+        		 fos.close();
+        		 
+        		 Desktop.getDesktop().browse( f.toURI() );
+        	 }
          }
 
          /*if (fileContents != null) {
@@ -747,15 +772,49 @@ public class JavaFasta extends JApplet {
 									FileReader fr = new FileReader( f );
 									BufferedReader br = new BufferedReader( fr );
 									String line = br.readLine();
+									
+									Map<String,Integer>	hitmap = new HashMap<String,Integer>();
+									while( line != null ) {
+										if( line.startsWith(">") ) {
+											String val = line.substring(2);
+											
+											line = br.readLine();
+											while( !line.startsWith(">") && !line.startsWith("Query=") ) {
+												String trim = line.trim();
+												if( trim.startsWith("Score") ) {
+													String end = trim.substring(trim.length()-3);
+													if( end.equals("0.0") ) {
+														if( hitmap.containsKey( val ) ) {
+															hitmap.put( val, hitmap.get(val)+1 );
+														} else {
+															hitmap.put( val, 1 );
+														}
+														
+														break;
+													}
+												}
+												
+												line = br.readLine();
+											}
+										} else {
+											line = br.readLine();
+										}
+									}
+									br.close();
+									fr = new FileReader( f );
+									br = new BufferedReader( fr );
+									
+									line = br.readLine();
 									String query;
-									Sequence tseq;
+									Sequence tseq = null;
 									int k = 0;
 									while( line != null ) {
 										if( line.startsWith( "Query=" ) ) {
 											query = line.substring(7);
 											if( mseq.containsKey( query ) ) {
 												Sequence seq = mseq.get( query );
-												if( lseq.indexOf( seq ) >= k ) {
+												int ind = lseq.indexOf( seq );
+												if( ind >= k ) {
 													tseq = seq;
 													lseq.remove( seq );
 													lseq.add(k++, seq);
@@ -770,17 +829,21 @@ public class JavaFasta extends JApplet {
 											String val = line.substring(2);//line.split("[\t ]+")[1];
 											line = br.readLine();
 											Sequence seq = null;
+											int ind = -1;
 											while( !line.startsWith(">") && !line.startsWith("Query=") ) {
 												String trim = line.trim();
 												if( trim.startsWith("Score") ) {
 													String end = trim.substring(trim.length()-3);
-													if( end.equals("0.0") ) {
+													if( end.equals("0.0") && hitmap.get(val) == 1 ) {
 														if( mseq.containsKey( val ) ) {
 															seq = mseq.get( val );
-															if( lseq.indexOf( seq ) >= k ) {
+															ind = lseq.indexOf( seq );
+															if( ind >= k ) {
 																lseq.remove( seq );
-																lseq.add(k++, seq);
-															} else seq = null;
+																lseq.add(k, seq);
+															}/* else {											
+																seq = null;
+															}*/
 														}
 													} else {
 														break;
@@ -805,13 +868,35 @@ public class JavaFasta extends JApplet {
 												line = br.readLine();
 											}
 											
-											if( seq != null ) {
-												if( sstart > sstop ) {
-													seq.revcomp = 2;
-													int sval = qstart-(seq.getLength()-sstart+1);
-													seq.setStart( sval );
-												} else {
-													seq.setStart( qstart-sstart );
+											if( ind != -1 ) {
+												if( ind >= k ) {
+													if( sstart > sstop ) {
+														seq.revcomp = 2;
+														int sval = qstart-(seq.getLength()-sstart+1);
+														seq.setStart( sval );
+													} else {
+														seq.setStart( qstart-sstart );
+													}
+													k++;
+												} else if( tseq != null ) {
+													if( sstart > sstop ) {
+														if( seq.revcomp == 2 ) {
+															int sval = (seq.getLength()-sstart+1)-qstart  +  seq.getStart();
+															tseq.setStart( sval );
+														} else {
+															tseq.revcomp = 2;
+															int sval = sstart-qstart  +  seq.getStart();
+															tseq.setStart( sval );
+														}
+													} else {
+														if( seq.revcomp == 2 ) {
+															tseq.revcomp = 2;
+															int sval = sstart-qstart  +  seq.getStart();
+															tseq.setStart( sval );
+														} else {
+															tseq.setStart( sstart-qstart  +  seq.getStart() );
+														}
+													}
 												}
 											}
 											
@@ -1031,7 +1116,11 @@ public class JavaFasta extends JApplet {
 		popup.add( new AbstractAction("Open") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				openFiles();
+				try {
+					openFiles();
+				} catch (IOException e1) {
+					e1.printStackTrace();
+				}
 			}
 		});
 		popup.add( new AbstractAction("Export") {
@@ -1060,11 +1149,13 @@ public class JavaFasta extends JApplet {
 					int i = table.convertRowIndexToModel( r );
 					Sequence s = lseq.get( i );
 					
-					Rectangle rect = table.getVisibleRect();
+					Rectangle rect = c.getVisibleRect();
 					if( rect.x == (s.getStart()-min)*10 ) {
 						rect.x = (s.getEnd()-min)*10-rect.width;
-					} else rect.x = (s.getStart()-min)*10;
-					table.scrollRectToVisible( rect );
+					} else {
+						rect.x = (s.getStart()-min)*10;
+					}
+					c.scrollRectToVisible( rect );
 				}
 			}
 
