@@ -17,6 +17,7 @@ import java.awt.datatransfer.UnsupportedFlavorException;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
@@ -35,6 +36,7 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -260,6 +262,33 @@ public class JavaFasta extends JApplet {
 			this.rh = rh;
 			this.ruler = ruler;
 			this.table = table;
+			
+			this.setToolTipText(" ");
+		}
+		
+		Annotation searchann = new Annotation( null, "search", null );
+		public String getToolTipText( MouseEvent e ) {
+			Point p = e.getPoint();
+			
+			int w = p.x/10;
+			int h = p.y/rh;
+			
+			int i = table.convertRowIndexToModel( h );
+			Sequence seq = lseq.get( i );
+			
+			if( w+min >= seq.getStart() && w+min <= seq.getEnd() ) { 
+				searchann.start = (w+min) - seq.getStart();
+				int ai = Collections.binarySearch( seq.annset, searchann );
+				
+				int ip = Math.abs(ai)-1;
+				
+				if( ip > 0 && ip <= seq.annset.size() ) {
+					Annotation a = seq.annset.get( ip-1 );
+					if( a.getCoordEnd() > w+min ) return a.name;
+				}
+			}
+			
+			return null;
 		}
 		
 		public void paintComponent( Graphics g ) {
@@ -311,7 +340,7 @@ public class JavaFasta extends JApplet {
 		
 	};
 	
-	public class Annotation {
+	public class Annotation implements Comparable<Annotation> {
 		Sequence	seq;
 		String	name;
 		StringBuilder	desc;
@@ -326,7 +355,7 @@ public class JavaFasta extends JApplet {
 			this.color = color;
 			this.seq = seq;
 			
-			seq.addAnnotation( this );
+			if( seq != null ) seq.addAnnotation( this );
 		}
 		
 		public int getLength() {
@@ -353,14 +382,19 @@ public class JavaFasta extends JApplet {
 			if( desc == null ) desc = new StringBuilder( astr );
 			else desc.append( astr );
 		}
+
+		@Override
+		public int compareTo(Annotation o) {
+			return start - o.start;
+		}
 	};
 	
-	public class Sequence {
+	public class Sequence implements Comparable<Sequence> {
 		String 			name;
 		StringBuilder 	sb = new StringBuilder();
 		int				start = 0;
 		int				revcomp = 0;
-		Set<Annotation>	annset;
+		List<Annotation>	annset;
 		
 		public Sequence( String name ) {
 			this.name = name;
@@ -368,7 +402,7 @@ public class JavaFasta extends JApplet {
 		}
 		
 		public void addAnnotation( Annotation a ) {
-			if( annset == null ) annset = new HashSet<Annotation>();
+			if( annset == null ) annset = new ArrayList<Annotation>();
 			annset.add( a );
 		}
 		
@@ -420,6 +454,11 @@ public class JavaFasta extends JApplet {
 		
 		public int getRevComp() {
 			return revcomp;
+		}
+
+		@Override
+		public int compareTo(Sequence o) {
+			return start - o.start;
 		}
 	}
 	
@@ -1271,7 +1310,25 @@ public class JavaFasta extends JApplet {
 		overviewsplit.setBottomComponent( overview );
 		
 		JTextField	asearch = new JTextField();
-		atable = new JTable();
+		atable = new JTable() {
+			/**
+			 * 
+			 */
+			private static final long serialVersionUID = 1L;
+
+			public String getToolTipText( MouseEvent me ) {
+				//super.getToolTipText( me );
+				Point p = me.getPoint();
+				int y = p.y/atable.getRowHeight();
+				
+				int i = atable.convertRowIndexToModel( y );
+				Annotation a = lann.get(i);
+				
+				return a.desc.toString();
+			}
+		};
+		atable.setToolTipText( "" );
+		atable.setAutoCreateRowSorter( true );
 		JScrollPane	ascroll = new JScrollPane( atable );
 		JComponent	acomp = new JComponent() {};
 		acomp.setLayout( new BorderLayout() );
@@ -1329,6 +1386,31 @@ public class JavaFasta extends JApplet {
 			public void removeTableModelListener(TableModelListener l) {}
 		});
 		setAnnotationTableTransferhandler( ascroll );
+		
+		atable.addMouseListener( new MouseAdapter() {
+			public void mousePressed( MouseEvent e ) {
+				if( e.getClickCount() == 2 ) {
+					int r = atable.getSelectedRow();
+					int i = atable.convertRowIndexToModel( r );
+					Annotation a = lann.get( i );
+					
+					i = lseq.indexOf( a.seq );
+					int m = table.convertRowIndexToView( i );
+					table.setRowSelectionInterval(m, m);
+					
+					Rectangle cellrect = table.getCellRect(m, 0, true);
+					Rectangle rect = c.getVisibleRect();
+					if( rect.x == (a.getCoordStart()-min)*10 ) {
+						rect.x = (a.getCoordEnd()-min)*10-rect.width;
+					} else {
+						rect.x = (a.getCoordStart()-min)*10;
+					}
+					rect.y = cellrect.y;
+					
+					c.scrollRectToVisible( rect );
+				}
+			}
+		});
 		
 		mainsplit.setBackground( Color.white );
 		ascroll.getViewport().setBackground( Color.white );
@@ -1391,9 +1473,7 @@ public class JavaFasta extends JApplet {
 				}
 	
 				public boolean importData(TransferHandler.TransferSupport support) {
-					try {
-						System.err.println( table.getSelectedRows().length );
-						
+					try {						
 						if( support.isDataFlavorSupported( DataFlavor.javaFileListFlavor ) ) {
 							Object obj = support.getTransferable().getTransferData( DataFlavor.javaFileListFlavor );
 							//InputStream is = (InputStream)obj;
@@ -1416,146 +1496,59 @@ public class JavaFasta extends JApplet {
 									bb.clear();
 								} else if( fname.endsWith(".blastout") ) {
 									FileReader fr = new FileReader( f );
-									BufferedReader br = new BufferedReader( fr );
+									BufferedReader br = new BufferedReader( fr );									
 									String line = br.readLine();
-									
-									Map<String,Integer>	hitmap = new HashMap<String,Integer>();
-									while( line != null ) {
-										if( line.startsWith(">") ) {
-											System.err.println( line );
-											
-											String val = line.substring(2);
-											
-											line = br.readLine();
-											while( line != null && !line.startsWith(">") && !line.startsWith("Query=") ) {
-												String trim = line.trim();
-												if( trim.startsWith("Score") ) {
-													String end = trim.substring(trim.length()-3);
-													if( end.equals("0.0") ) {
-														if( hitmap.containsKey( val ) ) {
-															hitmap.put( val, hitmap.get(val)+1 );
-														} else {
-															hitmap.put( val, 1 );
-														}
-														
-														break;
-													}
-												}
-												
-												line = br.readLine();
-											}
-										} else {
-											line = br.readLine();
-										}
-									}
-									br.close();
-									fr = new FileReader( f );
-									br = new BufferedReader( fr );
-									
-									line = br.readLine();
-									String query;
+									String query = null;
+									String name = null;
+									double	eval;
 									Sequence tseq = null;
 									int k = 0;
 									while( line != null ) {
 										if( line.startsWith( "Query=" ) ) {
-											query = line.substring(7);
-											if( mseq.containsKey( query ) ) {
-												Sequence seq = mseq.get( query );
-												int ind = lseq.indexOf( seq );
-												if( ind >= k ) {
-													tseq = seq;
-													lseq.remove( seq );
-													lseq.add(k++, seq);
-												}
-											}
-										} else if( line.startsWith(">") ) {
-											int qstart = -1;
-											int qstop = 0;
-											int sstart = -1;
-											int sstop = 0;
-											
-											String val = line.substring(2);//line.split("[\t ]+")[1];
-											line = br.readLine();
-											Sequence seq = null;
-											int ind = -1;
-											while( !line.startsWith(">") && !line.startsWith("Query=") ) {
-												String trim = line.trim();
-												if( trim.startsWith("Score") ) {
-													String end = trim.substring(trim.length()-3);
-													if( end.equals("0.0") && hitmap.get(val) == 1 ) {
-														if( mseq.containsKey( val ) ) {
-															seq = mseq.get( val );
-															ind = lseq.indexOf( seq );
-															if( ind >= k ) {
-																lseq.remove( seq );
-																lseq.add(k, seq);
-															}/* else {											
-																seq = null;
-															}*/
-														}
-													} else {
+											if( query != null ) {
+												Sequence seq = null;
+												for( String seqname : mseq.keySet() ) {
+													int bil = seqname.indexOf(' ');
+													if( query.contains( seqname.substring(0, bil) ) ) {
+														seq = mseq.get(seqname);
 														break;
 													}
-												} else if( trim.startsWith("Query") ) {
-													int li = trim.lastIndexOf(' ');
-													int qtmp = Integer.parseInt( trim.substring( li+1 ) );
-													qstop = qtmp;
-													if( qstart == -1 ) {
-														qtmp = Integer.parseInt( trim.split("[ ]+")[1] );
-														qstart = qtmp;
-													}
-												} else if( trim.startsWith("Sbjct") ) {
-													int li = trim.lastIndexOf(' ');
-													int stmp = Integer.parseInt( trim.substring( li+1 ) );
-													sstop = stmp;
-													if( sstart == -1 ) {
-														stmp = Integer.parseInt( trim.split("[ ]+")[1] );
-														sstart = stmp;
-													}
 												}
-												line = br.readLine();
-											}
-											
-											if( ind != -1 ) {
-												if( ind >= k ) {
-													if( sstart > sstop ) {
-														seq.revcomp = 2;
-														int sval = qstart-(seq.getLength()-sstart+1);
-														seq.setStart( sval );
-													} else {
-														seq.setStart( qstart-sstart );
-													}
-													k++;
-												} else if( tseq != null ) {
-													if( sstart > sstop ) {
-														if( seq.revcomp == 2 ) {
-															int sval = (seq.getLength()-sstart+1)-qstart  +  seq.getStart();
-															tseq.setStart( sval );
-														} else {
-															tseq.revcomp = 2;
-															int sval = sstart-qstart  +  seq.getStart();
-															tseq.setStart( sval );
-														}
-													} else {
-														if( seq.revcomp == 2 ) {
-															tseq.revcomp = 2;
-															int sval = sstart-qstart  +  seq.getStart();
-															tseq.setStart( sval );
-														} else {
-															tseq.setStart( sstart-qstart  +  seq.getStart() );
-														}
-													}
+												
+												if( seq != null ) {
+													Annotation a = new Annotation( seq, name, Color.red );
+													a.desc = a.desc == null ? new StringBuilder( query ) : a.desc.append( query );
+													String[]	mylla = query.split("#");
+													if( mylla[3].trim().equals("-1") ) a.color = Color.green;
+													int start = Integer.parseInt( mylla[1].trim() );
+													int stop = Integer.parseInt( mylla[2].trim() );
+													a.start = start;
+													a.stop = stop;
+													lann.add( a );
+													mann.put( name, a );
 												}
 											}
-											
-											continue;
+											query = line.substring(7);
+										} else if( line.startsWith(">") ) {
+											name = line;
+										} else {
+											String[] str = line.split("[ ]+");
+											eval = -1.0;
+											try {
+												eval = Double.parseDouble( str[str.length-1] );
+											} catch( Exception e ) {
+												e.printStackTrace();
+											}
 										}
 										
 										line = br.readLine();
 									}
 									br.close();
 									
-									updateView();
+									atable.tableChanged( new TableModelEvent( atable.getModel() ) );
+									for( Sequence seq : lseq ) {
+										Collections.sort( seq.annset );
+									}
 								} else {
 									Annotation a = null;
 									BufferedReader	br = new BufferedReader( new FileReader( f ) );
@@ -1575,6 +1568,7 @@ public class JavaFasta extends JApplet {
 											if(  theseq != null ) {
 												a = new Annotation( theseq, name, Color.red );
 												String[]	mylla = name.split("#");
+												if( mylla[3].trim().equals("-1") ) a.color = Color.green;
 												int start = Integer.parseInt( mylla[1].trim() );
 												int stop = Integer.parseInt( mylla[2].trim() );
 												a.start = start;
