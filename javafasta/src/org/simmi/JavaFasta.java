@@ -778,8 +778,11 @@ public class JavaFasta extends JApplet {
 										if( line.startsWith(">") ) {
 											String val = line.substring(2);
 											
+											System.err.println( line );
+											
 											line = br.readLine();
-											while( !line.startsWith(">") && !line.startsWith("Query=") ) {
+											boolean erm = true;
+											while( erm && !line.startsWith(">") && !line.startsWith("Query=") ) {
 												String trim = line.trim();
 												if( trim.startsWith("Score") ) {
 													String end = trim.substring(trim.length()-3);
@@ -790,7 +793,7 @@ public class JavaFasta extends JApplet {
 															hitmap.put( val, 1 );
 														}
 														
-														break;
+														erm = false;
 													}
 												}
 												
