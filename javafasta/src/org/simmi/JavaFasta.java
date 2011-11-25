@@ -276,7 +276,7 @@ public class JavaFasta extends JApplet {
 			int i = table.convertRowIndexToModel( h );
 			Sequence seq = lseq.get( i );
 			
-			if( w+min >= seq.getStart() && w+min <= seq.getEnd() ) { 
+			if( seq.annset != null && w+min >= seq.getStart() && w+min <= seq.getEnd() ) { 
 				searchann.start = (w+min) - seq.getStart();
 				int ai = Collections.binarySearch( seq.annset, searchann );
 				
