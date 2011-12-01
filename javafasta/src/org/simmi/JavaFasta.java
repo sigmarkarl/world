@@ -273,18 +273,20 @@ public class JavaFasta extends JApplet {
 			int w = p.x/10;
 			int h = p.y/rh;
 			
-			int i = table.convertRowIndexToModel( h );
-			Sequence seq = lseq.get( i );
-			
-			if( seq.annset != null && w+min >= seq.getStart() && w+min <= seq.getEnd() ) { 
-				searchann.start = (w+min) - seq.getStart();
-				int ai = Collections.binarySearch( seq.annset, searchann );
+			if( h >= 0 && h < table.getRowCount() ) {
+				int i = table.convertRowIndexToModel( h );
+				Sequence seq = lseq.get( i );
 				
-				int ip = Math.abs(ai)-1;
-				
-				if( ip > 0 && ip <= seq.annset.size() ) {
-					Annotation a = seq.annset.get( ip-1 );
-					if( a.getCoordEnd() > w+min ) return a.name;
+				if( seq.annset != null && w+min >= seq.getStart() && w+min <= seq.getEnd() ) { 
+					searchann.start = (w+min) - seq.getStart();
+					int ai = Collections.binarySearch( seq.annset, searchann );
+					
+					int ip = Math.abs(ai)-1;
+					
+					if( ip > 0 && ip <= seq.annset.size() ) {
+						Annotation a = seq.annset.get( ip-1 );
+						if( a.getCoordEnd() > w+min ) return a.name;
+					}
 				}
 			}
 			
@@ -394,6 +396,7 @@ public class JavaFasta extends JApplet {
 		StringBuilder 	sb = new StringBuilder();
 		int				start = 0;
 		int				revcomp = 0;
+		int				gcp = -1;
 		List<Annotation>	annset;
 		
 		public Sequence( String name ) {
@@ -455,6 +458,18 @@ public class JavaFasta extends JApplet {
 		public int getRevComp() {
 			return revcomp;
 		}
+		
+		public int getGCP() {
+			if( gcp == -1 && sb.length() > 0 ) {
+				gcp = 0;
+				for( int i = 0; i < sb.length(); i++ ) {
+					char c = sb.charAt(i);
+					if( c == 'G' || c == 'g' || c == 'C' || c == 'c' ) gcp++;
+				}
+				gcp = 100*gcp/sb.length();
+			}
+			return gcp;
+		}
 
 		@Override
 		public int compareTo(Sequence o) {
@@ -462,29 +477,41 @@ public class JavaFasta extends JApplet {
 		}
 	}
 	
+	public void importReader( BufferedReader br ) throws IOException {
+		Sequence s = null;
+		String line = br.readLine();
+		while( line != null ) {
+			if( line.startsWith(">") ) {
+				if( s != null ) {
+					if( s.getEnd() > max ) max = s.getEnd();
+				}
+				s = new Sequence( line.substring(1) );
+				lseq.add( s );
+			} else if( s != null ) {
+				int start = 0;
+				int i = line.indexOf(' ');
+				while( i != -1 ) {
+					String substr = line.substring(start, i);
+					s.append( substr );
+					start = i+1;
+					i = line.indexOf(' ', start);
+				}
+				s.append( line.substring(start, line.length()) );
+			}
+			line = br.readLine();
+		}
+		br.close();
+		
+		if( s != null ) {
+			if( s.getLength() > max ) max = s.getLength();
+		}
+	}
+	
 	public void importFile( String name, InputStream is ) throws IOException {
 		if( name.endsWith(".ab1") || name.endsWith(".abi") ) addAbiSequence( name, is );
     	else {
-    		Sequence s = null;
 			BufferedReader	br = new BufferedReader( new InputStreamReader( is ) );
-			String line = br.readLine();
-			while( line != null ) {
-				if( line.startsWith(">") ) {
-					if( s != null ) {
-						if( s.getEnd() > max ) max = s.getEnd();
-					}
-					s = new Sequence( line.substring(1) );
-					lseq.add( s );
-				} else if( s != null ) {
-					s.append( line );
-				}
-				line = br.readLine();
-			}
-			br.close();
-			
-			if( s != null ) {
-				if( s.getLength() > max ) max = s.getLength();
-			}
+			importReader( br );
     	}
 	}
 	
@@ -717,7 +744,7 @@ public class JavaFasta extends JApplet {
 
 			@Override
 			public int getColumnCount() {
-				return 4;
+				return 5;
 			}
 
 			@Override
@@ -726,6 +753,7 @@ public class JavaFasta extends JApplet {
 				else if( columnIndex == 1 ) return "Length";
 				else if( columnIndex == 2 ) return "Start";
 				else if( columnIndex == 3 ) return "RevComp";
+				else if( columnIndex == 4 ) return "GC%";
 				return null;
 			}
 
@@ -735,6 +763,7 @@ public class JavaFasta extends JApplet {
 				else if( columnIndex == 1 ) return Integer.class;
 				else if( columnIndex == 2 ) return Integer.class;
 				else if( columnIndex == 3 ) return Integer.class;
+				else if( columnIndex == 4 ) return Integer.class;
 				return null;
 			}
 
@@ -750,6 +779,7 @@ public class JavaFasta extends JApplet {
 				else if( columnIndex == 1 ) return seq.getLength();
 				else if( columnIndex == 2 ) return seq.getStart();
 				else if( columnIndex == 3 ) return seq.getRevComp();
+				else if( columnIndex == 4 ) return seq.getGCP();
 				return null;
 			}
 
@@ -1018,9 +1048,9 @@ public class JavaFasta extends JApplet {
 									
 									updateView();
 								} else {
-									Sequence s = null;
 									BufferedReader	br = new BufferedReader( new FileReader( f ) );
-									String line = br.readLine();
+									importReader( br );
+									/*String line = br.readLine();
 									while( line != null ) {
 										if( line.startsWith(">") ) {
 											if( s != null ) {
@@ -1029,7 +1059,15 @@ public class JavaFasta extends JApplet {
 											s = new Sequence( line.substring(1) );
 											lseq.add( s );
 										} else if( s != null ) {
-											s.append( line );
+											int start = 0;
+											int i = line.indexOf(' ');
+											while( i != -1 ) {
+												String substr = line.substring(0, i);
+												s.append( substr );
+												start = i+1;
+												i = line.indexOf(' ', start);
+											}
+											s.append( line.substring(start, i) );
 										}
 										line = br.readLine();
 									}
@@ -1037,12 +1075,11 @@ public class JavaFasta extends JApplet {
 									
 									if( s != null ) {
 										if( s.getLength() > max ) max = s.getLength();
-									}
+									}*/
 								}
 							}
 							
-							table.tableChanged( new TableModelEvent( table.getModel() ) );
-							c.updateCoords();
+							updateView();
 							
 							return true;
 						} else if( support.isDataFlavorSupported( df ) ) {							
@@ -1221,6 +1258,58 @@ public class JavaFasta extends JApplet {
 				table.tableChanged( new TableModelEvent( table.getModel() ) );
 			}
 		});
+		popup.add( new AbstractAction("UT Replacement") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				int[] rr = table.getSelectedRows();
+				for( int r : rr ) {
+					int k = table.convertRowIndexToModel( r );
+					Sequence seq = lseq.get( k );
+					StringBuilder	sb = seq.sb;
+					
+					int i1 = sb.indexOf("T");
+					int i2 = sb.indexOf("U");
+					
+					if( i1 == -1 ) i1 = sb.length();
+					if( i2 == -1 ) i2 = sb.length();
+					
+					while( i1 < sb.length() || i2 < sb.length() ) {
+						while( i1 < i2 ) {
+							sb.setCharAt(i1, 'U');
+							i1 = sb.indexOf("T", i1+1);
+							if( i1 == -1 ) i1 = sb.length();
+						}
+						
+						while( i2 < i1 ) {
+							sb.setCharAt(i2, 'T');
+							i2 = sb.indexOf("U", i2+1);
+							if( i2 == -1 ) i2 = sb.length();
+						}
+					}
+					
+					i1 = sb.indexOf("t");
+					i2 = sb.indexOf("u");
+					
+					if( i1 == -1 ) i1 = sb.length();
+					if( i2 == -1 ) i2 = sb.length();
+					
+					while( i1 < sb.length() || i2 < sb.length() ) {
+						while( i1 < i2 ) {
+							sb.setCharAt(i1, 'u');
+							i1 = sb.indexOf("t", i1+1);
+							if( i1 == -1 ) i1 = sb.length();
+						}
+						
+						while( i2 < i1 ) {
+							sb.setCharAt(i2, 't');
+							i2 = sb.indexOf("u", i2+1);
+							if( i2 == -1 ) i2 = sb.length();
+						}
+					}
+				}
+				c.repaint();
+			}
+		});
 		popup.addSeparator();
 		popup.add( new AbstractAction("Open") {
 			@Override
@@ -1300,7 +1389,7 @@ public class JavaFasta extends JApplet {
 					lseq.removeAll( delset );
 					
 					checkMaxMin();
-					table.tableChanged( new TableModelEvent( table.getModel() ) );
+					updateView();
 				}
 			}
 		});
