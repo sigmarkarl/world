@@ -977,7 +977,8 @@ public class JavaFasta extends JApplet {
 		tablescroll.getViewport().setBackground( Color.white );
 		
 		try {
-			final DataFlavor df = new DataFlavor( DataFlavor.javaJVMLocalObjectMimeType );
+			final DataFlavor ndf = new DataFlavor( DataFlavor.javaJVMLocalObjectMimeType );
+			final DataFlavor df = DataFlavor.getTextPlainUnicodeFlavor();
 			final String charset = df.getParameter("charset");
 			final Transferable transferable = new Transferable() {
 				@Override
@@ -1000,12 +1001,12 @@ public class JavaFasta extends JApplet {
 
 				@Override
 				public DataFlavor[] getTransferDataFlavors() {
-					return new DataFlavor[] { df };
+					return new DataFlavor[] { df, ndf };
 				}
 
 				@Override
 				public boolean isDataFlavorSupported(DataFlavor arg0) {
-					if( arg0.equals(df) ) {
+					if( arg0.equals(df) || arg0.equals(ndf) ) {
 						return true;
 					}
 					return false;
@@ -1233,6 +1234,16 @@ public class JavaFasta extends JApplet {
 							return true;
 						} else if( support.isDataFlavorSupported( df ) ) {							
 							Object obj = support.getTransferable().getTransferData( df );
+							InputStream is = (InputStream)obj;
+							
+							System.err.println( charset );
+							importReader( new BufferedReader(new InputStreamReader(is, charset)) );
+							
+							updateView();
+							
+							return true;
+						} else if( support.isDataFlavorSupported( ndf ) ) {							
+							Object obj = support.getTransferable().getTransferData( df );
 							ArrayList<Sequence>	seqs = (ArrayList<Sequence>)obj;
 							
 							ArrayList<Sequence> newlist = new ArrayList<Sequence>( lseq.size() );
@@ -1269,8 +1280,8 @@ public class JavaFasta extends JApplet {
 			};
 			tablescroll.setTransferHandler( th );
 			table.setTransferHandler( th );
-		} catch (ClassNotFoundException e2) {
-			e2.printStackTrace();
+		} catch( Exception e ) {
+			e.printStackTrace();
 		}
 		
 		JTextField	textfield = new JTextField();
