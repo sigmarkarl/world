@@ -15,6 +15,7 @@ import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.Transferable;
 import java.awt.datatransfer.UnsupportedFlavorException;
 import java.awt.event.ActionEvent;
+import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseAdapter;
@@ -80,7 +81,8 @@ public class JavaFasta extends JApplet {
 	private static final long serialVersionUID = 1L;
 
 	public class Ruler extends JComponent {
-		int x;
+		int 	x;
+		double	cw;
 		
 		public Ruler() {
 			super();
@@ -89,7 +91,7 @@ public class JavaFasta extends JApplet {
 			popup.add( new AbstractAction("Start here") {
 				@Override
 				public void actionPerformed(ActionEvent e) {					
-					int xval = x/10+min;
+					int xval = (int)(x/cw)+min;
 					int[] rr = table.getSelectedRows();
 					for( int r : rr ) {
 						int i = table.convertRowIndexToModel( r );
@@ -107,7 +109,7 @@ public class JavaFasta extends JApplet {
 			popup.add( new AbstractAction("End here") {
 				@Override
 				public void actionPerformed(ActionEvent e) {
-					int xval = x/10+min;
+					int xval = (int)(x/cw)+min;
 					int[] rr = table.getSelectedRows();
 					for( int r : rr ) {
 						int i = table.convertRowIndexToModel( r );
@@ -126,7 +128,7 @@ public class JavaFasta extends JApplet {
 			popup.add( new AbstractAction("Move here") {
 				@Override
 				public void actionPerformed(ActionEvent e) {					
-					int xval = x/10;
+					int xval = (int)(x/cw);
 					int[] rr = table.getSelectedRows();
 					
 					int min = Integer.MAX_VALUE;
@@ -152,7 +154,7 @@ public class JavaFasta extends JApplet {
 			popup.add( new AbstractAction("Move end here") {
 				@Override
 				public void actionPerformed(ActionEvent e) {					
-					int xval = x/10;
+					int xval = (int)(x/cw);
 					int[] rr = table.getSelectedRows();
 					
 					int max = 0;
@@ -199,8 +201,10 @@ public class JavaFasta extends JApplet {
 			int h = this.getHeight();
 			Rectangle r = g2.getClipBounds();
 			
-			for( int x = r.x/10; x < (r.x+r.width)/10+1; x++ ) {
-				int xx = x*10;
+			//double l = Math.log10( cw );
+			//int dval = Math.min( 10, )
+			for( int x = (int)(r.x/cw); x < (int)((r.x+r.width)/cw)+1; x++ ) {
+				int xx = (int)(x*cw);
 				int xm = x+min;
 				if( xm % 10 == 0 ) {
 					g.drawLine(xx+4, h-6, xx+4, h);
@@ -235,9 +239,11 @@ public class JavaFasta extends JApplet {
 				int i = table.convertRowIndexToModel(r);
 				Sequence s = lseq.get(i);
 				
-				int x = ((s.getStart()-min)*bi.getWidth())/(max-min);
-				int y = (r*bi.getHeight())/lseq.size();
-				bg.fillRect( x, y, Math.max(1, (int)( ((long)s.getLength()*(long)bi.getWidth())/(long)(max-min) )), Math.max(1, (bi.getHeight())/lseq.size()) );
+				if( max != min ) {
+					int x = ((s.getStart()-min)*bi.getWidth())/(max-min);
+					int y = (r*bi.getHeight())/lseq.size();
+					bg.fillRect( x, y, Math.max(1, (int)( ((long)s.getLength()*(long)bi.getWidth())/(long)(max-min) )), Math.max(1, (bi.getHeight())/lseq.size()) );
+				}
 			}
 		}
 		
@@ -257,6 +263,7 @@ public class JavaFasta extends JApplet {
 		Ruler			ruler;
 		JTable			table;
 		int				rh;
+		double			cw = 10.0;
 		
 		public FastaView( int rh, Ruler ruler, JTable table ) {
 			this.rh = rh;
@@ -264,13 +271,27 @@ public class JavaFasta extends JApplet {
 			this.table = table;
 			
 			this.setToolTipText(" ");
+			
+			this.addKeyListener( new KeyAdapter() {
+				public void keyPressed( KeyEvent k ) {
+					int keycode = k.getKeyCode();
+					if( keycode == KeyEvent.VK_PLUS ) {
+						cw *= 1.25;
+					} else if( keycode == KeyEvent.VK_MINUS ) {
+						cw *= 0.8;
+					}
+					FastaView.this.ruler.cw = cw;
+					
+					updateCoords();
+				}
+			});
 		}
 		
 		Annotation searchann = new Annotation( null, "search", null );
 		public String getToolTipText( MouseEvent e ) {
 			Point p = e.getPoint();
 			
-			int w = p.x/10;
+			int w = (int)(p.x/cw);
 			int h = p.y/rh;
 			
 			if( h >= 0 && h < table.getRowCount() ) {
@@ -301,8 +322,8 @@ public class JavaFasta extends JApplet {
 			
 			Rectangle r = g2.getClipBounds();
 			
-			int xmin = r.x/10;
-			int xmax = Math.min( (r.x+r.width)/10+1, max-min );
+			int xmin = (int)(r.x/cw);
+			int xmax = Math.min( (int)((r.x+r.width)/cw)+1, max-min );
 			for( int y = r.y/rh; y < Math.min( (r.y+r.height)/rh+1, lseq.size() ); y++ ) {
 				int i = table.convertRowIndexToModel( y );
 				Sequence seq = lseq.get( i );
@@ -311,10 +332,10 @@ public class JavaFasta extends JApplet {
 					for( Annotation a : seq.annset ) {
 						g.setColor( a.color );
 						for( int x = Math.max(a.getCoordStart()-min, xmin); x < Math.min(a.getCoordEnd()-min, xmax); x++ ) {
-							g.fillRect(x*10, y*rh, 10, rh);
+							g.fillRect((int)(x*cw), y*rh, (int)cw, rh);
 							if( a.ori == -1 ) {
 								g.setColor( Color.black );
-								g.drawLine(x*10+3, y*rh, x*10, y*rh+3);
+								g.drawLine((int)(x*cw)+3, y*rh, (int)(x*cw), y*rh+3);
 								g.setColor( a.color );
 							}
 						}
@@ -322,16 +343,18 @@ public class JavaFasta extends JApplet {
 					}
 				}
 				
-				g.setColor( Color.black );
-				for( int x = Math.max(seq.getStart()-min, xmin); x < Math.min(seq.getEnd()-min, xmax); x++ ) {
-					g.drawString( Character.toString( seq.charAt(x+min) ), x*10, y*rh+rh-2);
+				if( cw > 5.0 ) {
+					g.setColor( Color.black );
+					for( int x = Math.max(seq.getStart()-min, xmin); x < Math.min(seq.getEnd()-min, xmax); x++ ) {
+						g.drawString( Character.toString( seq.charAt(x+min) ), (int)(x*cw), y*rh+rh-2);
+					}
 				}
 			}
 		}
 		
 		public void updateCoords() {
-			int w = (max-min)*10;
-			int h = lseq.size()*16;
+			int w = (int)((max-min)*cw);
+			int h = lseq.size()*rh;
 			
 			this.setPreferredSize( new Dimension(w,h) );
 			this.setSize(w, h);
@@ -663,6 +686,73 @@ public class JavaFasta extends JApplet {
             	 exc.printStackTrace();
              }
          }*/
+	}
+	
+	public void exportAnnotationFasta( JTable table, List<Annotation> lann ) throws IOException, UnavailableServiceException {
+		FileSaveService fss = null;
+        FileContents fileContents = null;
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        OutputStreamWriter	osw = new OutputStreamWriter( baos );
+   	 
+	   	int[] rr = table.getSelectedRows();
+	   	for( int r : rr ) {
+	   		int i = table.convertRowIndexToModel( r );
+	   		Annotation ann = lann.get(i);
+	   		osw.write( ">" + ann.name + "\n" );
+	   		int val = ann.start;
+	   		while( val < ann.stop ) {
+	   			osw.write( ann.seq.sb.substring( val, Math.min( ann.stop, val+70 )) + "\n" );
+	   			val += 70;
+	   		}
+	   	}
+	   	osw.close();
+	   	baos.close();
+	
+	   	try {
+	   		fss = (FileSaveService)ServiceManager.lookup("javax.jnlp.FileSaveService");
+	   	} catch( UnavailableServiceException e ) {
+	   		fss = null;
+	   	}
+	   	 
+	    if (fss != null) {
+	   	 		ByteArrayInputStream bais = new ByteArrayInputStream( baos.toByteArray() );
+		        fileContents = fss.saveFileDialog(null, null, bais, "exportannotation.fasta");
+		        bais.close();
+		        OutputStream os = fileContents.getOutputStream(true);
+		        os.write( baos.toByteArray() );
+		        os.close();
+	    } else {
+		   	 JFileChooser jfc = new JFileChooser();
+		   	 if( jfc.showSaveDialog( JavaFasta.this ) == JFileChooser.APPROVE_OPTION ) {
+		   		 File f = jfc.getSelectedFile();
+		   		 FileOutputStream fos = new FileOutputStream( f );
+		   		 fos.write( baos.toByteArray() );
+		   		 fos.close();
+		   		 
+		   		 Desktop.getDesktop().browse( f.toURI() );
+		   	 }
+	    }
+
+        /*if (fileContents != null) {
+            try {
+           	 OutputStream os = fileContents.getOutputStream( true );
+           	 OutputStreamWriter	osw = new OutputStreamWriter( os );
+           	 
+           	 int[] rr = table.getSelectedRows();
+           	 for( int r : rr ) {
+           		 int i = table.convertRowIndexToModel( r );
+           		 Sequence seq = lseq.get(i);
+           		 osw.write( ">" + seq.name + "\n" );
+           		 int val = 0;
+           		 while( val < seq.getLength() ) {
+           			 osw.write( seq.sb.substring(val, Math.min( seq.getLength(), val+70 )) + "\n" );
+           			 val += 70;
+           		 }
+           	 }
+            } catch (IOException exc) {
+           	 exc.printStackTrace();
+            }
+        }*/
 	}
 	
 	public void console( String str ) {
@@ -1407,10 +1497,10 @@ public class JavaFasta extends JApplet {
 					Sequence s = lseq.get( i );
 					
 					Rectangle rect = c.getVisibleRect();
-					if( rect.x == (s.getStart()-min)*10 ) {
-						rect.x = (s.getEnd()-min)*10-rect.width;
+					if( rect.x == (int)((s.getStart()-min)*c.cw) ) {
+						rect.x = (int)((s.getEnd()-min)*c.cw)-rect.width;
 					} else {
-						rect.x = (s.getStart()-min)*10;
+						rect.x = (int)((s.getStart()-min)*c.cw);
 					}
 					c.scrollRectToVisible( rect );
 				}
@@ -1424,17 +1514,13 @@ public class JavaFasta extends JApplet {
 
 			@Override
 			public void mouseExited(MouseEvent e) {}
-			
 		});
 		table.addKeyListener( new KeyListener() {
 			@Override
 			public void keyTyped(KeyEvent e) {}
 			
 			@Override
-			public void keyReleased(KeyEvent e) {
-				// TODO Auto-generated method stub
-				
-			}
+			public void keyReleased(KeyEvent e) {}
 			
 			@Override
 			public void keyPressed(KeyEvent e) {
@@ -1492,6 +1578,21 @@ public class JavaFasta extends JApplet {
 		JSplitPane mainsplit = new JSplitPane( JSplitPane.HORIZONTAL_SPLIT );
 		mainsplit.setLeftComponent( overviewsplit );
 		mainsplit.setRightComponent( acomp );
+		
+		JPopupMenu	apopup = new JPopupMenu();
+		atable.setComponentPopupMenu( apopup );
+		apopup.add( new AbstractAction("Export Annotation") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				try {
+					exportAnnotationFasta( atable, lann );
+				} catch (IOException e1) {
+					e1.printStackTrace();
+				} catch (UnavailableServiceException e1) {
+					e1.printStackTrace();
+				}
+			}
+		});
 		
 		atable.setModel( new TableModel() {
 			@Override
@@ -1567,10 +1668,10 @@ public class JavaFasta extends JApplet {
 						
 						Rectangle cellrect = table.getCellRect(m, 0, true);
 						Rectangle rect = c.getVisibleRect();
-						if( rect.x == (a.getCoordStart()-min)*10 ) {
-							rect.x = (a.getCoordEnd()-min)*10-rect.width;
+						if( rect.x == (int)((a.getCoordStart()-min)*c.cw) ) {
+							rect.x = (int)((a.getCoordEnd()-min)*c.cw-rect.width);
 						} else {
-							rect.x = (a.getCoordStart()-min)*10;
+							rect.x = (int)((a.getCoordStart()-min)*c.cw);
 						}
 						rect.y = cellrect.y;
 						
@@ -1585,10 +1686,7 @@ public class JavaFasta extends JApplet {
 			public void keyTyped(KeyEvent e) {}
 			
 			@Override
-			public void keyReleased(KeyEvent e) {
-				// TODO Auto-generated method stub
-				
-			}
+			public void keyReleased(KeyEvent e) {}
 			
 			@Override
 			public void keyPressed(KeyEvent e) {
