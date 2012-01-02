@@ -16,6 +16,20 @@ import com.google.gwt.dom.client.Document;
 import com.google.gwt.dom.client.NodeList;
 import com.google.gwt.dom.client.Style;
 import com.google.gwt.dom.client.Style.Unit;
+import com.google.gwt.event.dom.client.DragEndEvent;
+import com.google.gwt.event.dom.client.DragEndHandler;
+import com.google.gwt.event.dom.client.DragEnterEvent;
+import com.google.gwt.event.dom.client.DragEnterHandler;
+import com.google.gwt.event.dom.client.DragEvent;
+import com.google.gwt.event.dom.client.DragHandler;
+import com.google.gwt.event.dom.client.DragLeaveEvent;
+import com.google.gwt.event.dom.client.DragLeaveHandler;
+import com.google.gwt.event.dom.client.DragOverEvent;
+import com.google.gwt.event.dom.client.DragOverHandler;
+import com.google.gwt.event.dom.client.DragStartEvent;
+import com.google.gwt.event.dom.client.DragStartHandler;
+import com.google.gwt.event.dom.client.DropEvent;
+import com.google.gwt.event.dom.client.DropHandler;
 import com.google.gwt.event.dom.client.KeyCodes;
 import com.google.gwt.event.dom.client.KeyDownEvent;
 import com.google.gwt.event.dom.client.KeyDownHandler;
@@ -58,70 +72,127 @@ public class Smasogur implements EntryPoint {
 	private final GreetingServiceAsync 	greetingService = GWT.create(GreetingService.class);
 	private final SmasagaServiceAsync 	smasagaService = GWT.create(SmasagaService.class);
 
-	public native int dropHandler( JavaScriptObject table ) /*-{
+	/*var s = this;
+	
+	function f1( evt ) {
+		evt.stopPropagation();
+		evt.preventDefault();
+	};
+	
+	function f2( evt ) {
+		
+	};
+	
+	function ie( evt ) {
+		f( evt );
+	}
+	
+	function everythingelse( evt ) {
+		f1( evt );
+		f( evt );
+	}
+	
+	function f( evt ) {*/
+
+	public native void dropHandler2( JavaScriptObject table, JavaScriptObject dataTransfer ) /*-{
 		var s = this;
-		
-		function f1( evt ) {
-			evt.stopPropagation();
-			evt.preventDefault();
-		};
-		
-		function f2( evt ) {
+		var files = dataTransfer.files;		
+		var count = files.length;
+	
+		if(count > 0) {
+			var file = files[0];
+			var reader = new FileReader();
+			reader.onload = function(e) {
+				var res = e.target.result;
+				s.@org.simmi.client.Smasogur::setStatus(Ljava/lang/String;)( "File loaded" );
+				s.@org.simmi.client.Smasogur::fileLoad(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)( file.name, res, 'simmi' );
+			};
 			
-		};
-		
-		function ie( evt ) {
-			f( evt );
-		}
-		
-		function everythingelse( evt ) {
-			f1( evt );
-			f( evt );
-		}
-		
-		function f( evt ) {	
-			s.@org.simmi.client.Smasogur::setStatus(Ljava/lang/String;)( "Checking login status" );
-			try {
-				$wnd.FB.getLoginStatus( function(response) {
-	  				if (response.session) {
-	   					var files = evt.dataTransfer.files;		
-						var count = files.length;
-			
-						if(count > 0) {
-							var file = files[0];
-							var reader = new FileReader();
-							reader.onload = function(e) {
-								var res = e.target.result;
-								s.@org.simmi.client.Smasogur::setStatus(Ljava/lang/String;)( "File loaded" );
-								s.@org.simmi.client.Smasogur::fileLoad(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)( file.name, res, response.session.uid );
-							};
-							
-							s.@org.simmi.client.Smasogur::setStatus(Ljava/lang/String;)( "Loading file" );
-							reader.readAsBinaryString( file );
-						}
-					} else {
-					    $wnd.FB.login();
-					}
-				});
-			} catch( e ) {
-				$wnd.alert( e );
-			}
-		};
-		
-		if( table.addEventListener ) {
-			table.addEventListener( "dragenter", f1, false );
-			table.addEventListener( "dragexit", f1, false );
-			table.addEventListener( "dragover", f1, false );
-			table.addEventListener( "drop", everythingelse, false );
+			s.@org.simmi.client.Smasogur::setStatus(Ljava/lang/String;)( "Loading file" );
+			reader.readAsBinaryString( file );
+		} else if (response.status === 'not_authorized') {
+		    $wnd.console.log('not authorized');
 		} else {
-			table.attachEvent ("ondragenter", f2);
-            table.attachEvent ("ondragover", f2);
-            table.attachEvent ("ondragleave", f2);
-            table.attachEvent ("ondrop", ie);
+		    $wnd.console.log('not logged in');
 		}
-		
-		return 0;
 	}-*/;
+	
+	public native void dropHandler( JavaScriptObject table, JavaScriptObject dataTransfer ) /*-{			
+		try {
+			var s = this;
+			$wnd.FB.getLoginStatus( function(response) {
+				if (response.status === 'connected') {
+				    // the user is logged in and connected to your
+				    // app, and response.authResponse supplies
+				    // the user's ID, a valid access token, a signed
+				    // request, and the time the access token 
+				    // and signed request each expire
+				    var uid = response.authResponse.userID;
+				    var accessToken = response.authResponse.accessToken;
+				    
+				    var files = dataTransfer.files;		
+					var count = files.length;
+		
+					if(count > 0) {
+						var file = files[0];
+						var reader = new FileReader();
+						reader.onload = function(e) {
+							var res = e.target.result;
+							s.@org.simmi.client.Smasogur::setStatus(Ljava/lang/String;)( "File loaded" );
+							s.@org.simmi.client.Smasogur::fileLoad(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)( file.name, res, uid );
+						};
+						
+						s.@org.simmi.client.Smasogur::setStatus(Ljava/lang/String;)( "Loading file" );
+						reader.readAsBinaryString( file );
+					}
+				} else if (response.status === 'not_authorized') {
+				    $wnd.console.log('not authorized');
+				} else {
+				    $wnd.console.log('not logged in');
+				    $wnd.FB.login();
+				}
+			
+//  				if (response.session) {
+//  					$wnd.console.log('ok '+response.session);
+//  					
+//   					var files = evt.dataTransfer.files;		
+//					var count = files.length;
+//		
+//					if(count > 0) {
+//						var file = files[0];
+//						var reader = new FileReader();
+//						reader.onload = function(e) {
+//							var res = e.target.result;
+//							s.@org.simmi.client.Smasogur::setStatus(Ljava/lang/String;)( "File loaded" );
+//							s.@org.simmi.client.Smasogur::fileLoad(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)( file.name, res, response.session.uid );
+//						};
+//						
+//						s.@org.simmi.client.Smasogur::setStatus(Ljava/lang/String;)( "Loading file" );
+//						reader.readAsBinaryString( file );
+//					}
+//				} else {
+//					$wnd.console.log('null '+response.session);
+//				    $wnd.FB.login();
+//				}
+			});
+		} catch( e ) {
+			$wnd.console.log( 'error '+e );
+		}
+	}-*/;
+	
+	/*};
+	
+	if( table.addEventListener ) {
+		table.addEventListener( "dragenter", f1, false );
+		table.addEventListener( "dragexit", f1, false );
+		table.addEventListener( "dragover", f1, false );
+		table.addEventListener( "drop", everythingelse, false );
+	} else {
+		table.attachEvent ("ondragenter", f2);
+        table.attachEvent ("ondragover", f2);
+        table.attachEvent ("ondragleave", f2);
+        table.attachEvent ("ondrop", ie);
+	}*/
 	
 	public com.google.gwt.dom.client.Element loginButton() {
 		//<fb:login-button show-faces="true" width="200" max-rows="1"></fb:login-button>
@@ -177,9 +248,15 @@ public class Smasogur implements EntryPoint {
 	public native void deleteSaga( int r ) /*-{
 		var s = this;
 		$wnd.FB.getLoginStatus( function(response) {
-			if (response.session) {
-				s.@org.simmi.client.Smasogur::delete(Ljava/lang/String;I)( response.session.uid, r );
+			if (response.status === 'connected') {
+			    var uid = response.authResponse.userID;
+			    var accessToken = response.authResponse.accessToken;
+			    
+			    s.@org.simmi.client.Smasogur::delete(Ljava/lang/String;I)( uid, r );
+			} else if (response.status === 'not_authorized') {
+			    $wnd.console.log('not authorized');
 			} else {
+			    $wnd.console.log('not logged in');
 			    $wnd.FB.login();
 			}
 		});
@@ -225,6 +302,10 @@ public class Smasogur implements EntryPoint {
 		gradeStr.put(6, "snilld");
 	}
 	
+	public native void console( String str ) /*-{
+		$wnd.console.log( str );
+	}-*/;
+	
 	public void fileLoad( String fileName, String binaryString, String uid ) {
 		final Saga smasaga = new Saga( fileName, "Óþekkt", uid, "Óþekktur", "");
 		
@@ -232,7 +313,7 @@ public class Smasogur implements EntryPoint {
 		smasagaService.saveShortStory( smasaga, fileName, binaryString, new AsyncCallback<String>() {
 			@Override
 			public void onFailure(Throwable caught) {
-				
+				console( caught.getMessage() );
 			}
 
 			@Override
@@ -391,7 +472,39 @@ public class Smasogur implements EntryPoint {
 						table.draw( view, options );
 					}
 				}
-	    	  } );
+	    	  });
+	    	  
+	    	  focuspanel.addDropHandler( new DropHandler() {
+				@Override
+				public void onDrop(DropEvent event) {
+					setStatus( "Checking login status" );
+					dropHandler( table.getElement(), event.getDataTransfer() );
+				}
+	    	  });
+	    	  focuspanel.addDragStartHandler( new DragStartHandler() {
+				@Override
+				public void onDragStart(DragStartEvent event) {}
+	    	  });
+	    	  focuspanel.addDragEndHandler( new DragEndHandler() {
+				@Override
+				public void onDragEnd(DragEndEvent event) {}	    		  
+	    	  });
+	    	  focuspanel.addDragEnterHandler( new DragEnterHandler() {
+				@Override
+				public void onDragEnter(DragEnterEvent event) {}
+	    	  });
+	    	  focuspanel.addDragHandler( new DragHandler() {
+				@Override
+				public void onDrag(DragEvent event) {}
+	    	  });
+	    	  focuspanel.addDragOverHandler( new DragOverHandler() {
+				@Override
+				public void onDragOver(DragOverEvent event) {}
+	    	  });
+	    	  focuspanel.addDragLeaveHandler( new DragLeaveHandler() {
+				@Override
+				public void onDragLeave(DragLeaveEvent event) {}
+	    	  });
 	    	  
 	    	  smasagaService.getAllShortstories( new AsyncCallback<Saga[]>() {
 				@Override
@@ -439,7 +552,7 @@ public class Smasogur implements EntryPoint {
 					
 				}
 	    	  });
-	    	  dropHandler( table.getElement() );
+	    	  //dropHandler( table.getElement() );
 	    	  
 	    	  vp.setVerticalAlignment( VerticalPanel.ALIGN_MIDDLE );
 	    	  vp.setHorizontalAlignment( VerticalPanel.ALIGN_CENTER );	    	  
