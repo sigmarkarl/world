@@ -20,6 +20,7 @@ import javax.crypto.spec.SecretKeySpec;
 
 import oauth.signpost.OAuth;
 
+import org.apache.commons.codec.binary.Base64;
 import org.simmi.client.SmasagaService;
 import org.simmi.shared.Saga;
 
@@ -31,7 +32,6 @@ import com.google.appengine.api.datastore.FetchOptions;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.api.datastore.Query;
-import com.google.appengine.repackaged.com.google.common.util.Base64;
 import com.google.gwt.user.server.rpc.RemoteServiceServlet;
 
 public class SmasagaServiceImpl extends RemoteServiceServlet implements SmasagaService {
@@ -160,7 +160,8 @@ public class SmasagaServiceImpl extends RemoteServiceServlet implements SmasagaS
 	        byte[] b = mac.doFinal(text);
 	        //byte[] nb = base64.encode(b);
 	        //String sign = new String(nb).trim();
-	        String sign = Base64.encode(b);
+	        byte[] signb = Base64.encodeBase64(b);
+	        String sign = new String( signb );
 	        parameters.put("oauth_signature", sign );
 			
 			URL url = new URL(target);

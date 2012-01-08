@@ -49,10 +49,19 @@ public class Smasaga implements EntryPoint {
 				$wnd.FB.getLoginStatus( function(response) {
 					try {
 						$wnd.FB.XFBML.parse();
-						if (response.session) {
-							ths.@org.simmi.client.Smasaga::setUserId(Ljava/lang/String;)( response.session.uid );
+						
+						if (response.status === 'connected') {
+						    var uid = response.authResponse.userID;
+						    var accessToken = response.authResponse.accessToken;
+						    
+							ths.@org.simmi.client.Smasaga::setUserId(Ljava/lang/String;)( uid );
+						} else if (response.status === 'not_authorized') {
+						    $wnd.console.log('not authorized');
+						    ths.@org.simmi.client.Smasaga::setUserId(Ljava/lang/String;)( "" );
 						} else {
-							ths.@org.simmi.client.Smasaga::setUserId(Ljava/lang/String;)( "" );
+						    $wnd.console.log('not logged in');
+						    $wnd.FB.login();
+						    ths.@org.simmi.client.Smasaga::setUserId(Ljava/lang/String;)( "" );
 						}
 					} catch( e ) {
 						$wnd.console.log( e );
