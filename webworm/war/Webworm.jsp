@@ -220,8 +220,6 @@
 	<input type="image" src="https://www.paypalobjects.com/en_US/i/btn/btn_cart_SM.gif" border="0" name="submit" alt="PayPal - The safer, easier way to pay online!">
 	<img alt="" border="0" src="https://www.paypalobjects.com/en_US/i/scr/pixel.gif" width="1" height="1">
 	</form>
-	
-	
     
     <!-- RECOMMENDED if your web app will not function without JavaScript enabled -->
     <noscript>
@@ -236,15 +234,15 @@
     <%
     if( str == null ) {%>
     <div id="ads">
-    	<script type="text/javascript"><!--
-			google_ad_client = "ca-pub-7204381538404733";
-			/* WebWorm */
-			google_ad_slot = "9414308425";
-			google_ad_width = 160;
-			google_ad_height = 600;
-			//-->
-		</script>
-    	<script type="text/javascript" src="http://pagead2.googlesyndication.com/pagead/show_ads.js"></script>
+    <script type="text/javascript"><!--
+		google_ad_client = "ca-pub-7204381538404733";
+		/* Webworm */
+		google_ad_slot = "1687563636";
+		google_ad_width = 160;
+		google_ad_height = 600;
+		//-->
+	</script>
+	<script type="text/javascript" src="http://pagead2.googlesyndication.com/pagead/show_ads.js"></script>
     </div>
     <%}%>
   </body>

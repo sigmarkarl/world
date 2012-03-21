@@ -16,7 +16,7 @@
 </resources>
 <applet-desc 
 	name="JavaFasta"
-	main-class="org.simmi.JavaFasta"
+	main-class="org.simmi.unsigned.JavaFasta"
 	width="1280"
 	height="800"> 
 <param name="draggable" value="true"/>
