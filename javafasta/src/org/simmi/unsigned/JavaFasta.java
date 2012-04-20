@@ -606,6 +606,10 @@ public class JavaFasta extends JApplet {
 			return super.equals( obj );
 		}
 		
+		public StringBuilder getStringBuilder() {
+			return sb;
+		}
+		
 		public String toString() {
 			return name;
 		}
@@ -2903,5 +2907,9 @@ public class JavaFasta extends JApplet {
 		jf.initGui( frame );
 		
 		frame.setVisible( true );
+	}
+	
+	public Rectangle getSelectedRect() {
+		return c.selectedRect;
 	}
 }

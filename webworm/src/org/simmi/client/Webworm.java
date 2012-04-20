@@ -627,48 +627,65 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 	public Element loginButton() {
 		//<fb:login-button show-faces="true" width="200" max-rows="1"></fb:login-button>
 		
-		Element elem = Document.get().createElement("fb:login-button");
+		/*Element elem = Document.get().createElement("fb:login-button");
 		elem.setAttribute("width", "50");
 		//elem.setAttribute("show-faces", "true");
 		elem.setAttribute("max-rows", "1");
 		//elem.setAttribute("perms", "user_birthday,friends_birthday,user_relationships,friends_relationships" );
-		elem.setId("fblogin");
+		elem.setId("fblogin");*/
+		
+		//<div class="fb-login-button" scope="email,user_checkins">
+		
+		Element elem = Document.get().createElement("div");
+		elem.setAttribute("class", "fb-login-button");
+		elem.setAttribute("scope", "user");
 		
 		return elem;
 	}
 	
 	public native void fbParse() /*-{
-		$wnd.FB.XFBML.parse();
+		if( $wnd.FB !== undefined ) {
+			$wnd.FB.XFBML.parse();
+		}
 	}-*/;
 	
 	public native void fbInit( String login ) /*-{
 		var ths = this;
-		$wnd.fbAsyncInit = function() {
-	    	$wnd.FB.init({appId: '215097581865564', status: true, cookie: true, xfbml: true});
-	    	
-	    	if( login == null ) {
-		    	try {
-					$wnd.FB.getLoginStatus( function(response) {
-						$wnd.console.log( "inside login response" );
-						try {
-							if (response.session) {
-								var uid = response.session.uid;
-								ths.@org.simmi.client.Webworm::setUserId(Ljava/lang/String;)( uid );
-							} else {
-								ths.@org.simmi.client.Webworm::setUserId(Ljava/lang/String;)( "" );
-							}
-							$wnd.FB.XFBML.parse();
-						} catch( e ) {
-							$wnd.console.log( e );
+		$wnd.console.log( "fbInit" );
+		
+		if( login == null ) {
+	    	try {
+	    		$wnd.console.log( "login null" );
+				$wnd.FB.getLoginStatus( function(response) {
+					$wnd.console.log( "inside login response" );
+					try {
+						if (response.session) {
+							var uid = response.session.uid;
+							ths.@org.simmi.client.Webworm::setUserId(Ljava/lang/String;)( uid );
+						} else {
+							ths.@org.simmi.client.Webworm::setUserId(Ljava/lang/String;)( "" );
 						}
-					});
-				} catch( e ) {
-					$wnd.console.log( e );
-				}
-	    	} else {
-	    		ths.@org.simmi.client.Webworm::setUserId(Ljava/lang/String;)( login );
-	    	}
-	  	};
+						$wnd.FB.XFBML.parse();
+					} catch( e ) {
+						$wnd.console.log( e );
+					}
+				});
+			} catch( e ) {
+				$wnd.console.log( e );
+			}
+		} else {
+			$wnd.console.log( login );
+			
+			ths.@org.simmi.client.Webworm::setUserId(Ljava/lang/String;)( login );
+		}
+	    	
+		//$wnd.fbAsyncInit = function() {
+		//	$wnd.console.log( "inside async init" );
+			
+	    //	$wnd.FB.init({appId: '215097581865564', status: true, cookie: true, xfbml: true});
+	    	
+	    	//here
+	  	//};
 	}-*/;
 	
 	SimplePanel	sp;
@@ -1245,10 +1262,10 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 		hp.add( form );
 		hp.add( splus );
 		
-		ScriptElement se = Document.get().createScriptElement();
+		/*ScriptElement se = Document.get().createScriptElement();
 		se.setAttribute("async", "true");
 		se.setSrc("http://connect.facebook.net/en_US/all.js");
-		Document.get().getElementById("fb-root").appendChild(se);
+		Document.get().getElementById("fb-root").appendChild(se);*/
 		
 		String fbuid = null;
 		NodeList<Element> nl = Document.get().getElementsByTagName("meta");
