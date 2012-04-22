@@ -129,7 +129,7 @@
     <!-- If you add any GWT meta tags, they must   -->
     <!-- be added before this line.                -->
     <!--                                           -->
-    <script type="text/javascript" src="https://apis.google.com/js/plusone.js">
+    <script type="text/javascript" src="//apis.google.com/js/plusone.js">
   	   {parsetags: 'explicit'}
 	</script>
     <script type="text/javascript" language="javascript" src="webworm/webworm.nocache.js"></script>
@@ -231,29 +231,13 @@
     </table>
     
      <div id="fb-root"></div>
-      <script>
-         window.fbAsyncInit = function() {
-          FB.init({
-            appId      : '215097581865564',
-            status     : true, 
-            cookie     : true,
-            xfbml      : true,
-            oauth      : true,
-          });
-        };
-        (function(d){
-           var js, id = 'facebook-jssdk'; if (d.getElementById(id)) {return;}
-           js = d.createElement('script'); js.id = id; js.async = true;
-           js.src = "//connect.facebook.net/en_US/all.js";
-           d.getElementsByTagName('head')[0].appendChild(js);
-         }(document));
-      </script>
-    <%
-    if( str == null ) {%>
+<%
+/*
+    if( str == null ) 
+    // { // % // >
     <div id="ads">
     <script type="text/javascript"><!--
 		google_ad_client = "ca-pub-7204381538404733";
-		/* Webworm */
 		google_ad_slot = "1687563636";
 		google_ad_width = 160;
 		google_ad_height = 600;
@@ -261,6 +245,8 @@
 	</script>
 	<script type="text/javascript" src="http://pagead2.googlesyndication.com/pagead/show_ads.js"></script>
     </div>
-    <%}%>
+    //< // % // }
+*/
+%>
   </body>
 </html>

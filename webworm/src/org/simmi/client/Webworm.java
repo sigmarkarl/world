@@ -652,41 +652,61 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 	public native void fbInit( String login ) /*-{
 		var ths = this;
 		$wnd.console.log( "fbInit" );
-		
-		if( login == null ) {
-	    	try {
-	    		$wnd.console.log( "login null" );
-				$wnd.FB.getLoginStatus( function(response) {
-					$wnd.console.log( "inside login response" );
-					try {
-						if (response.session) {
-							var uid = response.session.uid;
-							ths.@org.simmi.client.Webworm::setUserId(Ljava/lang/String;)( uid );
-						} else {
-							ths.@org.simmi.client.Webworm::setUserId(Ljava/lang/String;)( "" );
+	    	
+		$wnd.fbAsyncInit = function() {
+			$wnd.console.log( "inside async init" );
+			
+	    	$wnd.FB.init({appId: '215097581865564', status: true, cookie: true, xfbml: true, oauth : true});
+	    	
+	    	if( login == null ) {
+		    	try {
+		    		$wnd.console.log( "login null" );
+		    		$wnd.console.log( $wnd.FB );
+		    		$wnd.console.log( $wnd.FB.getLoginStatus );
+					$wnd.FB.getLoginStatus( function(response) {
+						$wnd.console.log( "inside login response" );
+						try {
+							if (response.status === 'connected') {
+							    // the user is logged in and has authenticated your
+							    // app, and response.authResponse supplies
+							    // the user's ID, a valid access token, a signed
+							    // request, and the time the access token 
+							    // and signed request each expire
+							    var uid = response.authResponse.userID;
+							    var accessToken = response.authResponse.accessToken;
+							    ths.@org.simmi.client.Webworm::setUserId(Ljava/lang/String;)( uid );
+							    $wnd.FB.XFBML.parse();
+							} else if (response.status === 'not_authorized') {
+							    // the user is logged in to Facebook, 
+							    // but has not authenticated your app
+							} else {
+							    // the user isn't logged in to Facebook.
+							    ths.@org.simmi.client.Webworm::setUserId(Ljava/lang/String;)( "" );
+							}
+						} catch( e ) {
+							$wnd.console.log( "getLoginStatus error" );
+							$wnd.console.log( e );
 						}
-						$wnd.FB.XFBML.parse();
-					} catch( e ) {
-						$wnd.console.log( e );
-					}
-				});
-			} catch( e ) {
-				$wnd.console.log( e );
+					});
+				} catch( e ) {
+					$wnd.console.log( "gls error" );
+					$wnd.console.log( e );
+				}
+			} else {
+				$wnd.console.log( login );
+				
+				ths.@org.simmi.client.Webworm::setUserId(Ljava/lang/String;)( login );
 			}
-		} else {
-			$wnd.console.log( login );
-			
-			ths.@org.simmi.client.Webworm::setUserId(Ljava/lang/String;)( login );
-		}
-	    	
-		//$wnd.fbAsyncInit = function() {
-		//	$wnd.console.log( "inside async init" );
-			
-	    //	$wnd.FB.init({appId: '215097581865564', status: true, cookie: true, xfbml: true});
-	    	
-	    	//here
-	  	//};
+	  	};
 	}-*/;
+	
+	/*if (response.session) {
+								var uid = response.session.uid;
+								ths.@org.simmi.client.Webworm::setUserId(Ljava/lang/String;)( uid );
+							} else {
+								ths.@org.simmi.client.Webworm::setUserId(Ljava/lang/String;)( "" );
+							}
+							$wnd.FB.XFBML.parse();*/
 	
 	SimplePanel	sp;
 	SimplePanel	splus;
@@ -1262,11 +1282,6 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 		hp.add( form );
 		hp.add( splus );
 		
-		/*ScriptElement se = Document.get().createScriptElement();
-		se.setAttribute("async", "true");
-		se.setSrc("http://connect.facebook.net/en_US/all.js");
-		Document.get().getElementById("fb-root").appendChild(se);*/
-		
 		String fbuid = null;
 		NodeList<Element> nl = Document.get().getElementsByTagName("meta");
 		int i;
@@ -1326,9 +1341,20 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 		}
 		fbInit( fbuid );
 		
+		String id = "facebook-jssdk";
+		ScriptElement se = Document.get().createScriptElement();
+		se.setId( id );
+		se.setAttribute("async", "true");
+		se.setSrc("//connect.facebook.net/en_US/all.js");
+		Document.get().getElementById("fb-root").appendChild(se);
+		
 		//sp.getElement().appendChild( e );
 		//sp.setWidth("170px");
+		
+		
 		splus.getElement().appendChild( plus );
+		
+		
 		//splus.setWidth("100px");
 		
 		//HorizontalPanel hsp = new HorizontalPanel();
