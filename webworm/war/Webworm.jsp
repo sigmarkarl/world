@@ -232,9 +232,8 @@
     
      <div id="fb-root"></div>
 <%
-/*
-    if( str == null ) 
-    // { // % // >
+    if( str == null ) {
+%>
     <div id="ads">
     <script type="text/javascript"><!--
 		google_ad_client = "ca-pub-7204381538404733";
@@ -243,10 +242,10 @@
 		google_ad_height = 600;
 		//-->
 	</script>
-	<script type="text/javascript" src="http://pagead2.googlesyndication.com/pagead/show_ads.js"></script>
+	<script type="text/javascript" src="//pagead2.googlesyndication.com/pagead/show_ads.js"></script>
     </div>
-    //< // % // }
-*/
+<%
+}
 %>
   </body>
 </html>
