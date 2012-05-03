@@ -599,6 +599,10 @@ public class JavaFasta extends JApplet {
 			return name;
 		}
 		
+		public void setName( String name ) {
+			this.name = name;
+		}
+		
 		public boolean equals( Object obj ) {			
 			/*boolean ret = name.equals( obj.toString() ); //super.equals( obj );
 			System.err.println( "erm " + this.toString() + " " + obj.toString() + "  " + ret );
@@ -773,6 +777,33 @@ public class JavaFasta extends JApplet {
     	}
 	}
 	
+	public Map<String,String> openRenameFile() throws IOException {
+		Map<String,String>	or = new HashMap<String,String>();
+		FileOpenService fos; 
+
+	    try { 
+	        fos = (FileOpenService)ServiceManager.lookup("javax.jnlp.FileOpenService"); 
+	    } catch (UnavailableServiceException e) {
+	        fos = null; 
+	    }
+	    
+	    if (fos != null) {
+	        FileContents[] fcs = fos.openMultiFileDialog(null, null);
+            for( FileContents fc : fcs ) {
+            	String name = fc.getName();
+            	or.putAll( importRenameFile( fc.getInputStream() ) );
+            }
+	    } else {
+	    	JFileChooser	jfc = new JFileChooser();
+	    	if( jfc.showOpenDialog( JavaFasta.this ) == JFileChooser.APPROVE_OPTION ) {
+	    		File f = jfc.getSelectedFile();
+	    		or.putAll( importRenameFile( new FileInputStream(f) ) );
+	    	}
+	    }
+	    
+	    return or;
+	}
+	
 	public void openFiles() throws IOException {
 		FileOpenService fos; 
 
@@ -796,6 +827,23 @@ public class JavaFasta extends JApplet {
 	    	}
 	    }
 	    updateView();
+	}
+	
+	public Map<String,String> importRenameFile( InputStream is ) throws IOException {
+		Map<String,String> or = new HashMap<String,String>();
+	
+		BufferedReader br = new BufferedReader( new InputStreamReader(is) );
+		String line = br.readLine();
+		while( line != null ) {
+			String[] split = line.split("\t");
+			if( split.length > 1 ) {
+				or.put(split[1], split[0]);
+			}
+			line = br.readLine();
+		}
+		br.close();
+		
+		return or;
 	}
 	
 	public void exportFasta( JTable table, List<Sequence> lseq ) throws IOException, UnavailableServiceException {
@@ -1934,6 +1982,26 @@ public class JavaFasta extends JApplet {
 				c.repaint();
 				overview.reval();
 				overview.repaint();
+			}
+		});
+		popup.add( new AbstractAction("RenameAppend") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				try {
+					Map<String,String> or = openRenameFile();
+					for( String seqval : or.keySet() ) {
+						String rename = or.get(seqval);
+						
+						for( Sequence seq : lseq ) {
+							if( seq.getStringBuilder().indexOf(seqval) != -1 ) {
+								seq.setName( seq.getName() + "_" + rename );
+							}
+						}
+					}
+					updateView();
+				} catch (IOException e1) {
+					e1.printStackTrace();
+				}
 			}
 		});
 		popup.addSeparator();

@@ -11,7 +11,7 @@
 </information>
 <offline-allowed/>
 <resources>
-  <j2se version="1.6+" />
+  <j2se version="1.6+" max-heap-size="1000M"/>
   <jar href="javafasta.jar"/>
 </resources>
 <applet-desc 
