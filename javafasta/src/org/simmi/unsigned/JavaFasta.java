@@ -67,6 +67,7 @@ import javax.swing.JScrollPane;
 import javax.swing.JSpinner;
 import javax.swing.JSplitPane;
 import javax.swing.JTable;
+import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.RowSorter;
 import javax.swing.SpinnerNumberModel;
@@ -2382,6 +2383,40 @@ public class JavaFasta extends JApplet {
 			}
 		});
 		popup.add( cbmi );
+		popup.add( new AbstractAction("Distance matrix") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				int[] rr = table.getSelectedRows();
+				JTextArea	text = new JTextArea();
+				text.append("\t"+rr.length+"\n");
+				for( int i = 0; i < rr.length; i++ ) {
+					int r = rr[i];
+					text.append( (String)table.getValueAt(r, 0) );
+					for( int y = 0; y < rr.length; y++ ) {
+						if( i == y ) text.append("\t0.0");
+						else {
+							Sequence seq1 = lseq.get( table.convertRowIndexToModel(rr[i]) );
+							Sequence seq2 = lseq.get( table.convertRowIndexToModel(rr[y]) );
+							int count = 0;
+							for( int k = 0; k < seq1.sb.length(); k++ ) {
+								char c1 = seq1.charAt(k);
+								char c2 = seq2.charAt(k);
+								
+								if( c1 != '.' && c1 != '-' && c1 != c2 ) count++;
+							}
+							text.append("\t"+count);
+						}
+					}
+					text.append("\n");
+				}
+				JScrollPane	sp = new JScrollPane( text );
+				JFrame	fr = new JFrame("Distance matrix");
+				fr.add( sp );
+				fr.setSize(800, 600);
+				fr.setDefaultCloseOperation( JFrame.DISPOSE_ON_CLOSE );
+				fr.setVisible( true );
+			}
+		});
 		popup.add( new AbstractAction("Dot plot") {
 			public void actionPerformed( ActionEvent e ) {
 				if( table.getSelectedRowCount() > 0 ) {
