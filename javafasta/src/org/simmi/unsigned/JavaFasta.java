@@ -31,6 +31,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -919,6 +920,73 @@ public class JavaFasta extends JApplet {
             	 exc.printStackTrace();
              }
          }*/
+	}
+	
+	public void exportManyFasta( JTable table, List<Sequence> lseq ) throws IOException, UnavailableServiceException {
+		 JFileChooser jfc = new JFileChooser();
+       	 jfc.setFileSelectionMode( JFileChooser.DIRECTORIES_ONLY );
+       	 File dir = null;
+       	 if( jfc.showSaveDialog( JavaFasta.this ) == JFileChooser.APPROVE_OPTION ) {
+       		 dir = jfc.getSelectedFile();
+       	 }
+       	 
+       	 Map<String,FileWriter>	filemap = new HashMap<String,FileWriter>();
+   	 
+	   	 int[] rr = table.getSelectedRows();
+	   	 for( int r : rr ) {
+	   		 int i = table.convertRowIndexToModel( r );
+	   		 Sequence seq = lseq.get(i);
+	   		 int val = 0;
+	   		 int end = seq.getLength();
+	   		 
+	   		 if( c.selectedRect.width > 0 ) {
+	   			 val = Math.max( val, c.selectedRect.x-seq.getStart() );
+	   			 end = Math.min( end, c.selectedRect.x+c.selectedRect.width-seq.getStart() );
+	   		 }
+	   		 
+	   		 String name = seq.getName();
+	   		 int ui = name.indexOf('_');
+	   		 if( ui == -1 ) ui = name.length();
+	   		 String filename = name.substring(0,ui);
+	   		 
+	   		 FileWriter fw;
+	   		 if( filemap.containsKey(filename) ) fw = filemap.get( filename );
+	   		 else {
+	   			 fw = new FileWriter( new File( dir, filename ) );
+	   			 filemap.put( filename, fw );
+	   		 }
+	   		 
+	   		 if( val < end ) fw.write( ">" + seq.name + "\n" );
+	   		 while( val < end ) {
+	   			 fw.write( seq.sb.substring(val, Math.min( end, val+70 )) + "\n" );
+	   			 val += 70;
+	   		 }
+	   	 }
+	   	 
+	   	 for( String filename : filemap.keySet() ) {
+	   		 filemap.get(filename).close();
+	   	 }
+
+        /*if (fileContents != null) {
+            try {
+           	 OutputStream os = fileContents.getOutputStream( true );
+           	 OutputStreamWriter	osw = new OutputStreamWriter( os );
+           	 
+           	 int[] rr = table.getSelectedRows();
+           	 for( int r : rr ) {
+           		 int i = table.convertRowIndexToModel( r );
+           		 Sequence seq = lseq.get(i);
+           		 osw.write( ">" + seq.name + "\n" );
+           		 int val = 0;
+           		 while( val < seq.getLength() ) {
+           			 osw.write( seq.sb.substring(val, Math.min( seq.getLength(), val+70 )) + "\n" );
+           			 val += 70;
+           		 }
+           	 }
+            } catch (IOException exc) {
+           	 exc.printStackTrace();
+            }
+        }*/
 	}
 	
 	public void exportAnnotationFasta( JTable table, List<Annotation> lann ) throws IOException, UnavailableServiceException {
@@ -2360,6 +2428,18 @@ public class JavaFasta extends JApplet {
 			public void actionPerformed(ActionEvent e) {
 				try {
 					exportFasta( table, lseq );
+				} catch (IOException e1) {
+					e1.printStackTrace();
+				} catch (UnavailableServiceException e1) {
+					e1.printStackTrace();
+				}
+			}
+		});
+		popup.add( new AbstractAction("Export many") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				try {
+					exportManyFasta( table, lseq );
 				} catch (IOException e1) {
 					e1.printStackTrace();
 				} catch (UnavailableServiceException e1) {
