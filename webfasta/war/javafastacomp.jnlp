@@ -13,6 +13,7 @@
 <resources>
   <j2se version="1.7" max-heap-size="1000M"/>
   <jar href="javafasta.jar"/>
+  <jar href="commons-codec.jar"/>
 </resources>
 <component-desc />
 </jnlp>

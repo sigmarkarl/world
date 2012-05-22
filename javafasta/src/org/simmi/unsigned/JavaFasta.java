@@ -57,12 +57,14 @@ import javax.jnlp.UnavailableServiceException;
 import javax.swing.AbstractAction;
 import javax.swing.JApplet;
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JComponent;
 import javax.swing.JDialog;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
 import javax.swing.JSpinner;
@@ -93,6 +95,15 @@ public class JavaFasta extends JApplet {
 	 * 
 	 */
 	private static final long serialVersionUID = 1L;
+	JApplet	parentApplet = JavaFasta.this;
+	
+	public void setParentApplet( JApplet applet ) {
+		parentApplet = applet;
+	}
+	
+	public JavaFasta( JApplet parentApplet ) {
+		if( parentApplet != null ) this.parentApplet = parentApplet;
+	}
 
 	public class Ruler extends JComponent {
 		int 	x;
@@ -797,7 +808,7 @@ public class JavaFasta extends JApplet {
             }
 	    } else {
 	    	JFileChooser	jfc = new JFileChooser();
-	    	if( jfc.showOpenDialog( JavaFasta.this ) == JFileChooser.APPROVE_OPTION ) {
+	    	if( jfc.showOpenDialog( parentApplet ) == JFileChooser.APPROVE_OPTION ) {
 	    		File f = jfc.getSelectedFile();
 	    		or.putAll( importRenameFile( new FileInputStream(f) ) );
 	    	}
@@ -823,7 +834,7 @@ public class JavaFasta extends JApplet {
             }
 	    } else {
 	    	JFileChooser	jfc = new JFileChooser();
-	    	if( jfc.showOpenDialog( JavaFasta.this ) == JFileChooser.APPROVE_OPTION ) {
+	    	if( jfc.showOpenDialog( parentApplet ) == JFileChooser.APPROVE_OPTION ) {
 	    		File f = jfc.getSelectedFile();
 	    		importFile( f.getName(), new FileInputStream(f) );
 	    	}
@@ -890,7 +901,7 @@ public class JavaFasta extends JApplet {
              os.close();
          } else {
         	 JFileChooser jfc = new JFileChooser();
-        	 if( jfc.showSaveDialog( JavaFasta.this ) == JFileChooser.APPROVE_OPTION ) {
+        	 if( jfc.showSaveDialog( parentApplet ) == JFileChooser.APPROVE_OPTION ) {
         		 File f = jfc.getSelectedFile();
         		 FileOutputStream fos = new FileOutputStream( f );
         		 fos.write( baos.toByteArray() );
@@ -926,7 +937,7 @@ public class JavaFasta extends JApplet {
 		 JFileChooser jfc = new JFileChooser();
        	 jfc.setFileSelectionMode( JFileChooser.DIRECTORIES_ONLY );
        	 File dir = null;
-       	 if( jfc.showSaveDialog( JavaFasta.this ) == JFileChooser.APPROVE_OPTION ) {
+       	 if( jfc.showSaveDialog( parentApplet ) == JFileChooser.APPROVE_OPTION ) {
        		 dir = jfc.getSelectedFile();
        	 }
        	 
@@ -1024,7 +1035,7 @@ public class JavaFasta extends JApplet {
 		        os.close();
 	    } else {
 		   	 JFileChooser jfc = new JFileChooser();
-		   	 if( jfc.showSaveDialog( JavaFasta.this ) == JFileChooser.APPROVE_OPTION ) {
+		   	 if( jfc.showSaveDialog( parentApplet ) == JFileChooser.APPROVE_OPTION ) {
 		   		 File f = jfc.getSelectedFile();
 		   		 FileOutputStream fos = new FileOutputStream( f );
 		   		 fos.write( baos.toByteArray() );
@@ -1360,6 +1371,42 @@ public class JavaFasta extends JApplet {
 		}
 		
 		c.repaint();
+	}
+	
+	public StringBuilder distanceMatrix() {
+		int[] rr = table.getSelectedRows();
+		StringBuilder	text = new StringBuilder();
+		text.append("\t"+rr.length+"\n");
+		for( int i = 0; i < rr.length; i++ ) {
+			int r = rr[i];
+			text.append( ((String)table.getValueAt(r, 0)).replace(' ','_') );
+			for( int y = 0; y < rr.length; y++ ) {
+				if( i == y ) text.append("\t0.0");
+				else {
+					Sequence seq1 = lseq.get( table.convertRowIndexToModel(rr[i]) );
+					Sequence seq2 = lseq.get( table.convertRowIndexToModel(rr[y]) );
+					int count = 0;
+					int mism = 0;
+					
+					int start = Math.max( seq1.getStart(), seq2.getStart() );
+					int end = Math.min( seq1.getEnd(), seq2.getEnd() );
+					
+					for( int k = start; k < end; k++ ) {
+						char c1 = seq1.charAt( k-seq1.getStart() );
+						char c2 = seq2.charAt( k-seq2.getStart() );
+						
+						if( c1 != '.' && c1 != '-' && c1 != ' ' &&  c2 != '.' && c2 != '-' && c2 != ' ' ) {
+							if( c1 != c2 ) mism++;
+							count++;
+						}
+					}
+					text.append("\t"+((double)mism/(double)count));
+				}
+			}
+			text.append("\n");
+		}
+		
+		return text;
 	}
 	
 	int[]	currentRowSelection;
@@ -1860,7 +1907,7 @@ public class JavaFasta extends JApplet {
 							updateView();
 							
 							return true;
-						} else if( support.isDataFlavorSupported( ndf ) ) {							
+						} else if( support.isDataFlavorSupported( ndf ) ) {						
 							Object obj = support.getTransferable().getTransferData( df );
 							ArrayList<Sequence>	seqs = (ArrayList<Sequence>)obj;
 							
@@ -2466,35 +2513,43 @@ public class JavaFasta extends JApplet {
 		popup.add( new AbstractAction("Distance matrix") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				int[] rr = table.getSelectedRows();
-				JTextArea	text = new JTextArea();
-				text.append("\t"+rr.length+"\n");
-				for( int i = 0; i < rr.length; i++ ) {
-					int r = rr[i];
-					text.append( (String)table.getValueAt(r, 0) );
-					for( int y = 0; y < rr.length; y++ ) {
-						if( i == y ) text.append("\t0.0");
-						else {
-							Sequence seq1 = lseq.get( table.convertRowIndexToModel(rr[i]) );
-							Sequence seq2 = lseq.get( table.convertRowIndexToModel(rr[y]) );
-							int count = 0;
-							for( int k = 0; k < seq1.sb.length(); k++ ) {
-								char c1 = seq1.charAt(k);
-								char c2 = seq2.charAt(k);
-								
-								if( c1 != '.' && c1 != '-' && c1 != c2 ) count++;
-							}
-							text.append("\t"+count);
-						}
-					}
-					text.append("\n");
-				}
+				JCheckBox check = new JCheckBox("Exclude gaps");
+				JOptionPane.showInputDialog( check );
+				
+				StringBuilder sb = distanceMatrix();
+				JTextArea		text = new JTextArea( sb.toString() );
 				JScrollPane	sp = new JScrollPane( text );
 				JFrame	fr = new JFrame("Distance matrix");
 				fr.add( sp );
 				fr.setSize(800, 600);
 				fr.setDefaultCloseOperation( JFrame.DISPOSE_ON_CLOSE );
 				fr.setVisible( true );
+			}
+		});
+		popup.add( new AbstractAction("Draw tree") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				StringBuilder	sb = distanceMatrix();
+				
+				System.err.println("about to call showTree");
+				JSObject jso = JSObject.getWindow( parentApplet );
+				jso.call("showTree", new Object[] {sb.toString()} );
+				/*String urlstr = Base64.encodeBase64URLSafeString( sb.toString().getBytes() );
+				try {
+					URI treeuri = new URI( "http://webconnectron.appspot.com/Treedraw.html?dist="+urlstr );
+					JavaFasta.this.getAppletContext().showDocument(treeuri.toURL(), "_blank");
+				} catch (URISyntaxException e1) {
+					e1.printStackTrace();
+				} catch (MalformedURLException e1) {
+					e1.printStackTrace();
+				}
+				
+				try {
+					URI treeuri = new URI( "http://webconnectron.appspot.com/Treedraw.html" );
+					JavaFasta.this.getAppletContext().showDocument(treeuri.toURL(), "_blank");
+				} catch (URISyntaxException | MalformedURLException e1) {
+					e1.printStackTrace();
+				}*/
 			}
 		});
 		popup.add( new AbstractAction("Dot plot") {
@@ -2604,7 +2659,7 @@ public class JavaFasta extends JApplet {
 								             os.close();
 								         } else {
 								        	 JFileChooser jfc = new JFileChooser();
-								        	 if( jfc.showSaveDialog( JavaFasta.this ) == JFileChooser.APPROVE_OPTION ) {
+								        	 if( jfc.showSaveDialog( parentApplet ) == JFileChooser.APPROVE_OPTION ) {
 								        		 File f = jfc.getSelectedFile();
 								        		 FileOutputStream fos = new FileOutputStream( f );
 								        		 fos.write( baos.toByteArray() );
@@ -3086,7 +3141,7 @@ public class JavaFasta extends JApplet {
 	public static void main(String[] args) {
 		JFrame	frame = new JFrame();
 		frame.setDefaultCloseOperation( JFrame.EXIT_ON_CLOSE );
-		JavaFasta	jf = new JavaFasta();
+		JavaFasta	jf = new JavaFasta( null );
 		jf.initGui( frame );
 		
 		frame.setVisible( true );

@@ -1414,23 +1414,48 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 			}
 		});
 		
-		final CheckBox	faudio = new CheckBox("No eff-ing music");
+		final RadioButton	seren = new RadioButton("faudio", "Worm-serenade");
+		final RadioButton	rhaps = new RadioButton("faudio", "Worm-rhapsody");
+		final RadioButton	faudio = new RadioButton("faudio", "No eff-ing music");
+		seren.addClickHandler( new ClickHandler() {
+			@Override
+			public void onClick(ClickEvent event) {
+				audio.setEnabled( true );
+				audio.setSrc("flabb2.mp3");
+			}
+		});
+		rhaps.addClickHandler( new ClickHandler() {
+			@Override
+			public void onClick(ClickEvent event) {
+				audio.setEnabled( true );
+				audio.setSrc("hey.mp3");
+			}
+		});
 		faudio.addClickHandler( new ClickHandler() {
 			@Override
 			public void onClick(ClickEvent event) {
-				audio.setEnabled( !faudio.getValue() );
+				audio.setEnabled( false );
 			}
 		});
+		
+		HorizontalPanel hpaudio = new HorizontalPanel();
+		hpaudio.setSpacing(5);
+		hpaudio.add( seren );
+		hpaudio.add( rhaps );
+		hpaudio.add( faudio );
+		
+		HTML	musicmessage = new HTML("I'm working on Worm-toccata and fuge. <br>If you like the game soundtrack, stay tuned!");
 		
 		infov.add( play );
 		infov.add( infohtml );
 		infov.add( hp );
-		infov.add( faudio );
+		infov.add( hpaudio );
+		infov.add( musicmessage );
 		infov.add( links );
 		info.add( infov );
 		
 		audio = Audio.createIfSupported();
-		audio.setSrc("flabb.mp3");
+		audio.setSrc("flabb2.mp3");
 		audio.setLoop( true );
 		audio.getAudioElement().setAttribute("loop", "true");
 		
