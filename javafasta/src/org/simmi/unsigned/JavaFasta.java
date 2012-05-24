@@ -682,8 +682,12 @@ public class JavaFasta extends JApplet {
 			return getStart() + substart;
 		}
 		
-		public int getRealLength() {
+		public int getRealStop() {
 			return getStart() + substop;
+		}
+		
+		public int getRealLength() {
+			return substop - substart;
 		}
 		
 		public void boundsCheck() {
@@ -1085,6 +1089,10 @@ public class JavaFasta extends JApplet {
 	
 	JTable			atable;
 	
+	public int getNumberOfSequences() {
+		return lseq.size();
+	}
+	
 	public byte[] getByteArray( int len ) {
 		return new byte[ len ];
 	}
@@ -1373,40 +1381,253 @@ public class JavaFasta extends JApplet {
 		c.repaint();
 	}
 	
-	public StringBuilder distanceMatrix() {
+	public StringBuilder getFastaWoGaps() {
+		int start = Integer.MIN_VALUE;
+		int end = Integer.MAX_VALUE;
+		
+		for( Sequence seq : lseq ) {
+			if( seq.getRealStart() > start ) start = seq.getRealStart();
+			if( seq.getRealStop() < end ) end = seq.getRealStop();
+		}
+		
+		List<Integer>	idxs = new ArrayList<Integer>();
+		for( int x = start; x < end; x++ ) {
+			boolean skip = false;
+			for( Sequence seq : lseq ) {
+				char c = seq.charAt( x );
+				if( c != '-' && c != '.' && c == ' ' ) {
+					skip = true;
+					break;
+				}
+			}
+			
+			if( !skip ) {
+				idxs.add( x );
+			}
+		}
+		
+		StringBuilder ret = new StringBuilder();
+		for( Sequence seq : lseq ) {
+			ret.append( ">"+seq.getName()+"\n" );
+			int k = 0;
+			for( int i : idxs ) {
+				ret.append( seq.charAt(i) );
+				k++;
+				if( k % 70 == 0 ) ret.append("\n");
+			}
+			if( k % 70 != 0 ) ret.append("\n");
+		}
+		return ret;
+	}
+	
+	public StringBuilder distanceMatrix( boolean excludeGaps ) {
+		JCheckBox	jukes = new JCheckBox("Jukes-cantor correction");
+		JOptionPane.showMessageDialog( parentApplet, jukes );
+		boolean cantor = jukes.isSelected();
+		
 		int[] rr = table.getSelectedRows();
 		StringBuilder	text = new StringBuilder();
 		text.append("\t"+rr.length+"\n");
-		for( int i = 0; i < rr.length; i++ ) {
-			int r = rr[i];
-			text.append( ((String)table.getValueAt(r, 0)).replace(' ','_') );
-			for( int y = 0; y < rr.length; y++ ) {
-				if( i == y ) text.append("\t0.0");
-				else {
-					Sequence seq1 = lseq.get( table.convertRowIndexToModel(rr[i]) );
-					Sequence seq2 = lseq.get( table.convertRowIndexToModel(rr[y]) );
-					int count = 0;
-					int mism = 0;
-					
-					int start = Math.max( seq1.getStart(), seq2.getStart() );
-					int end = Math.min( seq1.getEnd(), seq2.getEnd() );
-					
-					for( int k = start; k < end; k++ ) {
-						char c1 = seq1.charAt( k-seq1.getStart() );
-						char c2 = seq2.charAt( k-seq2.getStart() );
+		
+		if( excludeGaps ) {
+			int start = Integer.MIN_VALUE;
+			int end = Integer.MAX_VALUE;
+			
+			for( int i = 0; i < rr.length; i++ ) {
+				int r = rr[i];
+				Sequence seq = lseq.get( table.convertRowIndexToModel(r) );
+				if( seq.getRealStart() > start ) start = seq.getRealStart();
+				if( seq.getRealStop() < end ) end = seq.getRealStop();
+			}
+			
+			List<Integer>	idxs = new ArrayList<Integer>();
+			for( int x = start; x < end; x++ ) {
+				int i;
+				for( i = 0; i < rr.length; i++ ) {
+					int r = rr[i];
+					Sequence seq = lseq.get( table.convertRowIndexToModel(r) );
+					char c = seq.charAt( x );
+					if( c != '-' && c != '.' && c == ' ' ) break;
+				}
+				
+				if( i == rr.length ) {
+					idxs.add( x );
+				}
+			}
+			
+			for( int i = 0; i < rr.length; i++ ) {
+				int r = rr[i];
+				text.append( ((String)table.getValueAt(r, 0)).replace(' ','_') );
+				for( int y = 0; y < rr.length; y++ ) {
+					if( i == y ) text.append("\t0.0");
+					else {
+						Sequence seq1 = lseq.get( table.convertRowIndexToModel(rr[i]) );
+						Sequence seq2 = lseq.get( table.convertRowIndexToModel(rr[y]) );
+						int count = 0;
+						int mism = 0;
 						
-						if( c1 != '.' && c1 != '-' && c1 != ' ' &&  c2 != '.' && c2 != '-' && c2 != ' ' ) {
+						for( int k : idxs ) {
+							char c1 = seq1.charAt( k-seq1.getStart() );
+							char c2 = seq2.charAt( k-seq2.getStart() );
+							
 							if( c1 != c2 ) mism++;
 							count++;
 						}
+						double d = ((double)mism/(double)count);
+						if( cantor ) d = -3.0*Math.log( 1.0 - 4.0*d/3.0 )/4.0;
+						text.append("\t"+d);
 					}
-					text.append("\t"+((double)mism/(double)count));
 				}
+				text.append("\n");
 			}
-			text.append("\n");
+		} else {
+			for( int i = 0; i < rr.length; i++ ) {
+				int r = rr[i];
+				text.append( ((String)table.getValueAt(r, 0)).replace(' ','_') );
+				for( int y = 0; y < rr.length; y++ ) {
+					if( i == y ) text.append("\t0.0");
+					else {
+						Sequence seq1 = lseq.get( table.convertRowIndexToModel(rr[i]) );
+						Sequence seq2 = lseq.get( table.convertRowIndexToModel(rr[y]) );
+						int count = 0;
+						int mism = 0;
+						
+						int start = Math.max( seq1.getStart(), seq2.getStart() );
+						int end = Math.min( seq1.getEnd(), seq2.getEnd() );
+						
+						for( int k = start; k < end; k++ ) {
+							char c1 = seq1.charAt( k-seq1.getStart() );
+							char c2 = seq2.charAt( k-seq2.getStart() );
+							
+							if( c1 != '.' && c1 != '-' && c1 != ' ' &&  c2 != '.' && c2 != '-' && c2 != ' ' ) {
+								if( c1 != c2 ) mism++;
+								count++;
+							}
+						}
+						double d = ((double)mism/(double)count);
+						if( cantor ) d = -3.0*Math.log( 1.0 - 4.0*d/3.0 )/4.0;
+						text.append("\t"+d);
+					}
+				}
+				text.append("\n");
+			}
 		}
 		
 		return text;
+	}
+	
+	public List<String> getNames() {
+		List<String>	ret = new ArrayList<String>();
+		
+		for( Sequence seqname : lseq ) {
+			ret.add( seqname.getName().replace(' ', '_') );
+		}
+		
+		return ret;
+	}
+	
+	public double[] distanceMatrixNumeric( boolean excludeGaps ) {
+		JCheckBox	jukes = new JCheckBox("Jukes-cantor correction");
+		JOptionPane.showMessageDialog( parentApplet, jukes );
+		boolean cantor = jukes.isSelected();
+		
+		double[]	dmat = new double[ lseq.size()*lseq.size() ];
+		if( excludeGaps ) {
+			int start = Integer.MIN_VALUE;
+			int end = Integer.MAX_VALUE;
+			
+			for( Sequence seq : lseq ) {
+				if( seq.getRealStart() > start ) start = seq.getRealStart();
+				if( seq.getRealStop() < end ) end = seq.getRealStop();
+			}
+			
+			List<Integer>	idxs = new ArrayList<Integer>();
+			for( int x = start; x < end; x++ ) {
+				int i;
+				boolean skip = false;
+				for( Sequence seq : lseq ) {
+					char c = seq.charAt( x );
+					if( c != '-' && c != '.' && c == ' ' ) {
+						skip = true;
+						break;
+					}
+				}
+				
+				if( !skip ) {
+					idxs.add( x );
+				}
+			}
+			
+			int i = 0;
+			for( Sequence seq1 : lseq ) {
+				for( Sequence seq2 : lseq ) {
+					if( seq1 == seq2 ) dmat[i] = 0.0;
+					else {
+						int count = 0;
+						int mism = 0;
+						
+						for( int k : idxs ) {
+							char c1 = seq1.charAt( k-seq1.getStart() );
+							char c2 = seq2.charAt( k-seq2.getStart() );
+							
+							if( c1 != c2 ) mism++;
+							count++;
+						}
+						double d = ((double)mism/(double)count);
+						if( cantor ) d = -3.0*Math.log( 1.0 - 4.0*d/3.0 )/4.0;
+						dmat[i] = d;
+					}
+					i++;
+				}
+			}
+		} else {
+			int i = 0;
+			for( Sequence seq1 : lseq ) {
+				for( Sequence seq2 : lseq ) {
+					if( seq1 == seq2 ) dmat[i] = 0.0; 
+					else {
+						int count = 0;
+						int mism = 0;
+						
+						int start = Math.max( seq1.getStart(), seq2.getStart() );
+						int end = Math.min( seq1.getEnd(), seq2.getEnd() );
+						
+						for( int k = start; k < end; k++ ) {
+							char c1 = seq1.charAt( k-seq1.getStart() );
+							char c2 = seq2.charAt( k-seq2.getStart() );
+							
+							if( c1 != '.' && c1 != '-' && c1 != ' ' &&  c2 != '.' && c2 != '-' && c2 != ' ' ) {
+								if( c1 != c2 ) mism++;
+								count++;
+							}
+						}
+						double d = ((double)mism/(double)count);
+						if( cantor ) d = -3.0*Math.log( 1.0 - 4.0*d/3.0 )/4.0;
+						dmat[i] = d;
+					}
+					i++;
+				}
+			}
+		}
+		
+		return dmat;
+	}
+	
+	public void initDataStructures() {
+		lseq = new ArrayList<Sequence>() {
+			/**
+			 * 
+			 */
+			private static final long serialVersionUID = 1L;
+
+			public boolean add( Sequence seq ) {
+				seq.index = lseq.size();
+				return super.add( seq );
+			}
+		};
+		mseq = new HashMap<String,Sequence>();
+		lann = new ArrayList<Annotation>();
+		mann = new HashMap<String,Annotation>();
 	}
 	
 	int[]	currentRowSelection;
@@ -1431,23 +1652,10 @@ public class JavaFasta extends JApplet {
 			frame.setResizable(true);
 		}
 
-		lseq = new ArrayList<Sequence>() {
-			/**
-			 * 
-			 */
-			private static final long serialVersionUID = 1L;
-
-			public boolean add( Sequence seq ) {
-				seq.index = lseq.size();
-				return super.add( seq );
-			}
-		};
-		mseq = new HashMap<String,Sequence>();
-		lann = new ArrayList<Annotation>();
-		mann = new HashMap<String,Annotation>();
+		initDataStructures();
+		
 		table = new JTable();
 		table.setAutoCreateRowSorter( true );
-		
 		table.setDragEnabled( true );
 		
 		final Ruler ruler = new Ruler( 10.0 );
@@ -1561,7 +1769,7 @@ public class JavaFasta extends JApplet {
 				if( columnIndex == 0 ) return seq.getName();
 				else if( columnIndex == 1 ) return seq.getAlignedLength();
 				else if( columnIndex == 2 ) return seq.getUnalignedLength();
-				else if( columnIndex == 3 ) return seq.getStart();
+				else if( columnIndex == 3 ) return seq.getRealStart();
 				else if( columnIndex == 4 ) return seq.getRevComp();
 				else if( columnIndex == 5 ) return seq.getGCP();
 				else if( columnIndex == 6 ) {
@@ -1699,7 +1907,34 @@ public class JavaFasta extends JApplet {
 					try {
 						System.err.println( table.getSelectedRows().length );
 						
-						if( support.isDataFlavorSupported( DataFlavor.javaFileListFlavor ) ) {
+						 if( support.isDataFlavorSupported( ndf ) ) {						
+							Object obj = support.getTransferable().getTransferData( ndf );
+							ArrayList<Sequence>	seqs = (ArrayList<Sequence>)obj;
+							
+							ArrayList<Sequence> newlist = new ArrayList<Sequence>( lseq.size() );
+							for( int r = 0; r < table.getRowCount(); r++ ) {
+								int i = table.convertRowIndexToModel(r);
+								newlist.add( lseq.get(i) );
+							}
+							lseq.clear();
+							lseq = newlist;
+							
+							Point p = support.getDropLocation().getDropPoint();
+							int k = table.rowAtPoint( p );
+							
+							lseq.removeAll( seqs );
+							for( Sequence s : seqs ) {
+								lseq.add(k++, s);
+							}
+							
+							TableRowSorter<TableModel>	trs = (TableRowSorter<TableModel>)table.getRowSorter();
+							trs.setSortKeys( null );
+							
+							table.tableChanged( new TableModelEvent(table.getModel()) );
+							c.repaint();
+							
+							return true;
+						} else if( support.isDataFlavorSupported( DataFlavor.javaFileListFlavor ) ) {
 							Object obj = support.getTransferable().getTransferData( DataFlavor.javaFileListFlavor );
 							//InputStream is = (InputStream)obj;
 							List<File>	lfile = (List<File>)obj;
@@ -1905,33 +2140,6 @@ public class JavaFasta extends JApplet {
 							importReader( new BufferedReader(new InputStreamReader(is, charset)) );
 							
 							updateView();
-							
-							return true;
-						} else if( support.isDataFlavorSupported( ndf ) ) {						
-							Object obj = support.getTransferable().getTransferData( df );
-							ArrayList<Sequence>	seqs = (ArrayList<Sequence>)obj;
-							
-							ArrayList<Sequence> newlist = new ArrayList<Sequence>( lseq.size() );
-							for( int r = 0; r < table.getRowCount(); r++ ) {
-								int i = table.convertRowIndexToModel(r);
-								newlist.add( lseq.get(i) );
-							}
-							lseq.clear();
-							lseq = newlist;
-							
-							Point p = support.getDropLocation().getDropPoint();
-							int k = table.rowAtPoint( p );
-							
-							lseq.removeAll( seqs );
-							for( Sequence s : seqs ) {
-								lseq.add(k++, s);
-							}
-							
-							TableRowSorter<TableModel>	trs = (TableRowSorter<TableModel>)table.getRowSorter();
-							trs.setSortKeys( null );
-							
-							table.tableChanged( new TableModelEvent(table.getModel()) );
-							c.repaint();
 							
 							return true;
 						}
@@ -2510,27 +2718,76 @@ public class JavaFasta extends JApplet {
 			}
 		});
 		popup.add( cbmi );
+		popup.add( new AbstractAction("Dis-mat exclude gaps") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				StringBuilder sb = distanceMatrix( true );
+				
+				File save = null;
+				try {
+					JFileChooser	fc = new JFileChooser();
+					if( fc.showOpenDialog( parentApplet ) == JFileChooser.APPROVE_OPTION ) {
+						save = fc.getSelectedFile();
+					}
+				} catch( Exception e1 ) {
+					
+				}
+				
+				if( save != null ) {
+					try {
+						FileWriter fw = new FileWriter( save );
+						fw.write( sb.toString() );
+					} catch (IOException e1) {
+						e1.printStackTrace();
+					}
+				} else {
+					JTextArea		text = new JTextArea( sb.toString() );
+					JScrollPane	sp = new JScrollPane( text );
+					JFrame	fr = new JFrame("Distance matrix");
+					fr.add( sp );
+					fr.setSize(800, 600);
+					fr.setDefaultCloseOperation( JFrame.DISPOSE_ON_CLOSE );
+					fr.setVisible( true );
+				}
+			}
+		});
 		popup.add( new AbstractAction("Distance matrix") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				JCheckBox check = new JCheckBox("Exclude gaps");
-				JOptionPane.showInputDialog( check );
+				StringBuilder sb = distanceMatrix( false );
 				
-				StringBuilder sb = distanceMatrix();
-				JTextArea		text = new JTextArea( sb.toString() );
-				JScrollPane	sp = new JScrollPane( text );
-				JFrame	fr = new JFrame("Distance matrix");
-				fr.add( sp );
-				fr.setSize(800, 600);
-				fr.setDefaultCloseOperation( JFrame.DISPOSE_ON_CLOSE );
-				fr.setVisible( true );
+				File save = null;
+				try {
+					JFileChooser	fc = new JFileChooser();
+					if( fc.showOpenDialog( parentApplet ) == JFileChooser.APPROVE_OPTION ) {
+						save = fc.getSelectedFile();
+					}
+				} catch( Exception e1 ) {
+					
+				}
+				
+				if( save != null ) {
+					try {
+						FileWriter fw = new FileWriter( save );
+						fw.write( sb.toString() );
+					} catch (IOException e1) {
+						e1.printStackTrace();
+					}
+				} else {
+					JTextArea		text = new JTextArea( sb.toString() );
+					JScrollPane	sp = new JScrollPane( text );
+					JFrame	fr = new JFrame("Distance matrix");
+					fr.add( sp );
+					fr.setSize(800, 600);
+					fr.setDefaultCloseOperation( JFrame.DISPOSE_ON_CLOSE );
+					fr.setVisible( true );
+				}
 			}
 		});
 		popup.add( new AbstractAction("Draw tree") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				StringBuilder	sb = distanceMatrix();
-				
+				StringBuilder	sb = distanceMatrix( false );
 				System.err.println("about to call showTree");
 				JSObject jso = JSObject.getWindow( parentApplet );
 				jso.call("showTree", new Object[] {sb.toString()} );
@@ -2550,6 +2807,14 @@ public class JavaFasta extends JApplet {
 				} catch (URISyntaxException | MalformedURLException e1) {
 					e1.printStackTrace();
 				}*/
+			}
+		});
+		popup.add( new AbstractAction("Draw tree excluding gaps") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				StringBuilder	sb = distanceMatrix( true );
+				JSObject jso = JSObject.getWindow( parentApplet );
+				jso.call("showTree", new Object[] {sb.toString()} );
 			}
 		});
 		popup.add( new AbstractAction("Dot plot") {
