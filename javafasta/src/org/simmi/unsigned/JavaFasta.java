@@ -353,7 +353,7 @@ public class JavaFasta extends JApplet {
 		}
 	};
 	
-	public class FastaView extends JComponent {
+	public class FastaView extends JComponent implements KeyListener {
 		Ruler			ruler;
 		JTable			table;
 		int				rh;
@@ -368,23 +368,11 @@ public class JavaFasta extends JApplet {
 			this.ruler = ruler;
 			this.table = table;
 			
+			this.addKeyListener( this );
+			
 			cw = ruler.cw;
 			
 			this.setToolTipText(" ");
-			
-			this.addKeyListener( new KeyAdapter() {
-				public void keyPressed( KeyEvent k ) {
-					int keycode = k.getKeyCode();
-					if( keycode == KeyEvent.VK_PLUS ) {
-						cw *= 1.25;
-					} else if( keycode == KeyEvent.VK_MINUS ) {
-						cw *= 0.8;
-					}
-					FastaView.this.ruler.cw = cw;
-					
-					updateCoords();
-				}
-			});
 			
 			ccol.put('A', Color.red);
 			ccol.put('a', Color.red);
@@ -496,6 +484,63 @@ public class JavaFasta extends JApplet {
 		 * 
 		 */
 		private static final long serialVersionUID = 1L;
+
+		@Override
+		public void keyTyped(KeyEvent e) {
+			// TODO Auto-generated method stub
+			
+		}
+
+		@Override
+		public void keyPressed(KeyEvent e) {
+			int keycode = e.getKeyCode();
+			if( this.selectedRect != null && this.selectedRect.width > 0 ) {
+				List<Sequence>	seq = new ArrayList<Sequence>();
+				for( int i = this.selectedRect.y; i < this.selectedRect.y+this.selectedRect.height; i++ ) {
+					int r = table.convertRowIndexToModel(i);
+					if( r != -1 ) {
+						seq.add( lseq.get(r) );
+					}
+				}
+				if( keycode == KeyEvent.VK_LEFT ) {
+					for( Sequence s : seq ) {
+						int i = this.selectedRect.x-s.getStart()-1;
+						if( i >= 0 && i < s.sb.length() ) {
+							s.sb.deleteCharAt( i );
+							s.sb.insert( i+this.selectedRect.width, '-');
+						}
+					}
+					selectedRect.x--;
+					c.repaint();
+				} else if( keycode == KeyEvent.VK_RIGHT ) {
+					for( Sequence s : seq ) {
+						int i = this.selectedRect.x-s.getStart()-1;
+						if( i >= 0 && i < s.sb.length() ) {
+							s.sb.insert( i, '-' );
+							s.sb.deleteCharAt( i+this.selectedRect.width+2 );
+						}
+					}
+					selectedRect.x++;
+					c.repaint();
+				}
+			}
+		
+			if( keycode == KeyEvent.VK_PLUS ) {
+				cw *= 1.25;
+				FastaView.this.ruler.cw = cw;
+				updateCoords();
+			} else if( keycode == KeyEvent.VK_MINUS ) {
+				cw *= 0.8;
+				FastaView.this.ruler.cw = cw;
+				updateCoords();
+			}
+		}
+
+		@Override
+		public void keyReleased(KeyEvent e) {
+			// TODO Auto-generated method stub
+			
+		}
 		
 	};
 	
@@ -1473,7 +1518,7 @@ public class JavaFasta extends JApplet {
 							if( c1 != c2 ) mism++;
 							count++;
 						}
-						double d = ((double)mism/(double)count);
+						double d = count == 0 ? 0.0 : ((double)mism/(double)count);
 						if( cantor ) d = -3.0*Math.log( 1.0 - 4.0*d/3.0 )/4.0;
 						text.append("\t"+d);
 					}
@@ -1504,7 +1549,7 @@ public class JavaFasta extends JApplet {
 								count++;
 							}
 						}
-						double d = ((double)mism/(double)count);
+						double d = count == 0 ? 0.0 : ((double)mism/(double)count);
 						if( cantor ) d = -3.0*Math.log( 1.0 - 4.0*d/3.0 )/4.0;
 						text.append("\t"+d);
 					}
@@ -1573,7 +1618,7 @@ public class JavaFasta extends JApplet {
 							if( c1 != c2 ) mism++;
 							count++;
 						}
-						double d = ((double)mism/(double)count);
+						double d = count == 0 ? 0.0 : ((double)mism/(double)count);
 						if( cantor ) d = -3.0*Math.log( 1.0 - 4.0*d/3.0 )/4.0;
 						dmat[i] = d;
 					}
@@ -1589,8 +1634,8 @@ public class JavaFasta extends JApplet {
 						int count = 0;
 						int mism = 0;
 						
-						int start = Math.max( seq1.getStart(), seq2.getStart() );
-						int end = Math.min( seq1.getEnd(), seq2.getEnd() );
+						int start = Math.max( seq1.getRealStart(), seq2.getRealStart() );
+						int end = Math.min( seq1.getRealStop(), seq2.getRealStop() );
 						
 						for( int k = start; k < end; k++ ) {
 							char c1 = seq1.charAt( k-seq1.getStart() );
@@ -1601,7 +1646,7 @@ public class JavaFasta extends JApplet {
 								count++;
 							}
 						}
-						double d = ((double)mism/(double)count);
+						double d = count == 0 ? 0.0 : ((double)mism/(double)count);
 						if( cantor ) d = -3.0*Math.log( 1.0 - 4.0*d/3.0 )/4.0;
 						dmat[i] = d;
 					}
@@ -1668,7 +1713,7 @@ public class JavaFasta extends JApplet {
 			@Override
 			public void mousePressed(MouseEvent e) {
 				p = e.getPoint();
-				
+				c.requestFocus();
 				if( e.isShiftDown() ) {
 					if( c.selectedRect.width > 0 ) {
 						//c.selectedRect.x = (int)(p.x/c.cw);
@@ -1708,8 +1753,10 @@ public class JavaFasta extends JApplet {
 					c.repaint();
 				} else {
 					Rectangle r = c.getVisibleRect();
-					r.translate(p.x-np.x, p.y-np.y);
-					c.scrollRectToVisible( r );
+					if( p != null ) {
+						r.translate(p.x-np.x, p.y-np.y);
+						c.scrollRectToVisible( r );
+					}
 				}
 				
 				//p = np;
@@ -1817,6 +1864,7 @@ public class JavaFasta extends JApplet {
 		});
 		
 		JSplitPane	splitpane = new JSplitPane();
+		splitpane.setDividerLocation(0.3);
 		splitpane.setBackground( Color.white );
 		
 		JScrollPane	fastascroll = new JScrollPane( c );
@@ -3008,6 +3056,7 @@ public class JavaFasta extends JApplet {
 		
 		overview = new Overview();
 		JSplitPane	overviewsplit = new JSplitPane( JSplitPane.VERTICAL_SPLIT );
+		overviewsplit.setDividerLocation(0.3);
 		overviewsplit.setTopComponent( splitpane );
 		overviewsplit.setBottomComponent( overview );
 		
@@ -3038,6 +3087,7 @@ public class JavaFasta extends JApplet {
 		acomp.add( ascroll );
 		acomp.add( asearch, BorderLayout.SOUTH );
 		JSplitPane mainsplit = new JSplitPane( JSplitPane.HORIZONTAL_SPLIT );
+		mainsplit.setDividerLocation(0.3);
 		mainsplit.setLeftComponent( overviewsplit );
 		mainsplit.setRightComponent( acomp );
 		
@@ -3406,6 +3456,7 @@ public class JavaFasta extends JApplet {
 	public static void main(String[] args) {
 		JFrame	frame = new JFrame();
 		frame.setDefaultCloseOperation( JFrame.EXIT_ON_CLOSE );
+		frame.setSize(800, 600);
 		JavaFasta	jf = new JavaFasta( null );
 		jf.initGui( frame );
 		
