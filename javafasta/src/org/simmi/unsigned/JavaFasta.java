@@ -1839,16 +1839,10 @@ public class JavaFasta extends JApplet {
 			}
 
 			@Override
-			public void setValueAt(Object aValue, int rowIndex, int columnIndex) {
-				// TODO Auto-generated method stub
-				
-			}
+			public void setValueAt(Object aValue, int rowIndex, int columnIndex) {}
 
 			@Override
-			public void addTableModelListener(TableModelListener l) {
-				// TODO Auto-generated method stub
-				
-			}
+			public void addTableModelListener(TableModelListener l) {}
 
 			@Override
 			public void removeTableModelListener(TableModelListener l) {}
