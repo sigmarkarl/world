@@ -16,7 +16,6 @@ import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.Transferable;
 import java.awt.datatransfer.UnsupportedFlavorException;
 import java.awt.event.ActionEvent;
-import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseAdapter;
@@ -99,6 +98,10 @@ public class JavaFasta extends JApplet {
 	
 	public void setParentApplet( JApplet applet ) {
 		parentApplet = applet;
+	}
+	
+	public JavaFasta() {
+		
 	}
 	
 	public JavaFasta( JApplet parentApplet ) {
@@ -1474,87 +1477,89 @@ public class JavaFasta extends JApplet {
 		StringBuilder	text = new StringBuilder();
 		text.append("\t"+rr.length+"\n");
 		
-		if( excludeGaps ) {
-			int start = Integer.MIN_VALUE;
-			int end = Integer.MAX_VALUE;
-			
-			for( int i = 0; i < rr.length; i++ ) {
-				int r = rr[i];
-				Sequence seq = lseq.get( table.convertRowIndexToModel(r) );
-				if( seq.getRealStart() > start ) start = seq.getRealStart();
-				if( seq.getRealStop() < end ) end = seq.getRealStop();
-			}
-			
-			List<Integer>	idxs = new ArrayList<Integer>();
-			for( int x = start; x < end; x++ ) {
-				int i;
-				for( i = 0; i < rr.length; i++ ) {
+		if( rr.length > 0 ) {
+			if( excludeGaps ) {
+				int start = Integer.MIN_VALUE;
+				int end = Integer.MAX_VALUE;
+				
+				for( int i = 0; i < rr.length; i++ ) {
 					int r = rr[i];
 					Sequence seq = lseq.get( table.convertRowIndexToModel(r) );
-					char c = seq.charAt( x );
-					if( c != '-' && c != '.' && c == ' ' ) break;
+					if( seq.getRealStart() > start ) start = seq.getRealStart();
+					if( seq.getRealStop() < end ) end = seq.getRealStop();
 				}
 				
-				if( i == rr.length ) {
-					idxs.add( x );
-				}
-			}
-			
-			for( int i = 0; i < rr.length; i++ ) {
-				int r = rr[i];
-				text.append( ((String)table.getValueAt(r, 0)).replace(' ','_') );
-				for( int y = 0; y < rr.length; y++ ) {
-					if( i == y ) text.append("\t0.0");
-					else {
-						Sequence seq1 = lseq.get( table.convertRowIndexToModel(rr[i]) );
-						Sequence seq2 = lseq.get( table.convertRowIndexToModel(rr[y]) );
-						int count = 0;
-						int mism = 0;
-						
-						for( int k : idxs ) {
-							char c1 = seq1.charAt( k-seq1.getStart() );
-							char c2 = seq2.charAt( k-seq2.getStart() );
-							
-							if( c1 != c2 ) mism++;
-							count++;
-						}
-						double d = count == 0 ? 0.0 : ((double)mism/(double)count);
-						if( cantor ) d = -3.0*Math.log( 1.0 - 4.0*d/3.0 )/4.0;
-						text.append("\t"+d);
+				List<Integer>	idxs = new ArrayList<Integer>();
+				for( int x = start; x < end; x++ ) {
+					int i;
+					for( i = 0; i < rr.length; i++ ) {
+						int r = rr[i];
+						Sequence seq = lseq.get( table.convertRowIndexToModel(r) );
+						char c = seq.charAt( x );
+						if( c != '-' && c != '.' && c == ' ' ) break;
+					}
+					
+					if( i == rr.length ) {
+						idxs.add( x );
 					}
 				}
-				text.append("\n");
-			}
-		} else {
-			for( int i = 0; i < rr.length; i++ ) {
-				int r = rr[i];
-				text.append( ((String)table.getValueAt(r, 0)).replace(' ','_') );
-				for( int y = 0; y < rr.length; y++ ) {
-					if( i == y ) text.append("\t0.0");
-					else {
-						Sequence seq1 = lseq.get( table.convertRowIndexToModel(rr[i]) );
-						Sequence seq2 = lseq.get( table.convertRowIndexToModel(rr[y]) );
-						int count = 0;
-						int mism = 0;
-						
-						int start = Math.max( seq1.getStart(), seq2.getStart() );
-						int end = Math.min( seq1.getEnd(), seq2.getEnd() );
-						
-						for( int k = start; k < end; k++ ) {
-							char c1 = seq1.charAt( k-seq1.getStart() );
-							char c2 = seq2.charAt( k-seq2.getStart() );
+				
+				for( int i = 0; i < rr.length; i++ ) {
+					int r = rr[i];
+					text.append( ((String)table.getValueAt(r, 0)).replace(' ','_') );
+					for( int y = 0; y < rr.length; y++ ) {
+						if( i == y ) text.append("\t0.0");
+						else {
+							Sequence seq1 = lseq.get( table.convertRowIndexToModel(rr[i]) );
+							Sequence seq2 = lseq.get( table.convertRowIndexToModel(rr[y]) );
+							int count = 0;
+							int mism = 0;
 							
-							if( c1 != '.' && c1 != '-' && c1 != ' ' &&  c2 != '.' && c2 != '-' && c2 != ' ' ) {
+							for( int k : idxs ) {
+								char c1 = seq1.charAt( k-seq1.getStart() );
+								char c2 = seq2.charAt( k-seq2.getStart() );
+								
 								if( c1 != c2 ) mism++;
 								count++;
 							}
+							double d = count == 0 ? 0.0 : ((double)mism/(double)count);
+							if( cantor ) d = -3.0*Math.log( 1.0 - 4.0*d/3.0 )/4.0;
+							text.append("\t"+d);
 						}
-						double d = count == 0 ? 0.0 : ((double)mism/(double)count);
-						if( cantor ) d = -3.0*Math.log( 1.0 - 4.0*d/3.0 )/4.0;
-						text.append("\t"+d);
 					}
+					text.append("\n");
 				}
-				text.append("\n");
+			} else {
+				for( int i = 0; i < rr.length; i++ ) {
+					int r = rr[i];
+					text.append( ((String)table.getValueAt(r, 0)).replace(' ','_') );
+					for( int y = 0; y < rr.length; y++ ) {
+						if( i == y ) text.append("\t0.0");
+						else {
+							Sequence seq1 = lseq.get( table.convertRowIndexToModel(rr[i]) );
+							Sequence seq2 = lseq.get( table.convertRowIndexToModel(rr[y]) );
+							int count = 0;
+							int mism = 0;
+							
+							int start = Math.max( seq1.getStart(), seq2.getStart() );
+							int end = Math.min( seq1.getEnd(), seq2.getEnd() );
+							
+							for( int k = start; k < end; k++ ) {
+								char c1 = seq1.charAt( k-seq1.getStart() );
+								char c2 = seq2.charAt( k-seq2.getStart() );
+								
+								if( c1 != '.' && c1 != '-' && c1 != ' ' &&  c2 != '.' && c2 != '-' && c2 != ' ' ) {
+									if( c1 != c2 ) mism++;
+									count++;
+								}
+							}
+							double d = count == 0 ? 0.0 : ((double)mism/(double)count);
+							if( cantor ) d = -3.0*Math.log( 1.0 - 4.0*d/3.0 )/4.0;
+							text.append("\t"+d);
+						}
+					}
+					text.append("\n");
+				}
 			}
 		}
 		
@@ -2857,6 +2862,18 @@ public class JavaFasta extends JApplet {
 				StringBuilder	sb = distanceMatrix( true );
 				JSObject jso = JSObject.getWindow( parentApplet );
 				jso.call("showTree", new Object[] {sb.toString()} );
+			}
+		});
+		popup.add( new AbstractAction("Draw distance matrix") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				StringBuilder	sb = distanceMatrix( true );
+				System.err.println("what");
+				JSObject jso = JSObject.getWindow( parentApplet );
+				jso.eval("console.log('ermermermss')");
+				String dist = sb.toString();
+				jso.eval("console.log('"+dist.length()+"')");
+				jso.call("showMatr", new Object[] {dist} );
 			}
 		});
 		popup.add( new AbstractAction("Dot plot") {
