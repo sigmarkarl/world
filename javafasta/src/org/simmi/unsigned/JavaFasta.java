@@ -683,6 +683,13 @@ public class JavaFasta extends JApplet {
 			sb.append( str );
 		}
 		
+		public void deleteCharAt( int i ) {
+			int ind = i-start;
+			if( ind >= 0 && ind < sb.length() ) {
+				sb.deleteCharAt(ind);
+			}
+		}
+		
 		public char charAt( int i ) {
 			int ind = i-start;
 			if( ind >= 0 && ind < sb.length() ) {
@@ -911,6 +918,42 @@ public class JavaFasta extends JApplet {
 		return or;
 	}
 	
+	public void exportPhylip() throws IOException {
+		 FileSaveService fss = null;
+         FileContents fileContents = null;
+         ByteArrayOutputStream baos = new ByteArrayOutputStream();
+         OutputStreamWriter	osw = new OutputStreamWriter( baos );
+    	 
+    	 osw.write( getPhylip() );
+    	 osw.close();
+    	 baos.close();
+
+    	 try {
+    		 fss = (FileSaveService)ServiceManager.lookup("javax.jnlp.FileSaveService");
+    	 } catch( UnavailableServiceException e ) {
+    		 fss = null;
+    	 }
+    	 
+         if (fss != null) {
+        	 ByteArrayInputStream bais = new ByteArrayInputStream( baos.toByteArray() );
+             fileContents = fss.saveFileDialog(null, null, bais, "export.phy");
+             bais.close();
+             OutputStream os = fileContents.getOutputStream(true);
+             os.write( baos.toByteArray() );
+             os.close();
+         } else {
+        	 JFileChooser jfc = new JFileChooser();
+        	 if( jfc.showSaveDialog( parentApplet ) == JFileChooser.APPROVE_OPTION ) {
+        		 File f = jfc.getSelectedFile();
+        		 FileOutputStream fos = new FileOutputStream( f );
+        		 fos.write( baos.toByteArray() );
+        		 fos.close();
+        		 
+        		 Desktop.getDesktop().browse( f.toURI() );
+        	 }
+         }
+	}
+	
 	public void exportFasta( JTable table, List<Sequence> lseq ) throws IOException, UnavailableServiceException {
 		 FileSaveService fss = null;
          FileContents fileContents = null;
@@ -1136,6 +1179,10 @@ public class JavaFasta extends JApplet {
 	int				min = 0;
 	
 	JTable			atable;
+	
+	public List<Sequence> getSequences() {
+		return lseq;
+	}
 	
 	public int getNumberOfSequences() {
 		return lseq.size();
@@ -1576,6 +1623,49 @@ public class JavaFasta extends JApplet {
 		return ret;
 	}
 	
+	public String getPhylip() {
+		StringBuilder out = new StringBuilder();
+		
+		String erm = ""+lseq.size();
+		String seqlen = "";
+		for( int i = 0; i < 6-erm.length(); i++ ) {
+			seqlen += " ";
+		}
+		seqlen += erm;
+		int alen = lseq.get(0).getLength();
+		seqlen += "   "+alen;
+		
+		out.append( seqlen+"\n" );
+		
+		int u = 0;
+		for( int k = 0; k < alen; k+=50 ) {
+			for( Sequence seq : lseq ) {
+				if( u == 0 ) {
+					String seqname = seq.getName();
+					int m = Math.min( seqname.length(), 10 );
+					out.append( seqname.substring(0, m) );
+					while( m < 10 ) {
+						out.append(' ');
+						m++;
+					}
+				} else out.append("          ");
+				
+				for( int l = k; l < Math.min(k+50, alen); l++ ) {
+					if( l % 10 == 0 ) {
+						out.append(" ");
+					}
+					out.append( seq.sb.charAt(l) );
+				}
+				out.append("\n");
+			}
+			out.append("\n");
+			
+			u++;
+		}
+		
+		return out.toString();
+	}
+	
 	public double[] distanceMatrixNumeric( boolean excludeGaps ) {
 		JCheckBox	jukes = new JCheckBox("Jukes-cantor correction");
 		JOptionPane.showMessageDialog( parentApplet, jukes );
@@ -1678,6 +1768,46 @@ public class JavaFasta extends JApplet {
 		mseq = new HashMap<String,Sequence>();
 		lann = new ArrayList<Annotation>();
 		mann = new HashMap<String,Annotation>();
+	}
+	
+	public void removeGaps( List<Sequence> seqlist ) {
+		int min = Integer.MAX_VALUE;
+		int max = Integer.MIN_VALUE;
+		for( Sequence seq : seqlist ) {
+			min = Math.min( min, seq.getStart() );
+			max = Math.max( max, seq.getEnd() );
+		}
+		
+		for( Sequence seq : seqlist ) {
+			seq.setStart( seq.getStart()-min );
+		}
+		
+		int i = 0;
+		while( i < max-min ) {
+			boolean rem = true;
+			//char c = 0;
+			for( Sequence seq : seqlist ) {
+				char c2 = seq.charAt(i); //getCharAt(i, r);
+				if( c2 != '.' && c2 != '-' && c2 != ' ' ) {
+					rem = false;
+					break;
+				}
+				/*if( c2 != '.' && c2 != '-' ) {
+					if( c != 0 && c2 != c ) {
+						rem = false;
+						break;
+					}
+				
+					c = c2;
+				}*/
+			}
+			if( rem ) {
+				for( Sequence seq : seqlist ) {
+					seq.deleteCharAt(i);
+				}
+				max--;
+			} else i++;
+		}
 	}
 	
 	int[]	currentRowSelection;
@@ -2558,51 +2688,14 @@ public class JavaFasta extends JApplet {
 		popup.add( new AbstractAction("Remove gaps") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				int min = Integer.MAX_VALUE;
-				int max = Integer.MIN_VALUE;
+				List<Sequence>	seqlist = new ArrayList<Sequence>();
 				int[] rr = table.getSelectedRows();
 				for( int r : rr ) {
 					int k = table.convertRowIndexToModel( r );
 					Sequence seq = lseq.get( k );
-					//StringBuilder	sb = seq.sb;
-					//sb.
-					min = Math.min( min, seq.getStart() );
-					max = Math.max( max, seq.getEnd() );
+					seqlist.add( seq );
 				}
-				
-				for( int r : rr ) {
-					int k = table.convertRowIndexToModel( r );
-					Sequence seq = lseq.get( k );
-					seq.setStart( seq.getStart()-min );
-				}
-				
-				int i = 0;
-				while( i < max-min ) {
-					boolean rem = true;
-					char c = 0;
-					for( int r : rr ) {
-						char c2 = getCharAt(i, r);
-						if( c2 != '.' && c2 != '-' && c2 != ' ' ) {
-							rem = false;
-							break;
-						}
-						/*if( c2 != '.' && c2 != '-' ) {
-							if( c != 0 && c2 != c ) {
-								rem = false;
-								break;
-							}
-						
-							c = c2;
-						}*/
-					}
-					System.err.println( "i " + i );
-					if( rem ) {
-						for( int r : rr ) {
-							deleteCharAt(i, r);
-						}
-						max--;
-					} else i++;
-				}
+				removeGaps( seqlist );
 				
 				c.repaint();
 			}
@@ -2733,6 +2826,16 @@ public class JavaFasta extends JApplet {
 				} catch (IOException e1) {
 					e1.printStackTrace();
 				} catch (UnavailableServiceException e1) {
+					e1.printStackTrace();
+				}
+			}
+		});
+		popup.add( new AbstractAction("Export phylip") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				try {
+					exportPhylip();
+				} catch (IOException e1) {
 					e1.printStackTrace();
 				}
 			}
