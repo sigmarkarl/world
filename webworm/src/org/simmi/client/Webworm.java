@@ -38,6 +38,7 @@ import com.google.gwt.event.logical.shared.ResizeEvent;
 import com.google.gwt.event.logical.shared.ResizeHandler;
 import com.google.gwt.event.logical.shared.ValueChangeEvent;
 import com.google.gwt.event.logical.shared.ValueChangeHandler;
+import com.google.gwt.media.client.Audio;
 import com.google.gwt.user.client.Random;
 import com.google.gwt.user.client.Timer;
 import com.google.gwt.user.client.Window;
@@ -578,6 +579,11 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 	}-*/;
 	
 	public void drawStartMessage( Context2d context ) {
+		if( audio != null && !audio.isPaused() ) {
+			audio.pause();
+			audio.setCurrentTime(0.0);
+		}
+		
 		if( w > 480 && h > 320 ) {
 			infohtml.setHTML( "Press enter or mouseclick to add new worm (<- and -> to control)<br>" + 
 					"Free Superpower of the month: Deflection<br>" + 
@@ -1396,7 +1402,7 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 		VerticalPanel	infov = new VerticalPanel();
 		infov.setHorizontalAlignment( VerticalPanel.ALIGN_CENTER );
 		infov.setVerticalAlignment( VerticalPanel.ALIGN_MIDDLE );
-		infov.setSpacing( 20 );
+		infov.setSpacing( 15 );
 		infohtml = new HTML();
 		
 		Button	play = new Button();
@@ -1408,11 +1414,50 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 			}
 		});
 		
+		final RadioButton	seren = new RadioButton("faudio", "Worm-serenade");
+		final RadioButton	rhaps = new RadioButton("faudio", "Worm-rhapsody");
+		final RadioButton	faudio = new RadioButton("faudio", "No eff-ing music");
+		seren.addClickHandler( new ClickHandler() {
+			@Override
+			public void onClick(ClickEvent event) {
+				audio.setEnabled( true );
+				audio.setSrc("flabb2.mp3");
+			}
+		});
+		rhaps.addClickHandler( new ClickHandler() {
+			@Override
+			public void onClick(ClickEvent event) {
+				audio.setEnabled( true );
+				audio.setSrc("hey.mp3");
+			}
+		});
+		faudio.addClickHandler( new ClickHandler() {
+			@Override
+			public void onClick(ClickEvent event) {
+				audio.setEnabled( false );
+			}
+		});
+		
+		HorizontalPanel hpaudio = new HorizontalPanel();
+		hpaudio.setSpacing(5);
+		hpaudio.add( seren );
+		hpaudio.add( rhaps );
+		hpaudio.add( faudio );
+		
+		HTML	musicmessage = new HTML("I'm working on Worm-toccata and fuge. <br>If you like the game soundtrack, stay tuned!");
+		
 		infov.add( play );
 		infov.add( infohtml );
 		infov.add( hp );
+		infov.add( hpaudio );
+		infov.add( musicmessage );
 		infov.add( links );
 		info.add( infov );
+		
+		audio = Audio.createIfSupported();
+		audio.setSrc("flabb2.mp3");
+		audio.setLoop( true );
+		audio.getAudioElement().setAttribute("loop", "true");
 		
 		/*setGadsPars();
 		ScriptElement adscript = Document.get().createScriptElement();
@@ -1424,9 +1469,18 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 		rp.add( vp );
 	}
 	
+	Audio audio = null;
+	public void playMusic() {
+		if( audio != null && audio.isEnabled() && audio.isPaused() ) {
+			audio.play();
+		}
+	}
+	
 	public void startGame() {
 		int ws = worms.size();
 		if( ws == 0 ) {
+			playMusic();
+			
 			worms.add( new Worm("#00ff00", KeyCodes.KEY_LEFT, KeyCodes.KEY_RIGHT, KeyCodes.KEY_LEFT, KeyCodes.KEY_RIGHT ) );
 			updateCoordinates(cv, false);
 			
@@ -1490,7 +1544,7 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 		}
 	}
 	
-	boolean	mousedown = false;
+	boolean		mousedown = false;
 
 	@Override
 	public void onMouseDown(MouseDownEvent event) {

@@ -31,6 +31,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -56,12 +57,14 @@ import javax.jnlp.UnavailableServiceException;
 import javax.swing.AbstractAction;
 import javax.swing.JApplet;
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JComponent;
 import javax.swing.JDialog;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
 import javax.swing.JSpinner;
@@ -92,6 +95,15 @@ public class JavaFasta extends JApplet {
 	 * 
 	 */
 	private static final long serialVersionUID = 1L;
+	JApplet	parentApplet = JavaFasta.this;
+	
+	public void setParentApplet( JApplet applet ) {
+		parentApplet = applet;
+	}
+	
+	public JavaFasta( JApplet parentApplet ) {
+		if( parentApplet != null ) this.parentApplet = parentApplet;
+	}
 
 	public class Ruler extends JComponent {
 		int 	x;
@@ -341,7 +353,7 @@ public class JavaFasta extends JApplet {
 		}
 	};
 	
-	public class FastaView extends JComponent {
+	public class FastaView extends JComponent implements KeyListener {
 		Ruler			ruler;
 		JTable			table;
 		int				rh;
@@ -356,23 +368,11 @@ public class JavaFasta extends JApplet {
 			this.ruler = ruler;
 			this.table = table;
 			
+			this.addKeyListener( this );
+			
 			cw = ruler.cw;
 			
 			this.setToolTipText(" ");
-			
-			this.addKeyListener( new KeyAdapter() {
-				public void keyPressed( KeyEvent k ) {
-					int keycode = k.getKeyCode();
-					if( keycode == KeyEvent.VK_PLUS ) {
-						cw *= 1.25;
-					} else if( keycode == KeyEvent.VK_MINUS ) {
-						cw *= 0.8;
-					}
-					FastaView.this.ruler.cw = cw;
-					
-					updateCoords();
-				}
-			});
 			
 			ccol.put('A', Color.red);
 			ccol.put('a', Color.red);
@@ -484,6 +484,63 @@ public class JavaFasta extends JApplet {
 		 * 
 		 */
 		private static final long serialVersionUID = 1L;
+
+		@Override
+		public void keyTyped(KeyEvent e) {
+			// TODO Auto-generated method stub
+			
+		}
+
+		@Override
+		public void keyPressed(KeyEvent e) {
+			int keycode = e.getKeyCode();
+			if( this.selectedRect != null && this.selectedRect.width > 0 ) {
+				List<Sequence>	seq = new ArrayList<Sequence>();
+				for( int i = this.selectedRect.y; i < this.selectedRect.y+this.selectedRect.height; i++ ) {
+					int r = table.convertRowIndexToModel(i);
+					if( r != -1 ) {
+						seq.add( lseq.get(r) );
+					}
+				}
+				if( keycode == KeyEvent.VK_LEFT ) {
+					for( Sequence s : seq ) {
+						int i = this.selectedRect.x-s.getStart()-1;
+						if( i >= 0 && i < s.sb.length() ) {
+							s.sb.deleteCharAt( i );
+							s.sb.insert( i+this.selectedRect.width, '-');
+						}
+					}
+					selectedRect.x--;
+					c.repaint();
+				} else if( keycode == KeyEvent.VK_RIGHT ) {
+					for( Sequence s : seq ) {
+						int i = this.selectedRect.x-s.getStart()-1;
+						if( i >= 0 && i < s.sb.length() ) {
+							s.sb.insert( i, '-' );
+							s.sb.deleteCharAt( i+this.selectedRect.width+2 );
+						}
+					}
+					selectedRect.x++;
+					c.repaint();
+				}
+			}
+		
+			if( keycode == KeyEvent.VK_PLUS ) {
+				cw *= 1.25;
+				FastaView.this.ruler.cw = cw;
+				updateCoords();
+			} else if( keycode == KeyEvent.VK_MINUS ) {
+				cw *= 0.8;
+				FastaView.this.ruler.cw = cw;
+				updateCoords();
+			}
+		}
+
+		@Override
+		public void keyReleased(KeyEvent e) {
+			// TODO Auto-generated method stub
+			
+		}
 		
 	};
 	
@@ -670,8 +727,12 @@ public class JavaFasta extends JApplet {
 			return getStart() + substart;
 		}
 		
-		public int getRealLength() {
+		public int getRealStop() {
 			return getStart() + substop;
+		}
+		
+		public int getRealLength() {
+			return substop - substart;
 		}
 		
 		public void boundsCheck() {
@@ -796,7 +857,7 @@ public class JavaFasta extends JApplet {
             }
 	    } else {
 	    	JFileChooser	jfc = new JFileChooser();
-	    	if( jfc.showOpenDialog( JavaFasta.this ) == JFileChooser.APPROVE_OPTION ) {
+	    	if( jfc.showOpenDialog( parentApplet ) == JFileChooser.APPROVE_OPTION ) {
 	    		File f = jfc.getSelectedFile();
 	    		or.putAll( importRenameFile( new FileInputStream(f) ) );
 	    	}
@@ -822,7 +883,7 @@ public class JavaFasta extends JApplet {
             }
 	    } else {
 	    	JFileChooser	jfc = new JFileChooser();
-	    	if( jfc.showOpenDialog( JavaFasta.this ) == JFileChooser.APPROVE_OPTION ) {
+	    	if( jfc.showOpenDialog( parentApplet ) == JFileChooser.APPROVE_OPTION ) {
 	    		File f = jfc.getSelectedFile();
 	    		importFile( f.getName(), new FileInputStream(f) );
 	    	}
@@ -889,7 +950,7 @@ public class JavaFasta extends JApplet {
              os.close();
          } else {
         	 JFileChooser jfc = new JFileChooser();
-        	 if( jfc.showSaveDialog( JavaFasta.this ) == JFileChooser.APPROVE_OPTION ) {
+        	 if( jfc.showSaveDialog( parentApplet ) == JFileChooser.APPROVE_OPTION ) {
         		 File f = jfc.getSelectedFile();
         		 FileOutputStream fos = new FileOutputStream( f );
         		 fos.write( baos.toByteArray() );
@@ -919,6 +980,73 @@ public class JavaFasta extends JApplet {
             	 exc.printStackTrace();
              }
          }*/
+	}
+	
+	public void exportManyFasta( JTable table, List<Sequence> lseq ) throws IOException, UnavailableServiceException {
+		 JFileChooser jfc = new JFileChooser();
+       	 jfc.setFileSelectionMode( JFileChooser.DIRECTORIES_ONLY );
+       	 File dir = null;
+       	 if( jfc.showSaveDialog( parentApplet ) == JFileChooser.APPROVE_OPTION ) {
+       		 dir = jfc.getSelectedFile();
+       	 }
+       	 
+       	 Map<String,FileWriter>	filemap = new HashMap<String,FileWriter>();
+   	 
+	   	 int[] rr = table.getSelectedRows();
+	   	 for( int r : rr ) {
+	   		 int i = table.convertRowIndexToModel( r );
+	   		 Sequence seq = lseq.get(i);
+	   		 int val = 0;
+	   		 int end = seq.getLength();
+	   		 
+	   		 if( c.selectedRect.width > 0 ) {
+	   			 val = Math.max( val, c.selectedRect.x-seq.getStart() );
+	   			 end = Math.min( end, c.selectedRect.x+c.selectedRect.width-seq.getStart() );
+	   		 }
+	   		 
+	   		 String name = seq.getName();
+	   		 int ui = name.indexOf('_');
+	   		 if( ui == -1 ) ui = name.length();
+	   		 String filename = name.substring(0,ui);
+	   		 
+	   		 FileWriter fw;
+	   		 if( filemap.containsKey(filename) ) fw = filemap.get( filename );
+	   		 else {
+	   			 fw = new FileWriter( new File( dir, filename ) );
+	   			 filemap.put( filename, fw );
+	   		 }
+	   		 
+	   		 if( val < end ) fw.write( ">" + seq.name + "\n" );
+	   		 while( val < end ) {
+	   			 fw.write( seq.sb.substring(val, Math.min( end, val+70 )) + "\n" );
+	   			 val += 70;
+	   		 }
+	   	 }
+	   	 
+	   	 for( String filename : filemap.keySet() ) {
+	   		 filemap.get(filename).close();
+	   	 }
+
+        /*if (fileContents != null) {
+            try {
+           	 OutputStream os = fileContents.getOutputStream( true );
+           	 OutputStreamWriter	osw = new OutputStreamWriter( os );
+           	 
+           	 int[] rr = table.getSelectedRows();
+           	 for( int r : rr ) {
+           		 int i = table.convertRowIndexToModel( r );
+           		 Sequence seq = lseq.get(i);
+           		 osw.write( ">" + seq.name + "\n" );
+           		 int val = 0;
+           		 while( val < seq.getLength() ) {
+           			 osw.write( seq.sb.substring(val, Math.min( seq.getLength(), val+70 )) + "\n" );
+           			 val += 70;
+           		 }
+           	 }
+            } catch (IOException exc) {
+           	 exc.printStackTrace();
+            }
+        }*/
 	}
 	
 	public void exportAnnotationFasta( JTable table, List<Annotation> lann ) throws IOException, UnavailableServiceException {
@@ -956,7 +1084,7 @@ public class JavaFasta extends JApplet {
 		        os.close();
 	    } else {
 		   	 JFileChooser jfc = new JFileChooser();
-		   	 if( jfc.showSaveDialog( JavaFasta.this ) == JFileChooser.APPROVE_OPTION ) {
+		   	 if( jfc.showSaveDialog( parentApplet ) == JFileChooser.APPROVE_OPTION ) {
 		   		 File f = jfc.getSelectedFile();
 		   		 FileOutputStream fos = new FileOutputStream( f );
 		   		 fos.write( baos.toByteArray() );
@@ -1005,6 +1133,10 @@ public class JavaFasta extends JApplet {
 	int				min = 0;
 	
 	JTable			atable;
+	
+	public int getNumberOfSequences() {
+		return lseq.size();
+	}
 	
 	public byte[] getByteArray( int len ) {
 		return new byte[ len ];
@@ -1294,6 +1426,255 @@ public class JavaFasta extends JApplet {
 		c.repaint();
 	}
 	
+	public StringBuilder getFastaWoGaps() {
+		int start = Integer.MIN_VALUE;
+		int end = Integer.MAX_VALUE;
+		
+		for( Sequence seq : lseq ) {
+			if( seq.getRealStart() > start ) start = seq.getRealStart();
+			if( seq.getRealStop() < end ) end = seq.getRealStop();
+		}
+		
+		List<Integer>	idxs = new ArrayList<Integer>();
+		for( int x = start; x < end; x++ ) {
+			boolean skip = false;
+			for( Sequence seq : lseq ) {
+				char c = seq.charAt( x );
+				if( c != '-' && c != '.' && c == ' ' ) {
+					skip = true;
+					break;
+				}
+			}
+			
+			if( !skip ) {
+				idxs.add( x );
+			}
+		}
+		
+		StringBuilder ret = new StringBuilder();
+		for( Sequence seq : lseq ) {
+			ret.append( ">"+seq.getName()+"\n" );
+			int k = 0;
+			for( int i : idxs ) {
+				ret.append( seq.charAt(i) );
+				k++;
+				if( k % 70 == 0 ) ret.append("\n");
+			}
+			if( k % 70 != 0 ) ret.append("\n");
+		}
+		return ret;
+	}
+	
+	public StringBuilder distanceMatrix( boolean excludeGaps ) {
+		JCheckBox	jukes = new JCheckBox("Jukes-cantor correction");
+		JOptionPane.showMessageDialog( parentApplet, jukes );
+		boolean cantor = jukes.isSelected();
+		
+		int[] rr = table.getSelectedRows();
+		StringBuilder	text = new StringBuilder();
+		text.append("\t"+rr.length+"\n");
+		
+		if( excludeGaps ) {
+			int start = Integer.MIN_VALUE;
+			int end = Integer.MAX_VALUE;
+			
+			for( int i = 0; i < rr.length; i++ ) {
+				int r = rr[i];
+				Sequence seq = lseq.get( table.convertRowIndexToModel(r) );
+				if( seq.getRealStart() > start ) start = seq.getRealStart();
+				if( seq.getRealStop() < end ) end = seq.getRealStop();
+			}
+			
+			List<Integer>	idxs = new ArrayList<Integer>();
+			for( int x = start; x < end; x++ ) {
+				int i;
+				for( i = 0; i < rr.length; i++ ) {
+					int r = rr[i];
+					Sequence seq = lseq.get( table.convertRowIndexToModel(r) );
+					char c = seq.charAt( x );
+					if( c != '-' && c != '.' && c == ' ' ) break;
+				}
+				
+				if( i == rr.length ) {
+					idxs.add( x );
+				}
+			}
+			
+			for( int i = 0; i < rr.length; i++ ) {
+				int r = rr[i];
+				text.append( ((String)table.getValueAt(r, 0)).replace(' ','_') );
+				for( int y = 0; y < rr.length; y++ ) {
+					if( i == y ) text.append("\t0.0");
+					else {
+						Sequence seq1 = lseq.get( table.convertRowIndexToModel(rr[i]) );
+						Sequence seq2 = lseq.get( table.convertRowIndexToModel(rr[y]) );
+						int count = 0;
+						int mism = 0;
+						
+						for( int k : idxs ) {
+							char c1 = seq1.charAt( k-seq1.getStart() );
+							char c2 = seq2.charAt( k-seq2.getStart() );
+							
+							if( c1 != c2 ) mism++;
+							count++;
+						}
+						double d = count == 0 ? 0.0 : ((double)mism/(double)count);
+						if( cantor ) d = -3.0*Math.log( 1.0 - 4.0*d/3.0 )/4.0;
+						text.append("\t"+d);
+					}
+				}
+				text.append("\n");
+			}
+		} else {
+			for( int i = 0; i < rr.length; i++ ) {
+				int r = rr[i];
+				text.append( ((String)table.getValueAt(r, 0)).replace(' ','_') );
+				for( int y = 0; y < rr.length; y++ ) {
+					if( i == y ) text.append("\t0.0");
+					else {
+						Sequence seq1 = lseq.get( table.convertRowIndexToModel(rr[i]) );
+						Sequence seq2 = lseq.get( table.convertRowIndexToModel(rr[y]) );
+						int count = 0;
+						int mism = 0;
+						
+						int start = Math.max( seq1.getStart(), seq2.getStart() );
+						int end = Math.min( seq1.getEnd(), seq2.getEnd() );
+						
+						for( int k = start; k < end; k++ ) {
+							char c1 = seq1.charAt( k-seq1.getStart() );
+							char c2 = seq2.charAt( k-seq2.getStart() );
+							
+							if( c1 != '.' && c1 != '-' && c1 != ' ' &&  c2 != '.' && c2 != '-' && c2 != ' ' ) {
+								if( c1 != c2 ) mism++;
+								count++;
+							}
+						}
+						double d = count == 0 ? 0.0 : ((double)mism/(double)count);
+						if( cantor ) d = -3.0*Math.log( 1.0 - 4.0*d/3.0 )/4.0;
+						text.append("\t"+d);
+					}
+				}
+				text.append("\n");
+			}
+		}
+		
+		return text;
+	}
+	
+	public List<String> getNames() {
+		List<String>	ret = new ArrayList<String>();
+		
+		for( Sequence seqname : lseq ) {
+			ret.add( seqname.getName().replace(' ', '_') );
+		}
+		
+		return ret;
+	}
+	
+	public double[] distanceMatrixNumeric( boolean excludeGaps ) {
+		JCheckBox	jukes = new JCheckBox("Jukes-cantor correction");
+		JOptionPane.showMessageDialog( parentApplet, jukes );
+		boolean cantor = jukes.isSelected();
+		
+		double[]	dmat = new double[ lseq.size()*lseq.size() ];
+		if( excludeGaps ) {
+			int start = Integer.MIN_VALUE;
+			int end = Integer.MAX_VALUE;
+			
+			for( Sequence seq : lseq ) {
+				if( seq.getRealStart() > start ) start = seq.getRealStart();
+				if( seq.getRealStop() < end ) end = seq.getRealStop();
+			}
+			
+			List<Integer>	idxs = new ArrayList<Integer>();
+			for( int x = start; x < end; x++ ) {
+				int i;
+				boolean skip = false;
+				for( Sequence seq : lseq ) {
+					char c = seq.charAt( x );
+					if( c != '-' && c != '.' && c == ' ' ) {
+						skip = true;
+						break;
+					}
+				}
+				
+				if( !skip ) {
+					idxs.add( x );
+				}
+			}
+			
+			int i = 0;
+			for( Sequence seq1 : lseq ) {
+				for( Sequence seq2 : lseq ) {
+					if( seq1 == seq2 ) dmat[i] = 0.0;
+					else {
+						int count = 0;
+						int mism = 0;
+						
+						for( int k : idxs ) {
+							char c1 = seq1.charAt( k-seq1.getStart() );
+							char c2 = seq2.charAt( k-seq2.getStart() );
+							
+							if( c1 != c2 ) mism++;
+							count++;
+						}
+						double d = count == 0 ? 0.0 : ((double)mism/(double)count);
+						if( cantor ) d = -3.0*Math.log( 1.0 - 4.0*d/3.0 )/4.0;
+						dmat[i] = d;
+					}
+					i++;
+				}
+			}
+		} else {
+			int i = 0;
+			for( Sequence seq1 : lseq ) {
+				for( Sequence seq2 : lseq ) {
+					if( seq1 == seq2 ) dmat[i] = 0.0; 
+					else {
+						int count = 0;
+						int mism = 0;
+						
+						int start = Math.max( seq1.getRealStart(), seq2.getRealStart() );
+						int end = Math.min( seq1.getRealStop(), seq2.getRealStop() );
+						
+						for( int k = start; k < end; k++ ) {
+							char c1 = seq1.charAt( k-seq1.getStart() );
+							char c2 = seq2.charAt( k-seq2.getStart() );
+							
+							if( c1 != '.' && c1 != '-' && c1 != ' ' &&  c2 != '.' && c2 != '-' && c2 != ' ' ) {
+								if( c1 != c2 ) mism++;
+								count++;
+							}
+						}
+						double d = count == 0 ? 0.0 : ((double)mism/(double)count);
+						if( cantor ) d = -3.0*Math.log( 1.0 - 4.0*d/3.0 )/4.0;
+						dmat[i] = d;
+					}
+					i++;
+				}
+			}
+		}
+		
+		return dmat;
+	}
+	
+	public void initDataStructures() {
+		lseq = new ArrayList<Sequence>() {
+			/**
+			 * 
+			 */
+			private static final long serialVersionUID = 1L;
+
+			public boolean add( Sequence seq ) {
+				seq.index = lseq.size();
+				return super.add( seq );
+			}
+		};
+		mseq = new HashMap<String,Sequence>();
+		lann = new ArrayList<Annotation>();
+		mann = new HashMap<String,Annotation>();
+	}
+	
 	int[]	currentRowSelection;
 	Point	p;
 	public void initGui( Container cnt ) {
@@ -1316,23 +1697,10 @@ public class JavaFasta extends JApplet {
 			frame.setResizable(true);
 		}
 
-		lseq = new ArrayList<Sequence>() {
-			/**
-			 * 
-			 */
-			private static final long serialVersionUID = 1L;
-
-			public boolean add( Sequence seq ) {
-				seq.index = lseq.size();
-				return super.add( seq );
-			}
-		};
-		mseq = new HashMap<String,Sequence>();
-		lann = new ArrayList<Annotation>();
-		mann = new HashMap<String,Annotation>();
+		initDataStructures();
+		
 		table = new JTable();
 		table.setAutoCreateRowSorter( true );
-		
 		table.setDragEnabled( true );
 		
 		final Ruler ruler = new Ruler( 10.0 );
@@ -1345,7 +1713,7 @@ public class JavaFasta extends JApplet {
 			@Override
 			public void mousePressed(MouseEvent e) {
 				p = e.getPoint();
-				
+				c.requestFocus();
 				if( e.isShiftDown() ) {
 					if( c.selectedRect.width > 0 ) {
 						//c.selectedRect.x = (int)(p.x/c.cw);
@@ -1385,8 +1753,10 @@ public class JavaFasta extends JApplet {
 					c.repaint();
 				} else {
 					Rectangle r = c.getVisibleRect();
-					r.translate(p.x-np.x, p.y-np.y);
-					c.scrollRectToVisible( r );
+					if( p != null ) {
+						r.translate(p.x-np.x, p.y-np.y);
+						c.scrollRectToVisible( r );
+					}
 				}
 				
 				//p = np;
@@ -1446,7 +1816,7 @@ public class JavaFasta extends JApplet {
 				if( columnIndex == 0 ) return seq.getName();
 				else if( columnIndex == 1 ) return seq.getAlignedLength();
 				else if( columnIndex == 2 ) return seq.getUnalignedLength();
-				else if( columnIndex == 3 ) return seq.getStart();
+				else if( columnIndex == 3 ) return seq.getRealStart();
 				else if( columnIndex == 4 ) return seq.getRevComp();
 				else if( columnIndex == 5 ) return seq.getGCP();
 				else if( columnIndex == 6 ) {
@@ -1494,6 +1864,7 @@ public class JavaFasta extends JApplet {
 		});
 		
 		JSplitPane	splitpane = new JSplitPane();
+		splitpane.setDividerLocation(0.3);
 		splitpane.setBackground( Color.white );
 		
 		JScrollPane	fastascroll = new JScrollPane( c );
@@ -1584,7 +1955,34 @@ public class JavaFasta extends JApplet {
 					try {
 						System.err.println( table.getSelectedRows().length );
 						
-						if( support.isDataFlavorSupported( DataFlavor.javaFileListFlavor ) ) {
+						 if( support.isDataFlavorSupported( ndf ) ) {						
+							Object obj = support.getTransferable().getTransferData( ndf );
+							ArrayList<Sequence>	seqs = (ArrayList<Sequence>)obj;
+							
+							ArrayList<Sequence> newlist = new ArrayList<Sequence>( lseq.size() );
+							for( int r = 0; r < table.getRowCount(); r++ ) {
+								int i = table.convertRowIndexToModel(r);
+								newlist.add( lseq.get(i) );
+							}
+							lseq.clear();
+							lseq = newlist;
+							
+							Point p = support.getDropLocation().getDropPoint();
+							int k = table.rowAtPoint( p );
+							
+							lseq.removeAll( seqs );
+							for( Sequence s : seqs ) {
+								lseq.add(k++, s);
+							}
+							
+							TableRowSorter<TableModel>	trs = (TableRowSorter<TableModel>)table.getRowSorter();
+							trs.setSortKeys( null );
+							
+							table.tableChanged( new TableModelEvent(table.getModel()) );
+							c.repaint();
+							
+							return true;
+						} else if( support.isDataFlavorSupported( DataFlavor.javaFileListFlavor ) ) {
 							Object obj = support.getTransferable().getTransferData( DataFlavor.javaFileListFlavor );
 							//InputStream is = (InputStream)obj;
 							List<File>	lfile = (List<File>)obj;
@@ -1790,33 +2188,6 @@ public class JavaFasta extends JApplet {
 							importReader( new BufferedReader(new InputStreamReader(is, charset)) );
 							
 							updateView();
-							
-							return true;
-						} else if( support.isDataFlavorSupported( ndf ) ) {							
-							Object obj = support.getTransferable().getTransferData( df );
-							ArrayList<Sequence>	seqs = (ArrayList<Sequence>)obj;
-							
-							ArrayList<Sequence> newlist = new ArrayList<Sequence>( lseq.size() );
-							for( int r = 0; r < table.getRowCount(); r++ ) {
-								int i = table.convertRowIndexToModel(r);
-								newlist.add( lseq.get(i) );
-							}
-							lseq.clear();
-							lseq = newlist;
-							
-							Point p = support.getDropLocation().getDropPoint();
-							int k = table.rowAtPoint( p );
-							
-							lseq.removeAll( seqs );
-							for( Sequence s : seqs ) {
-								lseq.add(k++, s);
-							}
-							
-							TableRowSorter<TableModel>	trs = (TableRowSorter<TableModel>)table.getRowSorter();
-							trs.setSortKeys( null );
-							
-							table.tableChanged( new TableModelEvent(table.getModel()) );
-							c.repaint();
 							
 							return true;
 						}
@@ -2367,6 +2738,18 @@ public class JavaFasta extends JApplet {
 				}
 			}
 		});
+		popup.add( new AbstractAction("Export many") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				try {
+					exportManyFasta( table, lseq );
+				} catch (IOException e1) {
+					e1.printStackTrace();
+				} catch (UnavailableServiceException e1) {
+					e1.printStackTrace();
+				}
+			}
+		});
 		popup.add( new AbstractAction("Delete") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -2383,38 +2766,103 @@ public class JavaFasta extends JApplet {
 			}
 		});
 		popup.add( cbmi );
+		popup.add( new AbstractAction("Dis-mat exclude gaps") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				StringBuilder sb = distanceMatrix( true );
+				
+				File save = null;
+				try {
+					JFileChooser	fc = new JFileChooser();
+					if( fc.showOpenDialog( parentApplet ) == JFileChooser.APPROVE_OPTION ) {
+						save = fc.getSelectedFile();
+					}
+				} catch( Exception e1 ) {
+					
+				}
+				
+				if( save != null ) {
+					try {
+						FileWriter fw = new FileWriter( save );
+						fw.write( sb.toString() );
+					} catch (IOException e1) {
+						e1.printStackTrace();
+					}
+				} else {
+					JTextArea		text = new JTextArea( sb.toString() );
+					JScrollPane	sp = new JScrollPane( text );
+					JFrame	fr = new JFrame("Distance matrix");
+					fr.add( sp );
+					fr.setSize(800, 600);
+					fr.setDefaultCloseOperation( JFrame.DISPOSE_ON_CLOSE );
+					fr.setVisible( true );
+				}
+			}
+		});
 		popup.add( new AbstractAction("Distance matrix") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				int[] rr = table.getSelectedRows();
-				JTextArea	text = new JTextArea();
-				text.append("\t"+rr.length+"\n");
-				for( int i = 0; i < rr.length; i++ ) {
-					int r = rr[i];
-					text.append( (String)table.getValueAt(r, 0) );
-					for( int y = 0; y < rr.length; y++ ) {
-						if( i == y ) text.append("\t0.0");
-						else {
-							Sequence seq1 = lseq.get( table.convertRowIndexToModel(rr[i]) );
-							Sequence seq2 = lseq.get( table.convertRowIndexToModel(rr[y]) );
-							int count = 0;
-							for( int k = 0; k < seq1.sb.length(); k++ ) {
-								char c1 = seq1.charAt(k);
-								char c2 = seq2.charAt(k);
-								
-								if( c1 != '.' && c1 != '-' && c1 != c2 ) count++;
-							}
-							text.append("\t"+count);
-						}
+				StringBuilder sb = distanceMatrix( false );
+				
+				File save = null;
+				try {
+					JFileChooser	fc = new JFileChooser();
+					if( fc.showOpenDialog( parentApplet ) == JFileChooser.APPROVE_OPTION ) {
+						save = fc.getSelectedFile();
 					}
-					text.append("\n");
+				} catch( Exception e1 ) {
+					
 				}
-				JScrollPane	sp = new JScrollPane( text );
-				JFrame	fr = new JFrame("Distance matrix");
-				fr.add( sp );
-				fr.setSize(800, 600);
-				fr.setDefaultCloseOperation( JFrame.DISPOSE_ON_CLOSE );
-				fr.setVisible( true );
+				
+				if( save != null ) {
+					try {
+						FileWriter fw = new FileWriter( save );
+						fw.write( sb.toString() );
+					} catch (IOException e1) {
+						e1.printStackTrace();
+					}
+				} else {
+					JTextArea		text = new JTextArea( sb.toString() );
+					JScrollPane	sp = new JScrollPane( text );
+					JFrame	fr = new JFrame("Distance matrix");
+					fr.add( sp );
+					fr.setSize(800, 600);
+					fr.setDefaultCloseOperation( JFrame.DISPOSE_ON_CLOSE );
+					fr.setVisible( true );
+				}
+			}
+		});
+		popup.add( new AbstractAction("Draw tree") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				StringBuilder	sb = distanceMatrix( false );
+				System.err.println("about to call showTree");
+				JSObject jso = JSObject.getWindow( parentApplet );
+				jso.call("showTree", new Object[] {sb.toString()} );
+				/*String urlstr = Base64.encodeBase64URLSafeString( sb.toString().getBytes() );
+				try {
+					URI treeuri = new URI( "http://webconnectron.appspot.com/Treedraw.html?dist="+urlstr );
+					JavaFasta.this.getAppletContext().showDocument(treeuri.toURL(), "_blank");
+				} catch (URISyntaxException e1) {
+					e1.printStackTrace();
+				} catch (MalformedURLException e1) {
+					e1.printStackTrace();
+				}
+				
+				try {
+					URI treeuri = new URI( "http://webconnectron.appspot.com/Treedraw.html" );
+					JavaFasta.this.getAppletContext().showDocument(treeuri.toURL(), "_blank");
+				} catch (URISyntaxException | MalformedURLException e1) {
+					e1.printStackTrace();
+				}*/
+			}
+		});
+		popup.add( new AbstractAction("Draw tree excluding gaps") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				StringBuilder	sb = distanceMatrix( true );
+				JSObject jso = JSObject.getWindow( parentApplet );
+				jso.call("showTree", new Object[] {sb.toString()} );
 			}
 		});
 		popup.add( new AbstractAction("Dot plot") {
@@ -2524,7 +2972,7 @@ public class JavaFasta extends JApplet {
 								             os.close();
 								         } else {
 								        	 JFileChooser jfc = new JFileChooser();
-								        	 if( jfc.showSaveDialog( JavaFasta.this ) == JFileChooser.APPROVE_OPTION ) {
+								        	 if( jfc.showSaveDialog( parentApplet ) == JFileChooser.APPROVE_OPTION ) {
 								        		 File f = jfc.getSelectedFile();
 								        		 FileOutputStream fos = new FileOutputStream( f );
 								        		 fos.write( baos.toByteArray() );
@@ -2608,6 +3056,7 @@ public class JavaFasta extends JApplet {
 		
 		overview = new Overview();
 		JSplitPane	overviewsplit = new JSplitPane( JSplitPane.VERTICAL_SPLIT );
+		overviewsplit.setDividerLocation(0.3);
 		overviewsplit.setTopComponent( splitpane );
 		overviewsplit.setBottomComponent( overview );
 		
@@ -2638,6 +3087,7 @@ public class JavaFasta extends JApplet {
 		acomp.add( ascroll );
 		acomp.add( asearch, BorderLayout.SOUTH );
 		JSplitPane mainsplit = new JSplitPane( JSplitPane.HORIZONTAL_SPLIT );
+		mainsplit.setDividerLocation(0.3);
 		mainsplit.setLeftComponent( overviewsplit );
 		mainsplit.setRightComponent( acomp );
 		
@@ -3006,7 +3456,8 @@ public class JavaFasta extends JApplet {
 	public static void main(String[] args) {
 		JFrame	frame = new JFrame();
 		frame.setDefaultCloseOperation( JFrame.EXIT_ON_CLOSE );
-		JavaFasta	jf = new JavaFasta();
+		frame.setSize(800, 600);
+		JavaFasta	jf = new JavaFasta( null );
 		jf.initGui( frame );
 		
 		frame.setVisible( true );
