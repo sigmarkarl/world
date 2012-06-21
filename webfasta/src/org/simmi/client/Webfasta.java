@@ -455,7 +455,6 @@ public class Webfasta implements EntryPoint {
 				//String seqstr = subseq;//.replace("\n", "");
 				
 			int n = k == -1 ? content.length() : k-1;
-			
 			int m = 0;
 			/*for( int u = i+1; u < n; u++ ) {
 				if( content.charAt(u) == '\n' ) {
