@@ -16,7 +16,6 @@ import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.Transferable;
 import java.awt.datatransfer.UnsupportedFlavorException;
 import java.awt.event.ActionEvent;
-import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseAdapter;
@@ -45,6 +44,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -80,6 +80,8 @@ import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 import javax.swing.border.Border;
 import javax.swing.border.EmptyBorder;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
 import javax.swing.event.RowSorterEvent;
 import javax.swing.event.RowSorterListener;
 import javax.swing.event.TableModelEvent;
@@ -101,8 +103,43 @@ public class JavaFasta extends JApplet {
 		parentApplet = applet;
 	}
 	
+	public JavaFasta() {}
+	
+	public List<Sequence> getEditedSequences() {
+		List<Sequence>	es = new ArrayList<Sequence>();
+		for( Sequence s : lseq ) {
+			if( s.isEdited() ) es.add( s );
+		}
+		
+		return es;
+	}
+	
 	public JavaFasta( JApplet parentApplet ) {
 		if( parentApplet != null ) this.parentApplet = parentApplet;
+	}
+	
+	public void setStatus() {
+		int r = table.getSelectedRow();
+		if( r != -1 ) {
+			int tr = table.convertRowIndexToModel( r );
+			Sequence s = lseq.get(tr);
+			
+			int start = 0;
+			int stop = -1;
+			
+			int rs = s.getRealStart();
+			while( rs < c.selectedRect.x ) {
+				if( s.charAt( rs ) != '-' ) start++;
+				rs++;
+			}
+			stop = start;
+			while( rs < c.selectedRect.x+c.selectedRect.width ) {
+				if( s.charAt( rs ) != '-' ) stop++;
+				rs++;
+			}
+			
+			if( stop >= start ) status.setText( start + "-" + stop );
+		}
 	}
 
 	public class Ruler extends JComponent {
@@ -241,29 +278,36 @@ public class JavaFasta extends JApplet {
 			
 			this.addMouseListener( new MouseListener() {
 				@Override
-				public void mouseReleased(MouseEvent e) {
-					// TODO Auto-generated method stub	
-				}
+				public void mouseReleased(MouseEvent e) {}
 				
 				@Override
 				public void mousePressed(MouseEvent e) {
 					p = e.getPoint();
+					
+					if( e.isShiftDown() ) {
+						//c.selectedRect.x = (int)(p.x/c.cw);
+						//c.selectedRect.y = 0;
+						int oldpx = (int)(c.selectedRect.x*c.cw);
+						c.selectedRect.width = (int)((p.x-oldpx)/c.cw)+1;
+						//c.selectedRect.height = lseq.size();
+						c.repaint();
+					} else {
+						c.selectedRect.x = (int)(p.x/c.cw);
+						c.selectedRect.y = 0;
+						c.selectedRect.width = 1;
+						c.selectedRect.height = lseq.size();
+						c.repaint();
+					}
 				}
 				
 				@Override
-				public void mouseExited(MouseEvent e) {
-					// TODO Auto-generated method stub
-				}
+				public void mouseExited(MouseEvent e) {}
 				
 				@Override
-				public void mouseEntered(MouseEvent e) {
-					// TODO Auto-generated method stub
-				}
+				public void mouseEntered(MouseEvent e) {}
 				
 				@Override
-				public void mouseClicked(MouseEvent e) {
-					// TODO Auto-generated method stub
-				}
+				public void mouseClicked(MouseEvent e) {}
 			});
 			this.addMouseMotionListener( new MouseMotionListener() {
 				@Override
@@ -280,6 +324,8 @@ public class JavaFasta extends JApplet {
 						c.selectedRect.y = 0;
 						c.selectedRect.width = (int)((np.x-p.x)/c.cw)+1;
 						c.selectedRect.height = lseq.size();
+						
+						setStatus();
 						c.repaint();
 					}
 				}
@@ -361,7 +407,7 @@ public class JavaFasta extends JApplet {
 		boolean			basecolors = false;
 		Map<Character,Color>	ccol = new HashMap<Character,Color>();
 		Rectangle		selectedRect = new Rectangle();
-		Color			selectColor = new Color( 150,150,200,100 );
+		Color			selectColor = new Color( 150,150,200,200 );
 		
 		public FastaView( int rh, Ruler ruler, JTable table ) {
 			this.rh = rh;
@@ -494,6 +540,7 @@ public class JavaFasta extends JApplet {
 		@Override
 		public void keyPressed(KeyEvent e) {
 			int keycode = e.getKeyCode();
+			char keychar = e.getKeyChar();
 			if( this.selectedRect != null && this.selectedRect.width > 0 ) {
 				List<Sequence>	seq = new ArrayList<Sequence>();
 				for( int i = this.selectedRect.y; i < this.selectedRect.y+this.selectedRect.height; i++ ) {
@@ -508,19 +555,62 @@ public class JavaFasta extends JApplet {
 						if( i >= 0 && i < s.sb.length() ) {
 							s.sb.deleteCharAt( i );
 							s.sb.insert( i+this.selectedRect.width, '-');
+							s.edited = true;
 						}
 					}
 					selectedRect.x--;
 					c.repaint();
 				} else if( keycode == KeyEvent.VK_RIGHT ) {
 					for( Sequence s : seq ) {
-						int i = this.selectedRect.x-s.getStart()-1;
+						int i = this.selectedRect.x-s.getStart();
 						if( i >= 0 && i < s.sb.length() ) {
 							s.sb.insert( i, '-' );
-							s.sb.deleteCharAt( i+this.selectedRect.width+2 );
+							s.sb.deleteCharAt( i+this.selectedRect.width+1 );
+							s.edited = true;
 						}
 					}
 					selectedRect.x++;
+					c.repaint();
+				} else if( keycode == KeyEvent.VK_DELETE ) {
+					for( Sequence s : seq ) {
+						for( int i = Math.max(0, this.selectedRect.x-s.getStart()); i < Math.min(s.sb.length(),this.selectedRect.x+this.selectedRect.width-s.getStart()); i++ ) { 
+							s.sb.setCharAt(i, '-');
+							s.edited = true;
+							//s.sb.insert( i+this.selectedRect.width, '-');
+						}
+					}
+					c.repaint();
+					//selectedRect.x--;
+				} else if( keycode == KeyEvent.VK_BACK_SPACE ) {
+					for( Sequence s : seq ) {
+						int start = Math.max(0, this.selectedRect.x-s.getStart() );
+						int end = Math.min( s.sb.length(), this.selectedRect.x+this.selectedRect.width-s.getStart() );
+						
+						if( end > start ) {
+							s.sb.delete(start, end);
+							s.edited = true;
+						}
+					}
+					//selectedRect.width;
+					c.repaint();
+				} else if( keycode == KeyEvent.VK_SPACE ) {
+					for( Sequence s : seq ) {
+						int i = this.selectedRect.x-s.getStart();
+						if( i >= 0 && i < s.sb.length() ) {
+							s.sb.insert( i, '-' );
+							s.edited = true;
+						}
+					}
+					selectedRect.x++;
+					c.repaint();
+				} else if( (keychar >= 'a' && keychar <= 'z') || (keychar >= 'A' && keychar <= 'Z') ) {
+					for( Sequence s : seq ) {
+						int i = this.selectedRect.x-s.getStart();
+						if( i >= 0 && i < s.sb.length() ) {
+							s.sb.replace(i, i+1, Character.toString(keychar) );
+							s.edited = true;
+						}
+					}
 					c.repaint();
 				}
 			}
@@ -537,23 +627,26 @@ public class JavaFasta extends JApplet {
 		}
 
 		@Override
-		public void keyReleased(KeyEvent e) {
-			// TODO Auto-generated method stub
-			
-		}
+		public void keyReleased(KeyEvent e) {}
 		
 	};
 	
 	public class Annotation implements Comparable<Annotation> {
-		Sequence	seq;
-		String	name;
+		Sequence		seq;
+		String			name;
 		StringBuilder	desc;
-		String	type;
-		String	group;
-		int		start;
-		int		stop;
-		int		ori;
-		Color	color;
+		String			type;
+		String			group;
+		int				start;
+		int				stop;
+		int				ori;
+		Color			color;
+		
+		public Annotation( Sequence seq, String name, Color color, int start, int stop ) {
+			this( seq, name, color );
+			this.setStart( start );
+			this.setStop( stop );
+		}
 		
 		public Annotation( Sequence seq, String name, Color color ) {
 			this.name = name;
@@ -564,6 +657,10 @@ public class JavaFasta extends JApplet {
 				seq.addAnnotation( this );
 			}
 			mann.put( name, this );
+		}
+		
+		public boolean isGlobal() {
+			return seq == null;
 		}
 		
 		public int getLength() {
@@ -599,11 +696,11 @@ public class JavaFasta extends JApplet {
 		}
 		
 		public int getCoordStart() {
-			return seq.getStart()+start;
+			return (seq != null ? seq.getStart() : 0)+start;
 		}
 		
 		public int getCoordEnd() {
-			return seq.getStart()+stop;
+			return (seq != null ? seq.getStart() : 0)+stop;
 		}
 		
 		public void append( String astr ) {
@@ -619,6 +716,7 @@ public class JavaFasta extends JApplet {
 	
 	public class Sequence implements Comparable<Sequence> {
 		String 			name;
+		String			id;
 		StringBuilder 	sb;
 		int				start = 0;
 		int				revcomp = 0;
@@ -629,11 +727,34 @@ public class JavaFasta extends JApplet {
 		int				substop = 0;
 		List<Annotation>	annset;
 		int				index = -1;
+		boolean		edited = false;
+		
+		public boolean isEdited() {
+			return edited;
+		}
+		
+		public String getId() {
+			return id;
+		}
+		
+		public void setId( String id ) {
+			this.id = id;
+		}
+		
+		public Sequence( String id, String name ) {
+			this( name );
+			this.id = id;
+		}
 		
 		public Sequence( String name ) {
 			this.name = name;
 			sb = new StringBuilder();
 			mseq.put( name, this );
+		}
+		
+		public Sequence( String id, String name, StringBuilder sb ) {
+			this( name, sb );
+			this.id = id;
 		}
 		
 		public Sequence( String name, StringBuilder sb ) {
@@ -678,6 +799,22 @@ public class JavaFasta extends JApplet {
 		
 		public void append( String str ) {
 			sb.append( str );
+		}
+		
+		public void deleteCharAt( int i ) {
+			int ind = i-start;
+			if( ind >= 0 && ind < sb.length() ) {
+				sb.deleteCharAt(ind);
+				edited = true;
+			}
+		}
+		
+		public void clearCharAt( int i ) {
+			int ind = i-start;
+			if( ind >= 0 && ind < sb.length() ) {
+				sb.setCharAt(ind, '-');
+				edited = true;
+			}
 		}
 		
 		public char charAt( int i ) {
@@ -908,6 +1045,42 @@ public class JavaFasta extends JApplet {
 		return or;
 	}
 	
+	public void exportPhylip() throws IOException {
+		 FileSaveService fss = null;
+         FileContents fileContents = null;
+         ByteArrayOutputStream baos = new ByteArrayOutputStream();
+         OutputStreamWriter	osw = new OutputStreamWriter( baos );
+    	 
+    	 osw.write( getPhylip( lseq ) );
+    	 osw.close();
+    	 baos.close();
+
+    	 try {
+    		 fss = (FileSaveService)ServiceManager.lookup("javax.jnlp.FileSaveService");
+    	 } catch( UnavailableServiceException e ) {
+    		 fss = null;
+    	 }
+    	 
+         if (fss != null) {
+        	 ByteArrayInputStream bais = new ByteArrayInputStream( baos.toByteArray() );
+             fileContents = fss.saveFileDialog(null, null, bais, "export.phy");
+             bais.close();
+             OutputStream os = fileContents.getOutputStream(true);
+             os.write( baos.toByteArray() );
+             os.close();
+         } else {
+        	 JFileChooser jfc = new JFileChooser();
+        	 if( jfc.showSaveDialog( parentApplet ) == JFileChooser.APPROVE_OPTION ) {
+        		 File f = jfc.getSelectedFile();
+        		 FileOutputStream fos = new FileOutputStream( f );
+        		 fos.write( baos.toByteArray() );
+        		 fos.close();
+        		 
+        		 Desktop.getDesktop().browse( f.toURI() );
+        	 }
+         }
+	}
+	
 	public void exportFasta( JTable table, List<Sequence> lseq ) throws IOException, UnavailableServiceException {
 		 FileSaveService fss = null;
          FileContents fileContents = null;
@@ -1117,7 +1290,7 @@ public class JavaFasta extends JApplet {
 	}
 	
 	public void console( String str ) {
-		JSObject jso = JSObject.getWindow(this);
+		JSObject jso = JSObject.getWindow( parentApplet );
 		JSObject console = (JSObject)jso.getMember("console");
 		console.call("log", new Object[] {str});
 	}
@@ -1133,6 +1306,10 @@ public class JavaFasta extends JApplet {
 	int				min = 0;
 	
 	JTable			atable;
+	
+	public List<Sequence> getSequences() {
+		return lseq;
+	}
 	
 	public int getNumberOfSequences() {
 		return lseq.size();
@@ -1467,94 +1644,98 @@ public class JavaFasta extends JApplet {
 	
 	public StringBuilder distanceMatrix( boolean excludeGaps ) {
 		JCheckBox	jukes = new JCheckBox("Jukes-cantor correction");
-		JOptionPane.showMessageDialog( parentApplet, jukes );
+		JCheckBox	boots = new JCheckBox("Bootstrap");
+		JOptionPane.showMessageDialog( parentApplet, new Object[] {jukes, boots} );
 		boolean cantor = jukes.isSelected();
+		boolean bootstrap = boots.isSelected();
 		
 		int[] rr = table.getSelectedRows();
 		StringBuilder	text = new StringBuilder();
 		text.append("\t"+rr.length+"\n");
 		
-		if( excludeGaps ) {
-			int start = Integer.MIN_VALUE;
-			int end = Integer.MAX_VALUE;
-			
-			for( int i = 0; i < rr.length; i++ ) {
-				int r = rr[i];
-				Sequence seq = lseq.get( table.convertRowIndexToModel(r) );
-				if( seq.getRealStart() > start ) start = seq.getRealStart();
-				if( seq.getRealStop() < end ) end = seq.getRealStop();
-			}
-			
-			List<Integer>	idxs = new ArrayList<Integer>();
-			for( int x = start; x < end; x++ ) {
-				int i;
-				for( i = 0; i < rr.length; i++ ) {
+		if( rr.length > 0 ) {
+			if( excludeGaps ) {
+				int start = Integer.MIN_VALUE;
+				int end = Integer.MAX_VALUE;
+				
+				for( int i = 0; i < rr.length; i++ ) {
 					int r = rr[i];
 					Sequence seq = lseq.get( table.convertRowIndexToModel(r) );
-					char c = seq.charAt( x );
-					if( c != '-' && c != '.' && c == ' ' ) break;
+					if( seq.getRealStart() > start ) start = seq.getRealStart();
+					if( seq.getRealStop() < end ) end = seq.getRealStop();
 				}
 				
-				if( i == rr.length ) {
-					idxs.add( x );
-				}
-			}
-			
-			for( int i = 0; i < rr.length; i++ ) {
-				int r = rr[i];
-				text.append( ((String)table.getValueAt(r, 0)).replace(' ','_') );
-				for( int y = 0; y < rr.length; y++ ) {
-					if( i == y ) text.append("\t0.0");
-					else {
-						Sequence seq1 = lseq.get( table.convertRowIndexToModel(rr[i]) );
-						Sequence seq2 = lseq.get( table.convertRowIndexToModel(rr[y]) );
-						int count = 0;
-						int mism = 0;
-						
-						for( int k : idxs ) {
-							char c1 = seq1.charAt( k-seq1.getStart() );
-							char c2 = seq2.charAt( k-seq2.getStart() );
-							
-							if( c1 != c2 ) mism++;
-							count++;
-						}
-						double d = count == 0 ? 0.0 : ((double)mism/(double)count);
-						if( cantor ) d = -3.0*Math.log( 1.0 - 4.0*d/3.0 )/4.0;
-						text.append("\t"+d);
+				List<Integer>	idxs = new ArrayList<Integer>();
+				for( int x = start; x < end; x++ ) {
+					int i;
+					for( i = 0; i < rr.length; i++ ) {
+						int r = rr[i];
+						Sequence seq = lseq.get( table.convertRowIndexToModel(r) );
+						char c = seq.charAt( x );
+						if( c != '-' && c != '.' && c == ' ' ) break;
+					}
+					
+					if( i == rr.length ) {
+						idxs.add( x );
 					}
 				}
-				text.append("\n");
-			}
-		} else {
-			for( int i = 0; i < rr.length; i++ ) {
-				int r = rr[i];
-				text.append( ((String)table.getValueAt(r, 0)).replace(' ','_') );
-				for( int y = 0; y < rr.length; y++ ) {
-					if( i == y ) text.append("\t0.0");
-					else {
-						Sequence seq1 = lseq.get( table.convertRowIndexToModel(rr[i]) );
-						Sequence seq2 = lseq.get( table.convertRowIndexToModel(rr[y]) );
-						int count = 0;
-						int mism = 0;
-						
-						int start = Math.max( seq1.getStart(), seq2.getStart() );
-						int end = Math.min( seq1.getEnd(), seq2.getEnd() );
-						
-						for( int k = start; k < end; k++ ) {
-							char c1 = seq1.charAt( k-seq1.getStart() );
-							char c2 = seq2.charAt( k-seq2.getStart() );
+				
+				for( int i = 0; i < rr.length; i++ ) {
+					int r = rr[i];
+					text.append( ((String)table.getValueAt(r, 0)).replace(' ','_') );
+					for( int y = 0; y < rr.length; y++ ) {
+						if( i == y ) text.append("\t0.0");
+						else {
+							Sequence seq1 = lseq.get( table.convertRowIndexToModel(rr[i]) );
+							Sequence seq2 = lseq.get( table.convertRowIndexToModel(rr[y]) );
+							int count = 0;
+							int mism = 0;
 							
-							if( c1 != '.' && c1 != '-' && c1 != ' ' &&  c2 != '.' && c2 != '-' && c2 != ' ' ) {
+							for( int k : idxs ) {
+								char c1 = seq1.charAt( k-seq1.getStart() );
+								char c2 = seq2.charAt( k-seq2.getStart() );
+								
 								if( c1 != c2 ) mism++;
 								count++;
 							}
+							double d = count == 0 ? 0.0 : ((double)mism/(double)count);
+							if( cantor ) d = -3.0*Math.log( 1.0 - 4.0*d/3.0 )/4.0;
+							text.append("\t"+d);
 						}
-						double d = count == 0 ? 0.0 : ((double)mism/(double)count);
-						if( cantor ) d = -3.0*Math.log( 1.0 - 4.0*d/3.0 )/4.0;
-						text.append("\t"+d);
 					}
+					text.append("\n");
 				}
-				text.append("\n");
+			} else {
+				for( int i = 0; i < rr.length; i++ ) {
+					int r = rr[i];
+					text.append( ((String)table.getValueAt(r, 0)).replace(' ','_') );
+					for( int y = 0; y < rr.length; y++ ) {
+						if( i == y ) text.append("\t0.0");
+						else {
+							Sequence seq1 = lseq.get( table.convertRowIndexToModel(rr[i]) );
+							Sequence seq2 = lseq.get( table.convertRowIndexToModel(rr[y]) );
+							int count = 0;
+							int mism = 0;
+							
+							int start = Math.max( seq1.getStart(), seq2.getStart() );
+							int end = Math.min( seq1.getEnd(), seq2.getEnd() );
+							
+							for( int k = start; k < end; k++ ) {
+								char c1 = seq1.charAt( k-seq1.getStart() );
+								char c2 = seq2.charAt( k-seq2.getStart() );
+								
+								if( c1 != '.' && c1 != '-' && c1 != ' ' &&  c2 != '.' && c2 != '-' && c2 != ' ' ) {
+									if( c1 != c2 ) mism++;
+									count++;
+								}
+							}
+							double d = count == 0 ? 0.0 : ((double)mism/(double)count);
+							if( cantor ) d = -3.0*Math.log( 1.0 - 4.0*d/3.0 )/4.0;
+							text.append("\t"+d);
+						}
+					}
+					text.append("\n");
+				}
 			}
 		}
 		
@@ -1571,11 +1752,90 @@ public class JavaFasta extends JApplet {
 		return ret;
 	}
 	
+	public String getFasta() {
+		return getFasta( this.getSequences() );
+	}
+	
+	public String getFasta( List<Sequence> lseq ) {
+		StringBuilder out = new StringBuilder();
+		
+   	 	for( Sequence seq : lseq ) {
+   		 int val = 0;
+   		 int end = seq.getLength();
+   		 
+   		 if( c.selectedRect.width > 0 ) {
+   			 val = Math.max( val, c.selectedRect.x-seq.getStart() );
+   			 end = Math.min( end, c.selectedRect.x+c.selectedRect.width-seq.getStart() );
+   		 }
+   		 
+   		 if( val < end ) out.append( ">" + seq.name + "\n" );
+   		 while( val < end ) {
+   			 out.append( seq.sb.substring(val, Math.min( end, val+70 )) + "\n" );
+   			 val += 70;
+   		 }
+   	 	}
+   		 
+   		return out.toString();
+	}
+	
+	public String getPhylip() {
+		return getPhylip( this.getSequences() );
+	}
+	
+	public String getPhylip( List<Sequence> lseq ) {
+		StringBuilder out = new StringBuilder();
+		
+		String erm = ""+lseq.size();
+		String seqlen = "";
+		for( int i = 0; i < 6-erm.length(); i++ ) {
+			seqlen += " ";
+		}
+		seqlen += erm;
+		int alen = lseq.get(0).getLength();
+		seqlen += "   "+alen;
+		
+		out.append( seqlen+"\n" );
+		
+		int u = 0;
+		for( int k = 0; k < alen; k+=50 ) {
+			for( Sequence seq : lseq ) {
+				if( u == 0 ) {
+					String seqname = seq.getName();
+					int m = Math.min( seqname.length(), 10 );
+					out.append( seqname.substring(0, m) );
+					while( m < 10 ) {
+						out.append(' ');
+						m++;
+					}
+				} else out.append("          ");
+				
+				for( int l = k; l < Math.min(k+50, alen); l++ ) {
+					if( l % 10 == 0 ) {
+						out.append(" ");
+					}
+					out.append( seq.sb.charAt(l) );
+				}
+				out.append("\n");
+			}
+			out.append("\n");
+			
+			u++;
+		}
+		
+		return out.toString();
+	}
+	
 	public double[] distanceMatrixNumeric( boolean excludeGaps ) {
 		JCheckBox	jukes = new JCheckBox("Jukes-cantor correction");
+		//JCheckBox	boots = new JCheckBox("Bootstrap");
 		JOptionPane.showMessageDialog( parentApplet, jukes );
 		boolean cantor = jukes.isSelected();
+		//boolean bootstrap = boots.isSelected();
 		
+		return distanceMatrixNumeric(excludeGaps, false, cantor);
+	}
+	
+	public double[] distanceMatrixNumeric( boolean excludeGaps, boolean bootstrap, boolean cantor ) {		
 		double[]	dmat = new double[ lseq.size()*lseq.size() ];
 		if( excludeGaps ) {
 			int start = Integer.MIN_VALUE;
@@ -1627,6 +1887,7 @@ public class JavaFasta extends JApplet {
 			}
 		} else {
 			int i = 0;
+			Random r = new Random();
 			for( Sequence seq1 : lseq ) {
 				for( Sequence seq2 : lseq ) {
 					if( seq1 == seq2 ) dmat[i] = 0.0; 
@@ -1637,13 +1898,26 @@ public class JavaFasta extends JApplet {
 						int start = Math.max( seq1.getRealStart(), seq2.getRealStart() );
 						int end = Math.min( seq1.getRealStop(), seq2.getRealStop() );
 						
-						for( int k = start; k < end; k++ ) {
-							char c1 = seq1.charAt( k-seq1.getStart() );
-							char c2 = seq2.charAt( k-seq2.getStart() );
-							
-							if( c1 != '.' && c1 != '-' && c1 != ' ' &&  c2 != '.' && c2 != '-' && c2 != ' ' ) {
-								if( c1 != c2 ) mism++;
-								count++;
+						if( bootstrap ) {
+							for( int k = start; k < end; k++ ) {
+								int ir = start + r.nextInt( end-start );
+								char c1 = seq1.charAt( ir-seq1.getStart() );
+								char c2 = seq2.charAt( ir-seq2.getStart() );
+								
+								if( c1 != '.' && c1 != '-' && c1 != ' ' &&  c2 != '.' && c2 != '-' && c2 != ' ' ) {
+									if( c1 != c2 ) mism++;
+									count++;
+								}
+							}
+						} else {
+							for( int k = start; k < end; k++ ) {
+								char c1 = seq1.charAt( k-seq1.getStart() );
+								char c2 = seq2.charAt( k-seq2.getStart() );
+								
+								if( c1 != '.' && c1 != '-' && c1 != ' ' &&  c2 != '.' && c2 != '-' && c2 != ' ' ) {
+									if( c1 != c2 ) mism++;
+									count++;
+								}
 							}
 						}
 						double d = count == 0 ? 0.0 : ((double)mism/(double)count);
@@ -1673,6 +1947,46 @@ public class JavaFasta extends JApplet {
 		mseq = new HashMap<String,Sequence>();
 		lann = new ArrayList<Annotation>();
 		mann = new HashMap<String,Annotation>();
+	}
+	
+	public void removeGaps( List<Sequence> seqlist ) {
+		int min = Integer.MAX_VALUE;
+		int max = Integer.MIN_VALUE;
+		for( Sequence seq : seqlist ) {
+			min = Math.min( min, seq.getStart() );
+			max = Math.max( max, seq.getEnd() );
+		}
+		
+		for( Sequence seq : seqlist ) {
+			seq.setStart( seq.getStart()-min );
+		}
+		
+		int i = 0;
+		while( i < max-min ) {
+			boolean rem = true;
+			//char c = 0;
+			for( Sequence seq : seqlist ) {
+				char c2 = seq.charAt(i); //getCharAt(i, r);
+				if( c2 != '.' && c2 != '-' && c2 != ' ' ) {
+					rem = false;
+					break;
+				}
+				/*if( c2 != '.' && c2 != '-' ) {
+					if( c != 0 && c2 != c ) {
+						rem = false;
+						break;
+					}
+				
+					c = c2;
+				}*/
+			}
+			if( rem ) {
+				for( Sequence seq : seqlist ) {
+					seq.deleteCharAt(i);
+				}
+				max--;
+			} else i++;
+		}
 	}
 	
 	int[]	currentRowSelection;
@@ -1722,6 +2036,11 @@ public class JavaFasta extends JApplet {
 						double npy = c.rh*c.selectedRect.y;
 						c.selectedRect.width = (int)((p.x-npx)/c.cw)+1;
 						c.selectedRect.height = (int)((p.y-npy)/c.rh)+1;
+					} else {
+						c.selectedRect.x = (int)(p.x/c.cw);
+						c.selectedRect.y = (int)(p.y/c.rh);
+						c.selectedRect.width = 1;
+						c.selectedRect.height = 1;
 					}
 				} else {
 					c.selectedRect.width = 0;
@@ -1839,16 +2158,10 @@ public class JavaFasta extends JApplet {
 			}
 
 			@Override
-			public void setValueAt(Object aValue, int rowIndex, int columnIndex) {
-				// TODO Auto-generated method stub
-				
-			}
+			public void setValueAt(Object aValue, int rowIndex, int columnIndex) {}
 
 			@Override
-			public void addTableModelListener(TableModelListener l) {
-				// TODO Auto-generated method stub
-				
-			}
+			public void addTableModelListener(TableModelListener l) {}
 
 			@Override
 			public void removeTableModelListener(TableModelListener l) {}
@@ -2559,51 +2872,14 @@ public class JavaFasta extends JApplet {
 		popup.add( new AbstractAction("Remove gaps") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				int min = Integer.MAX_VALUE;
-				int max = Integer.MIN_VALUE;
+				List<Sequence>	seqlist = new ArrayList<Sequence>();
 				int[] rr = table.getSelectedRows();
 				for( int r : rr ) {
 					int k = table.convertRowIndexToModel( r );
 					Sequence seq = lseq.get( k );
-					//StringBuilder	sb = seq.sb;
-					//sb.
-					min = Math.min( min, seq.getStart() );
-					max = Math.max( max, seq.getEnd() );
+					seqlist.add( seq );
 				}
-				
-				for( int r : rr ) {
-					int k = table.convertRowIndexToModel( r );
-					Sequence seq = lseq.get( k );
-					seq.setStart( seq.getStart()-min );
-				}
-				
-				int i = 0;
-				while( i < max-min ) {
-					boolean rem = true;
-					char c = 0;
-					for( int r : rr ) {
-						char c2 = getCharAt(i, r);
-						if( c2 != '.' && c2 != '-' && c2 != ' ' ) {
-							rem = false;
-							break;
-						}
-						/*if( c2 != '.' && c2 != '-' ) {
-							if( c != 0 && c2 != c ) {
-								rem = false;
-								break;
-							}
-						
-							c = c2;
-						}*/
-					}
-					System.err.println( "i " + i );
-					if( rem ) {
-						for( int r : rr ) {
-							deleteCharAt(i, r);
-						}
-						max--;
-					} else i++;
-				}
+				removeGaps( seqlist );
 				
 				c.repaint();
 			}
@@ -2738,6 +3014,16 @@ public class JavaFasta extends JApplet {
 				}
 			}
 		});
+		popup.add( new AbstractAction("Export phylip") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				try {
+					exportPhylip();
+				} catch (IOException e1) {
+					e1.printStackTrace();
+				}
+			}
+		});
 		popup.add( new AbstractAction("Export many") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -2863,6 +3149,15 @@ public class JavaFasta extends JApplet {
 				StringBuilder	sb = distanceMatrix( true );
 				JSObject jso = JSObject.getWindow( parentApplet );
 				jso.call("showTree", new Object[] {sb.toString()} );
+			}
+		});
+		popup.add( new AbstractAction("Draw distance matrix") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				StringBuilder	sb = distanceMatrix( true );
+				JSObject jso = JSObject.getWindow( parentApplet );
+				String dist = sb.toString();
+				jso.call("showMatr", new Object[] {dist} );
 			}
 		});
 		popup.add( new AbstractAction("Dot plot") {
@@ -3009,6 +3304,13 @@ public class JavaFasta extends JApplet {
 		table.setComponentPopupMenu( popup );
 		tablescroll.setComponentPopupMenu( popup );
 		
+		table.getSelectionModel().addListSelectionListener( new ListSelectionListener() {
+			
+			@Override
+			public void valueChanged(ListSelectionEvent e) {
+				setStatus();
+			}
+		});
 		table.addMouseListener( new MouseListener() {
 			@Override
 			public void mouseClicked(MouseEvent e) {}
@@ -3105,6 +3407,47 @@ public class JavaFasta extends JApplet {
 				}
 			}
 		});
+		apopup.add( new AbstractAction("Clear sites") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				int[] rr = atable.getSelectedRows();
+				for( int r : rr ) {
+					int i = atable.convertRowIndexToModel( r );
+					Annotation a = lann.get( i );
+					if( a.seq == null ) {
+						for( Sequence seq : lseq ) {
+							int start = Math.max( seq.getRealStart(), a.getCoordStart() );
+							int stop = Math.min( seq.getRealStop(), a.getCoordEnd() );
+							for( int k = start; k < stop; k++ ) {
+								seq.clearCharAt(k);
+							}
+						}
+					}
+				}
+			}
+		});
+		apopup.add( new AbstractAction("Retain sites") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				int[] rr = atable.getSelectedRows();
+				for( Sequence seq : lseq ) {
+					for( int i = seq.getRealStart(); i < seq.getRealStop(); i++ ) {
+						boolean contained = false;
+						for( int r : rr ) {
+							int k = atable.convertRowIndexToModel( r );
+							Annotation a = lann.get( k );
+							if( i >= a.getCoordStart() && i <= a.getCoordEnd() ) {
+								contained = true;
+								break;
+							}
+						}
+						if( !contained ) {
+							seq.clearCharAt(i);
+						}
+					}
+				}
+			}
+		});
 		
 		atable.setModel( new TableModel() {
 			@Override
@@ -3175,8 +3518,11 @@ public class JavaFasta extends JApplet {
 						Annotation a = lann.get( i );
 						
 						i = lseq.indexOf( a.seq );
-						int m = table.convertRowIndexToView( i );
-						table.setRowSelectionInterval(m, m);
+						int m = 0;
+						if( i != -1 ) {
+							m = table.convertRowIndexToView( i );
+							table.setRowSelectionInterval(m, m);
+						}
 						
 						Rectangle cellrect = table.getCellRect(m, 0, true);
 						Rectangle rect = c.getVisibleRect();
@@ -3188,6 +3534,14 @@ public class JavaFasta extends JApplet {
 						rect.y = cellrect.y;
 						
 						c.scrollRectToVisible( rect );
+						
+						if( i == -1 ) {
+							c.selectedRect.x = a.getCoordStart()-min;
+							c.selectedRect.width = a.getLength();
+							c.selectedRect.y = 0;
+							c.selectedRect.height = table.getRowCount();
+							c.repaint();
+						}
 					}
 				}
 			}
@@ -3219,9 +3573,13 @@ public class JavaFasta extends JApplet {
 		mainsplit.setBackground( Color.white );
 		ascroll.getViewport().setBackground( Color.white );
 		
+		cnt.setLayout( new BorderLayout() );
 		cnt.add( mainsplit );
+		status.setPreferredSize( new Dimension(100, 20) );
+		cnt.add( status, BorderLayout.SOUTH );
 	}
 	
+	JLabel	status = new JLabel();
 	public void setAnnotationTableTransferhandler( JScrollPane atablescroll ) {
 		try {
 			final DataFlavor df = new DataFlavor( DataFlavor.javaJVMLocalObjectMimeType );
