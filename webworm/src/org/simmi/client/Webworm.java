@@ -2,8 +2,10 @@ package org.simmi.client;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import com.google.gwt.canvas.client.Canvas;
@@ -76,6 +78,7 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 	private final GreetingServiceAsync greetingService = GWT.create(GreetingService.class);
 	
 	int		highscore = 0;
+	String	huid = null;
 	String	highscoreholder = "no one";
 	int		highwidth = 1;
 	int		highheight = 1;
@@ -124,7 +127,7 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 	boolean luck = false;
 	boolean mondes = false;
 	
-	public native void fbFetchPersonName( String uid, int score ) /*-{
+	/*public native void fbFetchPersonName( String uid, int score ) /*-{
 		var ths = this;
 		var qStr = 'SELECT name FROM user WHERE uid = '+uid;
 		
@@ -137,14 +140,14 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 				ths.@org.simmi.client.Webworm::makeHighScore(Ljava/lang/String;I)( response[0].name, score );
 			}
 		);
-	}-*/;
+	}-*/
 	
-	public void makeHighScore( String name, final int score ) {
+	public void makeHighScore( final int score, final Worm worm ) {		
 		DialogBox	db = new DialogBox();
-		db.setText("Congratulations, you have the all time highscore! ("+score+")");
-		final TextBox		tb = new TextBox();
-		tb.setWidth("400px");
-		tb.setText( name );
+		db.setText("Congratulations, you have the highscore amoung your friends! ("+score+")");
+		//final TextBox		tb = new TextBox();
+		//tb.setWidth("400px");
+		//tb.setText( name );
 		db.setAutoHideEnabled( true );
 		db.setModal( true );
 		
@@ -178,13 +181,11 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 		hp.add( dipill );
 		hp.add( mondes );
 		
-		vp.add( tb );
+		//vp.add( tb );
 		vp.add( hp );
 		
 		db.add( vp );
-		pause = true;
-		db.center();
-		
+		pause = true;		
 		db.addCloseHandler( new CloseHandler<PopupPanel>() {
 			@Override
 			public void onClose(CloseEvent<PopupPanel> event) {
@@ -217,36 +218,47 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 				}*/
 				
 				//Window.alert(bonuspower + " " + dipill.getValue());
-				greetingService.highScore(tb.getText(), uid, score, cv.getCoordinateSpaceWidth(), cv.getCoordinateSpaceHeight(), superpowers, bonuspower, new AsyncCallback<String>() {
-					@Override
-					public void onFailure(Throwable caught) {
-						Window.alert(caught.getMessage());
-						//Window.alert( caught.getStackTrace()[0].toString() );
-						pause = false;
-					}
+				
+				//tb.getText()
+				saveHighScore( score, worm, superpowers, bonuspower );
+				//sendMessage(huid, "You have been challenged in WebWorm");
+			}
+		});
+		db.center();
+	}
 	
-					@Override
-					public void onSuccess(String result) {
-						String[] split = result.split("\t");
-						if( split.length > 3 ) {
-							highscoreholder = split[0];
-							try {
-								highscore = Integer.parseInt( split[ split.length-3 ] );
-								highwidth = Integer.parseInt( split[ split.length-2 ] );
-								highheight = Integer.parseInt( split[ split.length-1 ] );
-							} catch( Exception e ) {
-								
-							}
-						}
-						
-						if( worms.size() == 0 ) {
-							updateCoordinates( cv, false );
-							drawStartMessage( cv.getContext2d() );
-						}
-						
-						pause = false;
-					}
-				});
+	public void saveHighScore( int score, final Worm worm, String superpowers, String bonuspower ) {
+		greetingService.highScore(null, uid, score, cv.getCoordinateSpaceWidth(), cv.getCoordinateSpaceHeight(), superpowers, bonuspower, new AsyncCallback<String>() {
+			@Override
+			public void onFailure(Throwable caught) {
+				Window.alert(caught.getMessage());
+				//Window.alert( caught.getStackTrace()[0].toString() );
+				
+				pause = false;
+				if( worms.size() == 0 ) {
+					updateCoordinates( cv, false );
+					drawStartMessage( cv.getContext2d() );
+				}
+			}
+
+			@Override
+			public void onSuccess(String result) {
+				String[] split = result.split("\t");
+				if( split.length > 3 ) {
+					try {
+						huid = split[0];
+						long nuid = Long.parseLong( huid );
+						highscoreholder = fuids.get( nuid );
+						highscore = Integer.parseInt( split[ split.length-3 ] );
+						highwidth = Integer.parseInt( split[ split.length-2 ] );
+						highheight = Integer.parseInt( split[ split.length-1 ] );
+					} catch( Exception e ) {}
+				}
+				pause = false;
+				if( worms.size() == 0 ) {
+					updateCoordinates( cv, false );
+					drawStartMessage( cv.getContext2d() );
+				}
 			}
 		});
 	}
@@ -372,15 +384,29 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 		}
 		
 		public void kill() {
-			if( uid != null && uid.length() > 0 && (score > highscore || (score == highscore && (cv.getCoordinateSpaceWidth()*cv.getCoordinateSpaceHeight() < highwidth*highheight))) ) {				
-				fbFetchPersonName( uid, score );
-			}
-			
 			xs.clear();
 			ys.clear();
 			
 			hscore.remove( hp );
 			worms.remove( this );
+			if( uid != null && uid.length() > 0 && (score > highscore || (score == highscore && (cv.getCoordinateSpaceWidth()*cv.getCoordinateSpaceHeight() < highwidth*highheight))) ) {				
+				//String name = fuids.get( Long.parseLong(uid) );
+				if( uid != huid ) {
+					sendMessage(huid, "You have been challenged in WebWorm", score, this);
+				} else {
+					String superpowers = "";
+					if( Webworm.this.lorcon ) superpowers = superpowers.length() == 0 ? "lorcon" : "\tlorcon";
+					if( Webworm.this.quatel ) superpowers = superpowers.length() == 0 ? "quatel" : "\tquatel";
+					if( Webworm.this.dipill ) superpowers = superpowers.length() == 0 ? "dipill" : "\tdipill";
+					if( Webworm.this.luck ) superpowers = superpowers.length() == 0 ? "luck" : "\tluck";
+					if( Webworm.this.extlif ) superpowers = superpowers.length() == 0 ? "extlif" : "\textlif";
+					if( Webworm.this.deflec ) superpowers = superpowers.length() == 0 ? "deflec" : "\tdeflec";
+					if( Webworm.this.criang ) superpowers = superpowers.length() == 0 ? "criang" : "\tcriang";
+					if( Webworm.this.mondes ) superpowers = superpowers.length() == 0 ? "mondes" : "\tmondes";
+					
+					saveHighScore( score, this, superpowers, "" );
+				}
+			}
 			
 			//if( worms.size() == 0 ) timer.cancel();
 		}
@@ -587,9 +613,9 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 		if( w > 480 && h > 320 ) {
 			infohtml.setHTML( "Press enter or mouseclick to add new worm (<- and -> to control)<br>" + 
 					"Free Superpower of the month: Deflection<br>" + 
-					"Invite a friend and get the Critical angle Superpower for free!<br>" +
-					"All time highsore is: "+highscoreholder+" with "+highscore+" points ("+highwidth+"x"+highheight+")<br>" +
-					"Beat the all time highscore and get a Superpower of your choice for free");
+					//"Invite a friend and get the Critical angle Superpower for free!<br>" +
+					"The highsore amoung your friends is: "+highscoreholder+" with "+highscore+" points ("+highwidth+"x"+highheight+")<br>" +
+					"Beat the highscore, challenge friends and get a Superpower of your choice for free");
 			info.center();
 			gplusgo();
 			fbParse();
@@ -644,10 +670,27 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 		
 		Element elem = Document.get().createElement("div");
 		elem.setAttribute("class", "fb-login-button");
-		elem.setAttribute("scope", "user");
+		//elem.setAttribute("scope", "user");
 		
 		return elem;
 	}
+	
+	public native void sendMessage( String fuids, String body, int score, Worm worm ) /*-{
+		var ths = this;
+		
+		var requestCallback = function(response) {
+			$wnd.console.log( response );
+	    	if( response && response.request ) {
+	    		ths.@org.simmi.client.Webworm::makeHighScore(ILorg/simmi/client/Webworm$Worm;)( score, worm );
+	    	} else {
+	    		ths.@org.simmi.client.Webworm::saveHighScore(ILorg/simmi/client/Webworm$Worm;Ljava/lang/String;Ljava/lang/String;)( score, worm, null, null );
+	    	}
+	  	}
+	  
+		$wnd.FB.ui({method: 'apprequests',
+	    	message: body
+	  	}, requestCallback);
+	}-*/;
 	
 	public native void fbParse() /*-{
 		if( $wnd.FB !== undefined ) {
@@ -664,46 +707,40 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 			
 	    	$wnd.FB.init({appId: '215097581865564', status: true, cookie: true, xfbml: true, oauth : true});
 	    	
-	    	if( login == null ) {
-		    	try {
-		    		$wnd.console.log( "login null" );
-		    		$wnd.console.log( $wnd.FB );
-		    		$wnd.console.log( $wnd.FB.getLoginStatus );
-					$wnd.FB.getLoginStatus( function(response) {
-						$wnd.console.log( "inside login response" );
-						try {
-							if (response.status === 'connected') {
-							    // the user is logged in and has authenticated your
-							    // app, and response.authResponse supplies
-							    // the user's ID, a valid access token, a signed
-							    // request, and the time the access token 
-							    // and signed request each expire
-							    var uid = response.authResponse.userID;
-							    var accessToken = response.authResponse.accessToken;
-							    ths.@org.simmi.client.Webworm::setUserId(Ljava/lang/String;)( uid );
-							    $wnd.FB.XFBML.parse();
-							} else if (response.status === 'not_authorized') {
-							    // the user is logged in to Facebook, 
-							    // but has not authenticated your app
-							} else {
-							    // the user isn't logged in to Facebook.
-							    ths.@org.simmi.client.Webworm::setUserId(Ljava/lang/String;)( "" );
-							}
-						} catch( e ) {
-							$wnd.console.log( "getLoginStatus error" );
-							$wnd.console.log( e );
+	    	try {
+	    		$wnd.console.log( "login null" );
+				$wnd.FB.getLoginStatus( function(response) {
+					$wnd.console.log( "inside login response" );
+					try {
+						$wnd.console.log( response.status );
+						if (response.status === 'connected') {
+						    // the user is logged in and has authenticated your
+						    // app, and response.authResponse supplies
+						    // the user's ID, a valid access token, a signed
+						    // request, and the time the access token 
+						    // and signed request each expire
+						    var uid = response.authResponse.userID;
+						    var accessToken = response.authResponse.accessToken;
+						    ths.@org.simmi.client.Webworm::setUserId(Ljava/lang/String;)( uid );
+						    $wnd.FB.XFBML.parse();
+						} else if (response.status === 'not_authorized') {
+						    // the user is logged in to Facebook, 
+						    // but has not authenticated your app
+						    ths.@org.simmi.client.Webworm::setUserId(Ljava/lang/String;)( "" );
+						} else {
+						    // the user isn't logged in to Facebook.
+						    ths.@org.simmi.client.Webworm::setUserId(Ljava/lang/String;)( "" );
 						}
-					});
-				} catch( e ) {
-					$wnd.console.log( "gls error" );
-					$wnd.console.log( e );
-				}
-			} else {
-				$wnd.console.log( login );
-				
-				ths.@org.simmi.client.Webworm::setUserId(Ljava/lang/String;)( login );
+					} catch( e ) {
+						$wnd.console.log( "getLoginStatus error" );
+						$wnd.console.log( e );
+					}
+				});
+			} catch( e ) {
+				$wnd.console.log( "gls error" );
+				$wnd.console.log( e );
 			}
-	  	};
+  		};
 	}-*/;
 	
 	/*if (response.session) {
@@ -734,6 +771,9 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 			getSuperPowers( uid, null );
 			sendListener( uid );
 		}
+		
+		if( uid != null && uid.length() > 0 ) fetchMe();
+		else drawStartMessage( cv.getContext2d() );
 	}
 	
 	public native void sendListener( String uid ) /*-{
@@ -847,6 +887,69 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 		$wnd.google_ad_width = 160;
 		$wnd.google_ad_height = 600;
 	}-*/;
+	
+	public native void fetchMe() /*-{
+		var ths = this;
+		$wnd.FB.api('/me', function(response) {
+	    	ths.@org.simmi.client.Webworm::putFriend(Ljava/lang/String;Ljava/lang/String;)( response.id, response.name );
+	    	ths.@org.simmi.client.Webworm::fetchFriends()();
+	    });
+	}-*/;
+	
+	public native void fetchFriends() /*-{
+		var ths = this;
+		try {
+			$wnd.FB.api('/me/friends', function(response) {
+				for( i = 0; i < response.data.length; i++ ) {
+					var frd = response.data[i];
+					ths.@org.simmi.client.Webworm::putFriend(Ljava/lang/String;Ljava/lang/String;)( frd.id, frd.name );
+				}
+				ths.@org.simmi.client.Webworm::fetchHighScores()();
+			});
+		} catch( e ) {
+			$wnd.console.log( e );
+		}
+	}-*/;
+	
+	public void fetchHighScores() {
+		StringBuilder sb = new StringBuilder();
+		for( long fuid : fuids.keySet() ) {
+			if( sb.length() == 0 ) sb.append( ""+fuid );
+			else sb.append( ","+fuid );
+		}
+		String friends = sb.toString();
+		greetingService.highScore(friends, uid, 0, 0, 0, "", "", new AsyncCallback<String>() {
+			@Override
+			public void onSuccess(String result) {
+				String[] split = result.split("\t");
+				if( split.length > 3 ) {
+					try {
+						console( "erm ");
+						huid = split[0];
+						highscoreholder = fuids.get( Long.parseLong( huid ) );
+						highscore = Integer.parseInt( split[ split.length-3 ] );
+						highwidth = Integer.parseInt( split[ split.length-2 ] );
+						highheight = Integer.parseInt( split[ split.length-1 ] );
+					} catch( Exception e ) {}
+				}
+				
+				if( worms.size() == 0 ) {
+					drawStartMessage( cv.getContext2d() );
+				}
+			}
+			
+			@Override
+			public void onFailure(Throwable caught) {
+				console("epic failure" + caught.getMessage() );
+				console("epic " + caught.getStackTrace()[0].toString() );
+			}
+		});
+	}
+	
+	Map<Long,String>	fuids = new HashMap<Long,String>();
+	public void putFriend( String uid, String name ) {
+		fuids.put( Long.parseLong( uid ), name );
+	}
 
 	int				w, h;
 	Canvas			cv;
@@ -1215,32 +1318,6 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 		holder.add( img );
 		form.add( holder );*/
 		
-		greetingService.highScore(null, uid, 0, 0, 0, "", "", new AsyncCallback<String>() {
-			@Override
-			public void onSuccess(String result) {
-				String[] split = result.split("\t");
-				if( split.length > 3 ) {
-					highscoreholder = split[0];
-					try {
-						highscore = Integer.parseInt( split[ split.length-3 ] );
-						highwidth = Integer.parseInt( split[ split.length-2 ] );
-						highheight = Integer.parseInt( split[ split.length-1 ] );
-					} catch( Exception e ) {
-						
-					}
-				}
-				
-				if( worms.size() == 0 ) {
-					drawStartMessage( cv.getContext2d() );
-				}
-			}
-			
-			@Override
-			public void onFailure(Throwable caught) {
-				
-			}
-		});
-		
 		hscore = new HorizontalPanel();
 		hscore.setVerticalAlignment( HorizontalPanel.ALIGN_MIDDLE );
 		hscore.setHorizontalAlignment( HorizontalPanel.ALIGN_CENTER );
@@ -1346,6 +1423,7 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 			}
 		}
 		fbInit( fbuid );
+		//fetchHighScores();
 		
 		String id = "facebook-jssdk";
 		ScriptElement se = Document.get().createScriptElement();
@@ -1444,7 +1522,7 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 		hpaudio.add( rhaps );
 		hpaudio.add( faudio );
 		
-		HTML	musicmessage = new HTML("I'm working on Worm-toccata and fuge. <br>If you like the game soundtrack, stay tuned!");
+		HTML	musicmessage = new HTML("Coming soon, Worm-valz and Worm-toccata and fuge. <br>If you like the game soundtrack, stay tuned!");
 		
 		infov.add( play );
 		infov.add( infohtml );

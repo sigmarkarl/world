@@ -115,27 +115,76 @@ public class GreetingServiceImpl extends RemoteServiceServlet implements Greetin
 	public String highScore(String name, String uid, int hscore, int w, int h, String superpowers, String bonuspower) throws IllegalArgumentException {
 		String res = "";
 		DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
-		if( name == null ) {
-			Query query = new Query("highscore");
-			query.addSort("hscore", SortDirection.DESCENDING);
-			Iterator<Entity> itent = datastore.prepare(query).asIterator();
-			if( itent.hasNext() ) {
-				Entity e = itent.next();
-				res = e.getProperty("name")+"\t"+e.getProperty("hscore")+"\t"+e.getProperty("width")+"\t"+e.getProperty("height");
-				//List<Entity> powerEntities = datastore.prepare( query ).asList(FetchOptions.Builder.withDefaults());
+		if( name != null ) {
+			if( uid != null && uid.length() > 0 ) {
+				int start = 0;
+				int i = name.indexOf(',');
+				int k = 0;
+				long chscore = 0;
+				//String[] split = name.split(",");
+				
+				Set<String>	friendset = new HashSet<String>();
+				friendset.add( uid );
+				while( i != -1 ) {
+					String istr = name.substring(start, i);
+					friendset.add( istr );
+					start = i+1;
+					i = name.indexOf(',', start);
+					
+					if( (++k)%10 == 0 ) {						
+						Query query = new Query("highscore");
+						query.addFilter( "uid", FilterOperator.IN, friendset);
+						query.addSort("hscore", SortDirection.DESCENDING);
+						Iterator<Entity> itent = datastore.prepare(query).asIterator();
+						if( itent.hasNext() ) {
+							GreetingServiceImpl.this.log( "next" );
+							Entity e = itent.next();
+							long nhscore = (Long)e.getProperty("hscore");
+							if( nhscore > chscore ) {
+								chscore = nhscore;
+								res = e.getProperty("uid")+"\t"+chscore+"\t"+e.getProperty("width")+"\t"+e.getProperty("height");
+							}
+							//List<Entity> powerEntities = datastore.prepare( query ).asList(FetchOptions.Builder.withDefaults());
+						}
+						friendset.clear();
+					}
+				}
+				String istr = name.substring( start, name.length() );
+				friendset.add( istr );
+				
+				if( friendset.size() > 0 ) {
+					Query query = new Query("highscore");
+					query.addFilter( "uid", FilterOperator.IN, friendset);
+					query.addSort("hscore", SortDirection.DESCENDING);
+					Iterator<Entity> itent = datastore.prepare(query).asIterator();
+					if( itent.hasNext() ) {
+						Entity e = itent.next();
+						long nhscore = (Long)e.getProperty("hscore");
+						if( nhscore > chscore ) {
+							chscore = nhscore;
+							res = e.getProperty("uid")+"\t"+chscore+"\t"+e.getProperty("width")+"\t"+e.getProperty("height");
+						}
+					}
+					friendset.clear();
+				}
 			}
 		} else {
-			Entity e = new Entity("highscore");
+			Query query = new Query("highscore");
+			query.addFilter( "uid", FilterOperator.EQUAL, uid);
+			Entity e = datastore.prepare(query).asSingleEntity();
+			
+			if( e == null ) {
+				e = new Entity("highscore");
+				e.setProperty("uid", uid);
+			}
 			e.setProperty("hscore", hscore);
-			e.setProperty("name", name);
-			e.setProperty("uid", uid);
 			e.setProperty("width", w);
 			e.setProperty("height", h);
 			e.setProperty("superpowers", superpowers);
 			datastore.put( e );
 			
-			if( bonuspower.length() > 0 ) {
-				Query query = new Query("superpower");
+			if( bonuspower != null && bonuspower.length() > 0 ) {
+				query = new Query("superpower");
 				query.addFilter( "uid", FilterOperator.EQUAL, uid );
 				List<Entity> powerEntities = datastore.prepare( query ).asList(FetchOptions.Builder.withDefaults());
 				
@@ -153,7 +202,7 @@ public class GreetingServiceImpl extends RemoteServiceServlet implements Greetin
 				datastore.put( save );
 			}
 			
-			res = name+"\t"+hscore+"\t"+w+"\t"+h;
+			res = uid+"\t"+hscore+"\t"+w+"\t"+h;
 		}
 		
 		return res;
