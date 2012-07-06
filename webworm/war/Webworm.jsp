@@ -1,5 +1,6 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ page import="com.google.gwt.user.server.Base64Utils" %>
+<%@ page import="org.apache.commons.codec.binary.Base64" %>
 <%@ page import="java.io.BufferedReader" %>
 <%@ page import="java.util.Enumeration" %>
 <%@ page import="java.util.List" %>
@@ -31,9 +32,11 @@
 	<%
 	String str = request.getParameter("signed_request");
     if( str != null ) {
+    	int k = str.indexOf(".");
 		byte[] bb = null;    
     	try {
-    		bb = Base64Utils.fromBase64( str );
+    		//bb = Base64Utils.fromBase64( str );
+    		bb = Base64.decodeBase64( str.substring(k+1) );
     	} catch( Exception e ) {
     		e.printStackTrace();
     	}
@@ -45,6 +48,7 @@
     		if( i == bb.length ) i = 0;
 	    	String val = new String( bb, i+1, bb.length-i-1 );
 	    	i = val.indexOf("user_id");
+	    	%><meta property="erm" content="<%=val%>" /><%
 	    	if( i != -1 ) {
 	    		int n = i+10;
 	    		int m = val.indexOf("\"", n);
@@ -231,9 +235,7 @@
     </table>
     
      <div id="fb-root"></div>
-<%
-    if( str == null ) {
-%>
+<%if( str == null ) {%>
     <div id="ads">
     <script type="text/javascript"><!--
 		google_ad_client = "ca-pub-7204381538404733";
@@ -244,8 +246,19 @@
 	</script>
 	<script type="text/javascript" src="//pagead2.googlesyndication.com/pagead/show_ads.js"></script>
     </div>
-<%
-}
-%>
+<%} else {%>
+	<div id="ads">
+	<script type="text/javascript"><!--
+		google_ad_client = "ca-pub-7204381538404733";
+		/* Webworm FBCanvas */
+		google_ad_slot = "0213973952";
+		google_ad_width = 728;
+		google_ad_height = 90;
+		//-->
+	</script>
+	<script type="text/javascript" src="//pagead2.googlesyndication.com/pagead/show_ads.js"></script>
+	</div>
+<%}%>
+
   </body>
 </html>

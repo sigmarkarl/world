@@ -59,6 +59,7 @@ import com.google.gwt.user.client.ui.RootPanel;
 import com.google.gwt.user.client.ui.SimplePanel;
 import com.google.gwt.user.client.ui.TextBox;
 import com.google.gwt.user.client.ui.VerticalPanel;
+import com.google.gwt.user.client.ui.Widget;
 
 /**
  * Entry point classes define <code>onModuleLoad()</code>.
@@ -574,11 +575,12 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 		tmpset.clear();
 	}
 	
+	public int offset = 30;
 	public void updateCoordinates( Canvas cv, boolean init ) {
 		final Context2d context = cv.getContext2d();
 		if( init ) {
 			context.getCanvas().setWidth( w );
-			context.getCanvas().setHeight( h-30 );
+			context.getCanvas().setHeight( h-offset );
 			//cv.setWidth( w+"px" );
 			//cv.setHeight( h+"px" );
 			cv.setCoordinateSpaceWidth( context.getCanvas().getWidth() );
@@ -824,7 +826,26 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 		greetingService.
 	}*/
 	
-	public void addSuperPower( FlexTable table, Element form, boolean selected, String cost, String html, int row, String id, ValueChangeHandler<Boolean> handler, String status ) {
+	public native void fbPay( String order_info ) /*-{
+		var callback = function(data) {
+		   if (data['order_id']) {
+		   	 $wnd.console.log( data['order_id'] );
+		     return true;
+		   } else {
+		     return false;
+		   }
+		};
+		// calling the API ...
+		var obj = {
+		  method: 'pay',
+		  order_info: order_info,
+		  action: 'buy_item',
+		  dev_purchase_params: {'oscif': true}
+		};
+		$wnd.FB.ui(obj, callback);
+	}-*/;
+	
+	public void addSuperPower( FlexTable table, Widget form, boolean selected, String cost, String html, int row, String id, ValueChangeHandler<Boolean> handler, String status ) {
 		table.setHTML(row, 0, html);
 		table.setText(row, 1, cost);
 		
@@ -871,9 +892,18 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 			holder.add( img );
 			
 			form.add( holder );*/
-			SimplePanel	sp = new SimplePanel();
-			sp.getElement().appendChild( form );
-			table.setWidget(row, 2, sp);
+			//SimplePanel	sp = new SimplePanel();
+			//sp.getElement().appendChild( form );
+			table.setWidget(row, 2, form);
+			
+			/*Anchor	pay = new Anchor("Credits");
+			pay.addClickHandler( new ClickHandler() {
+				@Override
+				public void onClick(ClickEvent event) {
+					fbPay( "abc123" );
+				}
+			});
+			table.setWidget(row, 3, pay);*/
 		}
 	}
 	
@@ -940,7 +970,7 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 			
 			@Override
 			public void onFailure(Throwable caught) {
-				console("epic failure" + caught.getMessage() );
+				console("epic failure " + caught.getMessage() );
 				console("epic " + caught.getStackTrace()[0].toString() );
 			}
 		});
@@ -966,6 +996,28 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 		final Element donateEl = Document.get().getElementById("donate");
 		donateEl.removeFromParent();
 		
+		final Widget mondesWidget;
+		final Widget lorconWidget;
+		final Widget luckWidget;
+		final Widget quatelWidget;
+		final Widget criangWidget;
+		final Widget deflecWidget;
+		final Widget dipillWidget;
+		final Widget extlifWidget;
+		
+		String fbuid = null;
+		NodeList<Element> nl = Document.get().getElementsByTagName("meta");
+		int i;
+		for( i = 0; i < nl.getLength(); i++ ) {
+			Element e = nl.getItem(i);
+			String prop = e.getAttribute("property");
+			if( prop.equals("fbuid") ) {
+				//setUserId( e.getAttribute("content") );
+				fbuid = e.getAttribute("content");
+				break;
+			}
+		}
+		
 		final Element mondesEl = Document.get().getElementById("mondes");
 		mondesEl.removeFromParent();
 		final Element lorconEl = Document.get().getElementById("lorcon");
@@ -983,15 +1035,103 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 		final Element extlifEl = Document.get().getElementById("extlif");
 		extlifEl.removeFromParent();
 		
+		if( fbuid != null ) {
+			offset = 120;
+			
+			final Button mondesAnc = new Button("Buy");
+			mondesAnc.addClickHandler( new ClickHandler() {
+				@Override
+				public void onClick(ClickEvent event) {
+					fbPay("mondes");
+				}
+			});
+			mondesWidget = mondesAnc;
+			final Button lorconAnc = new Button("Buy");
+			lorconAnc.addClickHandler( new ClickHandler() {
+				@Override
+				public void onClick(ClickEvent event) {
+					fbPay("lorcon");
+				}
+			});
+			lorconWidget = lorconAnc;
+			final Button luckAnc = new Button("Buy");
+			luckAnc.addClickHandler( new ClickHandler() {
+				@Override
+				public void onClick(ClickEvent event) {
+					fbPay("luck");
+				}
+			});
+			luckWidget = luckAnc;
+			final Button quatelAnc = new Button("Buy");
+			quatelAnc.addClickHandler( new ClickHandler() {
+				@Override
+				public void onClick(ClickEvent event) {
+					fbPay("quatel");
+				}
+			});
+			quatelWidget = quatelAnc;
+			final Button criangAnc = new Button("Buy");
+			criangAnc.addClickHandler( new ClickHandler() {
+				@Override
+				public void onClick(ClickEvent event) {
+					fbPay("criang");
+				}
+			});
+			criangWidget = criangAnc;
+			final Button deflecAnc = new Button("Buy");
+			deflecAnc.addClickHandler( new ClickHandler() {
+				@Override
+				public void onClick(ClickEvent event) {
+					fbPay("deflec");
+				}
+			});
+			deflecWidget = deflecAnc;
+			final Button dipillAnc = new Button("Buy");
+			dipillAnc.addClickHandler( new ClickHandler() {
+				@Override
+				public void onClick(ClickEvent event) {
+					fbPay("dipill");
+				}
+			});
+			dipillWidget = dipillAnc;
+			final Button extlifAnc = new Button("Buy");
+			extlifAnc.addClickHandler( new ClickHandler() {
+				@Override
+				public void onClick(ClickEvent event) {
+					fbPay("extlif");
+				}
+			});
+			extlifWidget = extlifAnc;
+		} else {
+			console( "eldor" );
+			
+			mondesEl.getStyle().setDisplay( Display.INLINE );
+			lorconEl.getStyle().setDisplay( Display.INLINE );
+			luckEl.getStyle().setDisplay( Display.INLINE );
+			quatelEl.getStyle().setDisplay( Display.INLINE );
+			criangEl.getStyle().setDisplay( Display.INLINE );
+			deflecEl.getStyle().setDisplay( Display.INLINE );
+			dipillEl.getStyle().setDisplay( Display.INLINE );
+			extlifEl.getStyle().setDisplay( Display.INLINE );
+			
+			mondesWidget = new SimplePanel();
+			mondesWidget.getElement().appendChild( mondesEl );
+			lorconWidget = new SimplePanel();
+			lorconWidget.getElement().appendChild( lorconEl );
+			luckWidget = new SimplePanel();
+			luckWidget.getElement().appendChild( luckEl );
+			quatelWidget = new SimplePanel();
+			quatelWidget.getElement().appendChild( quatelEl );
+			criangWidget = new SimplePanel();
+			criangWidget.getElement().appendChild( criangEl );
+			deflecWidget = new SimplePanel();
+			deflecWidget.getElement().appendChild( deflecEl );
+			dipillWidget = new SimplePanel();
+			dipillWidget.getElement().appendChild( dipillEl );
+			extlifWidget = new SimplePanel();
+			extlifWidget.getElement().appendChild( extlifEl );
+		}
 		donateEl.getStyle().setDisplay( Display.INLINE );
-		mondesEl.getStyle().setDisplay( Display.INLINE );
-		lorconEl.getStyle().setDisplay( Display.INLINE );
-		luckEl.getStyle().setDisplay( Display.INLINE );
-		quatelEl.getStyle().setDisplay( Display.INLINE );
-		criangEl.getStyle().setDisplay( Display.INLINE );
-		deflecEl.getStyle().setDisplay( Display.INLINE );
-		dipillEl.getStyle().setDisplay( Display.INLINE );
-		extlifEl.getStyle().setDisplay( Display.INLINE );
 		
 		final RootPanel		rp = RootPanel.get();
 		Style				st = rp.getElement().getStyle();
@@ -1113,6 +1253,14 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 		hp.setHorizontalAlignment( HorizontalPanel.ALIGN_CENTER );
 		//hp.setHeight("10px");
 		hp.setSpacing( 10 );
+		
+		/*Button	spcredit = new Button("SP Credits");
+		spcredit.addClickHandler( new ClickHandler() {
+			@Override
+			public void onClick(ClickEvent event) {
+				fbPay( "abc123" );	
+			}
+		});*/
 		
 		Button	power = new Button("Superpowers");
 		power.addClickHandler( new ClickHandler() {
@@ -1260,14 +1408,14 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 					};
 					
 					FlexTable table = new FlexTable();
-					addSuperPower( table, lorconEl, lorcon, "$5", "<b>Lorentz contraction</b><br>As a stationary observer watching your worm in a 3D wormkowski space, you experience a relativistic length contraction in the direction of the worm movement", 0, "5GSE569LBQRN4", lorconHandler, powerset.contains("lorcon") ? "" : null );
-					addSuperPower( table, quatelEl, quatel, "$4", "<b>Quantum teleportation</b><br>As your worm exists in information space it is subject to the law of entanglement-assisted teleportation resulting in the ability to travel through the walls", 1, "RZEJDBKH4VHJ2", quatelHandler, powerset.contains("quatel") ? "" : null );					
-					addSuperPower( table, criangEl, criang, "$3", "<b>Critical angle</b><br>Your worm is able to make more steep turns", 2, "DGR8KG2HZVPVG", criangHandler, powerset.contains("criang") ? "" : null );
-					addSuperPower( table, deflecEl, deflec, "$3", "<b>Deflection</b><br>If the angle of impact is small enough, your worm will deflect from the walls", 3, "X3LQBSTXA686A", deflecHandler, "" );
-					addSuperPower( table, luckEl, luck, "$2", "<b>Luck</b><br>Like the apple that fell on Newtons head, the apples seem to fall closer to the mouth the worm, defying statistical laws", 4, "W8FC3N9EJBEQL", luckHandler, powerset.contains("luck") ? "" : "Out of stock" );
-					addSuperPower( table, dipillEl, dipill, "$6", "<b>Diet pill</b><br>Eat more, grow less!", 5, "CT6VST75J8Q6J", dipillHandler, powerset.contains("dipill") ? "" : null );
-					addSuperPower( table, extlifEl, extlif, "$1", "<b>Extra life</b><br>Get one chance of passing through if hitting a worm", 6, "93ULNAMGHQ9VS", extlifHandler, powerset.contains("extlif") ? "" : null );
-					addSuperPower( table, mondesEl, mondes, "$1", "<b>Ad Monolith destroyer</b><br>If you could just get rid of the monolith from the film 2001: A Space Odyssey and make the film understandable. Besides, it probably just contained ads anyways", 7, "GTDHG7AXUUWWE", mondesHandler, powerset.contains("mondes") ? "" : null );
+					addSuperPower( table, lorconWidget, lorcon, "$5", "<b>Lorentz contraction</b><br>As a stationary observer watching your worm in a 3D wormkowski space, you experience a relativistic length contraction in the direction of the worm movement", 0, "5GSE569LBQRN4", lorconHandler, powerset.contains("lorcon") ? "" : null );
+					addSuperPower( table, quatelWidget, quatel, "$4", "<b>Quantum teleportation</b><br>As your worm exists in information space it is subject to the law of entanglement-assisted teleportation resulting in the ability to travel through the walls", 1, "RZEJDBKH4VHJ2", quatelHandler, powerset.contains("quatel") ? "" : null );					
+					addSuperPower( table, criangWidget, criang, "$3", "<b>Critical angle</b><br>Your worm is able to make more steep turns", 2, "DGR8KG2HZVPVG", criangHandler, powerset.contains("criang") ? "" : null );
+					addSuperPower( table, deflecWidget, deflec, "$3", "<b>Deflection</b><br>If the angle of impact is small enough, your worm will deflect from the walls", 3, "X3LQBSTXA686A", deflecHandler, "" );
+					addSuperPower( table, luckWidget, luck, "$2", "<b>Luck</b><br>Like the apple that fell on Newtons head, the apples seem to fall closer to the mouth the worm, defying statistical laws", 4, "W8FC3N9EJBEQL", luckHandler, powerset.contains("luck") ? "" : "Out of stock" );
+					addSuperPower( table, dipillWidget, dipill, "$6", "<b>Diet pill</b><br>Eat more, grow less!", 5, "CT6VST75J8Q6J", dipillHandler, powerset.contains("dipill") ? "" : null );
+					addSuperPower( table, extlifWidget, extlif, "$1", "<b>Extra life</b><br>Get one chance of passing through if hitting a worm", 6, "93ULNAMGHQ9VS", extlifHandler, powerset.contains("extlif") ? "" : null );
+					addSuperPower( table, mondesWidget, mondes, "$1", "<b>Ad Monolith destroyer</b><br>If you could just get rid of the monolith from the film 2001: A Space Odyssey and make the film understandable. Besides, it probably just contained ads anyways", 7, "GTDHG7AXUUWWE", mondesHandler, powerset.contains("mondes") ? "" : null );
 					dbox.add( table );
 
 					dbox.center();
@@ -1361,26 +1509,14 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 		form.getElement().appendChild( donateEl );
 		
 		hp.add( sp );
+		//hp.add( spcredit );
 		hp.add( power );
 		hp.add( form );
 		hp.add( splus );
 		
-		String fbuid = null;
-		NodeList<Element> nl = Document.get().getElementsByTagName("meta");
-		int i;
-		for( i = 0; i < nl.getLength(); i++ ) {
-			Element e = nl.getItem(i);
-			String prop = e.getAttribute("property");
-			if( prop.equals("fbuid") ) {
-				//setUserId( e.getAttribute("content") );
-				fbuid = e.getAttribute("content");
-				break;
-			}
-		}
-		
-		if( fbuid == null ) {
-			final Element ads = Document.get().getElementById("ads");
-			
+		final Element ads = Document.get().getElementById("ads");
+		ads.removeFromParent();
+		if( fbuid == null ) {			
 			if( ads != null ) {
 				popup = new PopupPanel();
 				Style style = popup.getElement().getStyle();
@@ -1396,9 +1532,7 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 				//</script>
 				//popup.add( spopup );
 				
-				ads.removeFromParent();
 				popup.getElement().appendChild( ads );
-				
 				popup.setPopupPosition(0, (h-600)/2);
 				popup.setPixelSize(156, 594);
 				
@@ -1451,6 +1585,14 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 		coverpanel.add( hscore );
 		coverpanel.add( timepanel );
 		
+		if( fbuid != null ) {
+			SimplePanel adsPanel = new SimplePanel();
+			adsPanel.getElement().appendChild( ads );
+			adsPanel.setPixelSize( 728, 90 );
+			adsPanel.setSize("728px", "90px");
+			vp.add( adsPanel );
+			offset = 120;
+		}
 		vp.add( coverpanel );
 		vp.add( cv );
 		//vp.add( hp );

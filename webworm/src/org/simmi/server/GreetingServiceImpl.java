@@ -1,5 +1,6 @@
 package org.simmi.server;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -13,6 +14,8 @@ import com.google.appengine.api.datastore.DatastoreServiceFactory;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.FetchOptions;
 import com.google.appengine.api.datastore.Query;
+import com.google.appengine.api.datastore.Query.CompositeFilterOperator;
+import com.google.appengine.api.datastore.Query.Filter;
 import com.google.appengine.api.datastore.Query.FilterOperator;
 import com.google.appengine.api.datastore.Query.SortDirection;
 import com.google.gwt.user.server.rpc.RemoteServiceServlet;
@@ -28,7 +31,8 @@ public class GreetingServiceImpl extends RemoteServiceServlet implements Greetin
 		DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
 		if( uid != null && uid.length() > 0 ) {
 			Query query = new Query("superpower");
-			query.addFilter( "uid", FilterOperator.EQUAL, uid );
+			query.setFilter( new Query.FilterPredicate("uid", FilterOperator.EQUAL, uid) );
+			//query.addFilter( "uid", FilterOperator.EQUAL, uid );
 			List<Entity> powerEntities = datastore.prepare( query ).asList(FetchOptions.Builder.withDefaults());
 			
 			Entity save = null;
@@ -110,7 +114,27 @@ public class GreetingServiceImpl extends RemoteServiceServlet implements Greetin
 		}
 		return html.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
 	}
+	
+	private String querycheck( DatastoreService datastore, Set<String> friendset ) {
+		String res = null;
+		Query query = new Query("highscore");
+		//query.setFilter( CompositeFilterOperator.or( filters ) );
+		query.setFilter( new Query.FilterPredicate("uid", FilterOperator.IN, friendset) );
+		query.addSort("hscore", SortDirection.DESCENDING);
+		Iterator<Entity> itent = datastore.prepare(query).asIterator();
+		if( itent.hasNext() ) {
+			Entity e = itent.next();
+			long nhscore = (Long)e.getProperty("hscore");
+			if( nhscore > chscore ) {
+				chscore = nhscore;
+				res = e.getProperty("uid")+"\t"+chscore+"\t"+e.getProperty("width")+"\t"+e.getProperty("height");
+			}
+		}
+		
+		return res;
+	}
 
+	long chscore;
 	@Override
 	public String highScore(String name, String uid, int hscore, int w, int h, String superpowers, String bonuspower) throws IllegalArgumentException {
 		String res = "";
@@ -120,9 +144,12 @@ public class GreetingServiceImpl extends RemoteServiceServlet implements Greetin
 				int start = 0;
 				int i = name.indexOf(',');
 				int k = 0;
-				long chscore = 0;
+				chscore = 0;
 				//String[] split = name.split(",");
 				
+				GreetingServiceImpl.this.log( "ermif" );
+				
+				List<Filter>	filters = new ArrayList<Filter>();
 				Set<String>	friendset = new HashSet<String>();
 				friendset.add( uid );
 				while( i != -1 ) {
@@ -131,21 +158,10 @@ public class GreetingServiceImpl extends RemoteServiceServlet implements Greetin
 					start = i+1;
 					i = name.indexOf(',', start);
 					
-					if( (++k)%10 == 0 ) {						
-						Query query = new Query("highscore");
-						query.addFilter( "uid", FilterOperator.IN, friendset);
-						query.addSort("hscore", SortDirection.DESCENDING);
-						Iterator<Entity> itent = datastore.prepare(query).asIterator();
-						if( itent.hasNext() ) {
-							GreetingServiceImpl.this.log( "next" );
-							Entity e = itent.next();
-							long nhscore = (Long)e.getProperty("hscore");
-							if( nhscore > chscore ) {
-								chscore = nhscore;
-								res = e.getProperty("uid")+"\t"+chscore+"\t"+e.getProperty("width")+"\t"+e.getProperty("height");
-							}
-							//List<Entity> powerEntities = datastore.prepare( query ).asList(FetchOptions.Builder.withDefaults());
-						}
+					if( (++k)%10 == 0 ) {				
+						//filters.add( new Query.FilterPredicate( "uid", FilterOperator.IN, friendset ) );
+						String newres = querycheck( datastore, friendset );
+						if( newres != null ) res = newres;
 						friendset.clear();
 					}
 				}
@@ -153,24 +169,15 @@ public class GreetingServiceImpl extends RemoteServiceServlet implements Greetin
 				friendset.add( istr );
 				
 				if( friendset.size() > 0 ) {
-					Query query = new Query("highscore");
-					query.addFilter( "uid", FilterOperator.IN, friendset);
-					query.addSort("hscore", SortDirection.DESCENDING);
-					Iterator<Entity> itent = datastore.prepare(query).asIterator();
-					if( itent.hasNext() ) {
-						Entity e = itent.next();
-						long nhscore = (Long)e.getProperty("hscore");
-						if( nhscore > chscore ) {
-							chscore = nhscore;
-							res = e.getProperty("uid")+"\t"+chscore+"\t"+e.getProperty("width")+"\t"+e.getProperty("height");
-						}
-					}
+					//filters.add( new Query.FilterPredicate( "uid", FilterOperator.IN, friendset) );
+					String newres = querycheck( datastore, friendset );
+					if( newres != null ) res = newres;
 					friendset.clear();
 				}
 			}
 		} else {
 			Query query = new Query("highscore");
-			query.addFilter( "uid", FilterOperator.EQUAL, uid);
+			query.setFilter( new Query.FilterPredicate( "uid", FilterOperator.EQUAL, uid ) );
 			Entity e = datastore.prepare(query).asSingleEntity();
 			
 			if( e == null ) {
@@ -185,7 +192,7 @@ public class GreetingServiceImpl extends RemoteServiceServlet implements Greetin
 			
 			if( bonuspower != null && bonuspower.length() > 0 ) {
 				query = new Query("superpower");
-				query.addFilter( "uid", FilterOperator.EQUAL, uid );
+				query.setFilter( new Query.FilterPredicate( "uid", FilterOperator.EQUAL, uid ) );
 				List<Entity> powerEntities = datastore.prepare( query ).asList(FetchOptions.Builder.withDefaults());
 				
 				Entity save = null;

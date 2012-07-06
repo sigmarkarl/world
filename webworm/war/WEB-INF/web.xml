@@ -11,10 +11,20 @@
     <servlet-class>org.simmi.server.GreetingServiceImpl</servlet-class>
   </servlet>
   
+   <servlet>
+    <servlet-name>payServlet</servlet-name>
+    <servlet-class>org.simmi.server.PayServiceImpl</servlet-class>
+  </servlet>
+  
   <servlet-mapping>
     <servlet-name>greetServlet</servlet-name>
     <url-pattern>/webworm/greet</url-pattern>
   </servlet-mapping>
+  
+   <servlet-mapping>
+    <servlet-name>payServlet</servlet-name>
+    <url-pattern>/pay</url-pattern>
+   </servlet-mapping>
   
    <security-constraint>
         <web-resource-collection>
