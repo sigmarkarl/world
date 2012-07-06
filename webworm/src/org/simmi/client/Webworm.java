@@ -826,10 +826,56 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 		greetingService.
 	}*/
 	
+	public native void fbBuy() /*-{
+		var callback = function(data) {
+		   return true;
+		};
+		
+		var obj = {
+		  method: 'pay',
+		  action: 'buy_credits',
+		};
+		$wnd.FB.ui(obj, callback);
+	}-*/;
+	
+	DialogBox currentDb;
+	public void updatePowers( String str ) {
+		if( str.contains("lorcon") ) {
+			powerset.add( "lorcon" );
+			lorcon = true;
+		} else if( str.contains("quatel") ) {
+			powerset.add( "quatel" );
+			quatel = true;
+		} else if( str.contains("mondes") ) {
+			powerset.add( "mondes" );
+			mondes = true;
+		} else if( str.contains("criang") ) {
+			powerset.add( "criang" );
+			criang = true;
+		} else if( str.contains("extlif") ) {
+			powerset.add( "extlif" );
+			extlif = true;
+		} else if( str.contains("luck") ) {
+			powerset.add( "luck" );
+			luck = true;
+		} else if( str.contains("dipill") ) {
+			powerset.add( "dipill" );
+			dipill = true;
+		} else if( str.contains("deflec") ) {
+			powerset.add( "deflec" );
+			deflec = true;
+		}
+		
+		if( currentDb != null ) currentDb.hide();
+	}
+	
 	public native void fbPay( String order_info ) /*-{
+		var ths = this;
 		var callback = function(data) {
 		   if (data['order_id']) {
-		   	 $wnd.console.log( data['order_id'] );
+		   	 $wnd.console.log( data );
+		   	 ths.@org.simmi.client.Webworm::updatePowers(Ljava/lang/String;)( order_info );
+		
 		     return true;
 		   } else {
 		     return false;
@@ -1416,8 +1462,20 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 					addSuperPower( table, dipillWidget, dipill, "$6", "<b>Diet pill</b><br>Eat more, grow less!", 5, "CT6VST75J8Q6J", dipillHandler, powerset.contains("dipill") ? "" : null );
 					addSuperPower( table, extlifWidget, extlif, "$1", "<b>Extra life</b><br>Get one chance of passing through if hitting a worm", 6, "93ULNAMGHQ9VS", extlifHandler, powerset.contains("extlif") ? "" : null );
 					addSuperPower( table, mondesWidget, mondes, "$1", "<b>Ad Monolith destroyer</b><br>If you could just get rid of the monolith from the film 2001: A Space Odyssey and make the film understandable. Besides, it probably just contained ads anyways", 7, "GTDHG7AXUUWWE", mondesHandler, powerset.contains("mondes") ? "" : null );
+					
+					if( mondesWidget instanceof Button ) {
+						Button	buyCredit = new Button("Buy credits");
+						buyCredit.addClickHandler( new ClickHandler() {
+							@Override
+							public void onClick(ClickEvent event) {
+								fbBuy();
+							}
+						});
+						table.setWidget(8,0,buyCredit);
+					}
 					dbox.add( table );
 
+					currentDb = dbox;
 					dbox.center();
 				}
 			}

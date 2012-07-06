@@ -91,7 +91,7 @@
 	    		Entity save = null;
 	    		String uid = val.substring( i+22, k-1 );
 	    		Query query = new Query("superpower");
-				query.addFilter( "uid", FilterOperator.EQUAL, uid );
+				query.setFilter( new Query.FilterPredicate( "uid", FilterOperator.EQUAL, uid ) );
 				List<Entity> powerEntities = datastore.prepare( query ).asList(FetchOptions.Builder.withDefaults());
 				
 				for( Entity e : powerEntities ) {
