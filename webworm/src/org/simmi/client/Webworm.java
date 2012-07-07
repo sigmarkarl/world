@@ -1665,16 +1665,31 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 		HTML html = new HTML("|");
 		links.add( html );
 		
-		Anchor smas = new Anchor("smasogur.is");
-		smas.setHref("http://smasogur.is");
-		links.add( smas );
-	
-		html = new HTML("|");
-		links.add( html );
+		if( fbuid == null ) {
+			Anchor smas = new Anchor("suggestadate.appspot.com");
+			smas.setHref("http://suggestadate.appspot.com");
+			links.add( smas );
 		
-		Anchor fast = new Anchor("webwormgame.appspot.com");
-		fast.setHref("http://webwormgame.appspot.com");
-		links.add( fast );
+			html = new HTML("|");
+			links.add( html );
+			
+			Anchor fast = new Anchor("apps.facebook.com/webwormgame");
+			fast.setHref("https://apps.facebook.com/webwormgame");
+			links.add( fast );
+		} else {
+			Anchor smas = new Anchor("apps.facebook.com/suggestdate");
+			smas.setHref("https://apps.facebook.com/suggestdate");
+			smas.setTarget( "_blank" );
+			links.add( smas );
+		
+			html = new HTML("|");
+			links.add( html );
+			
+			Anchor fast = new Anchor("webwormgame.appspot.com");
+			fast.setHref("http://webwormgame.appspot.com");
+			fast.setTarget( "_blank" );
+			links.add( fast );
+		}
 		
 		info = new PopupPanel();
 		VerticalPanel	infov = new VerticalPanel();
