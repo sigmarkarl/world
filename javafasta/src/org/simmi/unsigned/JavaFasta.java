@@ -2829,6 +2829,33 @@ public class JavaFasta extends JApplet {
 				jso.call("showMatr", new Object[] {dist} );
 			}
 		});
+		popup.add( new AbstractAction("Draw shannon") {
+			public void actionPerformed( ActionEvent e ) {
+				String command = "command";
+				System.err.println("about to call showShannon");
+				JSObject win = JSObject.getWindow( parentApplet );
+				double[] d = new double[max-min];
+				Map<Character,Integer>	shanmap = new HashMap<Character,Integer>(); 
+				for( int x = min; x < max; x++ ) {
+					shanmap.clear();
+					int total = table.getRowCount();
+					for( int y = 0; y < total; y++ ) {
+						char c = getCharAt(x, y);
+						int val = 0;
+						if( shanmap.containsKey(c) ) val = shanmap.get(c);
+						shanmap.put( c, val+1 );
+					}
+					double res = 0.0;
+					for( char c : shanmap.keySet() ) {
+						int val = shanmap.get(c);
+						double p = (double)val/(double)total;
+						res -= p*Math.log(p)/Math.log(2.0);
+					}
+					d[x-min] = res;
+				}
+				win.call("showShannon", new Object[] {d, command} );
+			}
+		});
 		popup.add( new AbstractAction("Dot plot") {
 			public void actionPerformed( ActionEvent e ) {
 				if( table.getSelectedRowCount() > 0 ) {

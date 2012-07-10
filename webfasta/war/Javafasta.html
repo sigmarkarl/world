@@ -104,7 +104,9 @@
 	}
 	
 	var domain = 'http://webconnectron.appspot.com';
+	var simlabdomain = 'http://websimlab.appspot.com';
 	var treetext = "";
+	var commands = "";
 	var myPopup;
 	function receiveMessage(event) {
 		console.log( 'ready message received' );
@@ -113,9 +115,23 @@
 			if( treetext.length > 0 ) {
 				myPopup.postMessage(treetext,domain);
 			}
+    	} else if (event.origin == "http://websimlab.appspot.com") {
+			console.log( 'simlab origin' );
+			if( treetext.length > 0 ) {
+				myPopup.postMessage(treetext,simlabdomain);
+				//myPopup.postMessage(cmd,simlabdomain);
+			}
     	}
   	}
 	window.addEventListener("message", receiveMessage, false);
+	
+	showShannon = function( newshannon, cmd ) {
+		var dbuffer = new Float64Array( newshannon.length );
+		dbuffer.set( newshannon );
+		treetext = dbuffer.buffer;
+		commands = cmd;
+		myPopup = window.open(simlabdomain + '/Websimlab.html?callback=webfasta','_blank');
+	}
 	
 	showTree = function( newtree ) {
 		treetext = newtree;
