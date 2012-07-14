@@ -45,34 +45,14 @@
 	    	}
 	    }
 	}%>
-    <!--                                                               -->
-    <!-- Consider inlining CSS to reduce the number of requested files -->
-    <!--                                                               -->
     <link type="text/css" rel="stylesheet" href="Smasogur.css">
-
-    <!--                                           -->
-    <!-- Any title is fine                         -->
-    <!--                                           -->
     <title>Short stories</title>
-    
-    <!--                                           -->
-    <!-- This script loads your compiled module.   -->
-    <!-- If you add any GWT meta tags, they must   -->
-    <!-- be added before this line.                -->
-    <!--                                           -->
     <script type="text/javascript" src="https://apis.google.com/js/plusone.js">
   	   {parsetags: 'explicit'}
 	</script>
     <script type="text/javascript" language="javascript" src="smasogur/smasogur.nocache.js"></script>
   </head>
-
-  <!--                                           -->
-  <!-- The body can have arbitrary html, or      -->
-  <!-- you can leave the body empty if you want  -->
-  <!-- to create a completely dynamic UI.        -->
-  <!--                                           -->
   <body>
-
     <!-- OPTIONAL: include this if you want history support -->
     <iframe src="javascript:''" id="__gwt_historyFrame" tabIndex='-1' style="position:absolute;width:0;height:0;border:0"></iframe>
     
@@ -84,6 +64,18 @@
       </div>
     </noscript>
     
+    <div id="ads">
+    <script type="text/javascript"><!--
+		google_ad_client = "ca-pub-7204381538404733";
+		/* Shortstories */
+		google_ad_slot = "4103255287";
+		google_ad_width = 728;
+		google_ad_height = 90;
+		//-->
+	</script>
+	<script type="text/javascript" src="//pagead2.googlesyndication.com/pagead/show_ads.js">
+	</script>
+	</div>
      <div id="fb-root"></div>
   </body>
 </html>

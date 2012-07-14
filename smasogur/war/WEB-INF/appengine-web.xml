@@ -4,6 +4,7 @@
   <version>1</version>
 
   <!-- Configure serving/caching of GWT files -->
+  <threadsafe>true</threadsafe>
   <static-files>
     <include path="**" />
 

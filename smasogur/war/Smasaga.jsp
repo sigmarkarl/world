@@ -50,15 +50,21 @@
 		<!--                                           -->
 		<script language="javascript" src="org.simmi.Smasaga/org.simmi.Smasaga.nocache.js"></script>
 	</head>
-
-	<!--                                           -->
-	<!-- The body can have arbitrary html, or      -->
-	<!-- we leave the body empty because we want   -->
-	<!-- to create a completely dynamic ui         -->
-	<!--                                           -->
 	<body>
 		<!-- OPTIONAL: include this if you want history support -->
 		<iframe id="__gwt_historyFrame" style="width:0;height:0;border:0"></iframe>
+		<div id="ads">
+    	<script type="text/javascript"><!--
+			google_ad_client = "ca-pub-7204381538404733";
+			/* Shortstories */
+			google_ad_slot = "4103255287";
+			google_ad_width = 728;
+			google_ad_height = 90;
+			//-->
+		</script>
+		<script type="text/javascript" src="//pagead2.googlesyndication.com/pagead/show_ads.js">
+		</script>
+		</div>
 		<div id="fb-root"></div>
 	</body>
 	<%

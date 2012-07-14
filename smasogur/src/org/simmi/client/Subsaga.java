@@ -13,11 +13,12 @@ public class Subsaga implements Serializable {
 		
 	}
 	
-	public Subsaga( String nafn, String tegund, String hofundur, String hofundarnafn, String url ) {
+	public Subsaga( String nafn, String tegund, String hofundur, String hofundarnafn, String language, String url ) {
 		this.nafn = nafn;
 		this.tegund = tegund;
 		this.hofundur = hofundur;
 		this.hofundarnafn = hofundarnafn;
+		this.language = language;
 		this.url = url;
 	}
 	
@@ -26,6 +27,7 @@ public class Subsaga implements Serializable {
 	private String		tegund;
 	private String		hofundur;
 	private String		hofundarnafn;
+	private String		language;
 	private String		url;
 	private String		key;
 	private Einkunn[]	grades;
@@ -64,6 +66,14 @@ public class Subsaga implements Serializable {
 	
 	public String getName() {
 		return nafn;
+	}
+	
+	public String getLanguage() {
+		return language;
+	}
+	
+	public void setLanguage( String language ) {
+		this.language = language;
 	}
 	
 	public String getType() {

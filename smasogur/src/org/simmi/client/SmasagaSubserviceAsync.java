@@ -6,7 +6,7 @@ public interface SmasagaSubserviceAsync {
 
 	void getShortstory(String keystr, AsyncCallback<Subsaga> callback);
 
-	void updateShortstory(String keystr, String name, String author, String summary,
+	void updateShortstory(String keystr, String name, String author, String lang, String summary,
 			boolean love, boolean comedy, boolean tragedy, boolean horror,
 			boolean erotik, boolean science, boolean child, boolean adolescent,
 			boolean criminal, boolean historical, boolean truestory,

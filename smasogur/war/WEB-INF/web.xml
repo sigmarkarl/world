@@ -36,5 +36,13 @@
   	<servlet-name>SmasagaSubservice</servlet-name>
   	<url-pattern>/org.simmi.Smasaga/SmasagaSubservice</url-pattern>
   </servlet-mapping>
-
+  
+  <security-constraint>
+      <web-resource-collection>
+          <url-pattern>/secure</url-pattern>
+      </web-resource-collection>
+      <user-data-constraint>
+          <transport-guarantee>CONFIDENTIAL</transport-guarantee>
+      </user-data-constraint>
+  </security-constraint>
 </web-app>

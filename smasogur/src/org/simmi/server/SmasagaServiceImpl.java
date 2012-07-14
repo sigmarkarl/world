@@ -52,7 +52,7 @@ public class SmasagaServiceImpl extends RemoteServiceServlet implements SmasagaS
 		
 		int i = 0;
 		for( Entity e : soguEntities ) {
-			Saga smasaga = new Saga( (String)e.getProperty("name"), (String)e.getProperty("type"), (String)e.getProperty("author"), (String)e.getProperty("authorsynonim"), (String)e.getProperty("url") );
+			Saga smasaga = new Saga( (String)e.getProperty("name"), (String)e.getProperty("type"), (String)e.getProperty("author"), (String)e.getProperty("authorsynonim"), (String)e.getProperty("language"), (String)e.getProperty("url") );
 			Object love = e.getProperty("love");
 			smasaga.setLove( love == null ? false : (Boolean)love );
 			Object horror = e.getProperty("horror");
@@ -263,6 +263,7 @@ public class SmasagaServiceImpl extends RemoteServiceServlet implements SmasagaS
 		smasaga.setProperty("type", saga.getType());
 		smasaga.setProperty("author", saga.getAuthor());
 		smasaga.setProperty("authorsynonim", saga.getAuthorSynonim());
+		smasaga.setProperty("language", saga.getLanguage());
 		smasaga.setProperty("url", saga.getUrl());
 		
 		smasaga.setProperty("love", saga.getLove());
@@ -304,10 +305,11 @@ public class SmasagaServiceImpl extends RemoteServiceServlet implements SmasagaS
 			String name = (String)ent.getProperty("name");
 			String type = (String)ent.getProperty("type");
 			String author = (String)ent.getProperty("author");
+			String language = (String)ent.getProperty("language");
 			String authorsynonim = (String)ent.getProperty("authorsynonim");
 			String url = (String)ent.getProperty("url");
 			
-			Saga 	smasaga = new Saga( name, type, author, authorsynonim, url );
+			Saga 	smasaga = new Saga( name, type, author, authorsynonim, language, url );
 			smasaga.setLove( (Boolean)ent.getProperty("love") );
 			smasaga.setHorror( (Boolean)ent.getProperty("horror") );
 			smasaga.setComedy( (Boolean)ent.getProperty("comedy") );

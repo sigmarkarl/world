@@ -177,7 +177,7 @@ public class Smasaga implements EntryPoint {
 		final CheckBox truestory = new CheckBox("True story");
 		final CheckBox erotik = new CheckBox("Erotic");
 		final CheckBox criminal = new CheckBox("Pulp fiction");
-		final CheckBox adventure = new CheckBox("Fairy tai");
+		final CheckBox adventure = new CheckBox("Fairy tail");
 		final CheckBox poem = new CheckBox("Poem");
 		final CheckBox tobecontine = new CheckBox("To be continued");
 		
@@ -206,14 +206,29 @@ public class Smasaga implements EntryPoint {
 		Label 	authorLabel = new Label("Authorname:");
 		final TextBox	author = new TextBox();
 		author.setWidth("360px");
+		
+		Label 	langLabel = new Label("Language:");
+		final TextBox	lang = new TextBox();
+		author.setWidth("120px");
+		
 		hp.add( nameLabel );
 		hp.add( name );
 		hp.add( authorLabel );
 		hp.add( author );
+		hp.add( langLabel );
+		hp.add( lang );
 		
 		subvp.setSize(nw+"px", "600px");
 		
+		SimplePanel adspanel = new SimplePanel();
+   	  	com.google.gwt.dom.client.Element adselem = Document.get().getElementById("ads");
+   	  	adselem.removeFromParent();
+   	  	adspanel.getElement().appendChild( adselem );
+   	  	subvp.add( adspanel );
+		
 		final Anchor	anchor = new Anchor("Link");
+		//anchor.setHeight("75px");
+		subvp.setSpacing( 10 );
 		subvp.add( anchor );
 		subvp.add( hp );
 		//subvp.add( new Label("Veldu það sem við á") );
@@ -481,7 +496,7 @@ public class Smasaga implements EntryPoint {
 			@Override
 			public void onKeyDown(KeyDownEvent event) {
 				if( event.getNativeKeyCode() == KeyCodes.KEY_ENTER ) {
-					smasagaService.updateShortstory( keystr, name.getText(), author.getText(), urdrattur.getText(),
+					smasagaService.updateShortstory( keystr, name.getText(), author.getText(), lang.getText(), urdrattur.getText(),
 							love.getValue(), comedy.getValue(), tragedy.getValue(), horror.getValue(), 
 							erotik.getValue(), science.getValue(), child.getValue(), adolescent.getValue(), 
 							criminal.getValue(), historical.getValue(), truestory.getValue(), supernatural.getValue(), 
@@ -491,11 +506,12 @@ public class Smasaga implements EntryPoint {
 		};
 		name.addKeyDownHandler( keydownhandler );
 		author.addKeyDownHandler( keydownhandler );
+		lang.addKeyDownHandler( keydownhandler );
 		
 		ClickHandler clickHandler = new ClickHandler() {
 			@Override
 			public void onClick(ClickEvent event) {
-				smasagaService.updateShortstory( keystr, name.getText(), author.getText(), urdrattur.getText(),
+				smasagaService.updateShortstory( keystr, name.getText(), author.getText(), lang.getText(), urdrattur.getText(),
 						love.getValue(), comedy.getValue(), tragedy.getValue(), horror.getValue(), 
 						erotik.getValue(), science.getValue(), child.getValue(), adolescent.getValue(), 
 						criminal.getValue(), historical.getValue(), truestory.getValue(), supernatural.getValue(), 
@@ -537,7 +553,7 @@ public class Smasaga implements EntryPoint {
 		
   	  	elem = Document.get().createElement("script");
 		elem.setAttribute("async", "true");
-	 	elem.setAttribute("src", "http://connect.facebook.net/en_US/all.js" );
+	 	elem.setAttribute("src", "//connect.facebook.net/en_US/all.js" );
 		Document.get().getElementById("fb-root").appendChild( elem );
 		
 		rootPanel.add( vp );

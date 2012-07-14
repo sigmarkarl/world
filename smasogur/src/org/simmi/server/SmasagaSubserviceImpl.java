@@ -35,10 +35,11 @@ public class SmasagaSubserviceImpl extends RemoteServiceServlet implements Smasa
 			String type = (String)ent.getProperty("type");
 			String author = (String)ent.getProperty("author");
 			String authorsynonim = (String)ent.getProperty("authorsynonim");
+			String language = (String)ent.getProperty("language");
 			String url = (String)ent.getProperty("url");
 			String summary = (String)ent.getProperty("summary");
 			
-			Subsaga 	smasaga = new Subsaga( name, type, author, authorsynonim, url );
+			Subsaga 	smasaga = new Subsaga( name, type, author, authorsynonim, language, url );
 			smasaga.setSummary( summary );
 			
 			Object love = ent.getProperty("love");
@@ -75,7 +76,7 @@ public class SmasagaSubserviceImpl extends RemoteServiceServlet implements Smasa
 			smasaga.setKey( keystr );
 			
 			Query query = new Query("einkunn");
-			query.addFilter("story", FilterOperator.EQUAL, keystr);
+			query.setFilter( new Query.FilterPredicate( "story", FilterOperator.EQUAL, keystr ) );
 			List<Entity> lentity = datastore.prepare( query ).asList( FetchOptions.Builder.withDefaults() );
 			
 			Einkunn[] einkunnir = new Einkunn[ lentity.size() ];
@@ -100,7 +101,7 @@ public class SmasagaSubserviceImpl extends RemoteServiceServlet implements Smasa
 	}
 
 	@Override
-	public String updateShortstory(String keystr, String name, String author, String summary,
+	public String updateShortstory(String keystr, String name, String author, String lang, String summary,
 			boolean love, boolean comedy, boolean tragedy, boolean horror,
 			boolean erotik, boolean science, boolean child, boolean adolescent,
 			boolean criminal, boolean historical, boolean truestory,
@@ -111,6 +112,7 @@ public class SmasagaSubserviceImpl extends RemoteServiceServlet implements Smasa
 			Entity e = datastore.get( key );
 			e.setProperty("name", name);
 			e.setProperty("authorsynonim", author);
+			e.setProperty("language", lang);
 			e.setProperty("summary", summary);
 			e.setProperty("love", love);
 			e.setProperty("comedy", comedy);

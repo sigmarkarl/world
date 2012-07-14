@@ -20,6 +20,6 @@ public interface SmasagaSubservice extends RemoteService {
 	}
 	
 	public Subsaga getShortstory(String keystr);
-	public String updateShortstory( String keystr, String name, String author, String summary, boolean love, boolean comedy, boolean tragedy, boolean horror, boolean erotik, boolean science, boolean child, boolean adolescent, boolean criminal, boolean historical, boolean truestory, boolean supernatural, boolean adventure, boolean poem, boolean tobecontine );
+	public String updateShortstory( String keystr, String name, String author, String lang, String summary, boolean love, boolean comedy, boolean tragedy, boolean horror, boolean erotik, boolean science, boolean child, boolean adolescent, boolean criminal, boolean historical, boolean truestory, boolean supernatural, boolean adventure, boolean poem, boolean tobecontine );
 	public String updateEinkunn( String keystr, String comment, int grade, String user, String story );
 }

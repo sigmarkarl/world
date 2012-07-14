@@ -775,6 +775,8 @@ public class JavaFasta extends JApplet {
 	    		importFile( f.getName(), new FileInputStream(f) );
 	    	}
 	    }
+	    
+	    checkMaxMin();
 	    updateView();
 	}
 	
@@ -1657,6 +1659,9 @@ public class JavaFasta extends JApplet {
 				max--;
 			} else i++;
 		}
+		
+		checkMaxMin();
+		updateView();
 	}
 	
 	int[]	currentRowSelection;
@@ -3498,8 +3503,10 @@ public class JavaFasta extends JApplet {
 			if( s.getStart() < lmin ) lmin = s.getStart();
 		}
 		
-		if( lmin < getMin() ) setMin( lmin );
-		if( lmax > getMax() ) setMax( lmax );
+		//if( lmin < getMin() ) 
+		setMin( lmin );
+		//if( lmax > getMax() ) 
+		setMax( lmax );
 		
 		if( lmin < getMin() || lmax > getMax() ) {	
 			table.tableChanged( new TableModelEvent(table.getModel()) );

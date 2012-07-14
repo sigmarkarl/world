@@ -70,7 +70,7 @@ public class Smasogur implements EntryPoint {
 	 * Create a remote service proxy to talk to the server-side Greeting service.
 	 */
 	private final GreetingServiceAsync 	greetingService = GWT.create(GreetingService.class);
-	private final SmasagaServiceAsync 	smasagaService = GWT.create(SmasagaService.class);
+	private final SmasagaServiceAsync 		smasagaService = GWT.create(SmasagaService.class);
 
 	/*var s = this;
 	
@@ -110,17 +110,31 @@ public class Smasogur implements EntryPoint {
 			
 			s.@org.simmi.client.Smasogur::setStatus(Ljava/lang/String;)( "Loading file" );
 			reader.readAsBinaryString( file );
-		} else if (response.status === 'not_authorized') {
+		} else if( response.status === 'not_authorized' ) {
 		    $wnd.console.log('not authorized');
 		} else {
 		    $wnd.console.log('not logged in');
 		}
 	}-*/;
 	
-	public native void dropHandler( JavaScriptObject table, JavaScriptObject dataTransfer ) /*-{			
+	public native void dropHandler( JavaScriptObject table, JavaScriptObject dataTransfer ) /*-{
+		$wnd.console.log( dataTransfer );
+		$wnd.console.log( dataTransfer.files );
 		try {
+			var file;
+			if( dataTransfer.files.length > 0 ) file = dataTransfer.files[0];
 			var s = this;
+			if( $wnd.console ) {
+				$wnd.console.log( "checking" );
+				$wnd.console.log( $wnd.FB );
+			}
+			
 			$wnd.FB.getLoginStatus( function(response) {
+				if( $wnd.console ) {
+					$wnd.console.log( "ok" );
+					$wnd.console.log( response.status );
+				}
+				
 				if (response.status === 'connected') {
 				    // the user is logged in and connected to your
 				    // app, and response.authResponse supplies
@@ -130,11 +144,9 @@ public class Smasogur implements EntryPoint {
 				    var uid = response.authResponse.userID;
 				    var accessToken = response.authResponse.accessToken;
 				    
-				    var files = dataTransfer.files;		
-					var count = files.length;
+				    $wnd.console.log( uid );
 		
-					if(count > 0) {
-						var file = files[0];
+					if( file ) {
 						var reader = new FileReader();
 						reader.onload = function(e) {
 							var res = e.target.result;
@@ -221,16 +233,19 @@ public class Smasogur implements EntryPoint {
 	
 	public native String checkLoginStatus() /*-{
 		var ths = this;
+		if( $wnd.console ) $wnd.console.log( "lstat" );
 		$wnd.fbAsyncInit = function() {
-	    	$wnd.FB.init({appId: '179166572124315', status: true, cookie: true, xfbml: true});
-	    	
+			if( $wnd.console ) $wnd.console.log( "fbinit" );
+	    	$wnd.FB.init({appId: '179166572124315', status: true, cookie: true, xfbml: true, oauth : true});
+	    	if( $wnd.console ) $wnd.console.log( "fbstat" );
 	    	try {
 				$wnd.FB.getLoginStatus( function(response) {
 					$wnd.console.log( "inside login response" );
 					try {
 						$wnd.FB.XFBML.parse();
-						if (response.session) {
-							ths.@org.simmi.client.Smasogur::setUserId(Ljava/lang/String;)( response.session.uid );
+						if( response.status === 'connected' ) {
+							var uid = response.authResponse.userID;
+							ths.@org.simmi.client.Smasogur::setUserId(Ljava/lang/String;)( uid );
 						} else {
 							ths.@org.simmi.client.Smasogur::setUserId(Ljava/lang/String;)( "" );
 						}
@@ -274,32 +289,33 @@ public class Smasogur implements EntryPoint {
 		$wnd.gapi.plusone.go();
 	}-*/;
 	
-	public void delete( String uid, int r ) {
+	public void delete( String uid, final int r ) {
 		Saga saga = sogur.get(r);
-		if( saga.getAuthor().equals(uid) ) {
-			data.removeRow(r);
-		
+		if( saga.getAuthor().equals(uid) ) {		
 			smasagaService.deleteShortstory( sogur.get(r), new AsyncCallback<String>() {
 				@Override
 				public void onFailure(Throwable caught) {}
 
 				@Override
-				public void onSuccess(String result) {}
+				public void onSuccess(String result) {
+					data.removeRow(r);
+					sogur.remove( r );
+					
+					table.draw( view, options );
+				}
 			});
-			
-			sogur.remove( r );
 		}
 	}
 	
 	static Map<Integer,String>	gradeStr = new HashMap<Integer,String>();
 	static {
-		gradeStr.put(0, "rusl");
-		gradeStr.put(1, "mjög lélegt");
-		gradeStr.put(2, "frekar lélegt");
-		gradeStr.put(3, "sleppur");
-		gradeStr.put(4, "frekar gott");
-		gradeStr.put(5, "mjög gott");
-		gradeStr.put(6, "snilld");
+		gradeStr.put(0, "junk");
+		gradeStr.put(1, "very bad");
+		gradeStr.put(2, "rather bad");
+		gradeStr.put(3, "ok");
+		gradeStr.put(4, "rather good");
+		gradeStr.put(5, "very good");
+		gradeStr.put(6, "brilliant");
 	}
 	
 	public native void console( String str ) /*-{
@@ -307,7 +323,7 @@ public class Smasogur implements EntryPoint {
 	}-*/;
 	
 	public void fileLoad( String fileName, String binaryString, String uid ) {
-		final Saga smasaga = new Saga( fileName, "Óþekkt", uid, "Óþekktur", "");
+		final Saga smasaga = new Saga( fileName, "Unkown", uid, "Unknown", "English", "");
 		
 		setStatus( "Saving file" );
 		smasagaService.saveShortStory( smasaga, fileName, binaryString, new AsyncCallback<String>() {
@@ -323,31 +339,31 @@ public class Smasogur implements EntryPoint {
 				setStatus( "File saved" );
 				int r = data.getNumberOfRows();
 				data.addRow();
-				data.setFormattedValue(r, 0, "<a href=\"Smasaga.jsp?smasaga="+smasaga.getKey()+"\">"+smasaga.getName()+"</a>" );
+				data.setFormattedValue(r, 0, "<a href=\"Smasaga.jsp?smasaga="+smasaga.getKey()+"\" target=\"_blank\">"+smasaga.getName()+"</a>" );
 				data.setValue(r, 1, smasaga.getAuthorSynonim());
-				
+				data.setValue(r, 2, smasaga.getLanguage());
 				if( smasaga.getGradeNum() == 0 ) {
-					data.setValue(r, 2, "");
+					data.setValue(r, 3, "");
 				} else {
-					data.setValue(r, 2, gradeStr.get( (int)Math.round( (double)smasaga.getGradeSum()/(double)smasaga.getGradeNum() ) ) );
+					data.setValue(r, 3, gradeStr.get( (int)Math.round( (double)smasaga.getGradeSum()/(double)smasaga.getGradeNum() ) ) );
 				}
-				data.setValue(r, 3, smasaga.getGradeNum());
+				data.setValue(r, 4, smasaga.getGradeNum());
 				
-				data.setValue( r, 4, smasaga.getLove() );
-				data.setValue( r, 5, smasaga.getHorror() );
-				data.setValue( r, 6, smasaga.getScience() );
-				data.setValue( r, 7, smasaga.getChildren() );
-				data.setValue( r, 8, smasaga.getAdolescent() );
-				data.setValue( r, 9, smasaga.getHistorical() );
-				data.setValue( r, 10, smasaga.getTruestory() );
-				data.setValue( r, 11, smasaga.getErotic() );
-				data.setValue( r, 12, smasaga.getComedy() );
-				data.setValue( r, 13, smasaga.getTragedy() );
-				data.setValue( r, 14, smasaga.getSupernatural() );
-				data.setValue( r, 15, smasaga.getCriminal() );
-				data.setValue( r, 16, smasaga.getAdventure() );
-				data.setValue( r, 17, smasaga.getPoem() );
-				data.setValue( r, 18, smasaga.getContinue() );
+				data.setValue( r, 5, smasaga.getLove() );
+				data.setValue( r, 6, smasaga.getHorror() );
+				data.setValue( r, 7, smasaga.getScience() );
+				data.setValue( r, 8, smasaga.getChildren() );
+				data.setValue( r, 9, smasaga.getAdolescent() );
+				data.setValue( r, 10, smasaga.getHistorical() );
+				data.setValue( r, 11, smasaga.getTruestory() );
+				data.setValue( r, 12, smasaga.getErotic() );
+				data.setValue( r, 13, smasaga.getComedy() );
+				data.setValue( r, 14, smasaga.getTragedy() );
+				data.setValue( r, 15, smasaga.getSupernatural() );
+				data.setValue( r, 16, smasaga.getCriminal() );
+				data.setValue( r, 17, smasaga.getAdventure() );
+				data.setValue( r, 18, smasaga.getPoem() );
+				data.setValue( r, 19, smasaga.getContinue() );
 				
 				view = DataView.create( data );
 				table.draw( view, options );
@@ -428,6 +444,7 @@ public class Smasogur implements EntryPoint {
 	    	  
 	    	  data.addColumn( ColumnType.STRING, "Name");
 	    	  data.addColumn( ColumnType.STRING, "Author");
+	    	  data.addColumn( ColumnType.STRING, "Language");
 	    	  data.addColumn( ColumnType.STRING, "Grade");
 	    	  data.addColumn( ColumnType.NUMBER, "Comments");
 	    	  data.addColumn( ColumnType.BOOLEAN, "Love");
@@ -449,7 +466,7 @@ public class Smasogur implements EntryPoint {
 	    	  options = Options.create();
 	    	  if( fbuid != null ) options.setWidth("758px");
 	    	  else options.setWidth("100%");
-	    	  options.setHeight("480px");
+	    	  options.setHeight("360px");
 	    	  options.setAllowHtml( true );
 	    	  
 	    	  view = DataView.create( data );
@@ -478,6 +495,8 @@ public class Smasogur implements EntryPoint {
 				@Override
 				public void onDrop(DropEvent event) {
 					setStatus( "Checking login status" );
+					//event.stopPropagation();
+					event.preventDefault();
 					dropHandler( table.getElement(), event.getDataTransfer() );
 				}
 	    	  });
@@ -514,30 +533,31 @@ public class Smasogur implements EntryPoint {
 					for( Saga smasaga : result ) {
 						int r = data.getNumberOfRows();
 						data.addRow();
-						data.setFormattedValue( r, 0, "<a href=\"Smasaga.jsp?smasaga="+smasaga.getKey()+"\">"+smasaga.getName()+"</a>" );
+						data.setFormattedValue( r, 0, "<a href=\"Smasaga.jsp?smasaga="+smasaga.getKey()+"\" target=\"_blank\">"+smasaga.getName()+"</a>" );
 						data.setValue( r, 1, smasaga.getAuthorSynonim() );
+						data.setValue(r, 2, smasaga.getLanguage());
 						if( smasaga.getGradeNum() == 0 ) {
-							data.setValue(r, 2, "");
+							data.setValue(r, 3, "");
 						} else {
-							data.setValue(r, 2, gradeStr.get( (int)Math.round( (double)smasaga.getGradeSum()/(double)smasaga.getGradeNum() ) ) );
+							data.setValue(r, 3, gradeStr.get( (int)Math.round( (double)smasaga.getGradeSum()/(double)smasaga.getGradeNum() ) ) );
 						}
-						data.setValue(r, 3, smasaga.getGradeNum());
+						data.setValue(r, 4, smasaga.getGradeNum());
 						
-						data.setValue( r, 4, smasaga.getLove() );
-						data.setValue( r, 5, smasaga.getHorror() );
-						data.setValue( r, 6, smasaga.getScience() );
-						data.setValue( r, 7, smasaga.getChildren() );
-						data.setValue( r, 8, smasaga.getAdolescent() );
-						data.setValue( r, 9, smasaga.getHistorical() );
-						data.setValue( r, 10, smasaga.getTruestory() );
-						data.setValue( r, 11, smasaga.getErotic() );
-						data.setValue( r, 12, smasaga.getComedy() );
-						data.setValue( r, 13, smasaga.getTragedy() );
-						data.setValue( r, 14, smasaga.getSupernatural() );
-						data.setValue( r, 15, smasaga.getCriminal() );
-						data.setValue( r, 16, smasaga.getAdventure() );
-						data.setValue( r, 17, smasaga.getPoem() );
-						data.setValue( r, 18, smasaga.getContinue() );
+						data.setValue( r, 5, smasaga.getLove() );
+						data.setValue( r, 6, smasaga.getHorror() );
+						data.setValue( r, 7, smasaga.getScience() );
+						data.setValue( r, 8, smasaga.getChildren() );
+						data.setValue( r, 9, smasaga.getAdolescent() );
+						data.setValue( r, 10, smasaga.getHistorical() );
+						data.setValue( r, 11, smasaga.getTruestory() );
+						data.setValue( r, 12, smasaga.getErotic() );
+						data.setValue( r, 13, smasaga.getComedy() );
+						data.setValue( r, 14, smasaga.getTragedy() );
+						data.setValue( r, 15, smasaga.getSupernatural() );
+						data.setValue( r, 16, smasaga.getCriminal() );
+						data.setValue( r, 17, smasaga.getAdventure() );
+						data.setValue( r, 18, smasaga.getPoem() );
+						data.setValue( r, 19, smasaga.getContinue() );
 						
 						//smasaga.getf
 						//data.setValue( r, 3, smasaga.getUrl() );
@@ -563,11 +583,18 @@ public class Smasogur implements EntryPoint {
 	    	  
 	    	  final HTML html = new HTML();
 	    	  //html.setText( "Dragðu skrána með smásögunni þinni í töfluna. <br>Ef þú ert logguð/loggaður inná facebook er réttur höfundur skráður. <br>Þú getur valið höfundarnafn, nafnið á raunverulegum höfundi þarf ekki að vera valið" );
-	    	  html.setHTML( "Drag-drop the file containing you short story into the table. <br>" +
+	    	  html.setHTML( "Drag-drop the file containing your short story into the table. <br>" +
+	    			"The file can be in a format of your choice. For example pdf for text and mp3 for audiobooks.<br>" +
 	    	  		"If you are logged into facebook, you are registered as the author. <br>" +
 	    	  		"You can choose you own authorname, it doesn't have to be your real name" );
 	    	  html.setWidth("100%");
 	    	  html.getElement().getStyle().setMargin(20.0, Unit.PX);
+	    	  
+	    	  SimplePanel adspanel = new SimplePanel();
+	    	  com.google.gwt.dom.client.Element adselem = Document.get().getElementById("ads");
+	    	  adselem.removeFromParent();
+	    	  adspanel.getElement().appendChild( adselem );
+	    	  subvp.add( adspanel );
 	    	  
 	    	  HTML title = new HTML("<h2>Shortstories<h2/>");
 	    	  subvp.add( title );
@@ -590,10 +617,12 @@ public class Smasogur implements EntryPoint {
 	    	  
 	    	  Anchor	a = new Anchor( "huldaeggerts@gmail.com" );
 	    	  a.setHref("mailto:huldaeggers@gmail.com");
-	    	  Anchor	fast = new Anchor( "http://fasteignaverd.appspot.com" );
-	    	  fast.setHref("http://fasteignaverd.appspot.com");
-	    	  Anchor	conn = new Anchor( "http://webconnectron.appspot.com" );
-	    	  conn.setHref("http://webconnectron.appspot.com");
+	    	  Anchor	fast = new Anchor( "http://webwormgame.appspot.com" );
+	    	  fast.setHref("http://webwormgame.appspot.com");
+	    	  Anchor	conn = new Anchor( "http://webconnectron.appspot.com/Treedraw.html" );
+	    	  conn.setHref("http://webconnectron.appspot.com/Treedraw.html");
+	    	  Anchor	fblink = new Anchor( "https://apps.facebook.com/theshortstories" );
+	    	  fblink.setHref("https://apps.facebook.com/theshortstories");
 	    	  //HTML		kjall = new HTML("Kjallarinn klukkan fimm ehf.");
 	    	  
 	    	  //log.setSize("100px", "100px");
@@ -604,6 +633,7 @@ public class Smasogur implements EntryPoint {
 	    	  hp.add( a );
 	    	  hp.add( fast );
 	    	  hp.add( conn );
+	    	  hp.add( fblink );
 	    	  //hp.add( kjall );
 	    	  //hp.add( log );
 	    	  
@@ -632,9 +662,11 @@ public class Smasogur implements EntryPoint {
 	    	  fblogin.appendChild( elem );
 	    	  
 	    	  checkLoginStatus();
+	    	  String id = "facebook-jssdk";
 	    	  elem = Document.get().createElement("script");
 	  		  elem.setAttribute("async", "true");
-	  	 	  elem.setAttribute("src", "http://connect.facebook.net/en_US/all.js" );
+	  		  elem.setId( id );
+	  	 	  elem.setAttribute("src", "//connect.facebook.net/en_US/all.js" );
 	  		  Document.get().getElementById("fb-root").appendChild( elem );
 	    	  //205279482582
 	    	  
