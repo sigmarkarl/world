@@ -16,6 +16,10 @@ import com.google.gwt.dom.client.Document;
 import com.google.gwt.dom.client.NodeList;
 import com.google.gwt.dom.client.Style;
 import com.google.gwt.dom.client.Style.Unit;
+import com.google.gwt.event.dom.client.ChangeEvent;
+import com.google.gwt.event.dom.client.ChangeHandler;
+import com.google.gwt.event.dom.client.ClickEvent;
+import com.google.gwt.event.dom.client.ClickHandler;
 import com.google.gwt.event.dom.client.DragEndEvent;
 import com.google.gwt.event.dom.client.DragEndHandler;
 import com.google.gwt.event.dom.client.DragEnterEvent;
@@ -39,7 +43,10 @@ import com.google.gwt.user.client.Element;
 import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.rpc.AsyncCallback;
 import com.google.gwt.user.client.ui.Anchor;
+import com.google.gwt.user.client.ui.Button;
+import com.google.gwt.user.client.ui.FileUpload;
 import com.google.gwt.user.client.ui.FocusPanel;
+import com.google.gwt.user.client.ui.FormPanel;
 import com.google.gwt.user.client.ui.HTML;
 import com.google.gwt.user.client.ui.HorizontalPanel;
 import com.google.gwt.user.client.ui.Label;
@@ -111,15 +118,13 @@ public class Smasogur implements EntryPoint {
 			s.@org.simmi.client.Smasogur::setStatus(Ljava/lang/String;)( "Loading file" );
 			reader.readAsBinaryString( file );
 		} else if( response.status === 'not_authorized' ) {
-		    $wnd.console.log('not authorized');
+		    if( $wnd.console ) $wnd.console.log('not authorized');
 		} else {
-		    $wnd.console.log('not logged in');
+		    if( $wnd.console ) $wnd.console.log('not logged in');
 		}
 	}-*/;
 	
 	public native void dropHandler( JavaScriptObject table, JavaScriptObject dataTransfer ) /*-{
-		$wnd.console.log( dataTransfer );
-		$wnd.console.log( dataTransfer.files );
 		try {
 			var file;
 			if( dataTransfer.files.length > 0 ) file = dataTransfer.files[0];
@@ -143,8 +148,6 @@ public class Smasogur implements EntryPoint {
 				    // and signed request each expire
 				    var uid = response.authResponse.userID;
 				    var accessToken = response.authResponse.accessToken;
-				    
-				    $wnd.console.log( uid );
 		
 					if( file ) {
 						var reader = new FileReader();
@@ -158,9 +161,9 @@ public class Smasogur implements EntryPoint {
 						reader.readAsBinaryString( file );
 					}
 				} else if (response.status === 'not_authorized') {
-				    $wnd.console.log('not authorized');
+				    if( $wnd.console ) $wnd.console.log('not authorized');
 				} else {
-				    $wnd.console.log('not logged in');
+				    if( $wnd.console ) $wnd.console.log('not logged in');
 				    $wnd.FB.login();
 				}
 			
@@ -188,7 +191,49 @@ public class Smasogur implements EntryPoint {
 //				}
 			});
 		} catch( e ) {
-			$wnd.console.log( 'error '+e );
+			if( $wnd.console ) $wnd.console.log( 'error '+e );
+		}
+	}-*/;
+	
+	public native void loadHandler( JavaScriptObject table, JavaScriptObject ie ) /*-{
+		try {
+			var file = ie.files[0];
+			var s = this;
+			if( $wnd.console ) {
+				$wnd.console.log( "checking" );
+				$wnd.console.log( $wnd.FB );
+			}
+			
+			$wnd.FB.getLoginStatus( function(response) {
+				if( $wnd.console ) {
+					$wnd.console.log( "ok" );
+					$wnd.console.log( response.status );
+				}
+				
+				if (response.status === 'connected') {
+				    var uid = response.authResponse.userID;
+				    var accessToken = response.authResponse.accessToken;
+		
+					if( file ) {
+						var reader = new FileReader();
+						reader.onload = function(e) {
+							var res = e.target.result;
+							s.@org.simmi.client.Smasogur::setStatus(Ljava/lang/String;)( "File loaded" );
+							s.@org.simmi.client.Smasogur::fileLoad(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)( file.name, res, uid );
+						};
+						
+						s.@org.simmi.client.Smasogur::setStatus(Ljava/lang/String;)( "Loading file" );
+						reader.readAsBinaryString( file );
+					}
+				} else if (response.status === 'not_authorized') {
+				    if( $wnd.console ) $wnd.console.log('not authorized');
+				} else {
+				    if( $wnd.console ) $wnd.console.log('not logged in');
+				    $wnd.FB.login();
+				}
+			});
+		} catch( e ) {
+			if( $wnd.console ) $wnd.console.log( 'error '+e );
 		}
 	}-*/;
 	
@@ -233,14 +278,13 @@ public class Smasogur implements EntryPoint {
 	
 	public native String checkLoginStatus() /*-{
 		var ths = this;
-		if( $wnd.console ) $wnd.console.log( "lstat" );
 		$wnd.fbAsyncInit = function() {
 			if( $wnd.console ) $wnd.console.log( "fbinit" );
 	    	$wnd.FB.init({appId: '179166572124315', status: true, cookie: true, xfbml: true, oauth : true});
 	    	if( $wnd.console ) $wnd.console.log( "fbstat" );
 	    	try {
 				$wnd.FB.getLoginStatus( function(response) {
-					$wnd.console.log( "inside login response" );
+					if( $wnd.console ) $wnd.console.log( "inside login response" );
 					try {
 						$wnd.FB.XFBML.parse();
 						if( response.status === 'connected' ) {
@@ -250,12 +294,12 @@ public class Smasogur implements EntryPoint {
 							ths.@org.simmi.client.Smasogur::setUserId(Ljava/lang/String;)( "" );
 						}
 					} catch( e ) {
-						$wnd.console.log( e );
+						if( $wnd.console ) $wnd.console.log( e );
 					}
-					$wnd.console.log( "past login response" );
+					if( $wnd.console ) $wnd.console.log( "past login response" );
 				});
 			} catch( e ) {
-				$wnd.console.log( e );
+				if( $wnd.console ) $wnd.console.log( e );
 			}
 	  	};
 	}-*/;
@@ -269,9 +313,9 @@ public class Smasogur implements EntryPoint {
 			    
 			    s.@org.simmi.client.Smasogur::delete(Ljava/lang/String;I)( uid, r );
 			} else if (response.status === 'not_authorized') {
-			    $wnd.console.log('not authorized');
+			    if( $wnd.console ) $wnd.console.log('not authorized');
 			} else {
-			    $wnd.console.log('not logged in');
+			    if( $wnd.console ) $wnd.console.log('not logged in');
 			    $wnd.FB.login();
 			}
 		});
@@ -281,7 +325,7 @@ public class Smasogur implements EntryPoint {
 		try {
 			$wnd.FB.XFBML.parse();
 		} catch( e ) {
-			$wnd.console.log( e );
+			if( $wnd.console ) $wnd.console.log( e );
 		}
 	}-*/;
 	
@@ -319,7 +363,7 @@ public class Smasogur implements EntryPoint {
 	}
 	
 	public native void console( String str ) /*-{
-		$wnd.console.log( str );
+		if( $wnd.console ) $wnd.console.log( str );
 	}-*/;
 	
 	public void fileLoad( String fileName, String binaryString, String uid ) {
@@ -370,6 +414,10 @@ public class Smasogur implements EntryPoint {
 			}
 		});
 	}
+	
+	public native void click( JavaScriptObject e ) /*-{
+		e.click();
+	}-*/;
 	
 	String 		uid;
 	DataTable	data;
@@ -580,6 +628,7 @@ public class Smasogur implements EntryPoint {
 	    	  VerticalPanel	subvp = new VerticalPanel();
 	    	  subvp.setVerticalAlignment( VerticalPanel.ALIGN_MIDDLE );
 	    	  subvp.setHorizontalAlignment( VerticalPanel.ALIGN_CENTER );
+	    	  subvp.setSpacing( 20 );
 	    	  
 	    	  final HTML html = new HTML();
 	    	  //html.setText( "Dragðu skrána með smásögunni þinni í töfluna. <br>Ef þú ert logguð/loggaður inná facebook er réttur höfundur skráður. <br>Þú getur valið höfundarnafn, nafnið á raunverulegum höfundi þarf ekki að vera valið" );
@@ -588,7 +637,7 @@ public class Smasogur implements EntryPoint {
 	    	  		"If you are logged into facebook, you are registered as the author. <br>" +
 	    	  		"You can choose you own authorname, it doesn't have to be your real name" );
 	    	  html.setWidth("100%");
-	    	  html.getElement().getStyle().setMargin(20.0, Unit.PX);
+	    	  //html.getElement().getStyle().setMargin(20.0, Unit.PX);
 	    	  
 	    	  SimplePanel adspanel = new SimplePanel();
 	    	  com.google.gwt.dom.client.Element adselem = Document.get().getElementById("ads");
@@ -612,7 +661,30 @@ public class Smasogur implements EntryPoint {
 	    	  sharehp.add( gug );
 	    	  subvp.add( sharehp );
 	    	  
+	    	  FormPanel fp = new FormPanel();
+	  		  final FileUpload	file = new FileUpload();
+	  		  file.addChangeHandler( new ChangeHandler() {
+	  			@Override
+	  			public void onChange(ChangeEvent event) {
+	  				loadHandler( table.getElement(), file.getElement() );
+	  			}
+	  		  });	  		
+	    	  Button uploadButton = new Button("Upload");
+	    	  uploadButton.addClickHandler( new ClickHandler() {
+				@Override
+				public void onClick(ClickEvent event) {
+					click( file.getElement() );
+				}
+	    	  });
+	    	  
+	    	  file.setVisible( false );
+	    	  HorizontalPanel	filehp = new HorizontalPanel();
+	    	  filehp.add( file );
+	    	  filehp.add( uploadButton );
+	    	  fp.add( filehp );
+	    	  
 	    	  subvp.add( html );
+	    	  subvp.add( fp );
 	    	  subvp.add( focuspanel );
 	    	  
 	    	  Anchor	a = new Anchor( "huldaeggerts@gmail.com" );

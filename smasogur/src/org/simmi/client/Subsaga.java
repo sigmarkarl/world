@@ -65,6 +65,7 @@ public class Subsaga implements Serializable {
 	}
 	
 	public String getName() {
+		if( nafn == null || nafn.length() == 0 ) nafn = url;
 		return nafn;
 	}
 	

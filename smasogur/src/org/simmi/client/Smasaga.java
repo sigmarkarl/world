@@ -366,8 +366,11 @@ public class Smasaga implements EntryPoint {
 				
 				anchor.setText( result.getName() );
 				anchor.setHref( result.getUrl() );
+				anchor.setTarget("_blank");
+				
 				name.setText( result.getName() );
 				author.setText( result.getAuthorSynonim() );
+				lang.setText( result.getLanguage() );
 				urdrattur.setText( result.getSummary() );
 				
 				if( !result.getAuthor().equals(uid) ) {
