@@ -79,6 +79,8 @@ import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 import javax.swing.border.Border;
 import javax.swing.border.EmptyBorder;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import javax.swing.event.RowSorterEvent;
@@ -1589,7 +1591,7 @@ public class JavaFasta extends JApplet {
 		return out.toString();
 	}
 	
-	public double[] distanceMatrixNumeric( boolean excludeGaps ) {
+	public double[] distanceMatrixNumeric( boolean excludeGaps, double[] ent ) {
 		JCheckBox	jukes = new JCheckBox("Jukes-cantor correction");
 		//JCheckBox	boots = new JCheckBox("Bootstrap");
 		JOptionPane.showMessageDialog( parentApplet, jukes );
@@ -1625,7 +1627,7 @@ public class JavaFasta extends JApplet {
 		}
 		
 		double[] dd = new double[ lseq.size()*lseq.size() ];
-		Sequence.distanceMatrixNumeric( lseq, dd, idxs, false, cantor );
+		Sequence.distanceMatrixNumeric( lseq, dd, idxs, false, cantor, ent );
 		return dd;
 	}
 	
@@ -2864,11 +2866,123 @@ public class JavaFasta extends JApplet {
 				jso.call("showMatr", new Object[] {dist} );
 			}
 		});
+		popup.add( new AbstractAction("Shannon blocks filering") {
+			public void actionPerformed( ActionEvent e ) {
+				final JCheckBox cb = new JCheckBox("Only use selected for evaluation");
+				cb.setSelected( true );
+				final JLabel	ws = new JLabel("Winodw size:");
+				final JSpinner 	sp = new JSpinner( new SpinnerNumberModel(10, 2, 100, 1) );
+				final JLabel	lb = new JLabel("Percentage:");
+				final JSpinner 	pc = new JSpinner( new SpinnerNumberModel(0.9, 0.0, 1.0, 0.01) );
+				Object[] message = new Object[] { cb, ws, sp, lb, pc };
+				JOptionPane.showMessageDialog(parentApplet, message, "Shannon blocks filter", JOptionPane.DEFAULT_OPTION );
+				int winsize = (Integer)sp.getValue();
+				double per = (Double)pc.getValue();
+				
+				int min;
+				int max;
+				int total = table.getRowCount();
+				Set<Sequence> seqset = null;
+				if( cb.isSelected() ){
+					min = Integer.MAX_VALUE;
+					max = Integer.MIN_VALUE;
+					
+					seqset = new HashSet<Sequence>();
+					int[] rr = table.getSelectedRows();
+					for( int r : rr ) {
+						int k = table.convertRowIndexToModel( r );
+						Sequence seq = lseq.get( k );
+						
+						min = Math.min( min, seq.getStart() );
+						max = Math.max( max, seq.getEnd() );
+						
+						seqset.add( seq );
+					}
+					total = seqset.size();
+				} else {
+					min = JavaFasta.this.min;
+					max = JavaFasta.this.max;
+				}
+				
+				double[] d = new double[max-min];
+				Map<Character,Integer>	shanmap = new HashMap<Character,Integer>();
+				for( int x = min; x < max; x++ ) {
+					shanmap.clear();
+					
+					if( seqset != null ) {
+						for( Sequence seq : seqset ) {
+							char c = getCharAt( x, table.convertRowIndexToView( seq.index ) );
+							int val = 0;
+							if( shanmap.containsKey(c) ) val = shanmap.get(c);
+							shanmap.put( c, val+1 );
+						}
+					} else {
+						for( int y = 0; y < total; y++ ) {
+							char c = getCharAt(x, y);
+							int val = 0;
+							if( shanmap.containsKey(c) ) val = shanmap.get(c);
+							shanmap.put( c, val+1 );
+						}
+					}
+					
+					double res = 0.0;
+					for( char c : shanmap.keySet() ) {
+						int val = shanmap.get(c);
+						double p = (double)val/(double)total;
+						res -= p*Math.log(p)/Math.log(2.0);
+					}
+					d[x-min] = res;
+				}
+				
+				double[] old = d;
+				double sum = 0.0;
+				for( int k = 0; k < winsize; k++ ) {
+					sum += old[k];
+				}
+				d = new double[ old.length-winsize ];
+				for( int i = 0; i < d.length; i++ ) {
+					d[i] = sum/(double)winsize;
+					sum += -d[i]+d[i+winsize];
+				}
+				
+				
+				int i = 0;
+				while( i < max-min ) {
+					boolean rem = true;
+					for( Sequence seq : seqset ) {
+						int r = table.convertRowIndexToView( seq.index );
+						char c = getCharAt(i, r);
+						/*if( c2 != '.' && c2 != '-' && c2 != ' ' ) {
+							rem = false;
+							break;
+						}*/
+						if( c == '.' || c == '-' ) {
+							//if( c != 0 && c2 != c ) {
+							rem = false;
+							break;
+							//}
+						}
+					}
+					if( !rem ) {
+						for( Sequence seq : seqset ) {
+							int r = table.convertRowIndexToView( seq.index );
+							clearCharAt(i, r);
+						}
+					}
+					i++;
+				}
+				
+				for( Sequence seq : seqset ) {
+					seq.checkLengths();
+				}
+				
+				c.repaint();
+			}
+		});
 		popup.add( new AbstractAction("Draw shannon") {
 			public void actionPerformed( ActionEvent e ) {
 				String command = "command";
 				System.err.println("about to call showShannon");
-				JSObject win = JSObject.getWindow( parentApplet );
 				double[] d = new double[max-min];
 				Map<Character,Integer>	shanmap = new HashMap<Character,Integer>(); 
 				for( int x = min; x < max; x++ ) {
@@ -2888,6 +3002,33 @@ public class JavaFasta extends JApplet {
 					}
 					d[x-min] = res;
 				}
+				
+				final JCheckBox	cb = new JCheckBox("Filter blocks");
+				final JSpinner 	sp = new JSpinner( new SpinnerNumberModel(10, 2, 100, 1) );
+				sp.setEnabled( false );
+				cb.addChangeListener( new ChangeListener() {
+					@Override
+					public void stateChanged(ChangeEvent e) {
+						sp.setEnabled( cb.isSelected() );
+					}
+				});
+				Object[] message = new Object[] { cb, sp };
+				JOptionPane.showMessageDialog(parentApplet, message);
+				if( cb.isSelected() ) {
+					int val = (Integer)sp.getValue();
+					double[] old = d;
+					double sum = 0.0;
+					for( int k = 0; k < val; k++ ) {
+						sum += old[k];
+					}
+					d = new double[ old.length-val ];
+					for( int i = 0; i < d.length; i++ ) {
+						d[i] = sum/(double)val;
+						sum += -d[i]+d[i+val];
+					}
+				}
+				
+				JSObject win = JSObject.getWindow( parentApplet );
 				win.call("showShannon", new Object[] {d, command} );
 			}
 		});

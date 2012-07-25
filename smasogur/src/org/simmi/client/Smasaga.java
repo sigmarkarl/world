@@ -376,6 +376,7 @@ public class Smasaga implements EntryPoint {
 				if( !result.getAuthor().equals(uid) ) {
 					name.setReadOnly( true );
 					author.setReadOnly( true );
+					lang.setReadOnly( true );
 					urdrattur.setReadOnly( true );
 					
 					love.setEnabled( false );
