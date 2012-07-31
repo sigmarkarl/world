@@ -2520,7 +2520,7 @@ public class JavaFasta extends JApplet {
 				c.repaint();
 			}
 		});
-		popup.add( new AbstractAction(".- Replacement") {
+		popup.add( new AbstractAction(".* - Replacement") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				int[] rr = table.getSelectedRows();
@@ -2529,7 +2529,7 @@ public class JavaFasta extends JApplet {
 					Sequence seq = lseq.get( k );
 					StringBuilder	sb = seq.sb;
 					for( int i = 0; i < sb.length(); i++ ) {
-						if( sb.charAt(i) == '.' ) sb.setCharAt(i, '-');
+						if( sb.charAt(i) == '.' || sb.charAt(i) == '*' ) sb.setCharAt(i, '-');
 					}
 					
 					/*int i1 = sb.indexOf("T");
