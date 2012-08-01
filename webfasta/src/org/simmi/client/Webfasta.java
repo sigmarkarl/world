@@ -541,15 +541,15 @@ public class Webfasta implements EntryPoint {
 			int ax = Math.abs(xstartLocal-prevx);
 			int ay = Math.abs(ystartLocal-prevy);
 			
-			if( false && (ay < ch/2 && ax < cw/2) ) {
+			if( false && ay < ch/2 && ax < cw/2 ) {
 				int h = ch-ay;
 				int w = cw-ax;
 				int xuno = Math.max(0,xstartLocal-prevx);
 				int xduo = Math.max(0,prevx-xstartLocal);
 				int yuno = Math.max(0,ystartLocal-prevy);
 				int yduo = Math.max(0,prevy-ystartLocal);
-				//context.drawImage(context.getCanvas(), xuno, yuno+baseheight, w, h, xduo, yduo+baseheight, w, h);
-				/*tcontext.drawImage(tcontext.getCanvas(), 0, yuno+baseheight, tcw, h, 0, yduo+baseheight, tcw, h);
+				context.drawImage(context.getCanvas(), xuno, yuno+baseheight, w, h, xduo, yduo+baseheight, w, h);
+				//tcontext.drawImage(tcontext.getCanvas(), 0, yuno+baseheight, tcw, h, 0, yduo+baseheight, tcw, h);
 				if( xuno > xduo ) {
 					if( yuno > yduo ) {
 						drawSection( xstartLocal, ystartLocal, 0, h, w, ay );
@@ -574,7 +574,7 @@ public class Webfasta implements EntryPoint {
 						drawSection( xstartLocal, ystartLocal, 0, 0, ax, ay );
 						drawTable( ystartLocal, 0, ay );
 					}
-				}*/
+				}
 			} else {
 				drawSection( xstartLocal, ystartLocal, 0, 0, cw, ch );
 				drawTable( ystartLocal, 0, ch );
@@ -708,38 +708,71 @@ public class Webfasta implements EntryPoint {
 		context.fillRect( xs-xstartLocal, ys-ystartLocal+baseheight, xe-xs, ye-ys );
 		
 		context.setFillStyle("#222222");
-		for( int y = ys; y < ye; y+=baseheight ) {
-			int i = y/baseheight;
-			int yy = i*baseheight;
-			SequenceOld seq = val.get(i);
-			//int[]	ann = seq.getAnnotationIndex();
-				
-			if( selset.contains(i) ) {
-				context.setFillStyle("#DDDDFF");
-				context.fillRect(0, ystartLocal, canvasWidth, baseheight );
-				context.setFillStyle("#222222");
-			}
-			
-			for( int x = xs; x < Math.min( seq.length()*basewidth, xe ); x+=basewidth ) {
-				int k = x/basewidth;
-				int xx = k*basewidth;
-				
-				char c = seq.charAt(k);
-				if( basecolors ) {
-					String basecolor = ccol.get( c );
-					if( basecolor != null ) {
-						context.setFillStyle( basecolor );
-						context.fillRect( xx-xstartLocal, yy-ystartLocal+baseheight, basewidth, baseheight );
-						context.setFillStyle("#222222");
-					}
-				}
-				context.fillText(c+"", (xx-xstartLocal), yy+2.0*baseheight-3.0-ystartLocal );
-				/*if( ann != null && ann[x] != 0 ) {
-					Annotation a = seq.getAnnotations().get(ann[x]-1);
-					context.setFillStyle( a.color );
-					context.fillRect( (x-xstart)*10, th-top+baseheight, 10, 5 );
+		
+		if( basecolors ) {
+			for( int y = ys; y < ye; y+=baseheight ) {
+				int i = y/baseheight;
+				int yy = i*baseheight;
+				SequenceOld seq = val.get(i);
+				//int[]	ann = seq.getAnnotationIndex();
+					
+				/*if( selset.contains(i) ) {
+					context.setFillStyle("#DDDDFF");
+					context.fillRect(0, ystartLocal, canvasWidth, baseheight );
 					context.setFillStyle("#222222");
 				}*/
+				
+				for( int x = xs; x < Math.min( seq.length()*basewidth, xe ); x+=basewidth ) {
+					int k = x/basewidth;
+					int xx = k*basewidth;
+					
+					char c = seq.charAt(k);
+					Integer baseloc = mccol.get( c );
+					if( baseloc == null ) {
+						//String basecolor = ccol.get(c);
+						//context.setFillStyle( basecolor );
+						//context.fillRect( xx-xstartLocal, yy-ystartLocal+baseheight, basewidth, baseheight );
+						if( x == xs && y == ys ) console("kkokok2");
+						context.setFillStyle("#222222");
+						context.fillText(c+"", (xx-xstartLocal), yy+2.0*baseheight-3.0-ystartLocal );
+					} else {
+						if( x == xs && y == ys ) console("kkokok");
+						context.drawImage( buffer.getCanvasElement(), baseloc, 0, basewidth, baseheight, xx-xstartLocal, yy-ystartLocal, basewidth, baseheight);
+					}
+					/*if( ann != null && ann[x] != 0 ) {
+						Annotation a = seq.getAnnotations().get(ann[x]-1);
+						context.setFillStyle( a.color );
+						context.fillRect( (x-xstart)*10, th-top+baseheight, 10, 5 );
+						context.setFillStyle("#222222");
+					}*/
+				}
+			}
+		} else {
+			for( int y = ys; y < ye; y+=baseheight ) {
+				int i = y/baseheight;
+				int yy = i*baseheight;
+				SequenceOld seq = val.get(i);
+				//int[]	ann = seq.getAnnotationIndex();
+					
+				if( selset.contains(i) ) {
+					context.setFillStyle("#DDDDFF");
+					context.fillRect(0, ystartLocal, canvasWidth, baseheight );
+					context.setFillStyle("#222222");
+				}
+				
+				for( int x = xs; x < Math.min( seq.length()*basewidth, xe ); x+=basewidth ) {
+					int k = x/basewidth;
+					int xx = k*basewidth;
+					
+					char c = seq.charAt(k);
+					context.fillText(c+"", (xx-xstartLocal), yy+2.0*baseheight-3.0-ystartLocal );
+					/*if( ann != null && ann[x] != 0 ) {
+						Annotation a = seq.getAnnotations().get(ann[x]-1);
+						context.setFillStyle( a.color );
+						context.fillRect( (x-xstart)*10, th-top+baseheight, 10, 5 );
+						context.setFillStyle("#222222");
+					}*/
+				}
 			}
 		}
 	}
@@ -1024,8 +1057,10 @@ public class Webfasta implements EntryPoint {
 		return jo.charCodeAt(ind);
 	}-*/;
 
-	boolean basecolors = false;
+	Canvas					buffer;
+	boolean 				basecolors = false;
 	Map<Character,String>	ccol = new HashMap<Character,String>();
+	Map<Character,Integer>	mccol = new HashMap<Character,Integer>();
 	JsArrayInteger			sortind = null;
 	boolean					mousedown = false;
 	boolean					scrollx = false;
@@ -1043,6 +1078,22 @@ public class Webfasta implements EntryPoint {
 		ccol.put('u', "#00ffff");
 		ccol.put('C', "#ffff00");
 		ccol.put('c', "#ffff00");
+		
+		buffer = Canvas.createIfSupported();
+		buffer.setCoordinateSpaceWidth( ccol.size()*basewidth );
+		buffer.setCoordinateSpaceHeight( baseheight );
+		Context2d ctx = buffer.getContext2d();
+		int i = 0;
+		for( char c : ccol.keySet() ) {
+			String col = ccol.get(c);
+			ctx.setFillStyle( col );
+			ctx.fillRect(i*basewidth, 0, basewidth, baseheight);
+			ctx.setFillStyle("#000000");
+			ctx.fillText( c+"", i*basewidth, baseheight-3.0 );
+			mccol.put( c, i*basewidth );
+			
+			i++;
+		}
 		
 		//HorizontalPanel	hpanel = new HorizontalPanel();
 		//hpanel.setHorizontalAlignment( HorizontalPanel.ALIGN_CENTER );
