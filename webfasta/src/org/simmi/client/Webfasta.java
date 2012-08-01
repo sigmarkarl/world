@@ -261,8 +261,12 @@ public class Webfasta implements EntryPoint {
 		
 	}-*/;
 	
-	public native JavaScriptObject handleFiles( Element ie, int append ) /*-{
-		return ie.files[0];
+	public native JavaScriptObject handleFiles( Element ie ) /*-{
+		if( ie.files ) {
+			return ie.files[0];
+		} else {
+			return null;
+		}
 		
 //		var hthis = this;
 //		file = ie.files[0];
@@ -293,7 +297,7 @@ public class Webfasta implements EntryPoint {
 	}-*/;
 	
 	public native void console( String str ) /*-{
-		$wnd.console.log( str );
+		if( $wnd.console ) $wnd.console.log( str );
 	}-*/;
 	
 	class Annotation {
@@ -326,6 +330,14 @@ public class Webfasta implements EntryPoint {
 		
 		public String toString() {
 			return Webfasta.this.content.substring( namestart, nameend );
+		}
+		
+		public String getName() {
+			return toString();
+		}
+		
+		public String getSubstring( int start, int end ) {
+			return Webfasta.this.content.substring( start+seqstart, end+seqstart );
 		}
 		
 		/*public Sequence( String name, String seq ) {
@@ -598,10 +610,10 @@ public class Webfasta implements EntryPoint {
 			context.fillRect(0, ch-20.0+baseheight, cw, 20.0);
 			context.setFillStyle("#111111");
 			if( val.size() > 0 && max > 0 ) {
-				context.fillRect(cw-20.0, baseheight+(ch*ystartLocal)/(val.size()*baseheight), 20.0, 5.0);
-				context.fillRect((cw*xstartLocal)/(max*basewidth), baseheight+ch-20.0, 5.0, 20.0);
+				context.fillRect( cw-20.0, baseheight+((ch-20.0)*ystartLocal)/(val.size()*baseheight-ch), 20.0, 5.0 );
+				context.fillRect( ((cw-20.0)*xstartLocal)/(max*basewidth-cw), baseheight+ch-20.0, 5.0, 20.0 );
 			}
-				
+			
 			if( max > 0 ) {
 				/*ocontext.clearRect(0, 0, ocanvas.getWidth(), ocanvas.getHeight());
 				ocontext.setFillStyle("#CCFFCC");
@@ -732,12 +744,10 @@ public class Webfasta implements EntryPoint {
 						//String basecolor = ccol.get(c);
 						//context.setFillStyle( basecolor );
 						//context.fillRect( xx-xstartLocal, yy-ystartLocal+baseheight, basewidth, baseheight );
-						if( x == xs && y == ys ) console("kkokok2");
 						context.setFillStyle("#222222");
 						context.fillText(c+"", (xx-xstartLocal), yy+2.0*baseheight-3.0-ystartLocal );
 					} else {
-						if( x == xs && y == ys ) console("kkokok");
-						context.drawImage( buffer.getCanvasElement(), baseloc, 0, basewidth, baseheight, xx-xstartLocal, yy-ystartLocal, basewidth, baseheight);
+						context.drawImage( buffer.getCanvasElement(), baseloc, 0, basewidth, baseheight, xx-xstartLocal, yy-ystartLocal+baseheight, basewidth, baseheight);
 					}
 					/*if( ann != null && ann[x] != 0 ) {
 						Annotation a = seq.getAnnotations().get(ann[x]-1);
@@ -956,22 +966,21 @@ public class Webfasta implements EntryPoint {
 		reader.readAsArrayBuffer( file );
 	}-*/;
 	
-	public native void transferData( JavaScriptObject dataTransfer ) /*-{
+	public native boolean transferData( JavaScriptObject dataTransfer ) /*-{
+		var succ = false;
 		var s = this;
-		var files = dataTransfer.files;
-		var count = files.length;
-		
-		if(count > 0) {
-			succ = true;
-			
-			var file = files[0];
-			s.@org.simmi.client.Webfasta::fileRead(Lcom/google/gwt/core/client/JavaScriptObject;)( file );
-			//reader.readAsText( file );
-		} else {
-			var res = dataTransfer.getData("text/plain");
-			//$wnd.alert(evt.dataTransfer.effectAllowed);
-			s.@org.simmi.client.Webfasta::fileLoaded(Ljava/lang/String;I)( res, 0 );
+		if( dataTransfer.files ) {
+			var files = dataTransfer.files;
+			var count = files.length;
+			if( count > 0 ) {
+				succ = true;
+				//var count = files.length;
+				var file = files[0];
+				s.@org.simmi.client.Webfasta::fileRead(Lcom/google/gwt/core/client/JavaScriptObject;)( file );
+				//reader.readAsText( file );
+			}
 		}
+		return succ;
 	}-*/;
 	
 	/*public native void dropTarget( JavaScriptObject canvas ) /*-{
@@ -1057,6 +1066,14 @@ public class Webfasta implements EntryPoint {
 		return jo.charCodeAt(ind);
 	}-*/;
 
+	public class Selection {
+		int x;
+		int y;
+		int w;
+		int h;
+	};
+	
+	List<Selection>			selectionList = new ArrayList<Selection>();
 	Canvas					buffer;
 	boolean 				basecolors = false;
 	Map<Character,String>	ccol = new HashMap<Character,String>();
@@ -1108,7 +1125,8 @@ public class Webfasta implements EntryPoint {
 		file.addChangeHandler( new ChangeHandler() {
 			@Override
 			public void onChange(ChangeEvent event) {
-				fileRead( handleFiles( file.getElement(), 0 ) );
+				JavaScriptObject thefile = handleFiles( file.getElement() );
+				if( thefile != null ) fileRead( thefile );
 			}
 		});
 		fp.add( file );
@@ -1208,7 +1226,15 @@ public class Webfasta implements EntryPoint {
 			public void execute() {
 				//DialogBox db = new DialogBox();
 				//Anchor	a = new Anchor("okok");
-				String out = "";
+				StringBuilder out = new StringBuilder();
+				if( selectionList.isEmpty() ) {
+					for( SequenceOld seq : val ) {
+						out.append( seq.getName()+"\n" );
+						for( int i = 0; i < seq.length(); i+=70 ) {
+							out.append( seq.getSubstring(i, Math.min(seq.length(), i+70) )+"\n" );
+						}
+					}
+				}
 				/*for( int i = 0; i < data.getNumberOfRows(); i++ ) {
 					String str = data.getValueString(i, 0);
 					out += ">" + str + "\n";
@@ -1219,12 +1245,12 @@ public class Webfasta implements EntryPoint {
 						out += content.substring( k, Math.min(seq.length(), k+60) ) + "\n";
 					}
 				}*/
-				String bstr = encode( out );
-				String dataurl = "data:text/plain;fileName=export.fa;base64,"+bstr;
+				String bstr = encode( out.toString() );
+				String dataurl = "data:text/plain;fileName=export.fasta;base64,"+bstr;
 				//a.setHref(  );
 				//db.add( a );
 				//db.center();
-				Window.open(dataurl, "export.fa", "");
+				Window.open(dataurl, "export.fasta", "");
 			}
 		});
 		MenuBar	epopup = new MenuBar(true);
@@ -1280,18 +1306,18 @@ public class Webfasta implements EntryPoint {
 					if( mousey > ch-20 ) {
 						scrollx = true;
 						
-						int xmin1 = max*basewidth-cw;
-						int xmin2 = (max*basewidth*mousex)/cw;
-						xstart = Math.max( 0, Math.min( xmin1, xmin2 ) );
+						double xmin1 = max*basewidth-cw;
+						double xmin2 = (xmin1*mousex)/(cw-20.0);
+						xstart = (int)Math.max( 0.0, Math.min( xmin1, xmin2 ) );
 					}
 					
 					//int ystart = Webfasta.this.ystart;
 					if( mousex > cw-20.0 ) {
 						scrolly = true;
 						
-						int ymin1 = val.size()*baseheight-ch;
-						int ymin2 = (val.size()*baseheight*mousey)/ch;
-						ystart = Math.max( 0, Math.min( ymin1, ymin2 ) );
+						double ymin1 = val.size()*baseheight-ch;
+						double ymin2 = (ymin1*(mousey-baseheight))/(ch-20.0-baseheight);
+						ystart = (int)Math.max( 0.0, Math.min( ymin1, ymin2 ) );
 					}
 					
 					draw( xstart, ystart );
@@ -1311,13 +1337,13 @@ public class Webfasta implements EntryPoint {
 					if( scrollx || scrolly ) {
 						if( scrollx ) {
 							double xmin1 = max*basewidth-cw;
-							double xmin2 = (max*basewidth*x)/cw;
+							double xmin2 = (xmin1*x)/(cw-20.0);
 							xstart = (int)Math.max( 0.0, Math.min( xmin1, xmin2 ) );
 						}
 						
 						if( scrolly ) {
 							double ymin1 = val.size()*baseheight-canvas.getCoordinateSpaceHeight();
-							double ymin2 = (val.size()*baseheight*y)/ch;
+							double ymin2 = (ymin1*(y-baseheight))/(ch-20.0-baseheight);
 							ystart = (int)Math.max( 0.0, Math.min( ymin1, ymin2 ) );
 						}
 						
@@ -1347,16 +1373,32 @@ public class Webfasta implements EntryPoint {
 		
 		canvas.addMouseUpHandler( new MouseUpHandler() {
 			@Override
-			public void onMouseUp(MouseUpEvent event) {
-				mousedown = false;
-				scrollx = false;
-				scrolly = false;
-				
+			public void onMouseUp(MouseUpEvent event) {				
 				int x = event.getX();
 				int y = event.getY();
 				
-				xstart = Math.max( 0, Math.min( max*basewidth, xstart + (mousex-x) ) );
-				ystart = Math.max( 0, Math.min( val.size()*baseheight, ystart + (mousey-y) ) );
+				if( scrollx || scrolly ) {
+					if( scrollx ) {
+						double cw = (double)canvas.getCoordinateSpaceWidth();
+						double xmin1 = max*basewidth-cw;
+						double xmin2 = (xmin1*x)/(cw-20.0);
+						xstart = (int)Math.max( 0.0, Math.min( xmin1, xmin2 ) );
+					}
+					
+					if( scrolly ) {
+						double ch = (double)canvas.getCoordinateSpaceHeight();
+						double ymin1 = val.size()*baseheight-ch;
+						double ymin2 = (ymin1*(y-baseheight))/(ch-20.0-baseheight);
+						ystart = (int)Math.max( 0.0, Math.min( ymin1, ymin2 ) );
+					}
+				} else {
+					xstart = Math.max( 0, Math.min( max*basewidth, xstart + (mousex-x) ) );
+					ystart = Math.max( 0, Math.min( val.size()*baseheight, ystart + (mousey-y) ) );
+				}
+				
+				mousedown = false;
+				scrollx = false;
+				scrolly = false;
 				
 				draw( xstart, ystart );
 			}
@@ -1529,7 +1571,10 @@ public class Webfasta implements EntryPoint {
 				DataTransfer dt = event.getDataTransfer();
 				//dt.getData(format)
 				//File f = new File();
-				transferData( dt );
+				if( !transferData( dt ) ) {
+					String cont = dt.getData("Text");
+					fileLoaded(cont, 0);
+				}
 			}
 		});
 		//dropTarget( context.getCanvas() );

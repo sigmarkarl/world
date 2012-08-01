@@ -149,20 +149,20 @@ public class Smasaga implements EntryPoint {
 			}
 		});
 		
-		/*final CheckBox love = new CheckBox("Ástarsaga");
+		/*final CheckBox love = new CheckBox("Ã�starsaga");
 		final CheckBox horror = new CheckBox("Hryllingur");
 		final CheckBox child = new CheckBox("Barnasaga");
 		final CheckBox adolescent = new CheckBox("Unglingasaga");
 		final CheckBox tragedy = new CheckBox("Sorgarsaga");
 		final CheckBox comedy = new CheckBox("Gamansaga");
-		final CheckBox science = new CheckBox("Vísindaskáldsaga");
-		final CheckBox supernatural = new CheckBox("Yfirnáttúruleg");
-		final CheckBox historical = new CheckBox("Söguleg");
-		final CheckBox truestory = new CheckBox("Sannsöguleg");
-		final CheckBox erotik = new CheckBox("Erótísk");
-		final CheckBox criminal = new CheckBox("Glæpasaga");
-		final CheckBox adventure = new CheckBox("Ævintýri");
-		final CheckBox poem = new CheckBox("Ljóð");
+		final CheckBox science = new CheckBox("VÃ­sindaskÃ¡ldsaga");
+		final CheckBox supernatural = new CheckBox("YfirnÃ¡ttÃºruleg");
+		final CheckBox historical = new CheckBox("SÃ¶guleg");
+		final CheckBox truestory = new CheckBox("SannsÃ¶guleg");
+		final CheckBox erotik = new CheckBox("ErÃ³tÃ­sk");
+		final CheckBox criminal = new CheckBox("GlÃ¦pasaga");
+		final CheckBox adventure = new CheckBox("Ã†vintÃ½ri");
+		final CheckBox poem = new CheckBox("LjÃ³Ã°");
 		final CheckBox tobecontine = new CheckBox("Framhaldssaga");*/
 		
 		final CheckBox love = new CheckBox("Love story");
@@ -180,6 +180,22 @@ public class Smasaga implements EntryPoint {
 		final CheckBox adventure = new CheckBox("Fairy tail");
 		final CheckBox poem = new CheckBox("Poem");
 		final CheckBox tobecontine = new CheckBox("To be continued");
+		
+		love.setEnabled( false );
+		comedy.setEnabled( false );
+		tragedy.setEnabled( false );
+		horror.setEnabled( false );
+		erotik.setEnabled( false );
+		science.setEnabled( false );
+		child.setEnabled( false );
+		adolescent.setEnabled( false );
+		criminal.setEnabled( false );
+		historical.setEnabled( false );
+		truestory.setEnabled( false );
+		supernatural.setEnabled( false );
+		adventure.setEnabled( false );
+		poem.setEnabled( false );
+		tobecontine.setEnabled( false );
 		
 		grid.setWidget(0, 0, love);
 		grid.setWidget(0, 1, horror);
@@ -202,7 +218,7 @@ public class Smasaga implements EntryPoint {
 		Label 	nameLabel = new Label("Name:");
 		final TextBox	name = new TextBox();
 		name.setWidth("360px");
-		//Label 	authorLabel = new Label("Höfundarnafn:");
+		//Label 	authorLabel = new Label("HÃ¶fundarnafn:");
 		Label 	authorLabel = new Label("Authorname:");
 		final TextBox	author = new TextBox();
 		author.setWidth("360px");
@@ -231,14 +247,14 @@ public class Smasaga implements EntryPoint {
 		subvp.setSpacing( 10 );
 		subvp.add( anchor );
 		subvp.add( hp );
-		//subvp.add( new Label("Veldu það sem við á") );
+		//subvp.add( new Label("Veldu Ã¾aÃ° sem viÃ° Ã¡") );
 		subvp.add( new Label("Select what is relevant") );
 		subvp.add( grid );
 		
 		VerticalPanel inputvp = new VerticalPanel();
 		inputvp.setHorizontalAlignment( VerticalPanel.ALIGN_CENTER );
 		
-		//inputvp.add( new Label("Úrdráttur") );
+		//inputvp.add( new Label("ÃšrdrÃ¡ttur") );
 		inputvp.add( new Label("Summary") );
 		final TextArea urdrattur = new TextArea();
 		urdrattur.setSize("512px", "100px");
@@ -247,11 +263,11 @@ public class Smasaga implements EntryPoint {
 		HorizontalPanel	umsogn = new HorizontalPanel();
 		umsogn.setSpacing( 2 );
 		/*final RadioButton	rusl = new RadioButton("Grade", "Rusl");
-		final RadioButton	vont = new RadioButton("Grade", "Mjög lélegt");
-		final RadioButton	slaemt = new RadioButton("Grade", "Frekar lélegt");
+		final RadioButton	vont = new RadioButton("Grade", "MjÃ¶g lÃ©legt");
+		final RadioButton	slaemt = new RadioButton("Grade", "Frekar lÃ©legt");
 		final RadioButton	sleppur = new RadioButton("Grade", "Sleppur");
 		final RadioButton	saemi = new RadioButton("Grade", "Frekar gott");
-		final RadioButton	gott = new RadioButton("Grade", "Mjög gott");
+		final RadioButton	gott = new RadioButton("Grade", "MjÃ¶g gott");
 		final RadioButton	snilld = new RadioButton("Grade", "Snilld");*/
 		final RadioButton	rusl = new RadioButton("Grade", "Crap");
 		final RadioButton	vont = new RadioButton("Grade", "Very bad");
@@ -268,9 +284,23 @@ public class Smasaga implements EntryPoint {
 		umsogn.add(gott);
 		umsogn.add(snilld);
 		
+		name.setReadOnly( true );
+		author.setReadOnly( true );
+		lang.setReadOnly( true );
+		urdrattur.setReadOnly( true );
+		
+		rusl.setEnabled( false );
+		vont.setEnabled( false );
+		slaemt.setEnabled( false );
+		sleppur.setEnabled( false );
+		saemi.setEnabled( false );
+		gott.setEnabled( false );
+		snilld.setEnabled( false );
+		
 		final RadioButton[] buttons = {rusl, vont, slaemt, sleppur, saemi, gott, snilld};
 		
 		final TextArea umsogntext = new TextArea();
+		umsogntext.setReadOnly( true );
 		
 		HorizontalPanel	umh = new HorizontalPanel();
 		umh.setSpacing( 10 );
@@ -373,39 +403,39 @@ public class Smasaga implements EntryPoint {
 				lang.setText( result.getLanguage() );
 				urdrattur.setText( result.getSummary() );
 				
-				if( !result.getAuthor().equals(uid) ) {
-					name.setReadOnly( true );
-					author.setReadOnly( true );
-					lang.setReadOnly( true );
-					urdrattur.setReadOnly( true );
+				if( result.getAuthor().equals(uid) ) {
+					name.setReadOnly( false );
+					author.setReadOnly( false );
+					lang.setReadOnly( false );
+					urdrattur.setReadOnly( false );
 					
-					love.setEnabled( false );
-					comedy.setEnabled( false );
-					tragedy.setEnabled( false );
-					horror.setEnabled( false );
-					erotik.setEnabled( false );
-					science.setEnabled( false );
-					child.setEnabled( false );
-					adolescent.setEnabled( false );
-					criminal.setEnabled( false );
-					historical.setEnabled( false );
-					truestory.setEnabled( false );
-					supernatural.setEnabled( false );
-					adventure.setEnabled( false );
-					poem.setEnabled( false );
-					tobecontine.setEnabled( false );
+					love.setEnabled( true );
+					comedy.setEnabled( true );
+					tragedy.setEnabled( true );
+					horror.setEnabled( true );
+					erotik.setEnabled( true );
+					science.setEnabled( true );
+					child.setEnabled( true );
+					adolescent.setEnabled( true );
+					criminal.setEnabled( true );
+					historical.setEnabled( true );
+					truestory.setEnabled( true );
+					supernatural.setEnabled( true );
+					adventure.setEnabled( true );
+					poem.setEnabled( true );
+					tobecontine.setEnabled( true );
 				}
 				
-				if( uid.length() == 0 || !name.isReadOnly() ) {
-					rusl.setEnabled( false );
-					vont.setEnabled( false );
-					slaemt.setEnabled( false );
-					sleppur.setEnabled( false );
-					saemi.setEnabled( false );
-					gott.setEnabled( false );
-					snilld.setEnabled( false );
+				if( uid.length() != 0 && name.isReadOnly() ) {
+					rusl.setEnabled( true );
+					vont.setEnabled( true );
+					slaemt.setEnabled( true );
+					sleppur.setEnabled( true );
+					saemi.setEnabled( true );
+					gott.setEnabled( true );
+					snilld.setEnabled( true );
 					
-					umsogntext.setReadOnly( true );
+					umsogntext.setReadOnly( false );
 				}
 				
 				Einkunn[] einkunnir = result.getGrades();
