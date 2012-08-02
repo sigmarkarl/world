@@ -326,6 +326,31 @@ public class Smasaga implements EntryPoint {
 		
 		subvp.add( umcom );
 		
+		final AsyncCallback<String> async = new AsyncCallback<String>() {
+			@Override
+			public void onFailure(Throwable caught) {
+				
+			}
+
+			@Override
+			public void onSuccess(String result) {
+				
+			}
+		};
+		final Button save = new Button( "Save" );
+		save.setEnabled( false );
+		save.addClickHandler( new ClickHandler() {
+			@Override
+			public void onClick(ClickEvent event) {
+				smasagaService.updateShortstory( keystr, name.getText(), author.getText(), lang.getText(), urdrattur.getText(),
+						love.getValue(), comedy.getValue(), tragedy.getValue(), horror.getValue(), 
+						erotik.getValue(), science.getValue(), child.getValue(), adolescent.getValue(), 
+						criminal.getValue(), historical.getValue(), truestory.getValue(), supernatural.getValue(), 
+						adventure.getValue(), poem.getValue(), tobecontine.getValue(), async );
+			}
+		});
+		subvp.add( save );
+		
 		HorizontalPanel	discl = new HorizontalPanel();
 		//discl.setHeight("30px");
 		discl.setSpacing(10);
@@ -424,6 +449,8 @@ public class Smasaga implements EntryPoint {
 					adventure.setEnabled( true );
 					poem.setEnabled( true );
 					tobecontine.setEnabled( true );
+					
+					save.setEnabled( true );
 				}
 				
 				if( uid.length() != 0 && name.isReadOnly() ) {
@@ -513,18 +540,6 @@ public class Smasaga implements EntryPoint {
 			}
 		};
 		loginStatus();
-		
-		final AsyncCallback<String> async = new AsyncCallback<String>() {
-			@Override
-			public void onFailure(Throwable caught) {
-				
-			}
-
-			@Override
-			public void onSuccess(String result) {
-				
-			}
-		};
 		
 		KeyDownHandler keydownhandler = new KeyDownHandler() {
 			@Override

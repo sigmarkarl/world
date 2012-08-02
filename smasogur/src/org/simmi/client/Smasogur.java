@@ -16,8 +16,6 @@ import com.google.gwt.dom.client.Document;
 import com.google.gwt.dom.client.NodeList;
 import com.google.gwt.dom.client.Style;
 import com.google.gwt.dom.client.Style.Unit;
-import com.google.gwt.event.dom.client.ChangeEvent;
-import com.google.gwt.event.dom.client.ChangeHandler;
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
 import com.google.gwt.event.dom.client.DragEndEvent;
@@ -47,6 +45,10 @@ import com.google.gwt.user.client.ui.Button;
 import com.google.gwt.user.client.ui.FileUpload;
 import com.google.gwt.user.client.ui.FocusPanel;
 import com.google.gwt.user.client.ui.FormPanel;
+import com.google.gwt.user.client.ui.FormPanel.SubmitCompleteEvent;
+import com.google.gwt.user.client.ui.FormPanel.SubmitCompleteHandler;
+import com.google.gwt.user.client.ui.FormPanel.SubmitEvent;
+import com.google.gwt.user.client.ui.FormPanel.SubmitHandler;
 import com.google.gwt.user.client.ui.HTML;
 import com.google.gwt.user.client.ui.HorizontalPanel;
 import com.google.gwt.user.client.ui.Label;
@@ -195,9 +197,28 @@ public class Smasogur implements EntryPoint {
 		}
 	}-*/;
 	
+	public native void checkLogin() /*-{
+		$wnd.FB.getLoginStatus( function(response) {			
+			if (response.status === 'connected') {
+			    var uid = response.authResponse.userID;
+			    var accessToken = response.authResponse.accessToken;
+	
+				///...
+			} else if (response.status === 'not_authorized') {
+			    if( $wnd.console ) $wnd.console.log('not authorized');
+			} else {
+			    if( $wnd.console ) $wnd.console.log('not logged in');
+			    $wnd.FB.login();
+			}
+		});
+	}-*/;
+	
 	public native void loadHandler( JavaScriptObject table, JavaScriptObject ie ) /*-{
 		try {
-			var file = ie.files[0];
+			var file;
+			if( ie.files ) {
+				if( ie.files.length > 0 ) file = ie.files[0];
+			}
 			var s = this;
 			if( $wnd.console ) {
 				$wnd.console.log( "checking" );
@@ -224,6 +245,8 @@ public class Smasogur implements EntryPoint {
 						
 						s.@org.simmi.client.Smasogur::setStatus(Ljava/lang/String;)( "Loading file" );
 						reader.readAsBinaryString( file );
+					} else {
+						
 					}
 				} else if (response.status === 'not_authorized') {
 				    if( $wnd.console ) $wnd.console.log('not authorized');
@@ -445,6 +468,7 @@ public class Smasogur implements EntryPoint {
 			if( prop.equals("erm") ) {
 				//setUserId( e.getAttribute("content") );
 				fbuid = e.getAttribute("content");
+				if( fbuid != null ) uid = fbuid;
 				break;
 			}
 		}
@@ -662,13 +686,28 @@ public class Smasogur implements EntryPoint {
 	    	  subvp.add( sharehp );
 	    	  
 	    	  FormPanel fp = new FormPanel();
+	    	  fp.setAction( "/smasogur/FileUpload" );
+	    	  fp.setMethod( FormPanel.METHOD_POST );
+	    	  fp.setEncoding( FormPanel.ENCODING_MULTIPART );
+	    	  
+	    	  fp.addSubmitHandler( new SubmitHandler() {
+				@Override
+				public void onSubmit(SubmitEvent event) {}
+	    	  });
+	    	  fp.addSubmitCompleteHandler( new SubmitCompleteHandler() {
+				@Override
+				public void onSubmitComplete(SubmitCompleteEvent event) {
+					String subm = event.getResults();
+				}
+	    	  });
+	    	  
 	  		  final FileUpload	file = new FileUpload();
-	  		  file.addChangeHandler( new ChangeHandler() {
+	  		  /*file.addChangeHandler( new ChangeHandler() {
 	  			@Override
 	  			public void onChange(ChangeEvent event) {
 	  				loadHandler( table.getElement(), file.getElement() );
 	  			}
-	  		  });	  		
+	  		  });*/	  		
 	    	  Button uploadButton = new Button("Upload");
 	    	  uploadButton.addClickHandler( new ClickHandler() {
 				@Override
