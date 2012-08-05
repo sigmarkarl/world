@@ -49,8 +49,9 @@ import com.google.gwt.event.dom.client.MouseUpEvent;
 import com.google.gwt.event.dom.client.MouseUpHandler;
 import com.google.gwt.event.logical.shared.ResizeEvent;
 import com.google.gwt.event.logical.shared.ResizeHandler;
+import com.google.gwt.typedarrays.client.Int8ArrayNative;
 import com.google.gwt.typedarrays.shared.ArrayBuffer;
-import com.google.gwt.typedarrays.shared.Uint8Array;
+import com.google.gwt.typedarrays.shared.Int8Array;
 import com.google.gwt.user.client.Command;
 import com.google.gwt.user.client.Element;
 import com.google.gwt.user.client.Timer;
@@ -87,7 +88,7 @@ public class Webfasta implements EntryPoint {
     Context2d			tcontext;
     Context2d 			ocontext;
     
-    String				content = null;
+    Int8Array				content = null;
 	
 	/*public void stuff() {
 		canvas = Canvas.createIfSupported();
@@ -316,6 +317,9 @@ public class Webfasta implements EntryPoint {
 	
 	static int sortcol = 0;
 	class SequenceOld implements Comparable<SequenceOld> {
+		String name;
+		int start;
+		
 		int namestart;
 		int nameend;
 		int seqstart;
@@ -326,18 +330,31 @@ public class Webfasta implements EntryPoint {
 			this.nameend = nend;
 			this.seqstart = sstart;
 			this.seqstop = sstop;
+			
+			this.start = 0;
+			
+			byte[] bb = new byte[ nameend-namestart ];
+			for( int i = namestart; i < nameend; i++ ) {
+				bb[i-namestart] = content.get(i);
+			}
+			name = new String( bb );
 		}
 		
-		public String toString() {
-			return Webfasta.this.content.substring( namestart, nameend );
+		public int getStart() {
+			return start;
 		}
+		
+		/*public String toString() {
+			//content.toString()
+			return Webfasta.this.content.subarray( namestart, nameend );
+		}*/
 		
 		public String getName() {
-			return toString();
+			return name;
 		}
 		
-		public String getSubstring( int start, int end ) {
-			return Webfasta.this.content.substring( start+seqstart, end+seqstart );
+		public Int8Array getSubarray( int start, int end ) {
+			return Webfasta.this.content.subarray( start+seqstart, end+seqstart );
 		}
 		
 		/*public Sequence( String name, String seq ) {
@@ -364,7 +381,11 @@ public class Webfasta implements EntryPoint {
 		}
 		
 		public char charAt( int i ) {
-			return content.charAt( seqstart+i ); //char2String.get( content.charAt( seqstart+i ) );
+			return (char)content.get( seqstart+i ); //char2String.get( content.charAt( seqstart+i ) );
+		}
+		
+		public void setCharAt( int i, char c ) {
+			content.set( seqstart+i, c );
 		}
 		
 		public int length() {
@@ -374,7 +395,7 @@ public class Webfasta implements EntryPoint {
 
 		@Override
 		public int compareTo(SequenceOld o) {
-			return sortcol == 0 ? toString().compareTo(o.toString()) : length()-o.length();
+			return sortcol == 0 ? getName().compareTo(o.getName()) : length()-o.length();
 		}
 		
 		/*String				name;
@@ -387,7 +408,7 @@ public class Webfasta implements EntryPoint {
 		return jso.indexOf( val, start );
 	}-*/;
 	
-	public void fileLoad( String cont, int max ) {
+	public void fileLoad( Int8Array cont, int max ) {
 		prevx = Integer.MAX_VALUE;
 		prevy = Integer.MAX_VALUE;
 		
@@ -426,33 +447,43 @@ public class Webfasta implements EntryPoint {
         scrollEv( de );*/
 	}
 	
-	List<SequenceOld> 			val = new ArrayList<SequenceOld>();
-	Map<String,SequenceOld>	seqmap = new HashMap<String,SequenceOld>();
-	int						max = 0;
-	public void fileLoaded( String cont, int append ) {	
-		this.content = cont;//.replace("\n", "");
-		seqmap.clear();
-		max = 0;
-				
-		if( append == 0 ) {
-		//	data = DataTable.create();
-	    //	data.addColumn(ColumnType.STRING, "Name");
-	    //	data.addColumn(ColumnType.NUMBER, "Length");
+	public int indexOf( char c ) {
+		return indexOf( c, 0 );
+	}
+	
+	public int indexOf( char c, int k ) {
+		for( int i = k; i < content.length(); i++ ) {
+			if( content.get(i) == c ) return i;
 		}
-		int start = 0;//data.getNumberOfRows();
-		//data.addRows( split.length-1 );
-		int count = 0;
-		val = new ArrayList<SequenceOld>();// split.length-1 );
+		return -1;
+	}
+	
+	List<SequenceOld> 			val = new ArrayList<SequenceOld>();
+	Map<String,SequenceOld>		seqmap = new HashMap<String,SequenceOld>();
+	int							max = 0;
+	public void fileLoaded( Int8Array cont ) {
+		int start = 0;
+		if( append ) {
+			start = content.length();
+			Int8Array i8a = Int8ArrayNative.create( content.length()+cont.length() );
+			i8a.set( content );
+			i8a.set( cont, content.length() );
+			this.content = i8a;
+		} else {
+			content = cont;
+			seqmap.clear();
+			max = 0;
+			val = new ArrayList<SequenceOld>();
+		}
 		
-		//content.indexOf(ch)
-		int r = content.indexOf(">"); //indexOf( content, '>', 0);
+		int r = indexOf('>', start); //indexOf( content, '>', 0);
 		//String seqname = "mu";//content.substring(r+1, i);
 		//int k = content.indexOf('>', i);
 		while( r != -1 ) {
-			int i = content.indexOf("\n", r+1); //indexOf( content, '\n', r+1);
+			int i = indexOf('\n', r+1); //indexOf( content, '\n', r+1);
 			//String seqname = content.substring(r+1, i);
 			if( i != -1 ) {
-				int k = content.indexOf(">", i+1); //indexOf( content, '>', i+1);
+				int k = indexOf('>', i+1); //indexOf( content, '>', i+1);
 				//for( int r = 0; r < split.length-1; r++ ) {
 					//String s = split[r+1];
 				
@@ -484,26 +515,12 @@ public class Webfasta implements EntryPoint {
 				//seqmap.put( seqname, seq );
 				val.add( seq );
 				if( seqlen > max ) max = seqlen;
-				//data.addRow();
-				//data.setValue( count+start, 0, seqname );
-				//data.setValue( count+start, 1, seqlen );
-				count++;
 				
 				r = k;
 			} else r = -1;
 		}
 		
-		//table.setWidth("200px");
-		//table.setHeight("200px");
-		//table.draw(data, createTableOptions());
-		
-		console( "maaax " + max );
 		draw( xstart, ystart );
-		
-		/*Element e = table.getElement();
-        com.google.gwt.dom.client.Element de = e.getFirstChildElement();
-        de = de.getFirstChildElement();
-        scrollEv( de );*/
 	}
 	
 	public Node nodeRecursive( Node n ) {
@@ -678,7 +695,7 @@ public class Webfasta implements EntryPoint {
 			int i = y/baseheight;
 			int yy = i*baseheight;
 			SequenceOld seq = val.get(i);
-			tcontext.fillText( seq.toString(), 3.0, yy+2.0*baseheight-3.0-ystartLocal );
+			tcontext.fillText( seq.getName(), 3.0, yy+2.0*baseheight-3.0-ystartLocal );
 		}
 		
 		tcontext.setFillStyle("#ffffff");
@@ -895,19 +912,25 @@ public class Webfasta implements EntryPoint {
 		}
 	}-*/;
 	
-	public native void subRead( ArrayBuffer newview, int k ) /*-{
+	public native void subReadOld( ArrayBuffer newview, int k ) /*-{
+		$wnd.console.log( "subRead" );
+		
 		var s = this;
 		var view = new Uint8Array( newview, 0, k );
+		
+		$wnd.console.log( "blobprob" );
 		var blob = new Blob( [view], { "type" : "text/plain" } );
+		$wnd.console.log( "subRead2" );
+		
 		reader = new FileReader();
 		reader.onload = function(e) {
 			var res = e.target.result;
-			s.@org.simmi.client.Webfasta::fileLoaded(Ljava/lang/String;I)( res, 0 );
+			//s.@org.simmi.client.Webfasta::fileLoaded(Ljava/lang/String;I)( res, 0 );
 		}
 		reader.readAsText( blob );
 	}-*/;
 	
-	public void shorten( Uint8Array view ) {
+	public void shorten( Int8Array view ) {
 		//res.
 		//Uint8Array view = new Uint8ArrayImpl(res, 0, res.byteLength());
 		
@@ -943,16 +966,16 @@ public class Webfasta implements EntryPoint {
 		
 		if( r == k ) r = -1;
 		
-		int count = 0;
-		int max = 0;
+		//int count = 0;
+		//int max = 0;
 		//String seqname = "mu";//content.substring(r+1, i);
 		//int k = content.indexOf('>', i);
 		
 		r = -1;
 		//whileStuff();
 		
-		subRead( view.buffer(), k );
-		//s.@org.simmi.client.Webfasta::fileLoad(Ljava/lang/String;I)( view, max );
+		//subRead( view.buffer(), k );
+		fileLoaded( Int8ArrayNative.create( view.buffer(), 0, k) );
 	}
 	
 	public native void fileRead( JavaScriptObject file ) /*-{
@@ -960,8 +983,8 @@ public class Webfasta implements EntryPoint {
 		var reader = new FileReader();
 		reader.onload = function(e) {
 			var res = e.target.result;
-			var view = new Uint8Array(res,0,res.byteLength);
-			s.@org.simmi.client.Webfasta::shorten(Lcom/google/gwt/typedarrays/shared/Uint8Array;)( view );
+			var view = new Int8Array(res,0,res.byteLength);
+			s.@org.simmi.client.Webfasta::shorten(Lcom/google/gwt/typedarrays/shared/Int8Array;)( view );
 		};
 		reader.readAsArrayBuffer( file );
 	}-*/;
@@ -1073,6 +1096,26 @@ public class Webfasta implements EntryPoint {
 		int h;
 	};
 	
+	public char charAt( int x, int y ) {
+		if( y < val.size() ) {
+			SequenceOld seq = val.get(y);
+			if( x >= seq.getStart() && x < seq.getStart()+seq.length() ) {
+				return seq.charAt( x-seq.getStart() );
+			}
+		}
+		return ' ';
+	}
+	
+	public void setCharAt( int x, int y, char c ) {
+		if( y < val.size() ) {
+			SequenceOld seq = val.get(y);
+			if( x >= seq.getStart() && x < seq.getStart()+seq.length() ) {
+				seq.setCharAt( x-seq.getStart(), c );
+			}
+		}
+	}
+	
+	boolean					append = false;
 	List<Selection>			selectionList = new ArrayList<Selection>();
 	Canvas					buffer;
 	boolean 				basecolors = false;
@@ -1126,7 +1169,9 @@ public class Webfasta implements EntryPoint {
 			@Override
 			public void onChange(ChangeEvent event) {
 				JavaScriptObject thefile = handleFiles( file.getElement() );
-				if( thefile != null ) fileRead( thefile );
+				if( thefile != null ) {
+					fileRead( thefile );
+				}
 			}
 		});
 		fp.add( file );
@@ -1137,6 +1182,7 @@ public class Webfasta implements EntryPoint {
 		popup.addItem("Open", new Command() {
 			@Override
 			public void execute() {
+				append = false;
 				click( file.getElement() );
 				
 				/*try {
@@ -1218,7 +1264,9 @@ public class Webfasta implements EntryPoint {
 		popup.addItem( "Append", new Command() {
 			@Override
 			public void execute() {
-				stuff( 1 );
+				append = true;
+				click( file.getElement() );
+				//stuff( 1 );
 			}
 		});
 		popup.addItem( "Export", new Command() {
@@ -1229,10 +1277,16 @@ public class Webfasta implements EntryPoint {
 				StringBuilder out = new StringBuilder();
 				if( selectionList.isEmpty() ) {
 					for( SequenceOld seq : val ) {
-						out.append( seq.getName()+"\n" );
+						String seqname = seq.getName();
+						out.append( ">"+seqname+"\n" );
 						for( int i = 0; i < seq.length(); i+=70 ) {
-							out.append( seq.getSubstring(i, Math.min(seq.length(), i+70) )+"\n" );
+							for( int k = i; k < Math.min( seq.length(), i+70 ); k++ ) {
+								out.append( seq.charAt(k) );
+							}
+							out.append( '\n' );
+							//out.append( seq.getSubarray(i, Math.min(seq.length(), i+70) )+"\n" );
 						}
+						//console( "doing seq: "+seqname+"  "+out.length() );
 					}
 				}
 				/*for( int i = 0; i < data.getNumberOfRows(); i++ ) {
@@ -1245,7 +1299,8 @@ public class Webfasta implements EntryPoint {
 						out += content.substring( k, Math.min(seq.length(), k+60) ) + "\n";
 					}
 				}*/
-				String bstr = encode( out.toString() );
+				String encstr = out.toString();
+				String bstr = encode( encstr );
 				String dataurl = "data:text/plain;fileName=export.fasta;base64,"+bstr;
 				//a.setHref(  );
 				//db.add( a );
@@ -1254,6 +1309,29 @@ public class Webfasta implements EntryPoint {
 			}
 		});
 		MenuBar	epopup = new MenuBar(true);
+		epopup.addItem("Clear sites with gaps", new Command() {
+			@Override
+			public void execute() {
+				for( int x = 0; x < max; x++ ) {
+					int y;
+					for( y = 0; y < val.size(); y++ ) {
+						char c = charAt( x, y );
+						if( c == '-' ) {
+							break;
+						}
+					}
+					
+					if( y < val.size() ) {
+						for( y = 0; y < val.size(); y++ ) {
+							setCharAt( x, y, '-' );
+						}
+					}
+				}
+				
+				draw( xstart, ystart );
+			}
+		});
+		epopup.addSeparator();
 		epopup.addItem("Select All", new Command() {
 			@Override
 			public void execute() {
@@ -1573,7 +1651,13 @@ public class Webfasta implements EntryPoint {
 				//File f = new File();
 				if( !transferData( dt ) ) {
 					String cont = dt.getData("Text");
-					fileLoaded(cont, 0);
+					byte[] bb = cont.getBytes();
+					// FileReader method
+					Int8Array i8a = Int8ArrayNative.create( bb.length );
+					//for( int i = 0; i < i8a.length(); i++ ) {
+					i8a.set( bb );
+					//}
+					shorten(i8a);
 				}
 			}
 		});

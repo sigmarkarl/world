@@ -581,8 +581,8 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 		if( init ) {
 			context.getCanvas().setWidth( w );
 			context.getCanvas().setHeight( h-offset );
-			//cv.setWidth( w+"px" );
-			//cv.setHeight( h+"px" );
+			cv.setWidth( w+"px" );
+			cv.setHeight( (h-offset)+"px" );
 			cv.setCoordinateSpaceWidth( context.getCanvas().getWidth() );
 			cv.setCoordinateSpaceHeight( context.getCanvas().getHeight() );
 		}
@@ -603,7 +603,7 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 	}
 	
 	public native void console( String s ) /*-{
-		$wnd.console.log( s );
+		if( $wnd.console ) $wnd.console.log( s );
 	}-*/;
 	
 	public void drawStartMessage( Context2d context ) {
@@ -628,11 +628,11 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 		TextMetrics tm = context.measureText( msg );
 		context.fillText(msg, (context.getCanvas().getWidth()-tm.getWidth())/2.0, context.getCanvas().getHeight()/2.0);
 		
-		String jscore = "ハイスコアをビートと無料でお好みのスーパーパワーを得る";
+		String jscore = "ãƒ�ã‚¤ã‚¹ã‚³ã‚¢ã‚’ãƒ“ãƒ¼ãƒˆã�¨ç„¡æ–™ã�§ã�Šå¥½ã�¿ã�®ã‚¹ãƒ¼ãƒ‘ãƒ¼ãƒ‘ãƒ¯ãƒ¼ã‚’å¾—ã‚‹";
 		tm = context.measureText( jscore );
 		context.fillText(jscore, (context.getCanvas().getWidth()-tm.getWidth())/2.0, context.getCanvas().getHeight()/2.0+90);
 		
-		String japs = "新しいワームを追加するには、Enterキーを押します（<を - と - >を制御する）";
+		String japs = "æ–°ã�—ã�„ãƒ¯ãƒ¼ãƒ ã‚’è¿½åŠ ã�™ã‚‹ã�«ã�¯ã€�Enterã‚­ãƒ¼ã‚’æŠ¼ã�—ã�¾ã�™ï¼ˆ<ã‚’ - ã�¨ - >ã‚’åˆ¶å¾¡ã�™ã‚‹ï¼‰";
 		tm = context.measureText( japs );
 		context.fillText(japs, (context.getCanvas().getWidth()-tm.getWidth())/2.0, context.getCanvas().getHeight()/2.0+60);
 		
@@ -644,7 +644,7 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 		tm = context.measureText( invt );
 		context.fillText(invt, (context.getCanvas().getWidth()-tm.getWidth())/2.0, context.getCanvas().getHeight()/2.0-30);
 		
-		String	nipp = "ハイスコア: "+highscoreholder+" と "+highscore+" ポイント ("+highwidth+"x"+highheight+")";
+		String	nipp = "ãƒ�ã‚¤ã‚¹ã‚³ã‚¢: "+highscoreholder+" ã�¨ "+highscore+" ãƒ�ã‚¤ãƒ³ãƒˆ ("+highwidth+"x"+highheight+")";
 		tm = context.measureText( nipp );
 		context.fillText(nipp, (context.getCanvas().getWidth()-tm.getWidth())/2.0, context.getCanvas().getHeight()/2.0-120);
 		
@@ -681,7 +681,7 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 		var ths = this;
 		
 		var requestCallback = function(response) {
-			$wnd.console.log( response );
+			if( $wnd.console ) $wnd.console.log( response );
 	    	if( response && response.request ) {
 	    		ths.@org.simmi.client.Webworm::makeHighScore(ILorg/simmi/client/Webworm$Worm;)( score, worm );
 	    	} else {
@@ -702,11 +702,8 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 	
 	public native void fbInit( String login ) /*-{
 		var ths = this;
-		$wnd.console.log( "fbInit" );
 	    	
-		$wnd.fbAsyncInit = function() {
-			$wnd.console.log( "inside async init" );
-			
+		$wnd.fbAsyncInit = function() {			
 	    	$wnd.FB.init({appId: '215097581865564', status: true, cookie: true, xfbml: true, oauth : true});
 	    	
 	    	try {
@@ -743,6 +740,20 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 				$wnd.console.log( e );
 			}
   		};
+	}-*/;
+	
+	public native void ieSpec() /*-{
+		var s = this;
+		function whatKeyDown(evt) {
+			var keycode = evt.keyCode;
+			s.@org.simmi.client.Webworm::keyDown(I)( keycode );
+		}
+		function whatKeyUp(evt) {
+			var keycode = evt.keyCode;
+			s.@org.simmi.client.Webworm::keyUp(I)( keycode );
+		}
+		$wnd.addEventListener('keydown', whatKeyDown, true);
+		$wnd.addEventListener('keyup', whatKeyUp, true);
 	}-*/;
 	
 	/*if (response.session) {
@@ -1179,7 +1190,7 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 		}
 		donateEl.getStyle().setDisplay( Display.INLINE );
 		
-		final RootPanel		rp = RootPanel.get();
+		final RootPanel		rp = RootPanel.get("content");
 		Style				st = rp.getElement().getStyle();
 		
 		st.setMargin(0.0, Unit.PX);
@@ -1209,7 +1220,7 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 		//fp.add( cv );
 		
 		worms = new HashSet<Worm>();
-		w = Window.getClientWidth();
+		w = Window.getClientWidth()-160;
 		h = Window.getClientHeight();		
 		rp.setWidth( w+"px" );
 		rp.setHeight( h+"px" );
@@ -1226,7 +1237,7 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 		Window.addResizeHandler( new ResizeHandler() {
 			@Override
 			public void onResize(ResizeEvent event) {
-				w = event.getWidth();
+				w = event.getWidth()-160;
 				h = event.getHeight();
 				rp.setWidth( w+"px" );
 				rp.setHeight( h+"px" );
@@ -1235,12 +1246,13 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 				//rp.setWidth( (w-100)+"px" );
 				//rp.setHeight( (h-100)+"px" );
 				updateCoordinates( cv, true );
-				if( popup != null ) {
+				
+				/*if( popup != null ) {
 					if( h >= 720 && w >= 720 ) {
 						popup.setPopupPosition(0, (h-600)/2);
 						popup.show();
 					} else popup.hide();
-				}
+				}*/
 				
 				if( info.isVisible() && w > info.getOffsetWidth() && h > info.getOffsetHeight() ) {
 					info.setPopupPosition( (w-info.getOffsetWidth())/2, (h-info.getOffsetHeight())/2 );
@@ -1285,11 +1297,18 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 			}
 		};
 		
+		String useragent = Window.Navigator.getUserAgent();
 		cv.addMouseDownHandler( this );
 		cv.addMouseUpHandler( this );
 		cv.addMouseMoveHandler( this );
-		cv.addKeyDownHandler( this );
-		cv.addKeyUpHandler( this );
+		
+		if( useragent.contains("MSIE") ) {
+			ieSpec();
+		} else {
+			cv.addKeyDownHandler( this );
+			cv.addKeyUpHandler( this );
+		}
+		
 		cv.setFocus( true );
 		
 		//Style style;
@@ -1314,7 +1333,7 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 			public void onClick(ClickEvent event) {
 				if( uid == null || uid.length() == 0 ) {
 					DialogBox	dbox = new DialogBox( true, true );
-					dbox.setText("Superpowers"); //スーパーパワー");
+					dbox.setText("Superpowers"); //ã‚¹ãƒ¼ãƒ‘ãƒ¼ãƒ‘ãƒ¯ãƒ¼");
 					dbox.addCloseHandler( new CloseHandler<PopupPanel>() {
 						@Override
 						public void onClose(CloseEvent<PopupPanel> event) {
@@ -1327,7 +1346,7 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 					dbox.center();
 				} else {
 					DialogBox	dbox = new DialogBox( true, true );
-					dbox.setText("Superpowers"); //スーパーパワー");
+					dbox.setText("Superpowers"); //ã‚¹ãƒ¼ãƒ‘ãƒ¼ãƒ‘ãƒ¯ãƒ¼");
 					
 					/*<form target="paypal" action="https://www.paypal.com/cgi-bin/webscr" method="post">
 					<input type="hidden" name="cmd" value="_s-xclick">
@@ -1528,20 +1547,24 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 		hscore.setVerticalAlignment( HorizontalPanel.ALIGN_MIDDLE );
 		hscore.setHorizontalAlignment( HorizontalPanel.ALIGN_CENTER );
 		hscore.setWidth("160px");
+		//hscore.setHeight("50px");
 		
 		Label timelabel = new Label("Time:");
 		timelabel.getElement().getStyle().setColor("#eeeeee");
+		//timelabel.setHeight("50px");
 		
 		HorizontalPanel	coverpanel = new HorizontalPanel();
 		coverpanel.setVerticalAlignment( HorizontalPanel.ALIGN_MIDDLE );
 		coverpanel.setHorizontalAlignment( HorizontalPanel.ALIGN_CENTER );
 		coverpanel.setSpacing( 5 );
 		coverpanel.setWidth("100%");
+		//coverpanel.setHeight("50px");
 		
 		HorizontalPanel timepanel = new HorizontalPanel();
 		timepanel.setVerticalAlignment( HorizontalPanel.ALIGN_MIDDLE );
 		timepanel.setHorizontalAlignment( HorizontalPanel.ALIGN_CENTER );
 		timepanel.setWidth("150px");
+		//timepanel.setHeight("50px");
 		
 		timepanel.add( timelabel );
 		timepanel.add( timebox );
@@ -1572,7 +1595,7 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 		hp.add( form );
 		hp.add( splus );
 		
-		final Element ads = Document.get().getElementById("ads");
+		/*final Element ads = Document.get().getElementById("ads");
 		ads.removeFromParent();
 		if( fbuid == null ) {			
 			if( ads != null ) {
@@ -1611,9 +1634,9 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 						adscript.setAttribute("async", "true");
 						spopup.getElement().appendChild( adscript );
 					}
-				});*/
+				});*
 			}
-		}
+		}*/
 		fbInit( fbuid );
 		//fetchHighScores();
 		
@@ -1643,14 +1666,14 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 		coverpanel.add( hscore );
 		coverpanel.add( timepanel );
 		
-		if( fbuid != null ) {
+		/*if( fbuid != null ) {
 			SimplePanel adsPanel = new SimplePanel();
 			adsPanel.getElement().appendChild( ads );
 			adsPanel.setPixelSize( 728, 90 );
 			adsPanel.setSize("728px", "90px");
 			vp.add( adsPanel );
 			offset = 120;
-		}
+		}*/
 		vp.add( coverpanel );
 		vp.add( cv );
 		//vp.add( hp );
@@ -1811,16 +1834,11 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 		}
 	}
 	
-	Set<Integer>	keyset = new HashSet<Integer>();
-
-	@Override
-	public void onKeyUp(KeyUpEvent event) {
-		keyset.remove( event.getNativeKeyCode() );
+	public void keyUp( int keyCode ) {
+		keyset.remove( keyCode );
 	}
-
-	@Override
-	public void onKeyDown(KeyDownEvent event) {
-		int keycode = event.getNativeKeyCode();
+	
+	public void keyDown( int keycode ) {
 		if( keycode == ' ' ) {
 			pause = !pause;
 		} else if( keycode == KeyCodes.KEY_ESCAPE ) {
@@ -1835,6 +1853,19 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 		} else {
 			keyset.add( keycode );
 		}
+	}
+	
+	Set<Integer>	keyset = new HashSet<Integer>();
+
+	@Override
+	public void onKeyUp(KeyUpEvent event) {
+		keyUp( event.getNativeKeyCode() );
+	}
+
+	@Override
+	public void onKeyDown(KeyDownEvent event) {
+		int keycode = event.getNativeKeyCode();
+		keyDown( keycode );
 	}
 	
 	boolean		mousedown = false;
