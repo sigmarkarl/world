@@ -1653,6 +1653,19 @@ public class JavaFasta extends JApplet {
 		};
 	}
 	
+	public void removeAllGaps( List<Sequence> seqlist ) {
+		for( Sequence seq : seqlist ) {
+			int i = 0;
+			while( i < seq.sb.length() ) {
+				if( seq.sb.charAt(i) == '-' ) seq.sb.deleteCharAt(i);
+				else i++;
+			}
+		}
+		
+		checkMaxMin();
+		updateView();
+	}
+	
 	public void removeGaps( List<Sequence> seqlist ) {
 		int min = Integer.MAX_VALUE;
 		int max = Integer.MIN_VALUE;
@@ -2586,6 +2599,21 @@ public class JavaFasta extends JApplet {
 					seqlist.add( seq );
 				}
 				removeGaps( seqlist );
+				
+				c.repaint();
+			}
+		});
+		popup.add( new AbstractAction("Remove all gaps") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				List<Sequence>	seqlist = new ArrayList<Sequence>();
+				int[] rr = table.getSelectedRows();
+				for( int r : rr ) {
+					int k = table.convertRowIndexToModel( r );
+					Sequence seq = lseq.get( k );
+					seqlist.add( seq );
+				}
+				removeAllGaps( seqlist );
 				
 				c.repaint();
 			}
