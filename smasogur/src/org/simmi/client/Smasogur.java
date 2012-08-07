@@ -1,5 +1,7 @@
 package org.simmi.client;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -39,6 +41,7 @@ import com.google.gwt.event.dom.client.KeyDownEvent;
 import com.google.gwt.event.dom.client.KeyDownHandler;
 import com.google.gwt.event.logical.shared.ResizeEvent;
 import com.google.gwt.event.logical.shared.ResizeHandler;
+import com.google.gwt.http.client.URL;
 import com.google.gwt.user.client.Element;
 import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.rpc.AsyncCallback;
@@ -407,8 +410,9 @@ public class Smasogur implements EntryPoint {
 	}-*/;
 	
 	public void fileLoad( String fileName, String binaryString, String uid ) {
-		final Saga smasaga = new Saga( fileName, "Unkown", uid, "Unknown", "English", "");
+		final String fnameDecoded = URL.decode( fileName );
 		
+		final Saga smasaga = new Saga( fnameDecoded, "Unkown", uid, "Unknown", "English", "");
 		setStatus( "Saving file" );
 		smasagaService.saveShortStory( smasaga, fileName, binaryString, new AsyncCallback<String>() {
 			@Override
@@ -714,7 +718,7 @@ public class Smasogur implements EntryPoint {
 				public void onSubmitComplete(SubmitCompleteEvent event) {
 					String subm = event.getResults();
 					if( subm.contains("tokst") ) {
-						fileLoad( file.getName(), null, uid);
+						fileLoad( file.getName(), null, uid );
 					}
 				}
 	    	  });
@@ -729,7 +733,14 @@ public class Smasogur implements EntryPoint {
 	  				int k = filename.lastIndexOf('\\');
 	  				i = Math.max(i, k);
 	  				String fname = filename.substring(i+1);
+	  				fname = URL.encode( fname );
 	  				file.setName( fname );
+	  				/*try {
+						fname = URLEncoder.encode( fname, "UTF-8" );
+						file.setName( fname );
+					} catch (UnsupportedEncodingException e) {
+						e.printStackTrace();
+					}*/
 	  				//file.get
 	  				//console("erm");
 	  				//loadHandler( table.getElement(), file.getElement() );
@@ -737,6 +748,7 @@ public class Smasogur implements EntryPoint {
 	  			}
 	  		  });
 	    	  SubmitButton uploadButton = new SubmitButton("Upload");
+	    	  
 	    	  /*uploadButton.addClickHandler( new ClickHandler() {
 				@Override
 				public void onClick(ClickEvent event) {

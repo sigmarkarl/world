@@ -16,7 +16,7 @@ public class FileUploadServiceImpl extends HttpServlet {
 		ServletFileUpload upload = new ServletFileUpload();
         try {
             FileItemIterator iter = upload.getItemIterator(req);
-
+            
             while (iter.hasNext()) {
                 FileItemStream item = iter.next();
 
@@ -31,7 +31,7 @@ public class FileUploadServiceImpl extends HttpServlet {
                     out.write(buffer, 0, len);
                 }
 
-                SmasagaServiceImpl.dropToBox(name, out.toByteArray());
+                SmasagaServiceImpl.dropToBox(name, out.toByteArray(), this);
                 /*int maxFileSize = 10*(1024*1024); //10 megs max 
                 if (out.size() > maxFileSize) { 
                     throw new RuntimeException("File is > than " + maxFileSize);

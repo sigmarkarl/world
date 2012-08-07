@@ -3,8 +3,11 @@ package org.simmi.server;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.net.URLDecoder;
+import java.net.URLEncoder;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
@@ -17,6 +20,7 @@ import java.util.TreeMap;
 import javax.crypto.Mac;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
+import javax.servlet.http.HttpServlet;
 
 import oauth.signpost.OAuth;
 
@@ -118,24 +122,34 @@ public class SmasagaServiceImpl extends RemoteServiceServlet implements SmasagaS
 		return ret;
 	}
 	
-	public static boolean dropboxSave( String target, String tokenkey, String tokensecret, String fname, byte[] contents ) throws IOException {
+	public static boolean dropboxSave( String target, String tokenkey, String tokensecret, String fname, byte[] contents, HttpServlet servlet ) throws IOException {
 		Map<String,String>	parameters = new TreeMap<String,String>();
-		parameters.put("file", fname.replace(" ", "%20") );
+		//URL u;
+		//fname = OAuth.percentEncode(fname);//URLEncoder.encode(fname, "UTF-8");
+		//String origname = fname;
+		
+		servlet.log( fname );
+		String fnameDecoded = URLDecoder.decode( fname, "UTF-8" );
+		//fname.
+		//fname = fname.replace(" ", "%20");
+		//servlet.log( fname );
+		parameters.put("file", fname );
 		parameters.put("oauth_consumer_key", "jemmmn3c5ot8rdu");
 		parameters.put("oauth_token", tokenkey );
 		parameters.put("oauth_timestamp", Long.toString(System.currentTimeMillis()/1000) );
 		parameters.put("oauth_signature_method", "HMAC-SHA1");
 		parameters.put("oauth_nonce", Long.toString(Math.abs(new Random().nextLong())) );
-		parameters.put("oauth_version", "1.0" ); 
-			
+		parameters.put("oauth_version", "1.0" );
+		
 		String paramstr = null;
 		for( String par : parameters.keySet() ) {
 			if( paramstr == null ) paramstr = par + "=" + parameters.get(par);
 			else paramstr += "&" + par + "=" + parameters.get(par);
 		}
 		
-		String keyString = OAuth.percentEncode("9or8lsn165d44qv") + '&' + OAuth.percentEncode(tokensecret);
-        byte[] keyBytes = keyString.getBytes(OAuth.ENCODING);
+		//String keyString = OAuth.percentEncode("9or8lsn165d44qv") + '&' + OAuth.percentEncode(tokensecret);
+		String keyString = URLEncoder.encode("9or8lsn165d44qv", "UTF-8").replace("+", "%20") + '&' + URLEncoder.encode(tokensecret, "UTF-8").replace("+", "%20");
+        byte[] keyBytes = keyString.getBytes( "UTF-8" );
 
         String MAC_NAME = "HmacSHA1";
         //Base64 base64 = new Base64();
@@ -150,12 +164,14 @@ public class SmasagaServiceImpl extends RemoteServiceServlet implements SmasagaS
 			e.printStackTrace();
 		}
 
-		String str = OAuth.percentEncode(target) + "&" + OAuth.percentEncode(paramstr);
+		//String str = OAuth.percentEncode(target) + "&" + OAuth.percentEncode(paramstr);
+		String str = URLEncoder.encode(target, "UTF-8").replace("+", "%20") + "&" + URLEncoder.encode(paramstr, "UTF-8").replace("+", "%20");
         //return "GET&" + str;
         String sbs = "POST&" + str; //generate( baseurl, paramstr );
-        byte[] text = sbs.getBytes(OAuth.ENCODING);
+        byte[] text = sbs.getBytes( "UTF-8" );
         
         System.err.println(sbs);
+        servlet.log( "signature string: "+sbs );
 
         byte[] b = mac.doFinal(text);
         //byte[] nb = base64.encode(b);
@@ -207,13 +223,14 @@ public class SmasagaServiceImpl extends RemoteServiceServlet implements SmasagaS
 		int resp = httpConnection.getResponseCode();
 		System.out.println( s );
 		System.out.println( resp );
+		servlet.log( "response: "+resp+"  "+s );
 		
 		httpConnection.disconnect();
 		
 		return resp >= 200 && resp < 300;
 	}
 	
-	public static boolean dropToBox( String fname, byte[] contents ) {
+	public static boolean dropToBox( String fname, byte[] contents, HttpServlet servlet ) {
     	try {            
 			String urlstr = "https://api.dropbox.com/0/token?email=sigmarkarl@gmail.com&password=skc.311";
 			String oauth = "&oauth_consumer_key=jemmmn3c5ot8rdu";
@@ -242,7 +259,7 @@ public class SmasagaServiceImpl extends RemoteServiceServlet implements SmasagaS
             String baseurl = "api-content.getdropbox.com";
 			//String baseurl = "localhost:8899";
             String target = "https://"+baseurl+"/0/files/dropbox/Public";
-            return dropboxSave( target, tokenkey, tokensecret, fname, contents );
+            return dropboxSave( target, tokenkey, tokensecret, fname, contents, servlet );
         } catch (Exception e) {
             e.printStackTrace();
             assert false : "Total failure trying to access the trusted authenticator." + e;
@@ -252,16 +269,19 @@ public class SmasagaServiceImpl extends RemoteServiceServlet implements SmasagaS
 
 	@Override
 	public String saveShortStory(Saga saga, String filename, String binary) {
-		String urlstr = "http://dl.dropbox.com/u/10024658/"+filename;
-		
-		saga.setUrl( urlstr );
+		try {
+			String urlstr = "http://dl.dropbox.com/u/10024658/"+URLEncoder.encode(filename, "UTF-8");
+			saga.setUrl( urlstr );
+		} catch (UnsupportedEncodingException e) {
+			e.printStackTrace();
+		}
 		
 		if( binary != null ) {
 			byte[] bbinary = new byte[ binary.length() ];
 			for( int i = 0; i < binary.length(); i++ ) {
 				bbinary[i] = (byte)binary.charAt(i);
 			}
-			dropToBox( filename, bbinary );
+			dropToBox( filename, bbinary, this );
 		}
 		
 		Entity	smasaga = new Entity("smasaga");
