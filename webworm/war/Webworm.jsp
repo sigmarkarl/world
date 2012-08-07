@@ -259,6 +259,7 @@
 	<script type="text/javascript" src="//pagead2.googlesyndication.com/pagead/show_ads.js"></script>
 	</div>
 <%}%>
+<div id="content"></div>
 
   </body>
 </html>

@@ -107,7 +107,7 @@ public class SmasagaServiceImpl extends RemoteServiceServlet implements SmasagaS
 		return smasogur;
 	}
 	
-	public String getParamstr( Map<String,String> map, List<String> set ) {
+	public static String getParamstr( Map<String,String> map, List<String> set ) {
 		String ret = "";
 		
 		for( String s : set ) {
@@ -118,99 +118,102 @@ public class SmasagaServiceImpl extends RemoteServiceServlet implements SmasagaS
 		return ret;
 	}
 	
-	public void dropboxSave( String target, String tokenkey, String tokensecret, String fname, byte[] contents ) throws IOException {
-	        Map<String,String>	parameters = new TreeMap<String,String>();
-			parameters.put("file", fname);
-			parameters.put("oauth_consumer_key", "jemmmn3c5ot8rdu");
-			parameters.put("oauth_token", tokenkey );
-			parameters.put("oauth_timestamp", Long.toString(System.currentTimeMillis()/1000) );
-			parameters.put("oauth_signature_method", "HMAC-SHA1");
-			parameters.put("oauth_nonce", Long.toString(Math.abs(new Random().nextLong())) );
-			parameters.put("oauth_version", "1.0" ); 
+	public static boolean dropboxSave( String target, String tokenkey, String tokensecret, String fname, byte[] contents ) throws IOException {
+		Map<String,String>	parameters = new TreeMap<String,String>();
+		parameters.put("file", fname.replace(" ", "%20") );
+		parameters.put("oauth_consumer_key", "jemmmn3c5ot8rdu");
+		parameters.put("oauth_token", tokenkey );
+		parameters.put("oauth_timestamp", Long.toString(System.currentTimeMillis()/1000) );
+		parameters.put("oauth_signature_method", "HMAC-SHA1");
+		parameters.put("oauth_nonce", Long.toString(Math.abs(new Random().nextLong())) );
+		parameters.put("oauth_version", "1.0" ); 
 			
-			String paramstr = null;
-			for( String par : parameters.keySet() ) {
-				if( paramstr == null ) paramstr = par + "=" + parameters.get(par);
-				else paramstr += "&" + par + "=" + parameters.get(par);
-			}
-			
-			String keyString = OAuth.percentEncode("9or8lsn165d44qv") + '&' + OAuth.percentEncode(tokensecret);
-	        byte[] keyBytes = keyString.getBytes(OAuth.ENCODING);
+		String paramstr = null;
+		for( String par : parameters.keySet() ) {
+			if( paramstr == null ) paramstr = par + "=" + parameters.get(par);
+			else paramstr += "&" + par + "=" + parameters.get(par);
+		}
+		
+		String keyString = OAuth.percentEncode("9or8lsn165d44qv") + '&' + OAuth.percentEncode(tokensecret);
+        byte[] keyBytes = keyString.getBytes(OAuth.ENCODING);
 
-	        String MAC_NAME = "HmacSHA1";
-	        //Base64 base64 = new Base64();
-	        SecretKey key = new SecretKeySpec(keyBytes, MAC_NAME);
-	        Mac mac = null;
-			try {
-				mac = Mac.getInstance(MAC_NAME);
-				mac.init(key);
-			} catch (NoSuchAlgorithmException e) {
-				e.printStackTrace();
-			} catch (InvalidKeyException e) {
-				e.printStackTrace();
-			}
+        String MAC_NAME = "HmacSHA1";
+        //Base64 base64 = new Base64();
+        SecretKey key = new SecretKeySpec(keyBytes, MAC_NAME);
+        Mac mac = null;
+		try {
+			mac = Mac.getInstance(MAC_NAME);
+			mac.init(key);
+		} catch (NoSuchAlgorithmException e) {
+			e.printStackTrace();
+		} catch (InvalidKeyException e) {
+			e.printStackTrace();
+		}
 
-			String str = OAuth.percentEncode(target) + "&" + OAuth.percentEncode(paramstr);
-	        //return "GET&" + str;
-	        String sbs = "POST&" + str; //generate( baseurl, paramstr );
-	        byte[] text = sbs.getBytes(OAuth.ENCODING);
-	        
-	        System.err.println(sbs);
+		String str = OAuth.percentEncode(target) + "&" + OAuth.percentEncode(paramstr);
+        //return "GET&" + str;
+        String sbs = "POST&" + str; //generate( baseurl, paramstr );
+        byte[] text = sbs.getBytes(OAuth.ENCODING);
+        
+        System.err.println(sbs);
 
-	        byte[] b = mac.doFinal(text);
-	        //byte[] nb = base64.encode(b);
-	        //String sign = new String(nb).trim();
-	        byte[] signb = Base64.encodeBase64(b);
-	        String sign = new String( signb );
-	        parameters.put("oauth_signature", sign );
-			
-			URL url = new URL(target);
-			HttpURLConnection httpConnection = (HttpURLConnection)url.openConnection();
-			
-			String dispstr = "Content-Disposition: form-data; name=\"file\"; filename=\""+fname+"\"\n\n";
-			httpConnection.setRequestMethod("POST");
-			httpConnection.setDoInput( true );
-			httpConnection.setDoOutput( true );
-			String[] incl = {"file", "oauth_token", "oauth_consumer_key", "oauth_version", "oauth_signature_method", "oauth_timestamp", "oauth_nonce", "oauth_signature"};
-			String stuff = getParamstr( parameters, Arrays.asList( incl ) );
-			httpConnection.setRequestProperty("Authorization", "OAuth "+stuff);
-			httpConnection.setRequestProperty("Content-Type", "multipart/form-data; boundary=46-B_DuxmY9qurDm33PMiHpZ2dP7Lr"); //req.getContentType());
-			
-			String cont = "--46-B_DuxmY9qurDm33PMiHpZ2dP7Lr\n";
-			cont += dispstr;
-			//cont += filecontents;
-			cont += "\n--46-B_DuxmY9qurDm33PMiHpZ2dP7Lr--\n";
-			int clen = cont.length()+contents.length;
-			
-			httpConnection.setRequestProperty("Content-Length", ""+clen);
-			httpConnection.setRequestProperty("Accept", "text/html, image/gif, image/jpeg, *; q=.2, */*; q=.2" );
-			httpConnection.setRequestProperty("Connection", "keep-alive");
-			httpConnection.setRequestProperty("Expect", "100-Continue");
-			
-			OutputStream os = httpConnection.getOutputStream();
-			os.write( "--46-B_DuxmY9qurDm33PMiHpZ2dP7Lr\n".getBytes() );
-			os.write( dispstr.getBytes() );
-			os.write( contents );
-			os.write( "\n--46-B_DuxmY9qurDm33PMiHpZ2dP7Lr--\n".getBytes() );
-			
-			InputStream is = httpConnection.getInputStream();
-			byte[] bb = new byte[256];
-			int r = is.read( bb );
-			String s = "";
-			while( r > 0 ) {
-				s += new String( bb, 0, r );
-				r = is.read( bb );
-			}
-			is.close();
-			os.close();
-			
-			System.out.println( s );
-			System.out.println( httpConnection.getResponseCode() );
-			
-			httpConnection.disconnect();
+        byte[] b = mac.doFinal(text);
+        //byte[] nb = base64.encode(b);
+        //String sign = new String(nb).trim();
+        byte[] signb = Base64.encodeBase64(b);
+        String sign = new String( signb );
+        parameters.put("oauth_signature", sign );
+		
+		URL url = new URL(target);
+		HttpURLConnection httpConnection = (HttpURLConnection)url.openConnection();
+		
+		String dispstr = "Content-Disposition: form-data; name=\"file\"; filename=\""+fname+"\"\n\n";
+		httpConnection.setRequestMethod("POST");
+		httpConnection.setDoInput( true );
+		httpConnection.setDoOutput( true );
+		String[] incl = {"file", "oauth_token", "oauth_consumer_key", "oauth_version", "oauth_signature_method", "oauth_timestamp", "oauth_nonce", "oauth_signature"};
+		String stuff = getParamstr( parameters, Arrays.asList( incl ) );
+		httpConnection.setRequestProperty("Authorization", "OAuth "+stuff);
+		httpConnection.setRequestProperty("Content-Type", "multipart/form-data; boundary=46-B_DuxmY9qurDm33PMiHpZ2dP7Lr"); //req.getContentType());
+		
+		String cont = "--46-B_DuxmY9qurDm33PMiHpZ2dP7Lr\n";
+		cont += dispstr;
+		//cont += filecontents;
+		cont += "\n--46-B_DuxmY9qurDm33PMiHpZ2dP7Lr--\n";
+		int clen = cont.length()+contents.length;
+		
+		httpConnection.setRequestProperty("Content-Length", ""+clen);
+		httpConnection.setRequestProperty("Accept", "text/html, image/gif, image/jpeg, *; q=.2, */*; q=.2" );
+		httpConnection.setRequestProperty("Connection", "keep-alive");
+		httpConnection.setRequestProperty("Expect", "100-Continue");
+		
+		OutputStream os = httpConnection.getOutputStream();
+		os.write( "--46-B_DuxmY9qurDm33PMiHpZ2dP7Lr\n".getBytes() );
+		os.write( dispstr.getBytes() );
+		os.write( contents );
+		os.write( "\n--46-B_DuxmY9qurDm33PMiHpZ2dP7Lr--\n".getBytes() );
+		
+		InputStream is = httpConnection.getInputStream();
+		byte[] bb = new byte[256];
+		int r = is.read( bb );
+		String s = "";
+		while( r > 0 ) {
+			s += new String( bb, 0, r );
+			r = is.read( bb );
+		}
+		is.close();
+		os.close();
+		
+		int resp = httpConnection.getResponseCode();
+		System.out.println( s );
+		System.out.println( resp );
+		
+		httpConnection.disconnect();
+		
+		return resp >= 200 && resp < 300;
 	}
 	
-	public void dropToBox( String fname, byte[] contents ) {
+	public static boolean dropToBox( String fname, byte[] contents ) {
     	try {            
 			String urlstr = "https://api.dropbox.com/0/token?email=sigmarkarl@gmail.com&password=skc.311";
 			String oauth = "&oauth_consumer_key=jemmmn3c5ot8rdu";
@@ -239,11 +242,12 @@ public class SmasagaServiceImpl extends RemoteServiceServlet implements SmasagaS
             String baseurl = "api-content.getdropbox.com";
 			//String baseurl = "localhost:8899";
             String target = "https://"+baseurl+"/0/files/dropbox/Public";
-            dropboxSave( target, tokenkey, tokensecret, fname, contents );
+            return dropboxSave( target, tokenkey, tokensecret, fname, contents );
         } catch (Exception e) {
             e.printStackTrace();
             assert false : "Total failure trying to access the trusted authenticator." + e;
         }
+    	return false;
     }
 
 	@Override
@@ -252,11 +256,13 @@ public class SmasagaServiceImpl extends RemoteServiceServlet implements SmasagaS
 		
 		saga.setUrl( urlstr );
 		
-		byte[] bbinary = new byte[ binary.length() ];
-		for( int i = 0; i < binary.length(); i++ ) {
-			bbinary[i] = (byte)binary.charAt(i);
+		if( binary != null ) {
+			byte[] bbinary = new byte[ binary.length() ];
+			for( int i = 0; i < binary.length(); i++ ) {
+				bbinary[i] = (byte)binary.charAt(i);
+			}
+			dropToBox( filename, bbinary );
 		}
-		dropToBox( filename, bbinary );
 		
 		Entity	smasaga = new Entity("smasaga");
 		smasaga.setProperty("name", saga.getName());

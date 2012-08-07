@@ -16,6 +16,8 @@ import com.google.gwt.dom.client.Document;
 import com.google.gwt.dom.client.NodeList;
 import com.google.gwt.dom.client.Style;
 import com.google.gwt.dom.client.Style.Unit;
+import com.google.gwt.event.dom.client.ChangeEvent;
+import com.google.gwt.event.dom.client.ChangeHandler;
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
 import com.google.gwt.event.dom.client.DragEndEvent;
@@ -54,6 +56,7 @@ import com.google.gwt.user.client.ui.HorizontalPanel;
 import com.google.gwt.user.client.ui.Label;
 import com.google.gwt.user.client.ui.RootPanel;
 import com.google.gwt.user.client.ui.SimplePanel;
+import com.google.gwt.user.client.ui.SubmitButton;
 import com.google.gwt.user.client.ui.VerticalPanel;
 import com.google.gwt.visualization.client.AbstractDataTable.ColumnType;
 import com.google.gwt.visualization.client.DataTable;
@@ -330,6 +333,7 @@ public class Smasogur implements EntryPoint {
 	public native void deleteSaga( int r ) /*-{
 		var s = this;
 		$wnd.FB.getLoginStatus( function(response) {
+			$wnd.console.log("here");
 			if (response.status === 'connected') {
 			    var uid = response.authResponse.userID;
 			    var accessToken = response.authResponse.accessToken;
@@ -374,6 +378,19 @@ public class Smasogur implements EntryPoint {
 		}
 	}
 	
+	public void deleteSelection() {
+		JsArray<Selection> selections = table.getSelections();
+		for( int i = 0; i < selections.length(); i++ ) {
+			Selection s = selections.get(i);
+			int r = s.getRow();
+			//console("fuck");
+			if( uid != null ) delete( uid, r );
+			//deleteSaga( r );
+		}
+		view = DataView.create( data );
+		table.draw( view, options );
+	}
+	
 	static Map<Integer,String>	gradeStr = new HashMap<Integer,String>();
 	static {
 		gradeStr.put(0, "junk");
@@ -402,6 +419,7 @@ public class Smasogur implements EntryPoint {
 			@Override
 			public void onSuccess(String result) {
 				smasaga.setKey( result );
+				sogur.add( smasaga );
 				
 				setStatus( "File saved" );
 				int r = data.getNumberOfRows();
@@ -495,23 +513,23 @@ public class Smasogur implements EntryPoint {
 	    	  data = DataTable.create();
 	    	  
 	    	  /*data.addColumn( ColumnType.STRING, "Nafn");
-	    	  data.addColumn( ColumnType.STRING, "Höfundur");
+	    	  data.addColumn( ColumnType.STRING, "HÃ¶fundur");
 	    	  data.addColumn( ColumnType.STRING, "Einkunn");
 	    	  data.addColumn( ColumnType.NUMBER, "Umsagnir");
-	    	  data.addColumn( ColumnType.BOOLEAN, "Ástar");
+	    	  data.addColumn( ColumnType.BOOLEAN, "Ã�star");
 	    	  data.addColumn( ColumnType.BOOLEAN, "Hrylling");
-	    	  data.addColumn( ColumnType.BOOLEAN, "Vísinda");
+	    	  data.addColumn( ColumnType.BOOLEAN, "VÃ­sinda");
 	    	  data.addColumn( ColumnType.BOOLEAN, "Barna");
 	    	  data.addColumn( ColumnType.BOOLEAN, "Unglinga");
-	    	  data.addColumn( ColumnType.BOOLEAN, "Söguleg");
-	    	  data.addColumn( ColumnType.BOOLEAN, "Sannsögu");
-	    	  data.addColumn( ColumnType.BOOLEAN, "Erótísk");
+	    	  data.addColumn( ColumnType.BOOLEAN, "SÃ¶guleg");
+	    	  data.addColumn( ColumnType.BOOLEAN, "SannsÃ¶gu");
+	    	  data.addColumn( ColumnType.BOOLEAN, "ErÃ³tÃ­sk");
 	    	  data.addColumn( ColumnType.BOOLEAN, "Gaman");
 	    	  data.addColumn( ColumnType.BOOLEAN, "Sorgar");
-	    	  data.addColumn( ColumnType.BOOLEAN, "Yfirnátt");
-	    	  data.addColumn( ColumnType.BOOLEAN, "Glæpa");
-	    	  data.addColumn( ColumnType.BOOLEAN, "Ævintýra");
-	    	  data.addColumn( ColumnType.BOOLEAN, "Ljóð");
+	    	  data.addColumn( ColumnType.BOOLEAN, "YfirnÃ¡tt");
+	    	  data.addColumn( ColumnType.BOOLEAN, "GlÃ¦pa");
+	    	  data.addColumn( ColumnType.BOOLEAN, "Ã†vintÃ½ra");
+	    	  data.addColumn( ColumnType.BOOLEAN, "LjÃ³Ã°");
 	    	  data.addColumn( ColumnType.BOOLEAN, "Framhald");*/
 	    	  
 	    	  data.addColumn( ColumnType.STRING, "Name");
@@ -551,14 +569,7 @@ public class Smasogur implements EntryPoint {
 				@Override
 				public void onKeyDown(KeyDownEvent event) {
 					if( event.getNativeKeyCode() == KeyCodes.KEY_DELETE ) {
-						JsArray<Selection> selections = table.getSelections();
-						for( int i = 0; i < selections.length(); i++ ) {
-							Selection s = selections.get(i);
-							int r = s.getRow();
-							deleteSaga( r );
-						}
-						view = DataView.create( data );
-						table.draw( view, options );
+						deleteSelection();
 					}
 				}
 	    	  });
@@ -655,7 +666,7 @@ public class Smasogur implements EntryPoint {
 	    	  subvp.setSpacing( 20 );
 	    	  
 	    	  final HTML html = new HTML();
-	    	  //html.setText( "Dragðu skrána með smásögunni þinni í töfluna. <br>Ef þú ert logguð/loggaður inná facebook er réttur höfundur skráður. <br>Þú getur valið höfundarnafn, nafnið á raunverulegum höfundi þarf ekki að vera valið" );
+	    	  //html.setText( "DragÃ°u skrÃ¡na meÃ° smÃ¡sÃ¶gunni Ã¾inni Ã­ tÃ¶fluna. <br>Ef Ã¾Ãº ert logguÃ°/loggaÃ°ur innÃ¡ facebook er rÃ©ttur hÃ¶fundur skrÃ¡Ã°ur. <br>ÃžÃº getur valiÃ° hÃ¶fundarnafn, nafniÃ° Ã¡ raunverulegum hÃ¶fundi Ã¾arf ekki aÃ° vera valiÃ°" );
 	    	  html.setHTML( "Drag-drop the file containing your short story into the table. <br>" +
 	    			"The file can be in a format of your choice. For example pdf for text and mp3 for audiobooks.<br>" +
 	    	  		"If you are logged into facebook, you are registered as the author. <br>" +
@@ -663,11 +674,11 @@ public class Smasogur implements EntryPoint {
 	    	  html.setWidth("100%");
 	    	  //html.getElement().getStyle().setMargin(20.0, Unit.PX);
 	    	  
-	    	  SimplePanel adspanel = new SimplePanel();
+	    	  /*SimplePanel adspanel = new SimplePanel();
 	    	  com.google.gwt.dom.client.Element adselem = Document.get().getElementById("ads");
 	    	  adselem.removeFromParent();
-	    	  adspanel.getElement().appendChild( adselem );
-	    	  subvp.add( adspanel );
+	    	  adspanel.getElement().appendChild( adselem );*/
+	    	  //subvp.add( adspanel );
 	    	  
 	    	  HTML title = new HTML("<h2>Shortstories<h2/>");
 	    	  subvp.add( title );
@@ -685,38 +696,55 @@ public class Smasogur implements EntryPoint {
 	    	  sharehp.add( gug );
 	    	  subvp.add( sharehp );
 	    	  
-	    	  FormPanel fp = new FormPanel();
+	    	  final FormPanel fp = new FormPanel();
 	    	  fp.setAction( "/smasogur/FileUpload" );
 	    	  fp.setMethod( FormPanel.METHOD_POST );
 	    	  fp.setEncoding( FormPanel.ENCODING_MULTIPART );
 	    	  
 	    	  fp.addSubmitHandler( new SubmitHandler() {
 				@Override
-				public void onSubmit(SubmitEvent event) {}
+				public void onSubmit(SubmitEvent event) {
+					console("submitted");
+				}
 	    	  });
+	    	  
+	    	  final FileUpload	file = new FileUpload();
 	    	  fp.addSubmitCompleteHandler( new SubmitCompleteHandler() {
 				@Override
 				public void onSubmitComplete(SubmitCompleteEvent event) {
 					String subm = event.getResults();
+					if( subm.contains("tokst") ) {
+						fileLoad( file.getName(), null, uid);
+					}
 				}
 	    	  });
 	    	  
-	  		  final FileUpload	file = new FileUpload();
-	  		  /*file.addChangeHandler( new ChangeHandler() {
+	  		  file.getElement().setId("shortstory");
+	  		  file.setName("shortstory");
+	  		  file.addChangeHandler( new ChangeHandler() {
 	  			@Override
 	  			public void onChange(ChangeEvent event) {
-	  				loadHandler( table.getElement(), file.getElement() );
+	  				String filename = file.getFilename();
+	  				int i = filename.lastIndexOf('/');
+	  				int k = filename.lastIndexOf('\\');
+	  				i = Math.max(i, k);
+	  				String fname = filename.substring(i+1);
+	  				file.setName( fname );
+	  				//file.get
+	  				//console("erm");
+	  				//loadHandler( table.getElement(), file.getElement() );
+	  				//file.setName( event.);
 	  			}
-	  		  });*/	  		
-	    	  Button uploadButton = new Button("Upload");
-	    	  uploadButton.addClickHandler( new ClickHandler() {
+	  		  });
+	    	  SubmitButton uploadButton = new SubmitButton("Upload");
+	    	  /*uploadButton.addClickHandler( new ClickHandler() {
 				@Override
 				public void onClick(ClickEvent event) {
-					click( file.getElement() );
+					//click( file.getElement() );
+					fp.submit();
 				}
-	    	  });
+	    	  });*/
 	    	  
-	    	  file.setVisible( false );
 	    	  HorizontalPanel	filehp = new HorizontalPanel();
 	    	  filehp.add( file );
 	    	  filehp.add( uploadButton );
@@ -730,8 +758,8 @@ public class Smasogur implements EntryPoint {
 	    	  a.setHref("mailto:huldaeggers@gmail.com");
 	    	  Anchor	fast = new Anchor( "http://webwormgame.appspot.com" );
 	    	  fast.setHref("http://webwormgame.appspot.com");
-	    	  Anchor	conn = new Anchor( "http://webconnectron.appspot.com/Treedraw.html" );
-	    	  conn.setHref("http://webconnectron.appspot.com/Treedraw.html");
+	    	  //Anchor	conn = new Anchor( "http://webconnectron.appspot.com/Treedraw.html" );
+	    	  //conn.setHref("http://webconnectron.appspot.com/Treedraw.html");
 	    	  Anchor	fblink = new Anchor( "https://apps.facebook.com/theshortstories" );
 	    	  fblink.setHref("https://apps.facebook.com/theshortstories");
 	    	  //HTML		kjall = new HTML("Kjallarinn klukkan fimm ehf.");
@@ -743,7 +771,7 @@ public class Smasogur implements EntryPoint {
 	    	  hp.setSpacing(10);
 	    	  hp.add( a );
 	    	  hp.add( fast );
-	    	  hp.add( conn );
+	    	  //hp.add( conn );
 	    	  hp.add( fblink );
 	    	  //hp.add( kjall );
 	    	  //hp.add( log );
@@ -761,6 +789,14 @@ public class Smasogur implements EntryPoint {
 	    	  DOM.appendChild(spel, el);
 	    	  hp.add( sp );*/
 	    	  
+	    	  Button deleteButton = new Button("Delete selection");
+	    	  deleteButton.addClickHandler( new ClickHandler() {
+				@Override
+				public void onClick(ClickEvent event) {
+					deleteSelection();
+				}
+	    	  });
+	    	  subvp.add( deleteButton );
 	    	  subvp.add( hp );
 	    	  
 	    	  status = new Label();
