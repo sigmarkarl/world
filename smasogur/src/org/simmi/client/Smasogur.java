@@ -1,7 +1,5 @@
 package org.simmi.client;
 
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -301,8 +299,10 @@ public class Smasogur implements EntryPoint {
 		if( status != null ) status.setText( statusStr );
 	}
 	
+	SubmitButton	uploadButton;
 	public void setUserId( String val ) {
 		uid = val;
+		//if( uploadButton != null ) uploadButton.setEnabled( uid != null && uid.length() > 1 );
 	}
 	
 	public native String checkLoginStatus() /*-{
@@ -747,7 +747,8 @@ public class Smasogur implements EntryPoint {
 	  				//file.setName( event.);
 	  			}
 	  		  });
-	    	  SubmitButton uploadButton = new SubmitButton("Upload");
+	    	  uploadButton = new SubmitButton("Upload");
+	    	  //if( uid == null || uid.length() < 2 ) uploadButton.setEnabled( false );
 	    	  
 	    	  /*uploadButton.addClickHandler( new ClickHandler() {
 				@Override

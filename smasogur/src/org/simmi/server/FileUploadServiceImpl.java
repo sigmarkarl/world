@@ -12,6 +12,11 @@ import org.apache.commons.fileupload.FileItemStream;
 import org.apache.commons.fileupload.servlet.ServletFileUpload;
 
 public class FileUploadServiceImpl extends HttpServlet {
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+
 	public void doPost( HttpServletRequest req, HttpServletResponse res ) {
 		ServletFileUpload upload = new ServletFileUpload();
         try {
@@ -39,7 +44,8 @@ public class FileUploadServiceImpl extends HttpServlet {
                 
                 res.getWriter().println("tokst");
             }
-        } catch(Exception e){
+        } catch(Exception e) {
+        	this.log( "mu " + e.getMessage() );
             throw new RuntimeException(e);
         }
 		

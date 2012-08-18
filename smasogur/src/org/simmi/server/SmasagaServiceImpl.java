@@ -1,5 +1,6 @@
 package org.simmi.server;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -22,12 +23,17 @@ import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import javax.servlet.http.HttpServlet;
 
-import oauth.signpost.OAuth;
-
 import org.apache.commons.codec.binary.Base64;
 import org.simmi.client.SmasagaService;
 import org.simmi.shared.Saga;
 
+import com.dropbox.client2.DropboxAPI;
+import com.dropbox.client2.ProgressListener;
+import com.dropbox.client2.exception.DropboxException;
+import com.dropbox.client2.session.AccessTokenPair;
+import com.dropbox.client2.session.AppKeyPair;
+import com.dropbox.client2.session.Session;
+import com.dropbox.client2.session.WebAuthSession;
 import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.DatastoreServiceFactory;
 import com.google.appengine.api.datastore.Entity;
@@ -230,7 +236,28 @@ public class SmasagaServiceImpl extends RemoteServiceServlet implements SmasagaS
 		return resp >= 200 && resp < 300;
 	}
 	
-	public static boolean dropToBox( String fname, byte[] contents, HttpServlet servlet ) {
+	public static boolean dropToBox( String fname, byte[] contents, final HttpServlet servlet ) throws DropboxException {
+		servlet.log( "beginning" );
+		
+		AppKeyPair		appkey = new AppKeyPair("jemmmn3c5ot8rdu", "9or8lsn165d44qv");
+		AccessTokenPair accesstoken = new AccessTokenPair("sigmarkarl@gmail.com", "skc.311");
+		WebAuthSession	session = new WebAuthSession( appkey, Session.AccessType.DROPBOX, accesstoken);
+		DropboxAPI<?>	client = new DropboxAPI<WebAuthSession>( session );
+		
+		servlet.log( "starting" );
+		ByteArrayInputStream	bis = new ByteArrayInputStream( contents );
+		ProgressListener progl = new ProgressListener() {
+			@Override
+			public void onProgress(long bytes, long total) {
+				servlet.log( bytes + " " + total );
+			}
+		};
+		client.putFile("Public/"+fname, bis, contents.length, null, progl);
+		
+		return true;
+	}
+	
+	public static boolean dropToBoxOld( String fname, byte[] contents, HttpServlet servlet ) {
     	try {            
 			String urlstr = "https://api.dropbox.com/0/token?email=sigmarkarl@gmail.com&password=skc.311";
 			String oauth = "&oauth_consumer_key=jemmmn3c5ot8rdu";
@@ -281,7 +308,12 @@ public class SmasagaServiceImpl extends RemoteServiceServlet implements SmasagaS
 			for( int i = 0; i < binary.length(); i++ ) {
 				bbinary[i] = (byte)binary.charAt(i);
 			}
-			dropToBox( filename, bbinary, this );
+			try {
+				dropToBox( filename, bbinary, this );
+			} catch (DropboxException e) {
+				SmasagaServiceImpl.this.log( "message2 " + e.getMessage() );
+				e.printStackTrace();
+			}
 		}
 		
 		Entity	smasaga = new Entity("smasaga");
