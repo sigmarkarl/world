@@ -28,6 +28,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
@@ -1550,7 +1551,10 @@ public class JavaFasta extends JApplet {
 		
 		out.append( seqlen+"\n" );
 		
+		Set<String> seqset = new HashSet<>();
+		
 		int u = 0;
+		int count = 0;
 		for( int k = 0; k < alen; k+=50 ) {
 			int seqi = 0;
 			for( Sequence seq : lseq ) {
@@ -1558,7 +1562,20 @@ public class JavaFasta extends JApplet {
 					if( !numeric ) {
 						String seqname = seq.getName();
 						int m = Math.min( seqname.length(), 10 );
-						out.append( seqname.substring(0, m) );
+						
+						String subname = seqname.substring(0, m);
+						
+						if( seqset.contains( subname ) ) {
+							if( seqname.length() > 10 ) {
+								subname = seqname.substring( seqname.length()-10, seqname.length() );
+							} else {
+								m = Math.min( seqname.length(), 10-1 );
+								subname = seqname.substring(0,m)+(++count);
+							}
+						}
+						seqset.add( subname );
+						
+						out.append( subname );
 						while( m < 10 ) {
 							out.append(' ');
 							m++;
@@ -2614,6 +2631,53 @@ public class JavaFasta extends JApplet {
 					seqlist.add( seq );
 				}
 				removeAllGaps( seqlist );
+				
+				c.repaint();
+			}
+		});
+		popup.add( new AbstractAction("Discard high evo-rate sites") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				List<Sequence>	seqlist = new ArrayList<Sequence>();
+				int[] rr = table.getSelectedRows();
+				for( int r : rr ) {
+					int k = table.convertRowIndexToModel( r );
+					Sequence seq = lseq.get( k );
+					seqlist.add( seq );
+				}
+				JFileChooser fc = new JFileChooser();
+				if( fc.showOpenDialog( JavaFasta.this ) == JFileChooser.APPROVE_OPTION ) {
+					try {
+						FileReader fr = new FileReader( fc.getSelectedFile() );
+						BufferedReader br = new BufferedReader( fr );
+						String line = br.readLine();
+						line = br.readLine();
+						int i = 0;
+						while( line != null ) {
+							String[] split = line.split("\t");
+							int ix = Integer.parseInt( split[0].substring(1,split[0].length()-1) );
+							int is = Integer.parseInt( split[2] );
+							double dis = Double.parseDouble( split[3] );
+							
+							if( dis >= -20.0 ) {
+								for( Sequence seq : seqlist ) {
+									seq.sb.setCharAt( i, seq.sb.charAt(ix-1) );
+								}
+								i++;
+							}
+							
+							line = br.readLine();
+						}
+						for( Sequence seq : seqlist ) {
+							seq.sb.delete( i, seq.sb.length() );
+							seq.checkLengths();
+						}
+						br.close();
+					} catch (IOException e1) {
+						e1.printStackTrace();
+					}
+				}
+				//discardEvo( seqlist );
 				
 				c.repaint();
 			}
