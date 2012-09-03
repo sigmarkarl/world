@@ -1537,7 +1537,7 @@ public class JavaFasta extends JApplet {
 		return getPhylip( this.getSequences(), numeric );
 	}
 	
-	public String getPhylip( List<Sequence> lseq, boolean numeric ) {
+	public static String getPhylip( List<Sequence> lseq, boolean numeric ) {
 		StringBuilder out = new StringBuilder();
 		
 		String erm = ""+lseq.size();
