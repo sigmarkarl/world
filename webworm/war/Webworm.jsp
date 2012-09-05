@@ -235,8 +235,9 @@
     </table>
     
      <div id="fb-root"></div>
+     <div id="content" style="float: left"></div>
 <%if( str == null ) {%>
-    <div id="ads">
+    <div id="ads" style="float: right">
     <script type="text/javascript"><!--
 		google_ad_client = "ca-pub-7204381538404733";
 		google_ad_slot = "1687563636";
@@ -259,7 +260,6 @@
 	<script type="text/javascript" src="//pagead2.googlesyndication.com/pagead/show_ads.js"></script>
 	</div>
 <%}%>
-<div id="content"></div>
 
   </body>
 </html>

@@ -1732,6 +1732,7 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 		
 		final RadioButton	seren = new RadioButton("faudio", "Worm-serenade");
 		final RadioButton	rhaps = new RadioButton("faudio", "Worm-rhapsody");
+		final RadioButton	etude = new RadioButton("faudio", "Worm-etude");
 		final RadioButton	faudio = new RadioButton("faudio", "No eff-ing music");
 		seren.addClickHandler( new ClickHandler() {
 			@Override
@@ -1747,6 +1748,13 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 				audio.setSrc("hey.mp3");
 			}
 		});
+		etude.addClickHandler( new ClickHandler() {
+			@Override
+			public void onClick(ClickEvent event) {
+				audio.setEnabled( true );
+				audio.setSrc("etude.mp3");
+			}
+		});
 		faudio.addClickHandler( new ClickHandler() {
 			@Override
 			public void onClick(ClickEvent event) {
@@ -1758,6 +1766,7 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 		hpaudio.setSpacing(5);
 		hpaudio.add( seren );
 		hpaudio.add( rhaps );
+		hpaudio.add( etude );
 		hpaudio.add( faudio );
 		
 		HTML	musicmessage = new HTML("Coming soon, Worm-valz and Worm-toccata and fuge. <br>If you like the game soundtrack, stay tuned!");

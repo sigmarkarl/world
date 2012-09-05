@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.simmi.shared.Sequence;
+
 import com.google.gwt.canvas.client.Canvas;
 import com.google.gwt.canvas.dom.client.Context2d;
 import com.google.gwt.core.client.EntryPoint;
@@ -316,16 +318,16 @@ public class Webfasta implements EntryPoint {
 	};
 	
 	static int sortcol = 0;
-	class SequenceOld implements Comparable<SequenceOld> {
-		String name;
-		int start;
-		
+	class SequenceOld extends Sequence {
 		int namestart;
 		int nameend;
 		int seqstart;
 		int seqstop;
+		boolean selected = false;
 		
 		public SequenceOld( int nstart, int nend, int sstart, int sstop ) {
+			super( null, null );
+			
 			this.namestart = nstart;
 			this.nameend = nend;
 			this.seqstart = sstart;
@@ -337,7 +339,15 @@ public class Webfasta implements EntryPoint {
 			for( int i = namestart; i < nameend; i++ ) {
 				bb[i-namestart] = content.get(i);
 			}
-			name = new String( bb );
+			setName( new String( bb ) );
+		}
+		
+		public boolean isSelected() {
+			return selected;
+		}
+		
+		public void setSelected( boolean sel ) {
+			this.selected = sel;
 		}
 		
 		public int getStart() {
@@ -380,22 +390,29 @@ public class Webfasta implements EntryPoint {
 			return null;
 		}
 		
+		@Override
 		public char charAt( int i ) {
-			return (char)content.get( seqstart+i ); //char2String.get( content.charAt( seqstart+i ) );
+			int ind = i-start;
+			if( ind > 0 && ind < getLength() )
+				return (char)content.get( seqstart+ind ); //char2String.get( content.charAt( seqstart+i ) );
+			
+			return '-';
 		}
 		
+		@Override
 		public void setCharAt( int i, char c ) {
 			content.set( seqstart+i, c );
 		}
 		
-		public int length() {
+		@Override
+		public int getLength() {
 			return seqstop-seqstart;
 			//return seq.length();
 		}
 
 		@Override
-		public int compareTo(SequenceOld o) {
-			return sortcol == 0 ? getName().compareTo(o.getName()) : length()-o.length();
+		public int compareTo(Sequence o) {
+			return sortcol == 0 ? getName().compareTo(o.getName()) : getLength()-o.getLength();
 		}
 		
 		/*String				name;
@@ -458,7 +475,7 @@ public class Webfasta implements EntryPoint {
 		return -1;
 	}
 	
-	List<SequenceOld> 			val = new ArrayList<SequenceOld>();
+	List<Sequence> 			val = new ArrayList<Sequence>();
 	Map<String,SequenceOld>		seqmap = new HashMap<String,SequenceOld>();
 	int							max = 0;
 	public void fileLoaded( Int8Array cont ) {
@@ -473,7 +490,7 @@ public class Webfasta implements EntryPoint {
 			content = cont;
 			seqmap.clear();
 			max = 0;
-			val = new ArrayList<SequenceOld>();
+			val = new ArrayList<Sequence>();
 		}
 		
 		int r = indexOf('>', start); //indexOf( content, '>', 0);
@@ -688,30 +705,43 @@ public class Webfasta implements EntryPoint {
 		
 		//int ymax = Math.min( ystartLocal+tch, val.size()*baseheight );
 		
-		tcontext.setFillStyle("#ffffff");
-		tcontext.fillRect(0, ys-ystartLocal+baseheight, tcw, ye-ys);
-		tcontext.setFillStyle("#111111");
+		//tcontext.setFillStyle("#ffffff");
+		//tcontext.fillRect(0, ys-ystartLocal+baseheight, tcw, ye-ys);
+		//tcontext.fillRect(tcw-45, ys-ystartLocal+baseheight, 45, ye-ys);
+		
+		tcontext.clearRect(0, ys-ystartLocal+baseheight, tcw, ye-ys);
+		tcontext.clearRect(tcw-45, ys-ystartLocal+baseheight, 45, ye-ys);
 		for( int y = ys; y < ye; y+=baseheight ) {
 			int i = y/baseheight;
 			int yy = i*baseheight;
-			SequenceOld seq = val.get(i);
+			SequenceOld seq = (SequenceOld)val.get(i);
+			if( seq.isSelected() ) {
+				tcontext.setFillStyle("#0011AA");
+				tcontext.fillRect(0.0, yy+1.0*baseheight-ystartLocal+2.0, tcw, baseheight);
+				tcontext.setFillStyle("#ffffff");
+			} else {
+				tcontext.setFillStyle("#111111");
+			}
 			tcontext.fillText( seq.getName(), 3.0, yy+2.0*baseheight-3.0-ystartLocal );
+			tcontext.fillText( seq.getLength()+"", tcw-40.0, yy+2.0*baseheight-3.0-ystartLocal );
 		}
 		
-		tcontext.setFillStyle("#ffffff");
-		tcontext.fillRect(tcw-45, ys-ystartLocal+baseheight, 45, ye-ys);
-		tcontext.setFillStyle("#111111");
-		for( int y = ys; y < ye; y+=baseheight ) {
+		//tcontext.setFillStyle("#ffffff");
+		//tcontext.fillRect(tcw-45, ys-ystartLocal+baseheight, 45, ye-ys);
+		//tcontext.setFillStyle("#111111");
+		/*for( int y = ys; y < ye; y+=baseheight ) {
 			int i = y/baseheight;
 			int yy = i*baseheight;
 			SequenceOld seq = val.get(i);
-			tcontext.fillText( seq.length()+"", tcw-40.0, yy+2.0*baseheight-3.0-ystartLocal );
-		}
+			tcontext.fillText( seq.getLength()+"", tcw-40.0, yy+2.0*baseheight-3.0-ystartLocal );
+			//tcontext.fillText( seq.getType()+"", tcw-40.0, yy+2.0*baseheight-3.0-ystartLocal );
+		}*/
 		
 		tcontext.setFillStyle("#EEEEEE");
 		tcontext.fillRect(0.0, 0.0, tcw, 20.0);
 		tcontext.setFillStyle("#222222");
 		tcontext.fillText("Name", 3.0, 20.0-5.0);
+		//tcontext.fillText("Type", tcw-100, 20.0-5.0);
 		tcontext.fillText("Length", tcw-40, 20.0-5.0);
 	}
 	
@@ -742,7 +772,7 @@ public class Webfasta implements EntryPoint {
 			for( int y = ys; y < ye; y+=baseheight ) {
 				int i = y/baseheight;
 				int yy = i*baseheight;
-				SequenceOld seq = val.get(i);
+				Sequence seq = val.get(i);
 				//int[]	ann = seq.getAnnotationIndex();
 					
 				/*if( selset.contains(i) ) {
@@ -751,7 +781,7 @@ public class Webfasta implements EntryPoint {
 					context.setFillStyle("#222222");
 				}*/
 				
-				for( int x = xs; x < Math.min( seq.length()*basewidth, xe ); x+=basewidth ) {
+				for( int x = xs; x < Math.min( seq.getLength()*basewidth, xe ); x+=basewidth ) {
 					int k = x/basewidth;
 					int xx = k*basewidth;
 					
@@ -778,7 +808,7 @@ public class Webfasta implements EntryPoint {
 			for( int y = ys; y < ye; y+=baseheight ) {
 				int i = y/baseheight;
 				int yy = i*baseheight;
-				SequenceOld seq = val.get(i);
+				Sequence seq = val.get(i);
 				//int[]	ann = seq.getAnnotationIndex();
 					
 				if( selset.contains(i) ) {
@@ -787,7 +817,7 @@ public class Webfasta implements EntryPoint {
 					context.setFillStyle("#222222");
 				}
 				
-				for( int x = xs; x < Math.min( seq.length()*basewidth, xe ); x+=basewidth ) {
+				for( int x = xs; x < Math.min( seq.getLength()*basewidth, xe ); x+=basewidth ) {
 					int k = x/basewidth;
 					int xx = k*basewidth;
 					
@@ -1098,8 +1128,8 @@ public class Webfasta implements EntryPoint {
 	
 	public char charAt( int x, int y ) {
 		if( y < val.size() ) {
-			SequenceOld seq = val.get(y);
-			if( x >= seq.getStart() && x < seq.getStart()+seq.length() ) {
+			Sequence seq = val.get(y);
+			if( x >= seq.getStart() && x < seq.getStart()+seq.getLength() ) {
 				return seq.charAt( x-seq.getStart() );
 			}
 		}
@@ -1108,8 +1138,8 @@ public class Webfasta implements EntryPoint {
 	
 	public void setCharAt( int x, int y, char c ) {
 		if( y < val.size() ) {
-			SequenceOld seq = val.get(y);
-			if( x >= seq.getStart() && x < seq.getStart()+seq.length() ) {
+			Sequence seq = val.get(y);
+			if( x >= seq.getStart() && x < seq.getStart()+seq.getLength() ) {
 				seq.setCharAt( x-seq.getStart(), c );
 			}
 		}
@@ -1155,10 +1185,12 @@ public class Webfasta implements EntryPoint {
 			i++;
 		}
 		
+		int ww = Window.getClientWidth();
+		int wh = Window.getClientHeight();
 		//HorizontalPanel	hpanel = new HorizontalPanel();
 		//hpanel.setHorizontalAlignment( HorizontalPanel.ALIGN_CENTER );
 		//hpanel.setWidth("100%");
-		int height = Math.max( 1000, Window.getClientHeight() );
+		//int height = Math.max( 1000, wh );
 		//int height = RootPanel.get().getOffsetHeight();
 		//hpanel.setHeight(Math.max(1000, height)+"px");
 		
@@ -1276,11 +1308,11 @@ public class Webfasta implements EntryPoint {
 				//Anchor	a = new Anchor("okok");
 				StringBuilder out = new StringBuilder();
 				if( selectionList.isEmpty() ) {
-					for( SequenceOld seq : val ) {
+					for( Sequence seq : val ) {
 						String seqname = seq.getName();
 						out.append( ">"+seqname+"\n" );
-						for( int i = 0; i < seq.length(); i+=70 ) {
-							for( int k = i; k < Math.min( seq.length(), i+70 ); k++ ) {
+						for( int i = 0; i < seq.getLength(); i+=70 ) {
+							for( int k = i; k < Math.min( seq.getLength(), i+70 ); k++ ) {
 								out.append( seq.charAt(k) );
 							}
 							out.append( '\n' );
@@ -1306,6 +1338,16 @@ public class Webfasta implements EntryPoint {
 				//db.add( a );
 				//db.center();
 				Window.open(dataurl, "export.fasta", "");
+			}
+		});
+		popup.addItem( "Export phylip", new Command() {
+			@Override
+			public void execute() {
+				String out = Sequence.getPhylip(val, false);
+				String bstr = encode( out );
+				String dataurl = "data:text/plain;fileName=export.fasta;base64,"+bstr;
+				
+				Window.open(dataurl, "export.phy", "");
 			}
 		});
 		MenuBar	epopup = new MenuBar(true);
@@ -1342,6 +1384,9 @@ public class Webfasta implements EntryPoint {
 					
 				};*/
 				//table.setSelections( jsel );
+				for( Sequence seq : val ) {
+					((SequenceOld)seq).setSelected( true );
+				}
 				draw( xstart, ystart );
 			}
 		});
@@ -1364,6 +1409,10 @@ public class Webfasta implements EntryPoint {
 					data.removeRow( i );
 				}
 				table.draw( data );*/
+				
+				for( int i = val.size()-1; i >= 0; i-- ) {
+					if( ((SequenceOld)val.get(i)).isSelected() ) val.remove( i );
+				}
 				draw( xstart, ystart );
 			}
 		});
@@ -1589,18 +1638,10 @@ public class Webfasta implements EntryPoint {
 		vpanel.add( menubar );
 		
 		final SplitLayoutPanel slp = new SplitLayoutPanel();
-		slp.setWidth("100%");
-		slp.setHeight((height-25)+"px");
+		//slp.setWidth("100%");
+		slp.setSize( (ww-160)+"px", (wh-40)+"px");
 		vpanel.add( slp );
 		vpanel.add( fp );
-		
-		Window.addResizeHandler( new ResizeHandler() {
-			@Override
-			public void onResize(ResizeEvent event) {
-				int height = event.getHeight();
-				slp.setHeight((height-25)+"px");
-			}
-		});
 		
 		canvas.setWidth("100%");
 		canvas.setHeight("100%");
@@ -1768,8 +1809,13 @@ public class Webfasta implements EntryPoint {
 			
 			@Override
 			public void onMouseDown(MouseDownEvent event) {
-				int x = event.getX();
-				int y = event.getY();
+				mousex = event.getX();
+				mousey = event.getY();
+				
+				int x = mousex;
+				int y = mousey;
+				
+				mousedown = true;
 				
 				if( y < baseheight) {
 					if( x < tcanvas.getCoordinateSpaceWidth() - 40 ) {
@@ -1798,10 +1844,29 @@ public class Webfasta implements EntryPoint {
 					}
 					prevx = Integer.MAX_VALUE;
 					prevy = Integer.MAX_VALUE;
-					draw( 0, 0 );
+				} else {
+					int i = (y - baseheight + ystart)/baseheight;
+					SequenceOld	seq = (SequenceOld)val.get(i);
+					seq.setSelected( !seq.isSelected() );
+				}
+				draw( 0, 0 );
+			}
+		});
+		tcanvas.addMouseUpHandler( new MouseUpHandler() {
+			@Override
+			public void onMouseUp(MouseUpEvent event) {
+				mousedown = false;
+			}
+		});
+		tcanvas.addMouseMoveHandler( new MouseMoveHandler() {
+			@Override
+			public void onMouseMove(MouseMoveEvent event) {
+				if( mousedown ) {
+					int x = event.getX();
+					int y = event.getY();
 				}
 			}
-		});		
+		});
 		tableresize.addResizeHandler( new ResizeHandler() {
 			@Override
 			public void onResize(ResizeEvent event) {
@@ -1853,7 +1918,21 @@ public class Webfasta implements EntryPoint {
 		
 		Window.enableScrolling( false );
 		
-		rootPanel.add( vpanel );
+		final RootPanel	mainPanel = RootPanel.get( "main" );
+		mainPanel.setSize((ww-160)+"px", wh+"px");
+		mainPanel.add( vpanel );
+		
+		Window.addResizeHandler( new ResizeHandler() {
+			@Override
+			public void onResize(ResizeEvent event) {
+				int height = event.getHeight();
+				int width = event.getWidth();
+				//slp.setHeight((height-25)+"px");
+				slp.setSize( (width-160)+"px", (height-40)+"px");
+				
+				mainPanel.setWidth((width-160)+"px");
+			}
+		});
 		
 		/*//HorizontalSplitPanel hsp = new HorizontalSplitPanel();
 		slp.setWidth("1200px");
