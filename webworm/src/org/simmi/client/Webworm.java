@@ -1814,8 +1814,7 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 				cv.setFocus( true );
 				timer.scheduleRepeating( delay );
 			}
-		}
-		else if( ws == 1 ) {
+		} else if( ws == 1 ) {
 			Worm w = null;
 			for( Worm ww : worms ) {
 				w = ww;
@@ -1886,13 +1885,16 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 		int x = event.getX();
 		int y = event.getY();
 		
-		if( worms.size() == 0 ) {			
+		if( worms.size() == 0 ) {
+			playMusic();
+			
 			double angle = Math.atan2(cv.getCoordinateSpaceHeight()-y, x-cv.getCoordinateSpaceWidth()/2);
 			worms.add( new Worm("#00ff00", KeyCodes.KEY_LEFT, KeyCodes.KEY_RIGHT, KeyCodes.KEY_LEFT, KeyCodes.KEY_RIGHT, angle ) );
 			updateCoordinates(cv, false);
 			
 			if( timer != null ) {
 				info.hide();
+				cv.setFocus( true );
 				timer.scheduleRepeating( delay );
 			}
 		} else {

@@ -128,6 +128,42 @@ public class SmasagaServiceImpl extends RemoteServiceServlet implements SmasagaS
 		return ret;
 	}
 	
+	public static String getSignature( String method, String target, String paramstr ) throws UnsupportedEncodingException {
+		String MAC_NAME = "HmacSHA1";
+		String keyString = URLEncoder.encode("9or8lsn165d44qv", "UTF-8").replace("+", "%20");// + '&' + URLEncoder.encode(tokensecret, "UTF-8").replace("+", "%20");
+        byte[] keyBytes = keyString.getBytes( "UTF-8" );
+        SecretKey key = new SecretKeySpec(keyBytes, MAC_NAME);
+        Mac mac = null;
+		try {
+			mac = Mac.getInstance(MAC_NAME);
+			mac.init(key);
+		} catch (NoSuchAlgorithmException e) {
+			e.printStackTrace();
+		} catch (InvalidKeyException e) {
+			e.printStackTrace();
+		}
+		return getSignature( method, target, paramstr, mac );
+	}
+	
+	public static String getSignature( String method, String target, String paramstr, Mac mac ) throws UnsupportedEncodingException {
+		//String str = OAuth.percentEncode(target) + "&" + OAuth.percentEncode(paramstr);
+		String str = URLEncoder.encode(target, "UTF-8").replace("+", "%20") + "&" + URLEncoder.encode(paramstr, "UTF-8").replace("+", "%20");
+        //return "GET&" + str;
+        String sbs = method+"&" + str; //generate( baseurl, paramstr );
+        byte[] text = sbs.getBytes( "UTF-8" );
+        
+        System.err.println(sbs);
+        //servlet.log( "signature string: "+sbs );
+
+        byte[] b = mac.doFinal(text);
+        //byte[] nb = base64.encode(b);
+        //String sign = new String(nb).trim();
+        byte[] signb = Base64.encodeBase64(b);
+        String sign = new String( signb );
+        
+        return sign;
+	}
+	
 	public static boolean dropboxSave( String target, String tokenkey, String tokensecret, String fname, byte[] contents, HttpServlet servlet ) throws IOException {
 		Map<String,String>	parameters = new TreeMap<String,String>();
 		//URL u;
@@ -170,20 +206,7 @@ public class SmasagaServiceImpl extends RemoteServiceServlet implements SmasagaS
 			e.printStackTrace();
 		}
 
-		//String str = OAuth.percentEncode(target) + "&" + OAuth.percentEncode(paramstr);
-		String str = URLEncoder.encode(target, "UTF-8").replace("+", "%20") + "&" + URLEncoder.encode(paramstr, "UTF-8").replace("+", "%20");
-        //return "GET&" + str;
-        String sbs = "POST&" + str; //generate( baseurl, paramstr );
-        byte[] text = sbs.getBytes( "UTF-8" );
-        
-        System.err.println(sbs);
-        servlet.log( "signature string: "+sbs );
-
-        byte[] b = mac.doFinal(text);
-        //byte[] nb = base64.encode(b);
-        //String sign = new String(nb).trim();
-        byte[] signb = Base64.encodeBase64(b);
-        String sign = new String( signb );
+		String sign = getSignature( "POST", target, paramstr, mac );
         parameters.put("oauth_signature", sign );
 		
 		URL url = new URL(target);
@@ -236,11 +259,11 @@ public class SmasagaServiceImpl extends RemoteServiceServlet implements SmasagaS
 		return resp >= 200 && resp < 300;
 	}
 	
-	public static boolean dropToBox( String fname, byte[] contents, final HttpServlet servlet ) throws DropboxException {
+	public static boolean dropToBoxNew( String fname, byte[] contents, final HttpServlet servlet ) throws DropboxException {
 		servlet.log( "beginning" );
 		
 		AppKeyPair		appkey = new AppKeyPair("jemmmn3c5ot8rdu", "9or8lsn165d44qv");
-		AccessTokenPair accesstoken = new AccessTokenPair("sigmarkarl@gmail.com", "skc.311");
+		AccessTokenPair accesstoken = new AccessTokenPair("sigmarkarl@gmail.com", "drsmorc.311");
 		WebAuthSession	session = new WebAuthSession( appkey, Session.AccessType.DROPBOX, accesstoken);
 		DropboxAPI<?>	client = new DropboxAPI<WebAuthSession>( session );
 		
@@ -257,9 +280,9 @@ public class SmasagaServiceImpl extends RemoteServiceServlet implements SmasagaS
 		return true;
 	}
 	
-	public static boolean dropToBoxOld( String fname, byte[] contents, HttpServlet servlet ) {
-    	try {            
-			String urlstr = "https://api.dropbox.com/0/token?email=sigmarkarl@gmail.com&password=skc.311";
+	public static boolean dropToBox( String fname, byte[] contents, HttpServlet servlet ) {
+    	try {
+			String urlstr = "https://api.dropbox.com/0/token?email=sigmarkarl@gmail.com&password=drsmorc.311";
 			String oauth = "&oauth_consumer_key=jemmmn3c5ot8rdu";
 			
 			URL url = new URL(urlstr+oauth);
@@ -293,6 +316,103 @@ public class SmasagaServiceImpl extends RemoteServiceServlet implements SmasagaS
         }
     	return false;
     }
+	
+	public static boolean dropToBoxV1( String fname, byte[] contents, HttpServlet servlet ) {
+    	try {
+    		Map<String,String>	parameters = new TreeMap<String,String>();
+    		servlet.log( fname );
+    		parameters.put("oauth_consumer_key", "jemmmn3c5ot8rdu");
+    		//parameters.put("oauth_timestamp", Long.toString(System.currentTimeMillis()/1000) );
+    		parameters.put("oauth_signature_method", "PLAINTEXT");
+    		//parameters.put("oauth_nonce", Long.toString(Math.abs(new Random().nextLong())) );
+    		//parameters.put("oauth_version", "1.0" );
+    		
+    		String urlstr = "https://api.dropbox.com/1/oauth/request_token";
+    		String paramstr = "";
+    		for( String key : parameters.keySet() ) {
+    			if( paramstr.length() == 0 ) paramstr += key+"="+parameters.get(key);
+    			else paramstr += "&"+key+"="+parameters.get(key);
+    		}
+    		
+    		String sign = URLEncoder.encode("9or8lsn165d44qv", "UTF-8")+"&"+URLEncoder.encode("drsmorc.311", "UTF-8"); //getSignature( "GET", urlstr, paramstr );
+    		parameters.put("oauth_signature", sign );
+    		
+    		String urlparams = urlstr+"?"+paramstr+"&oauth_signature="+sign;
+    		System.err.println( urlparams );
+    		URL url = new URL( urlparams );
+    		
+    		InputStream is = url.openStream();
+			/*InputStreamReader isr = new InputStreamReader( is );
+			StringBuilder sb = new StringBuilder();
+			CharBuffer cb = CharBuffer.allocate( 1024 );
+			int r = isr.read( cb );
+			while( r > 0 ) {
+				sb.append( cb, 0, r );
+				r = isr.read( cb );
+			}
+			isr.close();
+			String s = sb.toString()*/
+    		
+    		byte[] bb = new byte[256];
+			int r = is.read( bb );
+			String s = "";
+			while( r > 0 ) {
+				s += new String( bb, 0, r );
+				r = is.read( bb );
+			}
+			is.close();
+			
+			System.err.println( "erm" );
+			System.err.println( s );
+			
+			Map<String,String>	json = new HashMap<String,String>();
+			String sub = s.substring( s.indexOf('{')+1, s.indexOf('}') );
+			String[] split = sub.split(",");
+			for( String sp : split ) {
+				String[] subspl = sp.split(":");
+				json.put( "oauth_"+subspl[0].trim().replace("\"", ""), subspl[1].trim().replace("\"", "") );
+			}
+			String tokenkey = json.get("oauth_token");
+			String tokensecret = json.get("oauth_secret");
+			
+			String fnameDecoded = URLDecoder.decode( fname, "UTF-8" );
+			parameters.put("file", fname );
+			parameters.put("oauth_token", tokenkey );
+    		
+			/*String urlstr = "https://api.dropbox.com/0/token?email=sigmarkarl@gmail.com&password=drsmorc.311";
+			String oauth = "&oauth_consumer_key=jemmmn3c5ot8rdu";
+			
+			URL url = new URL(urlstr+oauth);
+			InputStream is = url.openStream();
+			
+			byte[] bb = new byte[256];
+			int r = is.read( bb );
+			String s = "";
+			while( r > 0 ) {
+				s += new String( bb, 0, r );
+				r = is.read( bb );
+			}
+			is.close();
+			
+			Map<String,String>	json = new HashMap<String,String>();
+			String sub = s.substring( s.indexOf('{')+1, s.indexOf('}') );
+			String[] split = sub.split(",");
+			for( String sp : split ) {
+				String[] subspl = sp.split(":");
+				json.put( "oauth_"+subspl[0].trim().replace("\"", ""), subspl[1].trim().replace("\"", "") );
+			}
+			String tokenkey = json.get("oauth_token");
+			String tokensecret = json.get("oauth_secret");
+            String baseurl = "api-content.getdropbox.com";
+			//String baseurl = "localhost:8899";
+            String target = "https://"+baseurl+"/0/files/dropbox/Public";
+            return dropboxSave( target, tokenkey, tokensecret, fname, contents, servlet );*/
+        } catch (Exception e) {
+            e.printStackTrace();
+            assert false : "Total failure trying to access the trusted authenticator." + e;
+        }
+    	return false;
+    }
 
 	@Override
 	public String saveShortStory(Saga saga, String filename, String binary) {
@@ -308,12 +428,12 @@ public class SmasagaServiceImpl extends RemoteServiceServlet implements SmasagaS
 			for( int i = 0; i < binary.length(); i++ ) {
 				bbinary[i] = (byte)binary.charAt(i);
 			}
-			try {
+			//try {
 				dropToBox( filename, bbinary, this );
-			} catch (DropboxException e) {
+			/*} catch (DropboxException e) {
 				SmasagaServiceImpl.this.log( "message2 " + e.getMessage() );
 				e.printStackTrace();
-			}
+			}*/
 		}
 		
 		Entity	smasaga = new Entity("smasaga");

@@ -764,6 +764,7 @@ public class Smasogur implements EntryPoint {
 	    	  fp.add( filehp );
 	    	  
 	    	  subvp.add( html );
+	    	  //if( uid != null && uid.length() > 0 ) 
 	    	  subvp.add( fp );
 	    	  subvp.add( focuspanel );
 	    	  
