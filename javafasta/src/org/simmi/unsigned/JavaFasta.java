@@ -1627,27 +1627,33 @@ public class JavaFasta extends JApplet {
 		while( i < max-min ) {
 			boolean rem = true;
 			//char c = 0;
-			for( Sequence seq : seqlist ) {
-				char c2 = seq.charAt(i); //getCharAt(i, r);
-				if( c2 != '.' && c2 != '-' && c2 != ' ' ) {
-					rem = false;
-					break;
-				}
-				/*if( c2 != '.' && c2 != '-' ) {
-					if( c != 0 && c2 != c ) {
+			int len = -1;
+			while( rem && i+len < max ) {
+				len++;
+				for( Sequence seq : seqlist ) {
+					char c2 = seq.charAt(i+len); //getCharAt(i, r);
+					if( c2 != '.' && c2 != '-' && c2 != ' ' ) {
 						rem = false;
 						break;
 					}
-				
-					c = c2;
-				}*/
-			}
-			if( rem ) {
-				for( Sequence seq : seqlist ) {
-					seq.deleteCharAt(i);
+					/*if( c2 != '.' && c2 != '-' ) {
+						if( c != 0 && c2 != c ) {
+							rem = false;
+							break;
+						}
+					
+						c = c2;
+					}*/
 				}
-				max--;
-			} else i++;
+			}
+			if( len > 0 ) {
+				for( Sequence seq : seqlist ) {
+					seq.delete(i, i+len);
+				}
+				max-=len;
+			} else {
+				i++;
+			}
 		}
 		
 		checkMaxMin();
