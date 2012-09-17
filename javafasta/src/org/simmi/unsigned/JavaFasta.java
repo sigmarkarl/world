@@ -38,6 +38,7 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -1500,7 +1501,7 @@ public class JavaFasta extends JApplet {
 		List<String>	ret = new ArrayList<String>();
 		
 		for( Sequence seqname : lseq ) {
-			ret.add( seqname.getName().replace(' ', '_') );
+			ret.add( seqname.getName() ); //.replace(' ', '_') );
 		}
 		
 		return ret;
@@ -2357,6 +2358,107 @@ public class JavaFasta extends JApplet {
 				} catch (IOException e1) {
 					e1.printStackTrace();
 				}
+			}
+		});
+		popup.addSeparator();
+		popup.add( new AbstractAction("PCA for 2-state sites") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				int min = Integer.MAX_VALUE;
+				int max = Integer.MIN_VALUE;
+				int[] rr = table.getSelectedRows();
+				for( int r : rr ) {
+					int k = table.convertRowIndexToModel( r );
+					Sequence seq = lseq.get( k );
+					
+					min = Math.min( min, seq.getStart() );
+					max = Math.max( max, seq.getEnd() );
+				}
+				
+				List<Integer>	indx = new ArrayList<Integer>();
+				for( int i = min; i < max; i++ ) {
+					Set<Character>	charset = new HashSet<Character>();
+					for( int r : rr ) {
+						char c2 = getCharAt(i, r);
+						if( c2 == '.' && c2 == '-' || c2 == ' ' ) {
+							charset.clear();
+							break;
+						} else {
+							charset.add( c2 );
+						}
+					}
+					if( charset.size() == 2 ) {
+						indx.add( i );
+					}
+				}
+				
+				double[] X = new double[ indx.size()*rr.length ];
+				int kr = 0;
+				for( int r : rr ) {
+					char c = 0;
+					int ki = 0;
+					for( int i : indx ) {
+						char c2 = getCharAt(i, r);
+						if( c == 0 ) c = c2;
+						X[ kr*indx.size()+ki ] = c2 == c ? 1.0 : -1.0;
+						ki++;
+					}
+					kr++;
+				}
+				
+				double[] u = new double[rr.length];
+				double uu = 0.0;
+				for( int i = 0; i < u.length; i++ ) {
+					u[i] = X[i*indx.size()];
+					uu += u[i]*u[i];
+				}
+				double[] uold = new double[rr.length];
+				double d = 0.0;
+				
+				int count = 0;
+				do {
+					double[] v = new double[indx.size()];
+					double vv = 0.0;
+					for( int i = 0; i < v.length; i++ ) {
+						double Xv = 0.0;
+						for( int k = 0; k < rr.length; k++ ) {
+							Xv += X[k*indx.size()+i];
+						}
+						v[i] = Xv/uu;
+						vv = v[i]*v[i];
+					}
+					double vlen = Math.sqrt( vv );
+					for( int i = 0; i < v.length; i++ ) {
+						v[i] /= vlen;
+					}
+					
+					for( int i = 0; i < u.length; i++ ) {
+						uold[i] = u[i];
+					}
+					
+					uu = 0.0;
+					for( int i = 0; i < u.length; i++ ) {
+						u[i] = 0.0;
+						for( int k = 0; k < v.length; k++ ) {
+							u[i] += X[i*v.length+k]*v[k];
+						}
+						u[i] /= vv;
+						
+						uu += u[i]*u[i];
+					}
+					
+					d = 0.0;
+					for( int i = 0; i < u.length; i++ ) {
+						double ud = uold[i] - u[i];
+						d += ud*ud;
+					}
+					d = Math.sqrt(d);
+					 
+					System.err.println( d );
+					count++;
+			 	} while( d > 1.0e-8 );
+				
+				System.err.println( "success after "+count+" iteration" );
 			}
 		});
 		popup.addSeparator();
