@@ -428,7 +428,7 @@ public class Smasaga implements EntryPoint {
 				lang.setText( result.getLanguage() );
 				urdrattur.setText( result.getSummary() );
 				
-				if( result.getAuthor().equals(uid) ) {
+				if( uid != null && uid.length() > 0 && result.getAuthor().equals(uid) ) {
 					name.setReadOnly( false );
 					author.setReadOnly( false );
 					lang.setReadOnly( false );
@@ -453,7 +453,7 @@ public class Smasaga implements EntryPoint {
 					save.setEnabled( true );
 				}
 				
-				if( uid.length() != 0 && name.isReadOnly() ) {
+				if( uid != null && uid.length() > 0 && name.isReadOnly() ) {
 					rusl.setEnabled( true );
 					vont.setEnabled( true );
 					slaemt.setEnabled( true );

@@ -130,11 +130,33 @@ public class Smasogur implements EntryPoint {
 		}
 	}-*/;
 	
+	public native void fileLoad( JavaScriptObject file, String uid ) /*-{
+		var s = this;
+		if( file ) {
+			var reader = new FileReader();
+			reader.onload = function(e) {
+				var res = e.target.result;
+				s.@org.simmi.client.Smasogur::setStatus(Ljava/lang/String;)( "File loaded" );
+				s.@org.simmi.client.Smasogur::fileLoad(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)( file.name, res, uid );
+			};
+			
+			s.@org.simmi.client.Smasogur::setStatus(Ljava/lang/String;)( "Loading file" );
+			reader.readAsBinaryString( file );
+		}
+	}-*/;
+	
 	public native void dropHandler( JavaScriptObject table, JavaScriptObject dataTransfer ) /*-{
+		var file;
+		if( dataTransfer.files.length > 0 ) file = dataTransfer.files[0];
+		var s = this;
+		
+		//this.@org.simmi.client.Smasogur::fileLoad(Lcom/google/gwt/core/client/JavaScriptObject;Ljava/lang/String;)( file, "" );
+		this.@org.simmi.client.Smasogur::checkLoginForFileUpload(Lcom/google/gwt/core/client/JavaScriptObject;)( file );
+	}-*/;
+	
+	public native void checkLoginForFileUpload( JavaScriptObject file ) /*-{
+		var s = this;
 		try {
-			var file;
-			if( dataTransfer.files.length > 0 ) file = dataTransfer.files[0];
-			var s = this;
 			if( $wnd.console ) {
 				$wnd.console.log( "checking" );
 				$wnd.console.log( $wnd.FB );
@@ -155,17 +177,7 @@ public class Smasogur implements EntryPoint {
 				    var uid = response.authResponse.userID;
 				    var accessToken = response.authResponse.accessToken;
 		
-					if( file ) {
-						var reader = new FileReader();
-						reader.onload = function(e) {
-							var res = e.target.result;
-							s.@org.simmi.client.Smasogur::setStatus(Ljava/lang/String;)( "File loaded" );
-							s.@org.simmi.client.Smasogur::fileLoad(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)( file.name, res, uid );
-						};
-						
-						s.@org.simmi.client.Smasogur::setStatus(Ljava/lang/String;)( "Loading file" );
-						reader.readAsBinaryString( file );
-					}
+					s.@org.simmi.client.Smasogur::fileLoad(Lcom/google/gwt/core/client/JavaScriptObject;Ljava/lang/String;)( file, uid );
 				} else if (response.status === 'not_authorized') {
 				    if( $wnd.console ) $wnd.console.log('not authorized');
 				} else {
@@ -173,28 +185,28 @@ public class Smasogur implements EntryPoint {
 				    $wnd.FB.login();
 				}
 			
-//  				if (response.session) {
-//  					$wnd.console.log('ok '+response.session);
-//  					
-//   					var files = evt.dataTransfer.files;		
-//					var count = files.length;
-//		
-//					if(count > 0) {
-//						var file = files[0];
-//						var reader = new FileReader();
-//						reader.onload = function(e) {
-//							var res = e.target.result;
-//							s.@org.simmi.client.Smasogur::setStatus(Ljava/lang/String;)( "File loaded" );
-//							s.@org.simmi.client.Smasogur::fileLoad(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)( file.name, res, response.session.uid );
-//						};
-//						
-//						s.@org.simmi.client.Smasogur::setStatus(Ljava/lang/String;)( "Loading file" );
-//						reader.readAsBinaryString( file );
-//					}
-//				} else {
-//					$wnd.console.log('null '+response.session);
-//				    $wnd.FB.login();
-//				}
+	//				if (response.session) {
+	//					$wnd.console.log('ok '+response.session);
+	//					
+	//					var files = evt.dataTransfer.files;		
+	//				var count = files.length;
+	//	
+	//				if(count > 0) {
+	//					var file = files[0];
+	//					var reader = new FileReader();
+	//					reader.onload = function(e) {
+	//						var res = e.target.result;
+	//						s.@org.simmi.client.Smasogur::setStatus(Ljava/lang/String;)( "File loaded" );
+	//						s.@org.simmi.client.Smasogur::fileLoad(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)( file.name, res, response.session.uid );
+	//					};
+	//					
+	//					s.@org.simmi.client.Smasogur::setStatus(Ljava/lang/String;)( "Loading file" );
+	//					reader.readAsBinaryString( file );
+	//				}
+	//			} else {
+	//				$wnd.console.log('null '+response.session);
+	//			    $wnd.FB.login();
+	//			}
 			});
 		} catch( e ) {
 			if( $wnd.console ) $wnd.console.log( 'error '+e );
@@ -387,7 +399,7 @@ public class Smasogur implements EntryPoint {
 			Selection s = selections.get(i);
 			int r = s.getRow();
 			//console("fuck");
-			if( uid != null ) delete( uid, r );
+			if( uid != null && uid.length() > 0 ) delete( uid, r );
 			//deleteSaga( r );
 		}
 		view = DataView.create( data );
@@ -615,6 +627,8 @@ public class Smasogur implements EntryPoint {
 	    	  smasagaService.getAllShortstories( new AsyncCallback<Saga[]>() {
 				@Override
 				public void onSuccess(Saga[] result) {
+					console( "succ all load:"+result.length );
+					
 					sogur = new ArrayList<Saga>( Arrays.asList(result) );
 					
 					for( Saga smasaga : result ) {

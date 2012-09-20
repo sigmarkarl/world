@@ -108,9 +108,13 @@ public class SmasagaServiceImpl extends RemoteServiceServlet implements SmasagaS
 			Long 	grade = (Long)e.getProperty("grade");
 			
 			if( saga != null && saga.length() > 0 ) {
-				Saga smasaga = sagaMap.get(saga);
-				smasaga.setGradeNum( smasaga.getGradeNum()+1 );
-				smasaga.setGradeSum( (int)(smasaga.getGradeSum()+grade) );
+				if( sagaMap.containsKey( saga) ) {
+					Saga smasaga = sagaMap.get(saga);
+					smasaga.setGradeNum( smasaga.getGradeNum()+1 );
+					smasaga.setGradeSum( (int)(smasaga.getGradeSum()+grade) );
+				} else {
+					this.log( "no saga: " + saga );
+				}
 			}
 		}
 		
