@@ -38,7 +38,6 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -789,9 +788,9 @@ public class JavaFasta extends JApplet {
 		BufferedReader br = new BufferedReader( new InputStreamReader(is) );
 		String line = br.readLine();
 		while( line != null ) {
-			String[] split = line.split("\t");
+			String[] split = line.trim().split("[\t ]+");
 			if( split.length > 1 ) {
-				or.put(split[1], split[0]);
+				or.put(split[0], split[1]);
 			}
 			line = br.readLine();
 		}
@@ -2340,7 +2339,76 @@ public class JavaFasta extends JApplet {
 				overview.repaint();
 			}
 		});
+		popup.add( new AbstractAction("RenameSpec") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				String[] colors = {"#ff0000", "#00ff00", "#0000ff", "#ffff00", "#ff00ff", "#00ffff", "#ff8800", "#ff0088", "#88ff00", "#00ff88", "#8800ff", "#0088ff"};
+				Map<String,String> ss = new HashMap<String,String>();
+				for( Sequence seq : lseq ) {
+					String name = seq.getName();
+					
+					int i = name.indexOf('_');
+					if( i != -1 ) {
+						//int k = name.indexOf('_', i+1);
+						//if( k != -1 ) {
+						
+						int li = name.lastIndexOf(';');
+						int k = name.indexOf("_");
+						if( k == -1 ) k = li;
+						String key = name.substring(0, k);
+						String color;
+						if( ss.containsKey( key ) ) {
+							color = ss.get( key );
+						} else {
+							color = colors[ss.size()];
+							ss.put( key, color );
+						}
+						
+						if( li != -1 ) {
+							String end = name.substring(li+1).replace(';', ' ').trim();
+							seq.setName( name.substring(0,li)+"["+color+"]$;"+end );
+							//String end = name.substring(ln+1, name.length()).replace(';', ' ').trim();
+							//seq.setName( name.substring(0,u)+"["+color+"];"+end );
+						} else {
+							//String end = name.substring(li+1).replace(';', ' ').trim();
+							//seq.setName( name.substring(0,li)+"["+color+"]{1.0 1.0 2.0};"+end );
+						}
+						
+						/*int li = name.lastIndexOf(';');
+						int ln = name.lastIndexOf(';', li-1);
+						if( ln != -1 ) {
+							String end = name.substring(ln+1, name.length()).replace(';', ' ').trim();
+							seq.setName( name.substring(0,u)+"["+color+"];"+end );
+						} else {
+							String end = name.substring(u+1).replace(';', ' ').trim();
+							seq.setName( name.substring(0,u)+"["+color+"];"+end );
+						}*/
+					}
+				}
+				updateView();
+			}
+		});
 		popup.add( new AbstractAction("RenameAppend") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				try {
+					Map<String,String> or = openRenameFile();
+					for( String seqval : or.keySet() ) {
+						String rename = or.get(seqval);
+						
+						for( Sequence seq : lseq ) {
+							if( seq.getName().equals(seqval) ) {
+								seq.setName( seq.getName() + "_" + rename );
+							}
+						}
+					}
+					updateView();
+				} catch (IOException e1) {
+					e1.printStackTrace();
+				}
+			}
+		});
+		popup.add( new AbstractAction("RenameAppend from sequence") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				try {
@@ -2358,6 +2426,40 @@ public class JavaFasta extends JApplet {
 				} catch (IOException e1) {
 					e1.printStackTrace();
 				}
+			}
+		});
+		popup.add( new AbstractAction("Non-unique names") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				Map<String,List<Sequence>> un = new HashMap<String,List<Sequence>>();
+				for( Sequence seq : lseq ) {
+					List<Sequence> ul;
+					if( un.containsKey( seq.getName() ) ) {
+						ul = un.get( seq.getName() );
+					} else {
+						ul = new ArrayList<Sequence>();
+						un.put( seq.getName(), ul );
+					}
+					ul.add( seq );
+				}
+				
+				for( String seqname : un.keySet() ) {
+					List<Sequence> ul = un.get( seqname );
+					for( int i = 1; i < ul.size(); i++ ) {
+						Sequence seq = ul.get(i);
+						seq.setName( seq.getName()+"_"+i );
+					}
+				}
+				updateView();
+			}
+		});
+		popup.add( new AbstractAction("Strip names") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				for( Sequence seq : lseq ) {
+					seq.setName( seq.getName().split("[\t ]+")[0] );
+				}
+				updateView();
 			}
 		});
 		popup.addSeparator();
