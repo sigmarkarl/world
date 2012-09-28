@@ -36,6 +36,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
+import java.io.Writer;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -835,30 +836,38 @@ public class JavaFasta extends JApplet {
          }
 	}
 	
+	public void writeFasta( List<Sequence> seqlist, Writer osw ) throws IOException {
+		for( Sequence seq : seqlist ) {
+			int val = 0;
+	   		int end = seq.getLength();
+	   		 
+	   		if( c != null && c.selectedRect != null && c.selectedRect.width > 0 ) {
+	   			 val = Math.max( val, c.selectedRect.x-seq.getStart() );
+	   			 end = Math.min( end, c.selectedRect.x+c.selectedRect.width-seq.getStart() );
+	   		}
+	   		 
+	   		if( val < end ) osw.write( ">" + seq.name + "\n" );
+	   		while( val < end ) {
+	   			 osw.write( seq.sb.substring(val, Math.min( end, val+70 )) + "\n" );
+	   			 val += 70;
+	   		}
+		}
+	}
+	
 	public void exportFasta( JTable table, List<Sequence> lseq ) throws IOException, UnavailableServiceException {
 		 FileSaveService fss = null;
          FileContents fileContents = null;
          ByteArrayOutputStream baos = new ByteArrayOutputStream();
          OutputStreamWriter	osw = new OutputStreamWriter( baos );
     	 
+         List<Sequence> seqlist = new ArrayList<Sequence>();
     	 int[] rr = table.getSelectedRows();
     	 for( int r : rr ) {
     		 int i = table.convertRowIndexToModel( r );
     		 Sequence seq = lseq.get(i);
-    		 int val = 0;
-    		 int end = seq.getLength();
-    		 
-    		 if( c.selectedRect.width > 0 ) {
-    			 val = Math.max( val, c.selectedRect.x-seq.getStart() );
-    			 end = Math.min( end, c.selectedRect.x+c.selectedRect.width-seq.getStart() );
-    		 }
-    		 
-    		 if( val < end ) osw.write( ">" + seq.name + "\n" );
-    		 while( val < end ) {
-    			 osw.write( seq.sb.substring(val, Math.min( end, val+70 )) + "\n" );
-    			 val += 70;
-    		 }
+    		 seqlist.add( seq );
     	 }
+    	 writeFasta( seqlist, osw );
     	 osw.close();
     	 baos.close();
 
@@ -1608,7 +1617,6 @@ public class JavaFasta extends JApplet {
 		}
 		
 		checkMaxMin();
-		updateView();
 	}
 	
 	public void removeGaps( List<Sequence> seqlist ) {
@@ -2769,6 +2777,7 @@ public class JavaFasta extends JApplet {
 					seqlist.add( seq );
 				}
 				removeAllGaps( seqlist );
+				updateView();
 				
 				c.repaint();
 			}
