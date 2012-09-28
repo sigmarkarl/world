@@ -1405,6 +1405,51 @@ public class JavaFasta extends JApplet {
 		return ret;
 	}
 	
+	public double[] get2StatePCAMatrix( int[] rr ) {
+		int min = Integer.MAX_VALUE;
+		int max = Integer.MIN_VALUE;
+		for( int r : rr ) {
+			int k = table.convertRowIndexToModel( r );
+			Sequence seq = lseq.get( k );
+			
+			min = Math.min( min, seq.getStart() );
+			max = Math.max( max, seq.getEnd() );
+		}
+		
+		List<Integer>	indx = new ArrayList<Integer>();
+		for( int i = min; i < max; i++ ) {
+			Set<Character>	charset = new HashSet<Character>();
+			for( int r : rr ) {
+				char c2 = getCharAt(i, r);
+				if( c2 == '.' && c2 == '-' || c2 == ' ' ) {
+					charset.clear();
+					break;
+				} else {
+					charset.add( c2 );
+				}
+			}
+			if( charset.size() == 2 ) {
+				indx.add( i );
+			}
+		}
+		
+		double[] X = new double[ indx.size()*rr.length ];
+		int kr = 0;
+		for( int r : rr ) {
+			char c = 0;
+			int ki = 0;
+			for( int i : indx ) {
+				char c2 = getCharAt(i, r);
+				if( c == 0 ) c = c2;
+				X[ kr*indx.size()+ki ] = c2 == c ? 1.0 : -1.0;
+				ki++;
+			}
+			kr++;
+		}
+		
+		return X;
+	}
+	
 	public StringBuilder distanceMatrix( boolean excludeGaps ) {
 		JCheckBox	jukes = new JCheckBox("Jukes-cantor correction");
 		JCheckBox	boots = new JCheckBox("Bootstrap");
@@ -2471,55 +2516,59 @@ public class JavaFasta extends JApplet {
 			}
 		});
 		popup.addSeparator();
-		popup.add( new AbstractAction("PCA for 2-state sites") {
+		popup.add( new AbstractAction("View 2-state PCA matrix") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				int min = Integer.MAX_VALUE;
-				int max = Integer.MIN_VALUE;
 				int[] rr = table.getSelectedRows();
+				double[] X = get2StatePCAMatrix( rr );
+				int isize = X.length/rr.length;
+				
+				StringBuilder sb = new StringBuilder();
+				for( int i = 0; i < X.length; i++ ) {
+					sb.append( X[i] );
+					if( i % isize == isize-1 ) sb.append("\n");
+					else sb.append("\t");
+				}
+				
+				StringBuilder col = new StringBuilder();
 				for( int r : rr ) {
 					int k = table.convertRowIndexToModel( r );
 					Sequence seq = lseq.get( k );
+					String name = seq.getName();
+					int i = name.indexOf("[#");
+					if( i == -1 ) {
+						col.append( "0.0\t0.0\t0.0\n" );
+					} else {
+						col.append( Integer.parseInt(name.substring(i+2, i+4), 16)+"\t" );
+						col.append( Integer.parseInt(name.substring(i+4, i+6), 16)+"\t" );
+						col.append( Integer.parseInt(name.substring(i+6, i+8), 16)+"\n" );
+					}
+				}
+				
+				try {
+					FileWriter fw = new FileWriter("/home/sigmar/ok.txt");
+					fw.write( sb.toString() );
+					fw.close();
 					
-					min = Math.min( min, seq.getStart() );
-					max = Math.max( max, seq.getEnd() );
+					fw = new FileWriter("/home/sigmar/col.txt");
+					fw.write( col.toString() );
+					fw.close();
+				} catch (IOException e1) {
+					e1.printStackTrace();
 				}
-				
-				List<Integer>	indx = new ArrayList<Integer>();
-				for( int i = min; i < max; i++ ) {
-					Set<Character>	charset = new HashSet<Character>();
-					for( int r : rr ) {
-						char c2 = getCharAt(i, r);
-						if( c2 == '.' && c2 == '-' || c2 == ' ' ) {
-							charset.clear();
-							break;
-						} else {
-							charset.add( c2 );
-						}
-					}
-					if( charset.size() == 2 ) {
-						indx.add( i );
-					}
-				}
-				
-				double[] X = new double[ indx.size()*rr.length ];
-				int kr = 0;
-				for( int r : rr ) {
-					char c = 0;
-					int ki = 0;
-					for( int i : indx ) {
-						char c2 = getCharAt(i, r);
-						if( c == 0 ) c = c2;
-						X[ kr*indx.size()+ki ] = c2 == c ? 1.0 : -1.0;
-						ki++;
-					}
-					kr++;
-				}
+			}
+		});
+		popup.add( new AbstractAction("PCA for 2-state sites") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				int[] rr = table.getSelectedRows();
+				double[] X = get2StatePCAMatrix( rr );
+				int isize = X.length/rr.length;
 				
 				double[] u = new double[rr.length];
 				double uu = 0.0;
 				for( int i = 0; i < u.length; i++ ) {
-					u[i] = X[i*indx.size()];
+					u[i] = X[i*isize];
 					uu += u[i]*u[i];
 				}
 				double[] uold = new double[rr.length];
@@ -2527,12 +2576,12 @@ public class JavaFasta extends JApplet {
 				
 				int count = 0;
 				do {
-					double[] v = new double[indx.size()];
+					double[] v = new double[isize];
 					double vv = 0.0;
 					for( int i = 0; i < v.length; i++ ) {
 						double Xv = 0.0;
 						for( int k = 0; k < rr.length; k++ ) {
-							Xv += X[k*indx.size()+i];
+							Xv += X[k*isize+i];
 						}
 						v[i] = Xv/uu;
 						vv = v[i]*v[i];
