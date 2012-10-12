@@ -17,10 +17,15 @@ import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.ui.RootPanel;
 
 import elemental.client.Browser;
+import elemental.dom.LocalMediaStream;
 import elemental.html.AudioContext;
 import elemental.html.AudioGainNode;
 import elemental.html.AudioParam;
+import elemental.html.Navigator;
+import elemental.html.NavigatorUserMediaSuccessCallback;
 import elemental.html.Oscillator;
+import elemental.js.dom.JsDOMStringMap;
+import elemental.util.Mappable;
 
 /**
  * Entry point classes define <code>onModuleLoad()</code>.
@@ -94,13 +99,34 @@ public class Childsplay implements EntryPoint {
 		st.setPadding(0.0, Unit.PX);
 		st.setBorderWidth(0.0, Unit.PX);
 		
-		elemental.html.Window wnd = Browser.getWindow();
+		final elemental.html.Window wnd = Browser.getWindow();
 		AudioContext acontext = wnd.newAudioContext();
 		final AudioGainNode agn = acontext.createGainNode();
 		final Oscillator osc = acontext.createOscillator();
 		osc.setType( Oscillator.SINE );
 		osc.connect( (AudioParam)agn, 0 );
 		agn.connect( (AudioParam)acontext.getDestination(), 0 );
+		
+		Navigator nv = wnd.getNavigator();
+		Mappable mbl = new Mappable() {
+			
+			@Override
+			public void setAt(String key, Object value) {}
+			
+			@Override
+			public Object at(String key) {
+				if( key.equals("audio") ) return true;
+				return null;
+			}
+		};
+		nv.webkitGetUserMedia( mbl, new NavigatorUserMediaSuccessCallback() {
+			@Override
+			public boolean onNavigatorUserMediaSuccessCallback(LocalMediaStream stream) {
+				wnd.getConsole().log("succ");
+				//console("ookok");
+				return false;
+			}
+		});
 		
 		Window.enableScrolling( false );
 		int w = Window.getClientWidth();
