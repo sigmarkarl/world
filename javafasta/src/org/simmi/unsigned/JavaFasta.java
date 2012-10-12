@@ -1421,11 +1421,16 @@ public class JavaFasta extends JApplet {
 			Set<Character>	charset = new HashSet<Character>();
 			for( int r : rr ) {
 				char c2 = getCharAt(i, r);
-				if( c2 == '.' && c2 == '-' || c2 == ' ' ) {
+				if( c2 == '.' || c2 == '-' || c2 == ' ' ) {
 					charset.clear();
 					break;
 				} else {
 					charset.add( c2 );
+					
+					/*if( charset.size() == 2 ) {
+						int k = table.convertRowIndexToModel( r );
+						System.err.println( i + "  " + c2 + "  " + lseq.get( k ).getName() );
+					}*/
 				}
 			}
 			if( charset.size() == 2 ) {
@@ -1434,17 +1439,24 @@ public class JavaFasta extends JApplet {
 		}
 		
 		double[] X = new double[ indx.size()*rr.length ];
-		int kr = 0;
-		for( int r : rr ) {
+		int ki = 0;
+		for( int i : indx ) {
 			char c = 0;
-			int ki = 0;
-			for( int i : indx ) {
+			int kr = 0;
+			for( int r : rr ) {
 				char c2 = getCharAt(i, r);
 				if( c == 0 ) c = c2;
+				
+				/*int k = table.convertRowIndexToModel( r );
+				String acc = lseq.get( k ).getName();
+				if( i == 192 && acc.contains("1940") ) {
+					System.err.println(  i + "  " + c + "  " + c2 + "  " + lseq.get( k ).getName() );
+				}*/
+				
 				X[ kr*indx.size()+ki ] = c2 == c ? 1.0 : -1.0;
-				ki++;
+				kr++;
 			}
-			kr++;
+			ki++;
 		}
 		
 		return X;
@@ -2545,6 +2557,32 @@ public class JavaFasta extends JApplet {
 					}
 				}
 				
+				//Map<String,StringBuilder>	sbmap = new HashMap<String,StringBuilder>();
+				List<Sequence> ls = new ArrayList<Sequence>();
+				for( int r : rr ) {
+					int k = table.convertRowIndexToModel( r );
+					Sequence seq = lseq.get( k );
+					String name = seq.getName();
+					StringBuilder sub = new StringBuilder();
+					for( int i = 0; i < isize; i++ ) {
+						if( X[r*isize+i] == 1.0 ) sub.append("1");
+						else sub.append("0");
+					}
+					
+					Sequence subseq = new Sequence( name, name, sub, null );
+					ls.add( subseq );
+					
+					//sbmap.put(name, sub);
+					/*fas.append( ">"+name );
+					for( int i = 0; i < isize; i++ ) {
+						if( i % 70 == 0 ) fas.append("\n");
+						if( X[r*isize+i] == 1.0 ) fas.append("1");
+						else fas.append("0");
+					}
+					fas.append("\n");*/
+				}
+				String restext = Sequence.getPhylip( ls, false );				
+				
 				try {
 					FileWriter fw = new FileWriter("/home/sigmar/ok.txt");
 					fw.write( sb.toString() );
@@ -2552,6 +2590,10 @@ public class JavaFasta extends JApplet {
 					
 					fw = new FileWriter("/home/sigmar/col.txt");
 					fw.write( col.toString() );
+					fw.close();
+					
+					fw = new FileWriter("/home/sigmar/2state.fasta");
+					fw.write( restext );
 					fw.close();
 				} catch (IOException e1) {
 					e1.printStackTrace();
