@@ -846,7 +846,7 @@ public class JavaFasta extends JApplet {
 	   			 end = Math.min( end, c.selectedRect.x+c.selectedRect.width-seq.getStart() );
 	   		}
 	   		 
-	   		if( val < end ) osw.write( ">" + seq.name + "\n" );
+	   		if( val <= end ) osw.write( ">" + seq.name + "\n" );
 	   		while( val < end ) {
 	   			 osw.write( seq.sb.substring(val, Math.min( end, val+70 )) + "\n" );
 	   			 val += 70;
@@ -2523,6 +2523,18 @@ public class JavaFasta extends JApplet {
 			public void actionPerformed(ActionEvent e) {
 				for( Sequence seq : lseq ) {
 					seq.setName( seq.getName().split("[\t ]+")[0] );
+				}
+				updateView();
+			}
+		});
+		popup.add( new AbstractAction("Underscore spaces") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				for( Sequence seq : lseq ) {
+					String name = seq.getName();
+					int i = name.indexOf(' ');
+					name = name.substring(0,i+1) + name.substring(i+1).replace(' ', '_');
+					seq.setName( name );
 				}
 				updateView();
 			}
