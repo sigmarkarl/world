@@ -24,7 +24,6 @@ import elemental.html.AudioParam;
 import elemental.html.Navigator;
 import elemental.html.NavigatorUserMediaSuccessCallback;
 import elemental.html.Oscillator;
-import elemental.js.dom.JsDOMStringMap;
 import elemental.util.Mappable;
 
 /**
