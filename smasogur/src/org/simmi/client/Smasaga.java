@@ -86,6 +86,8 @@ public class Smasaga implements EntryPoint {
 	AsyncCallback<Subsaga> asaga;
 	private String uid = null;
 	private String keystr = null; 
+	Einkunn[] einkunnir;
+	String resultKey;
 	public void setUserId( String uid ) {
 		this.uid = uid;
 		
@@ -94,10 +96,167 @@ public class Smasaga implements EntryPoint {
 		//RootPanel fbroot = RootPanel.get("fb-root");
 		
 		//<fb:comments href="http://smasogurnar.appspot.com/Smasaga.jsp?smasaga=agtzbWFzb2d1cm5hcnIPCxIHc21hc2FnYRirwwEM" num_posts="2" width="500"></fb:comments>
-		smasagaService.getShortstory( keystr, asaga );
+		
+		initStory( authorName );
+		initGrades( einkunnir, resultKey, authorName );
+	}
+	
+	final CheckBox love = new CheckBox("Love story");
+	final CheckBox horror = new CheckBox("Horror story");
+	final CheckBox child = new CheckBox("Children story");
+	final CheckBox adolescent = new CheckBox("Story for adolescents");
+	final CheckBox tragedy = new CheckBox("Tragedy");
+	final CheckBox comedy = new CheckBox("Comedy");
+	final CheckBox science = new CheckBox("Science fiction");
+	final CheckBox supernatural = new CheckBox("Supernatural");
+	final CheckBox historical = new CheckBox("Historical");
+	final CheckBox truestory = new CheckBox("True story");
+	final CheckBox erotik = new CheckBox("Erotic");
+	final CheckBox criminal = new CheckBox("Pulp fiction");
+	final CheckBox adventure = new CheckBox("Fairy tail");
+	final CheckBox poem = new CheckBox("Poem");
+	final CheckBox tobecontine = new CheckBox("To be continued");
+	
+	final TextBox	name = new TextBox();
+	final TextBox	author = new TextBox();
+	final TextBox	lang = new TextBox();
+	
+	final RadioButton	rusl = new RadioButton("Grade", "Crap");
+	final RadioButton	vont = new RadioButton("Grade", "Very bad");
+	final RadioButton	slaemt = new RadioButton("Grade", "Below average");
+	final RadioButton	sleppur = new RadioButton("Grade", "Ok");
+	final RadioButton	saemi = new RadioButton("Grade", "Above average");
+	final RadioButton	gott = new RadioButton("Grade", "Very good");
+	final RadioButton	snilld = new RadioButton("Grade", "Masterpiece");
+	
+	final TextArea urdrattur = new TextArea();
+	
+	final RadioButton[] buttons = {rusl, vont, slaemt, sleppur, saemi, gott, snilld};
+	final TextArea umsogntext = new TextArea();
+	final Button save = new Button( "Save" );
+	
+	final Label umlab = new Label("Comment");
+	final Button	leftButt = new Button("<");
+	final Button	rightButt = new Button(">");
+	
+	public void initStory( String authorName ) {
+		if( uid != null && uid.length() > 0 && authorName.equals(uid) ) {
+			name.setReadOnly( false );
+			author.setReadOnly( false );
+			lang.setReadOnly( false );
+			urdrattur.setReadOnly( false );
+			
+			love.setEnabled( true );
+			comedy.setEnabled( true );
+			tragedy.setEnabled( true );
+			horror.setEnabled( true );
+			erotik.setEnabled( true );
+			science.setEnabled( true );
+			child.setEnabled( true );
+			adolescent.setEnabled( true );
+			criminal.setEnabled( true );
+			historical.setEnabled( true );
+			truestory.setEnabled( true );
+			supernatural.setEnabled( true );
+			adventure.setEnabled( true );
+			poem.setEnabled( true );
+			tobecontine.setEnabled( true );
+			
+			save.setEnabled( true );
+		}
+		
+		if( uid != null && uid.length() > 0 && name.isReadOnly() ) {
+			rusl.setEnabled( true );
+			vont.setEnabled( true );
+			slaemt.setEnabled( true );
+			sleppur.setEnabled( true );
+			saemi.setEnabled( true );
+			gott.setEnabled( true );
+			snilld.setEnabled( true );
+			
+			umsogntext.setReadOnly( false );
+		}
+	}
+	
+	public List<Einkunn> initGrades( Einkunn[] einkunnir, String resultKey, String resultAuthor ) {
+		final List<Einkunn> einkunnList = new ArrayList<Einkunn>();
+		//Einkunn[] einkunnir = result.getGrades();
+		for( Einkunn einkunn : einkunnir ) {
+			if( einkunn.getUser().equals(uid) && einkunn.getStory().equals(resultKey) ) {
+				einkunnList.addAll( Arrays.asList( einkunnir ) );
+				break;
+			}
+		}
+		
+		if( einkunnList.size() == 0 ) {
+			//Window.alert(result.getKey());
+			einkunnList.add( new Einkunn(uid,resultKey,"",-1) );
+			einkunnList.addAll( Arrays.asList( einkunnir ) );
+		}
+		
+		Einkunn enk = einkunnList.get(currentGrade);
+		umlab.setText("Comment ("+(currentGrade+1)+" of "+einkunnList.size()+")");
+		if( enk.grade != -1 ) {
+			buttons[(int)enk.grade].setValue( true );
+			umsogntext.setText( enk.getComment() );
+		}
+		
+		final String sagaOwner = resultAuthor;
+		leftButt.addClickHandler( new ClickHandler() {
+			@Override
+			public void onClick(ClickEvent event) {
+				currentGrade = (currentGrade-1)%einkunnList.size();
+				
+				Einkunn enk = einkunnList.get(currentGrade);
+				umlab.setText("Comment ("+(currentGrade+1)+" of "+einkunnList.size()+")");
+				if( enk.grade != -1 ) {
+					buttons[(int)enk.grade].setValue( true );
+				}
+				umsogntext.setText( enk.getComment() );
+				
+				boolean enni = uid != null && uid.length() > 0 && currentGrade == 0 && !sagaOwner.equals(uid);
+				
+				rusl.setEnabled( enni );
+				vont.setEnabled( enni );
+				slaemt.setEnabled( enni );
+				sleppur.setEnabled( enni );
+				saemi.setEnabled( enni );
+				gott.setEnabled( enni );
+				snilld.setEnabled( enni );
+				
+				umsogntext.setReadOnly( !enni );
+			}
+		});
+		rightButt.addClickHandler( new ClickHandler() {
+			@Override
+			public void onClick(ClickEvent event) {
+				currentGrade = (currentGrade+1)%einkunnList.size();
+				
+				Einkunn enk = einkunnList.get(currentGrade);
+				umlab.setText("Comment ("+(currentGrade+1)+" of "+einkunnList.size()+")");
+				if( enk.grade != -1 ) {
+					buttons[(int)enk.grade].setValue( true );
+				}
+				umsogntext.setText( enk.getComment() );
+				
+				boolean enni = uid != null && uid.length() > 0 && currentGrade == 0 && !sagaOwner.equals(uid);
+				
+				rusl.setEnabled( enni );
+				vont.setEnabled( enni );
+				slaemt.setEnabled( enni );
+				sleppur.setEnabled( enni );
+				saemi.setEnabled( enni );
+				gott.setEnabled( enni );
+				snilld.setEnabled( enni );
+				
+				umsogntext.setReadOnly( !enni );
+			}
+		});
+		return einkunnList;
 	}
 	
 	int currentGrade = 0;
+	String authorName = "";
 	public void onModuleLoad() {
 		final List<Einkunn>	einkunnList = new ArrayList<Einkunn>();
 		
@@ -110,11 +269,12 @@ public class Smasaga implements EntryPoint {
 		Style rootstyle = rootPanel.getElement().getStyle();
 		rootstyle.setMargin(0.0, Unit.PX);
 		rootstyle.setPadding(0.0, Unit.PX);
+		rootstyle.setBorderWidth(0.0, Unit.PX);
 		
-		final VerticalPanel	vp = new VerticalPanel();
-		vp.setSize("100%", "100%");
-		vp.setHorizontalAlignment( VerticalPanel.ALIGN_CENTER );
-		vp.setVerticalAlignment( VerticalPanel.ALIGN_MIDDLE );
+		//final VerticalPanel	vp = new VerticalPanel();
+		//vp.setSize("100%", "100%");
+		//vp.setHorizontalAlignment( VerticalPanel.ALIGN_CENTER );
+		//vp.setVerticalAlignment( VerticalPanel.ALIGN_MIDDLE );
 		
 		int w = Window.getClientWidth();
 		int h = Window.getClientHeight();
@@ -128,8 +288,9 @@ public class Smasaga implements EntryPoint {
 		grid.setWidth(nw+"px");
 		
 		final VerticalPanel subvp = new VerticalPanel();
+		subvp.setWidth("100%");
 		subvp.setHorizontalAlignment( VerticalPanel.ALIGN_CENTER );
-		subvp.setVerticalAlignment( VerticalPanel.ALIGN_MIDDLE );
+		//subvp.setVerticalAlignment( VerticalPanel.ALIGN_MIDDLE );
 		
 		Window.addResizeHandler( new ResizeHandler() {
 			@Override
@@ -144,7 +305,7 @@ public class Smasaga implements EntryPoint {
 				else nw = 758;*/ 
 				
 				grid.setWidth(nw+"px");
-				subvp.setSize(nw+"px", "600px");
+				subvp.setSize("100%", "600px");
 				//vp.setSize(event.getWidth()+"px", (event.getHeight())+"px");
 			}
 		});
@@ -164,22 +325,6 @@ public class Smasaga implements EntryPoint {
 		final CheckBox adventure = new CheckBox("Ã†vintÃ½ri");
 		final CheckBox poem = new CheckBox("LjÃ³Ã°");
 		final CheckBox tobecontine = new CheckBox("Framhaldssaga");*/
-		
-		final CheckBox love = new CheckBox("Love story");
-		final CheckBox horror = new CheckBox("Horror story");
-		final CheckBox child = new CheckBox("Children story");
-		final CheckBox adolescent = new CheckBox("Story for adolescents");
-		final CheckBox tragedy = new CheckBox("Tragedy");
-		final CheckBox comedy = new CheckBox("Comedy");
-		final CheckBox science = new CheckBox("Science fiction");
-		final CheckBox supernatural = new CheckBox("Supernatural");
-		final CheckBox historical = new CheckBox("Historical");
-		final CheckBox truestory = new CheckBox("True story");
-		final CheckBox erotik = new CheckBox("Erotic");
-		final CheckBox criminal = new CheckBox("Pulp fiction");
-		final CheckBox adventure = new CheckBox("Fairy tail");
-		final CheckBox poem = new CheckBox("Poem");
-		final CheckBox tobecontine = new CheckBox("To be continued");
 		
 		love.setEnabled( false );
 		comedy.setEnabled( false );
@@ -216,15 +361,12 @@ public class Smasaga implements EntryPoint {
 		HorizontalPanel	hp = new HorizontalPanel();
 		hp.setSpacing(10);
 		Label 	nameLabel = new Label("Name:");
-		final TextBox	name = new TextBox();
 		name.setWidth("360px");
 		//Label 	authorLabel = new Label("HÃ¶fundarnafn:");
 		Label 	authorLabel = new Label("Authorname:");
-		final TextBox	author = new TextBox();
 		author.setWidth("360px");
 		
 		Label 	langLabel = new Label("Language:");
-		final TextBox	lang = new TextBox();
 		author.setWidth("120px");
 		
 		hp.add( nameLabel );
@@ -234,13 +376,13 @@ public class Smasaga implements EntryPoint {
 		hp.add( langLabel );
 		hp.add( lang );
 		
-		subvp.setSize(nw+"px", "600px");
+		subvp.setSize("100%", "600px");
 		
-		SimplePanel adspanel = new SimplePanel();
+		/*SimplePanel adspanel = new SimplePanel();
    	  	com.google.gwt.dom.client.Element adselem = Document.get().getElementById("ads");
    	  	adselem.removeFromParent();
    	  	adspanel.getElement().appendChild( adselem );
-   	  	subvp.add( adspanel );
+   	  	subvp.add( adspanel );*/
 		
 		final Anchor	anchor = new Anchor("Link");
 		//anchor.setHeight("75px");
@@ -256,7 +398,6 @@ public class Smasaga implements EntryPoint {
 		
 		//inputvp.add( new Label("ÃšrdrÃ¡ttur") );
 		inputvp.add( new Label("Summary") );
-		final TextArea urdrattur = new TextArea();
 		urdrattur.setSize("512px", "100px");
 		inputvp.add( urdrattur );
 		
@@ -269,13 +410,6 @@ public class Smasaga implements EntryPoint {
 		final RadioButton	saemi = new RadioButton("Grade", "Frekar gott");
 		final RadioButton	gott = new RadioButton("Grade", "MjÃ¶g gott");
 		final RadioButton	snilld = new RadioButton("Grade", "Snilld");*/
-		final RadioButton	rusl = new RadioButton("Grade", "Crap");
-		final RadioButton	vont = new RadioButton("Grade", "Very bad");
-		final RadioButton	slaemt = new RadioButton("Grade", "Below average");
-		final RadioButton	sleppur = new RadioButton("Grade", "Ok");
-		final RadioButton	saemi = new RadioButton("Grade", "Above average");
-		final RadioButton	gott = new RadioButton("Grade", "Very good");
-		final RadioButton	snilld = new RadioButton("Grade", "Masterpiece");
 		umsogn.add(rusl);
 		umsogn.add(vont);
 		umsogn.add(slaemt);
@@ -297,17 +431,10 @@ public class Smasaga implements EntryPoint {
 		gott.setEnabled( false );
 		snilld.setEnabled( false );
 		
-		final RadioButton[] buttons = {rusl, vont, slaemt, sleppur, saemi, gott, snilld};
-		
-		final TextArea umsogntext = new TextArea();
 		umsogntext.setReadOnly( true );
 		
 		HorizontalPanel	umh = new HorizontalPanel();
-		umh.setSpacing( 10 );
-		final Label umlab = new Label("Comment");
-		final Button	leftButt = new Button("<");
-		final Button	rightButt = new Button(">");
-		
+		umh.setSpacing( 10 );		
 		umh.add( leftButt );
 		umh.add( umlab );
 		umh.add( rightButt );
@@ -337,7 +464,6 @@ public class Smasaga implements EntryPoint {
 				
 			}
 		};
-		final Button save = new Button( "Save" );
 		save.setEnabled( false );
 		save.addClickHandler( new ClickHandler() {
 			@Override
@@ -365,7 +491,7 @@ public class Smasaga implements EntryPoint {
 		
 		subvp.add( discl );
 		
-		vp.add( subvp );
+		//vp.add( subvp );
 		
 		ClickHandler gradeHandler = new ClickHandler() {
 			@Override
@@ -428,117 +554,14 @@ public class Smasaga implements EntryPoint {
 				lang.setText( result.getLanguage() );
 				urdrattur.setText( result.getSummary() );
 				
-				if( uid != null && uid.length() > 0 && result.getAuthor().equals(uid) ) {
-					name.setReadOnly( false );
-					author.setReadOnly( false );
-					lang.setReadOnly( false );
-					urdrattur.setReadOnly( false );
-					
-					love.setEnabled( true );
-					comedy.setEnabled( true );
-					tragedy.setEnabled( true );
-					horror.setEnabled( true );
-					erotik.setEnabled( true );
-					science.setEnabled( true );
-					child.setEnabled( true );
-					adolescent.setEnabled( true );
-					criminal.setEnabled( true );
-					historical.setEnabled( true );
-					truestory.setEnabled( true );
-					supernatural.setEnabled( true );
-					adventure.setEnabled( true );
-					poem.setEnabled( true );
-					tobecontine.setEnabled( true );
-					
-					save.setEnabled( true );
-				}
-				
-				if( uid != null && uid.length() > 0 && name.isReadOnly() ) {
-					rusl.setEnabled( true );
-					vont.setEnabled( true );
-					slaemt.setEnabled( true );
-					sleppur.setEnabled( true );
-					saemi.setEnabled( true );
-					gott.setEnabled( true );
-					snilld.setEnabled( true );
-					
-					umsogntext.setReadOnly( false );
-				}
-				
-				Einkunn[] einkunnir = result.getGrades();
-				for( Einkunn einkunn : einkunnir ) {
-					if( einkunn.getUser().equals(uid) && einkunn.getStory().equals(result.getKey()) ) {
-						einkunnList.addAll( Arrays.asList( einkunnir ) );
-						break;
-					}
-				}
-				
-				if( einkunnList.size() == 0 ) {
-					//Window.alert(result.getKey());
-					einkunnList.add( new Einkunn(uid,result.getKey(),"",-1) );
-					einkunnList.addAll( Arrays.asList( einkunnir ) );
-				}
-				
-				Einkunn enk = einkunnList.get(currentGrade);
-				umlab.setText("Comment ("+(currentGrade+1)+" of "+einkunnList.size()+")");
-				if( enk.grade != -1 ) {
-					buttons[(int)enk.grade].setValue( true );
-					umsogntext.setText( enk.getComment() );
-				}
-				
-				final String sagaOwner = result.getAuthor();
-				leftButt.addClickHandler( new ClickHandler() {
-					@Override
-					public void onClick(ClickEvent event) {
-						currentGrade = (currentGrade-1)%einkunnList.size();
-						
-						Einkunn enk = einkunnList.get(currentGrade);
-						umlab.setText("Comment ("+(currentGrade+1)+" of "+einkunnList.size()+")");
-						if( enk.grade != -1 ) {
-							buttons[(int)enk.grade].setValue( true );
-						}
-						umsogntext.setText( enk.getComment() );
-						
-						boolean enni = uid != null && uid.length() > 0 && currentGrade == 0 && !sagaOwner.equals(uid);
-						
-						rusl.setEnabled( enni );
-						vont.setEnabled( enni );
-						slaemt.setEnabled( enni );
-						sleppur.setEnabled( enni );
-						saemi.setEnabled( enni );
-						gott.setEnabled( enni );
-						snilld.setEnabled( enni );
-						
-						umsogntext.setReadOnly( !enni );
-					}
-				});
-				rightButt.addClickHandler( new ClickHandler() {
-					@Override
-					public void onClick(ClickEvent event) {
-						currentGrade = (currentGrade+1)%einkunnList.size();
-						
-						Einkunn enk = einkunnList.get(currentGrade);
-						umlab.setText("Comment ("+(currentGrade+1)+" of "+einkunnList.size()+")");
-						if( enk.grade != -1 ) {
-							buttons[(int)enk.grade].setValue( true );
-						}
-						umsogntext.setText( enk.getComment() );
-						
-						boolean enni = uid != null && uid.length() > 0 && currentGrade == 0 && !sagaOwner.equals(uid);
-						
-						rusl.setEnabled( enni );
-						vont.setEnabled( enni );
-						slaemt.setEnabled( enni );
-						sleppur.setEnabled( enni );
-						saemi.setEnabled( enni );
-						gott.setEnabled( enni );
-						snilld.setEnabled( enni );
-						
-						umsogntext.setReadOnly( !enni );
-					}
-				});
+				authorName = result.getAuthor();
+				einkunnir = result.getGrades();
+				resultKey = result.getKey();
+				//initStory( authorName );
+				//initGrades( einkunnir, resultKey, authorName );
 			}
 		};
+		smasagaService.getShortstory( keystr, asaga );
 		loginStatus();
 		
 		KeyDownHandler keydownhandler = new KeyDownHandler() {
@@ -605,6 +628,6 @@ public class Smasaga implements EntryPoint {
 	 	elem.setAttribute("src", "//connect.facebook.net/en_US/all.js" );
 		Document.get().getElementById("fb-root").appendChild( elem );
 		
-		rootPanel.add( vp );
+		rootPanel.add( subvp );
 	}
 }

@@ -4,7 +4,11 @@
 	<classpathentry kind="src" output="test-classes" path="test"/>
 	<classpathentry kind="con" path="com.google.gwt.eclipse.core.GWT_CONTAINER"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+<<<<<<< HEAD
 	<classpathentry kind="lib" path="/u0/gwt-2.5.0.rc1/gwt-elemental.jar"/>
+=======
+	<classpathentry kind="lib" path="/opt/gwt-2.5.0.rc2/gwt-elemental.jar"/>
+>>>>>>> 419d46e7e0fe3e32018821b213e87fe9a066101c
 	<classpathentry kind="con" path="com.google.appengine.eclipse.core.GAE_CONTAINER/v2"/>
 	<classpathentry kind="output" path="war/WEB-INF/classes"/>
 </classpath>
