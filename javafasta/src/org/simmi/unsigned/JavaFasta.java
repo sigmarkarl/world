@@ -2533,7 +2533,7 @@ public class JavaFasta extends JApplet {
 				for( Sequence seq : lseq ) {
 					String name = seq.getName();
 					int i = name.indexOf(' ');
-					name = name.substring(0,i+1) + name.substring(i+1).replace(' ', '_');
+					name = name.substring(0,i+1) + name.substring(i+1).replace(' ', '_') + ";";
 					seq.setName( name );
 				}
 				updateView();
