@@ -67,6 +67,9 @@ import com.google.gwt.visualization.client.VisualizationUtils;
 import com.google.gwt.visualization.client.visualizations.Table;
 import com.google.gwt.visualization.client.visualizations.Table.Options;
 
+import elemental.client.Browser;
+import elemental.html.Console;
+
 /**
  * Entry point classes define <code>onModuleLoad()</code>.
  */
@@ -485,14 +488,19 @@ public class Smasogur implements EntryPoint {
 	FocusPanel	focuspanel;
 	String 		fbuid = null;
 	public void onModuleLoad() {
+		final Console	console = Browser.getWindow().getConsole();
 		final RootPanel module = RootPanel.get();
 		
 		Style rootstyle = module.getElement().getStyle();
 		rootstyle.setMargin(0.0, Unit.PX);
 		rootstyle.setPadding(0.0, Unit.PX);
+		rootstyle.setBorderWidth(0.0, Unit.PX);
 		
-  	  	final VerticalPanel vp = new VerticalPanel();
-  	  	vp.setSize("100%", "100%");
+		Window.setMargin("0px");
+		Window.enableScrolling( false );
+		
+  	  	//final VerticalPanel vp = new VerticalPanel();
+  	  	//vp.setSize("100%", "100%");
   	  	
 		NodeList<com.google.gwt.dom.client.Element> nl = Document.get().getElementsByTagName("meta");
 		int i;
@@ -512,6 +520,17 @@ public class Smasogur implements EntryPoint {
 		if( fbuid == null ) module.setSize(w+"px", h+"px");
 		else module.setWidth("758px");
 		
+		final VerticalPanel	subvp = new VerticalPanel();
+  	  	subvp.setWidth("100%");
+  	    Style vstyle = subvp.getElement().getStyle();
+  	    vstyle.setPadding(0.0, Unit.PX);
+  	    vstyle.setMargin(0.0, Unit.PX);
+  	    vstyle.setBorderWidth(0.0, Unit.PX);
+  	  
+  	    subvp.setVerticalAlignment( VerticalPanel.ALIGN_MIDDLE );
+  	    subvp.setHorizontalAlignment( VerticalPanel.ALIGN_CENTER );
+  	    subvp.setSpacing( 10 );
+  	  
 	  	Window.addResizeHandler( new ResizeHandler() {
 	  		@Override
 			public void onResize(ResizeEvent event) {
@@ -519,13 +538,30 @@ public class Smasogur implements EntryPoint {
 	  			int h = event.getHeight();
 				if( fbuid == null ) module.setSize(w+"px", h+"px");
 				else module.setWidth("758px");
+				subvp.setWidth("100%");
+				
+				if( table != null ) {
+					table.setWidth( (w-20)+"px" );
+				}
 				//vp.setSize(event.getWidth()+"px", (event.getHeight())+"px");
 				//if( focuspanel != null ) focuspanel.setWidth("1024");
 			}
 	  	});
   	  
+	  	SimplePanel log = new SimplePanel();
+	  	SimplePanel gug = new SimplePanel();
+   	  	com.google.gwt.dom.client.Element plus = Document.get().createElement("g:plusone");
+ 		plus.setAttribute("size", "small");
+ 		gug.getElement().appendChild( plus );
+ 		  
+   	  	final HorizontalPanel	sharehp = new HorizontalPanel();
+   	  	sharehp.add( log );
+   	  	sharehp.add( gug );
+   	  	
 		Runnable onLoadCallback = new Runnable() {
 	      public void run() {
+	    	  console.log("slowness inside vizualload");
+	    	  
 	    	  data = DataTable.create();
 	    	  
 	    	  /*data.addColumn( ColumnType.STRING, "Nafn");
@@ -571,14 +607,26 @@ public class Smasogur implements EntryPoint {
 	    	  
 	    	  options = Options.create();
 	    	  if( fbuid != null ) options.setWidth("758px");
-	    	  else options.setWidth("100%");
+	    	  else {
+	    		  int w = Window.getClientWidth();
+	    		  options.setWidth((w-20)+"px");
+	    	  }
 	    	  options.setHeight("360px");
 	    	  options.setAllowHtml( true );
 	    	  
 	    	  view = DataView.create( data );
+	    	  
 	    	  table = new Table( view, options );
+	    	  Style tstyle = table.getElement().getStyle();
+	    	  tstyle.setMargin(0.0, Unit.PX);
+	    	  tstyle.setBorderWidth(0.0, Unit.PX);
+	    	  tstyle.setPadding(0.0, Unit.PX);
 	    	  
 	    	  focuspanel = new FocusPanel( table );
+	    	  Style focusstyle = focuspanel.getElement().getStyle();
+	    	  focusstyle.setMargin(0.0, Unit.PX);
+	    	  focusstyle.setBorderWidth(0.0, Unit.PX);
+	    	  focusstyle.setPadding(0.0, Unit.PX);
 	    	  focuspanel.setWidth("100%");
 	    	  
 	    	  focuspanel.addKeyDownHandler( new KeyDownHandler() {
@@ -624,10 +672,12 @@ public class Smasogur implements EntryPoint {
 				public void onDragLeave(DragLeaveEvent event) {}
 	    	  });
 	    	  
+	    	  console.log("about to load shortstories");
 	    	  smasagaService.getAllShortstories( new AsyncCallback<Saga[]>() {
 				@Override
 				public void onSuccess(Saga[] result) {
-					console( "succ all load:"+result.length );
+					console.log( "slowness inside shortstories" );
+					//console( "succ all load:"+result.length );
 					
 					sogur = new ArrayList<Saga>( Arrays.asList(result) );
 					
@@ -663,31 +713,28 @@ public class Smasogur implements EntryPoint {
 						//smasaga.getf
 						//data.setValue( r, 3, smasaga.getUrl() );
 
-						view = DataView.create( data );
-						table.draw( view, options );
+						if( smasaga == result[result.length-1] ) {
+							view = DataView.create( data );
+							table.draw( view, options );
+							console.log("done load shortstories");
+						}
+						console.log("iter "+r);
 					}
 				}
 		
 				@Override
-				public void onFailure(Throwable caught) {
-					
-				}
+				public void onFailure(Throwable caught) {}
 	    	  });
 	    	  //dropHandler( table.getElement() );
 	    	  
-	    	  vp.setVerticalAlignment( VerticalPanel.ALIGN_MIDDLE );
-	    	  vp.setHorizontalAlignment( VerticalPanel.ALIGN_CENTER );	    	  
-	    	  
-	    	  VerticalPanel	subvp = new VerticalPanel();
-	    	  subvp.setVerticalAlignment( VerticalPanel.ALIGN_MIDDLE );
-	    	  subvp.setHorizontalAlignment( VerticalPanel.ALIGN_CENTER );
-	    	  subvp.setSpacing( 20 );
+	    	  //vp.setVerticalAlignment( VerticalPanel.ALIGN_MIDDLE );
+	    	  //vp.setHorizontalAlignment( VerticalPanel.ALIGN_CENTER );	    	  
 	    	  
 	    	  final HTML html = new HTML();
 	    	  //html.setText( "DragÃ°u skrÃ¡na meÃ° smÃ¡sÃ¶gunni Ã¾inni Ã­ tÃ¶fluna. <br>Ef Ã¾Ãº ert logguÃ°/loggaÃ°ur innÃ¡ facebook er rÃ©ttur hÃ¶fundur skrÃ¡Ã°ur. <br>ÃžÃº getur valiÃ° hÃ¶fundarnafn, nafniÃ° Ã¡ raunverulegum hÃ¶fundi Ã¾arf ekki aÃ° vera valiÃ°" );
-	    	  html.setHTML( "Drag-drop the file containing your short story into the table. <br>" +
+	    	  html.setHTML( "Drag-drop the file containing your short story into the table. " +
 	    			"The file can be in a format of your choice. For example pdf for text and mp3 for audiobooks.<br>" +
-	    	  		"If you are logged into facebook, you are registered as the author. <br>" +
+	    	  		"If you are logged into facebook, you are registered as the author. " +
 	    	  		"You can choose you own authorname, it doesn't have to be your real name" );
 	    	  html.setWidth("100%");
 	    	  //html.getElement().getStyle().setMargin(20.0, Unit.PX);
@@ -699,19 +746,14 @@ public class Smasogur implements EntryPoint {
 	    	  //subvp.add( adspanel );
 	    	  
 	    	  HTML title = new HTML("<h2>Shortstories<h2/>");
+	    	  Style style = title.getElement().getStyle();
+	  			style.setMargin(0.0, Unit.PX);
+	  			style.setPadding(0.0, Unit.PX);
+	  			style.setBorderWidth(0.0, Unit.PX);
+	  		
 	    	  subvp.add( title );
 	    	  HTML subtitle = new HTML("<h4>Brought to you by The Basement At 5 o'Clock reading club<h4/>");
 	    	  subvp.add( subtitle );
-	    	  
-	    	  SimplePanel log = new SimplePanel();
-	    	  SimplePanel gug = new SimplePanel();
-	    	  com.google.gwt.dom.client.Element plus = Document.get().createElement("g:plusone");
-	  		  plus.setAttribute("size", "small");
-	    	  gug.getElement().appendChild( plus );
-	  		  
-	    	  HorizontalPanel	sharehp = new HorizontalPanel();
-	    	  sharehp.add( log );
-	    	  sharehp.add( gug );
 	    	  subvp.add( sharehp );
 	    	  
 	    	  final FormPanel fp = new FormPanel();
@@ -772,9 +814,18 @@ public class Smasogur implements EntryPoint {
 				}
 	    	  });*/
 	    	  
+	    	  Button deleteButton = new Button("Delete selection");
+	    	  deleteButton.addClickHandler( new ClickHandler() {
+				@Override
+				public void onClick(ClickEvent event) {
+					deleteSelection();
+				}
+	    	  });
+	    	  
 	    	  HorizontalPanel	filehp = new HorizontalPanel();
 	    	  filehp.add( file );
 	    	  filehp.add( uploadButton );
+	    	  filehp.add( deleteButton );
 	    	  fp.add( filehp );
 	    	  
 	    	  subvp.add( html );
@@ -817,41 +868,37 @@ public class Smasogur implements EntryPoint {
 	    	  DOM.appendChild(spel, el);
 	    	  hp.add( sp );*/
 	    	  
-	    	  Button deleteButton = new Button("Delete selection");
-	    	  deleteButton.addClickHandler( new ClickHandler() {
-				@Override
-				public void onClick(ClickEvent event) {
-					deleteSelection();
-				}
-	    	  });
-	    	  subvp.add( deleteButton );
+	    	  //subvp.add( deleteButton );
 	    	  subvp.add( hp );
 	    	  
 	    	  status = new Label();
 	    	  subvp.add( status );
 	    	  
-	    	  vp.add( subvp );
-	    	  
-	    	  com.google.gwt.dom.client.Element elem = loginButton();
-	    	  Element fblogin = log.getElement();
-	    	  fblogin.appendChild( elem );
-	    	  
-	    	  checkLoginStatus();
-	    	  String id = "facebook-jssdk";
-	    	  elem = Document.get().createElement("script");
-	  		  elem.setAttribute("async", "true");
-	  		  elem.setId( id );
-	  	 	  elem.setAttribute("src", "//connect.facebook.net/en_US/all.js" );
-	  		  Document.get().getElementById("fb-root").appendChild( elem );
-	    	  //205279482582
-	    	  
-	    	  module.add( vp );
-	    	  
-	    	  gplusgo();
+	    	  console.log("done");
+	    	  //vp.add( subvp );
 	      }
 	    };
 	    VisualizationUtils.loadVisualizationApi(onLoadCallback, Table.PACKAGE);
 		
+	    console.log("ok");
+	    com.google.gwt.dom.client.Element elem = loginButton();
+  	  	Element fblogin = log.getElement();
+  	  	fblogin.appendChild( elem );
+  	  
+  	  	checkLoginStatus();
+  	  	String id = "facebook-jssdk";
+  	  	elem = Document.get().createElement("script");
+		elem.setAttribute("async", "true");
+		elem.setId( id );
+	 	elem.setAttribute("src", "//connect.facebook.net/en_US/all.js" );
+		Document.get().getElementById("fb-root").appendChild( elem );
+  	  	//205279482582
+  	  
+		console.log("next");
+		module.add( subvp );
+  	  	gplusgo();
+  	  	console.log("done");
+  	  
 		/*final Button sendButton = new Button("Send");
 		final TextBox nameField = new TextBox();
 		nameField.setText("GWT User");

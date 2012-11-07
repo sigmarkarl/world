@@ -14,6 +14,7 @@
 		<%
 		String name = null;
 		String keystr = request.getParameter("smasaga");
+		String url = request.getServerName();
 		if( keystr != null ) {
 				DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
 				Key key = KeyFactory.stringToKey( keystr );
@@ -29,7 +30,7 @@
 		
 		<meta property="og:title" content="<%=name%>" />
 		<meta property="og:type" content="book" />
-		<meta id="metaurl" property="og:url" content="http://smasogurnar.appspot.com/Smasaga.jsp?smasaga=<%=keystr%>" />
+		<meta id="metaurl" property="og:url" content="http://<%=url%>/Smasaga.jsp?smasaga=<%=keystr%>" />
 		<!--meta property="og:image" content="" /-->
 		<meta property="og:site_name" content="Smasogur" />
 
@@ -53,7 +54,7 @@
 	<body>
 		<!-- OPTIONAL: include this if you want history support -->
 		<iframe id="__gwt_historyFrame" style="width:0;height:0;border:0"></iframe>
-		<div id="ads">
+		<div id="ads" style="text-align: center">
     	<script type="text/javascript"><!--
 			google_ad_client = "ca-pub-7204381538404733";
 			/* Shortstories */
