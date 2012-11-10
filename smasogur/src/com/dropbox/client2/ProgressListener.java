@@ -112,4 +112,34 @@ public abstract class ProgressListener {
             }
         }
     }
+
+    /**
+     * A progress listener that forwards on to another ProgressListener
+     * after adjusting the {@code total} and {@code bytes}.
+     */
+    public static final class Adjusted extends ProgressListener
+    {
+        private final ProgressListener relay;
+        private final long bytesOffset;
+        private final long adjustedTotal;
+
+        public Adjusted(ProgressListener relay, long bytesOffset, long adjustedTotal)
+        {
+            this.relay = relay;
+            this.bytesOffset = bytesOffset;
+            this.adjustedTotal = adjustedTotal;
+        }
+
+        @Override
+        public void onProgress(long bytes, long total)
+        {
+            relay.onProgress(bytesOffset+bytes, adjustedTotal);
+        }
+
+        @Override
+        public long progressInterval()
+        {
+            return relay.progressInterval();
+        }
+    }
 }

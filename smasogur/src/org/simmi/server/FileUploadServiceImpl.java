@@ -1,10 +1,12 @@
 package org.simmi.server;
 
 import java.io.ByteArrayOutputStream;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.GeneralSecurityException;
 import java.security.PrivateKey;
+import java.util.Map.Entry;
 
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -21,8 +23,10 @@ import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.services.drive.Drive;
+import com.google.api.services.drive.Drive.Files.List;
 import com.google.api.services.drive.DriveScopes;
 import com.google.api.services.drive.model.File;
+import com.google.api.services.drive.model.Permission;
 
 public class FileUploadServiceImpl extends HttpServlet {
 	/**
@@ -37,7 +41,7 @@ public class FileUploadServiceImpl extends HttpServlet {
 	private static final String SERVICE_ACCOUNT_PKCS12_FILE_PATH = "704d11bd617b01c108129a90b9f2184c85fd981c-privatekey.p12";
 	//private static String REDIRECT_URI = "urn:ietf:wg:oauth:2.0:oob";
 
-	public void gDrive( String name, String cont, byte[] bb ) throws IOException {
+	public static String gDrive( String name, String cont, byte[] bb, HttpServlet ths ) throws IOException, GeneralSecurityException {
 		HttpTransport httpTransport = new NetHttpTransport();
 	    JsonFactory jsonFactory = new JacksonFactory();
 
@@ -62,8 +66,11 @@ public class FileUploadServiceImpl extends HttpServlet {
 	    if( !file.exists() ) {
 	    	file = new java.io.File( "org/simmi/server/"+SERVICE_ACCOUNT_PKCS12_FILE_PATH );
 	    }
+	    /*if( !file.exists() ) {
+	    	file = new java.io.File( "/home/sigmar/world/smasogur/war/"+SERVICE_ACCOUNT_PKCS12_FILE_PATH );
+	    }*/
 	    
-	    this.log( "hey exists "+file.exists() );
+	    //if( ths != null ) ths.log( "hey exists "+file.exists() );
 	    
 	    //Clientb
 	    
@@ -84,31 +91,57 @@ public class FileUploadServiceImpl extends HttpServlet {
 			}
 	    };
 	    
+		 GoogleCredential credential = new GoogleCredential.Builder()
+		  .setTransport(httpTransport)
+		  .setJsonFactory(jsonFactory)
+		  .setServiceAccountId(SERVICE_ACCOUNT_EMAIL)
+		  .setServiceAccountScopes(DriveScopes.DRIVE_FILE)
+		  .setServiceAccountPrivateKeyFromP12File( file )
+		  //.setServiceAccountPrivateKey( pk )
+		  .build();
+		
+		//Create a new authorized API client
+	    Drive service = new Drive.Builder(httpTransport, jsonFactory, credential).build();
+
+	    //Insert a file
+	    File body = new File();
+	    body.setTitle( name );
+	    body.setDescription("A shortstory");
+	    body.setMimeType( cont );
+
+	    //java.io.File fileContent = new java.io.File("document.txt");
+	    //FileContent mediaContent = new FileContent("text/plain", fileContent);
+	    ByteArrayContent bac = new ByteArrayContent( "text/plain", bb );
+	    
+	    File f = service.files().insert(body, bac).execute();
+	    List l = service.files().list();
+	    for( Entry<String,Object> ent : l.entrySet() ) {
+	    	System.err.println( ent.getKey() + "  " + ent.getValue() );
+	    }
+	    
+	    Permission perm = new Permission();
+	    perm.setValue("default");
+	    perm.setType("anyone");
+	    perm.setRole("reader");
+	    service.permissions().insert( f.getId(), perm ).execute();
+	    String debugStr = "File ID: " + f.getId() + "  " + f.getWebContentLink();
+	    
+	    if( ths != null ) ths.log( debugStr );
+	    //else System.err.println( debugStr );
+	    
+	    return f.getWebContentLink();
+	}
+	
+	public static void main(String[] args) {
 		try {
-			 GoogleCredential credential = new GoogleCredential.Builder()
-			  .setTransport(httpTransport)
-			  .setJsonFactory(jsonFactory)
-			  .setServiceAccountId(SERVICE_ACCOUNT_EMAIL)
-			  .setServiceAccountScopes(DriveScopes.DRIVE_FILE)
-			  .setServiceAccountPrivateKeyFromP12File( file )
-			  //.setServiceAccountPrivateKey( pk )
-			  .build();
-			
-			//Create a new authorized API client
-		    Drive service = new Drive.Builder(httpTransport, jsonFactory, credential).build();
-
-		    //Insert a file
-		    File body = new File();
-		    body.setTitle( name );
-		    body.setDescription("A shortstory");
-		    body.setMimeType( cont );
-
-		    //java.io.File fileContent = new java.io.File("document.txt");
-		    //FileContent mediaContent = new FileContent("text/plain", fileContent);
-		    ByteArrayContent bac = new ByteArrayContent( "text/plain", bb );
-
-		    File f = service.files().insert(body, bac).execute();
-		    this.log( "File ID: " + f.getId() );
+			java.io.File f = new java.io.File( "/home/sigmar/col.txt" );
+			FileInputStream fis = new FileInputStream( f );
+			byte[] bb = new byte[ (int)f.length() ];
+			fis.read( bb );
+			fis.close();
+			gDrive("newfile3", "text/plain", bb, null);
+		} catch (IOException e) {
+			e.printStackTrace();
 		} catch (GeneralSecurityException e) {
 			e.printStackTrace();
 		}
@@ -134,14 +167,16 @@ public class FileUploadServiceImpl extends HttpServlet {
                 }
 
                 byte[] bb = out.toByteArray();
-                //gDrive( name, cont, bb );
-                SmasagaServiceImpl.dropToBox(name, bb, this);
+                String fileurl = gDrive( name, cont, bb, this );
+                //SmasagaServiceImpl.dropToBox(name, bb, this);
+                
+                
                 /*int maxFileSize = 10*(1024*1024); //10 megs max 
                 if (out.size() > maxFileSize) { 
                     throw new RuntimeException("File is > than " + maxFileSize);
                 }*/
                 
-                res.getWriter().println("tokst");
+                res.getWriter().println( fileurl );
             }
         } catch(Exception e) {
         	this.log( "mu " + e.getMessage() );

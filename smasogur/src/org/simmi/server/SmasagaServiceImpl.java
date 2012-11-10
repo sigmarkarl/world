@@ -3,12 +3,15 @@ package org.simmi.server;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
+import java.nio.CharBuffer;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
@@ -30,7 +33,6 @@ import org.simmi.shared.Saga;
 import com.dropbox.client2.DropboxAPI;
 import com.dropbox.client2.ProgressListener;
 import com.dropbox.client2.exception.DropboxException;
-import com.dropbox.client2.session.AccessTokenPair;
 import com.dropbox.client2.session.AppKeyPair;
 import com.dropbox.client2.session.Session;
 import com.dropbox.client2.session.WebAuthSession;
@@ -264,19 +266,25 @@ public class SmasagaServiceImpl extends RemoteServiceServlet implements SmasagaS
 	}
 	
 	public static boolean dropToBoxNew( String fname, byte[] contents, final HttpServlet servlet ) throws DropboxException {
-		servlet.log( "beginning" );
+		if( servlet != null ) servlet.log( "beginning" );
+		else System.err.println( "beginning" );
 		
 		AppKeyPair		appkey = new AppKeyPair("jemmmn3c5ot8rdu", "9or8lsn165d44qv");
-		AccessTokenPair accesstoken = new AccessTokenPair("sigmarkarl@gmail.com", "drsmorc.311");
-		WebAuthSession	session = new WebAuthSession( appkey, Session.AccessType.DROPBOX, accesstoken);
+		//AccessTokenPair accesstoken = new AccessTokenPair("sigmarkarl@gmail.com", "drsmorc.311");
+		WebAuthSession	session = new WebAuthSession( appkey, Session.AccessType.DROPBOX );
+		//session.re
+		
 		DropboxAPI<?>	client = new DropboxAPI<WebAuthSession>( session );
 		
-		servlet.log( "starting" );
+		if( servlet != null ) servlet.log( "starting" );
+		else System.err.println( "starting" );
+		
 		ByteArrayInputStream	bis = new ByteArrayInputStream( contents );
 		ProgressListener progl = new ProgressListener() {
 			@Override
 			public void onProgress(long bytes, long total) {
-				servlet.log( bytes + " " + total );
+				if( servlet != null ) servlet.log( bytes + " " + total );
+				//else System.err.println( bytes + " " + total );
 			}
 		};
 		client.putFile("Public/"+fname, bis, contents.length, null, progl);
@@ -323,29 +331,51 @@ public class SmasagaServiceImpl extends RemoteServiceServlet implements SmasagaS
 	
 	public static boolean dropToBoxV1( String fname, byte[] contents, HttpServlet servlet ) {
     	try {
-    		Map<String,String>	parameters = new TreeMap<String,String>();
-    		servlet.log( fname );
-    		parameters.put("oauth_consumer_key", "jemmmn3c5ot8rdu");
-    		//parameters.put("oauth_timestamp", Long.toString(System.currentTimeMillis()/1000) );
-    		parameters.put("oauth_signature_method", "PLAINTEXT");
-    		//parameters.put("oauth_nonce", Long.toString(Math.abs(new Random().nextLong())) );
-    		//parameters.put("oauth_version", "1.0" );
+    		String 		urlstr = "https://api.dropbox.com/1/oauth/request_token";
+    		URL 		url;
+    		InputStream is;
+    		int			r;
+    		String		s;
     		
-    		String urlstr = "https://api.dropbox.com/1/oauth/request_token";
+    		/*url = new URL( urlstr );
+    		is = url.openStream();
+    				
+    		InputStreamReader isr = new InputStreamReader( is );
+			StringBuilder sb = new StringBuilder();
+			CharBuffer cb = CharBuffer.allocate( 1024 );
+			r = isr.read( cb );
+			while( r > 0 ) {
+				sb.append( cb, 0, r );
+				r = isr.read( cb );
+			}
+			isr.close();
+			s = sb.toString();
+			
+			System.err.println( s );*/
+    		
+    		Map<String,String>	parameters = new TreeMap<String,String>();
+    		if( servlet != null ) servlet.log( fname );
+    		parameters.put("oauth_consumer_key", "jemmmn3c5ot8rdu");
+    		parameters.put("oauth_timestamp", Long.toString(System.currentTimeMillis()/1000) );
+    		//parameters.put("oauth_signature_method", "PLAINTEXT");
+    		parameters.put("oauth_signature_method", "HMAC-SHA1");
+    		parameters.put("oauth_nonce", Long.toString(Math.abs(new Random().nextLong())) );
+    		parameters.put("oauth_version", "1.0" );
+    		
     		String paramstr = "";
     		for( String key : parameters.keySet() ) {
     			if( paramstr.length() == 0 ) paramstr += key+"="+parameters.get(key);
     			else paramstr += "&"+key+"="+parameters.get(key);
     		}
     		
-    		String sign = URLEncoder.encode("9or8lsn165d44qv", "UTF-8")+"&"+URLEncoder.encode("drsmorc.311", "UTF-8"); //getSignature( "GET", urlstr, paramstr );
+    		String sign = paramstr; //URLEncoder.encode("9or8lsn165d44qv", "UTF-8")+"&"+URLEncoder.encode("drsmorc.311", "UTF-8"); //getSignature( "GET", urlstr, paramstr );
     		parameters.put("oauth_signature", sign );
     		
     		String urlparams = urlstr+"?"+paramstr+"&oauth_signature="+sign;
     		System.err.println( urlparams );
-    		URL url = new URL( urlparams );
+    		url = new URL( urlparams );
     		
-    		InputStream is = url.openStream();
+    		is = url.openStream();
 			/*InputStreamReader isr = new InputStreamReader( is );
 			StringBuilder sb = new StringBuilder();
 			CharBuffer cb = CharBuffer.allocate( 1024 );
@@ -358,8 +388,8 @@ public class SmasagaServiceImpl extends RemoteServiceServlet implements SmasagaS
 			String s = sb.toString()*/
     		
     		byte[] bb = new byte[256];
-			int r = is.read( bb );
-			String s = "";
+			r = is.read( bb );
+			s = "";
 			while( r > 0 ) {
 				s += new String( bb, 0, r );
 				r = is.read( bb );
@@ -419,13 +449,11 @@ public class SmasagaServiceImpl extends RemoteServiceServlet implements SmasagaS
     }
 
 	@Override
-	public String saveShortStory(Saga saga, String filename, String binary) {
-		try {
-			String urlstr = "http://dl.dropbox.com/u/10024658/"+URLEncoder.encode(filename, "UTF-8");
-			saga.setUrl( urlstr );
-		} catch (UnsupportedEncodingException e) {
-			e.printStackTrace();
-		}
+	public String saveShortStory(Saga saga, String filename, String fileurl, String binary) {
+		String urlstr = fileurl;
+		//if( filename.startsWith("http") ) urlstr = filename;
+		//else urlstr = "http://dl.dropbox.com/u/10024658/"+URLEncoder.encode(filename, "UTF-8");
+		saga.setUrl( urlstr );
 		
 		if( binary != null ) {
 			byte[] bbinary = new byte[ binary.length() ];
@@ -512,5 +540,37 @@ public class SmasagaServiceImpl extends RemoteServiceServlet implements SmasagaS
 		}
 		
 		return null;
+	}
+	
+	public static void dropToOne() {
+		String baseurl = "https://one.ubuntu.com";
+		String apiurl = "/api/file_storage/v1";
+		
+		try {
+			URL url = new URL( baseurl+apiurl );
+			InputStream is = url.openStream();
+			
+			InputStreamReader isr = new InputStreamReader( is );
+			StringBuilder sb = new StringBuilder();
+			CharBuffer cb = CharBuffer.allocate( 1024 );
+			int r = isr.read( cb );
+			while( r > 0 ) {
+				sb.append( cb, 0, r );
+				r = isr.read( cb );
+			}
+			isr.close();
+			String s = sb.toString();
+			
+			System.err.println( s );
+		} catch (MalformedURLException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	public static void main(String[] args) {
+		SmasagaServiceImpl.dropToOne();
+		//SmasagaServiceImpl.dropToBoxV1("simmi1", new byte[] {64, 64, 0}, null);
 	}
 }

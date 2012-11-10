@@ -7,7 +7,6 @@
 	<classpathentry kind="con" path="com.google.gwt.eclipse.core.GWT_CONTAINER"/>
 	<classpathentry kind="lib" path="war/WEB-INF/lib/commons-codec-1.6.jar"/>
 	<classpathentry kind="lib" path="war/WEB-INF/lib/commons-fileupload-1.2.2.jar"/>
-	<classpathentry kind="lib" path="war/WEB-INF/lib/dropbox-java-sdk.jar"/>
 	<classpathentry kind="lib" path="war/WEB-INF/lib/json_simple-1.1.jar"/>
 	<classpathentry kind="con" path="com.google.appengine.eclipse.core.GAE_CONTAINER"/>
 	<classpathentry kind="lib" path="/opt/gwt-2.5.0/gwt-elemental.jar"/>
