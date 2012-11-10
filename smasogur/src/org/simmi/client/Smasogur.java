@@ -121,7 +121,7 @@ public class Smasogur implements EntryPoint {
 			reader.onload = function(e) {
 				var res = e.target.result;
 				s.@org.simmi.client.Smasogur::setStatus(Ljava/lang/String;)( "File loaded" );
-				s.@org.simmi.client.Smasogur::fileLoad(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)( file.name, res, 'simmi' );
+				s.@org.simmi.client.Smasogur::fileLoad(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)( file.name, res, 'simmi' );
 			};
 			
 			s.@org.simmi.client.Smasogur::setStatus(Ljava/lang/String;)( "Loading file" );
@@ -140,7 +140,7 @@ public class Smasogur implements EntryPoint {
 			reader.onload = function(e) {
 				var res = e.target.result;
 				s.@org.simmi.client.Smasogur::setStatus(Ljava/lang/String;)( "File loaded" );
-				s.@org.simmi.client.Smasogur::fileLoad(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)( file.name, res, uid );
+				s.@org.simmi.client.Smasogur::fileLoad(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)( file.name, res, uid );
 			};
 			
 			s.@org.simmi.client.Smasogur::setStatus(Ljava/lang/String;)( "Loading file" );
@@ -259,7 +259,7 @@ public class Smasogur implements EntryPoint {
 						reader.onload = function(e) {
 							var res = e.target.result;
 							s.@org.simmi.client.Smasogur::setStatus(Ljava/lang/String;)( "File loaded" );
-							s.@org.simmi.client.Smasogur::fileLoad(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)( file.name, res, uid );
+							s.@org.simmi.client.Smasogur::fileLoad(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)( file.name, res, uid );
 						};
 						
 						s.@org.simmi.client.Smasogur::setStatus(Ljava/lang/String;)( "Loading file" );
@@ -316,6 +316,8 @@ public class Smasogur implements EntryPoint {
 	
 	SubmitButton	uploadButton;
 	public void setUserId( String val ) {
+		console( "about to set userid " + val );
+		
 		uid = val;
 		//if( uploadButton != null ) uploadButton.setEnabled( uid != null && uid.length() > 1 );
 	}
@@ -424,12 +426,13 @@ public class Smasogur implements EntryPoint {
 		if( $wnd.console ) $wnd.console.log( str );
 	}-*/;
 	
-	public void fileLoad( String fileName, String binaryString, String uid ) {
-		final String fnameDecoded = URL.decode( fileName );
+	public void fileLoad( String fileName, String fileUrl, String binaryString, String uid ) {
+		//final String fnameDecoded = URL.decode( fileName );
 		
-		final Saga smasaga = new Saga( fnameDecoded, "Unkown", uid, "Unknown", "English", "");
+		console("fl "+fileUrl);
+		final Saga smasaga = new Saga( fileName, "Unkown", uid, "Unknown", "English", "");
 		setStatus( "Saving file" );
-		smasagaService.saveShortStory( smasaga, fileName, binaryString, new AsyncCallback<String>() {
+		smasagaService.saveShortStory( smasaga, fileName, fileUrl, binaryString, new AsyncCallback<String>() {
 			@Override
 			public void onFailure(Throwable caught) {
 				console( caught.getMessage() );
@@ -437,6 +440,8 @@ public class Smasogur implements EntryPoint {
 
 			@Override
 			public void onSuccess(String result) {
+				console("in fl "+result);
+				
 				smasaga.setKey( result );
 				sogur.add( smasaga );
 				
@@ -497,7 +502,7 @@ public class Smasogur implements EntryPoint {
 		rootstyle.setBorderWidth(0.0, Unit.PX);
 		
 		Window.setMargin("0px");
-		Window.enableScrolling( false );
+		//Window.enableScrolling( false );
 		
   	  	//final VerticalPanel vp = new VerticalPanel();
   	  	//vp.setSize("100%", "100%");
@@ -773,8 +778,9 @@ public class Smasogur implements EntryPoint {
 				@Override
 				public void onSubmitComplete(SubmitCompleteEvent event) {
 					String subm = event.getResults();
-					if( subm.contains("tokst") ) {
-						fileLoad( file.getName(), null, uid );
+					console("ermi " + subm + "  " + uid);
+					if( subm.startsWith("http") ) {
+						fileLoad( file.getName(), subm, null, uid );
 					}
 				}
 	    	  });
@@ -823,6 +829,7 @@ public class Smasogur implements EntryPoint {
 	    	  });
 	    	  
 	    	  HorizontalPanel	filehp = new HorizontalPanel();
+	    	  filehp.setSpacing( 20 );
 	    	  filehp.add( file );
 	    	  filehp.add( uploadButton );
 	    	  filehp.add( deleteButton );
@@ -838,7 +845,7 @@ public class Smasogur implements EntryPoint {
 	    	  Anchor	fast = new Anchor( "http://webwormgame.appspot.com" );
 	    	  fast.setHref("http://webwormgame.appspot.com");
 	    	  //Anchor	conn = new Anchor( "http://webconnectron.appspot.com/Treedraw.html" );
-	    	  //conn.setHref("http://webconnectron.appspot.com/Treedraw.html");
+	    	  //conn.setHref("http://webconnectron.appspot.com/Treedrdasdddfasdfaw.html");
 	    	  Anchor	fblink = new Anchor( "https://apps.facebook.com/theshortstories" );
 	    	  fblink.setHref("https://apps.facebook.com/theshortstories");
 	    	  //HTML		kjall = new HTML("Kjallarinn klukkan fimm ehf.");

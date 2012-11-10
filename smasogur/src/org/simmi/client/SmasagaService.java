@@ -23,6 +23,6 @@ public interface SmasagaService extends RemoteService {
 	
 	Saga[] 	getAllShortstories();
 	Saga	getShortstory( String keystr );
-	String 	saveShortStory(Saga saga, String filename, String binary);
+	String 	saveShortStory(Saga saga, String filename, String fileurl, String binary);
 	String 	deleteShortstory( Saga saga );
 }

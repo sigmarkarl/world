@@ -644,7 +644,6 @@ public class DropboxAPI<SESS_T extends Session> {
                 bos.flush();
                 os.flush();
                 // Make sure it's flushed out to disk
-                // simmi
                 /*try {
                     if (os instanceof FileOutputStream) {
                         ((FileOutputStream)os).getFD().sync();
@@ -721,7 +720,7 @@ public class DropboxAPI<SESS_T extends Session> {
     }
 
     /**
-     * Identical to {@link getChunkedUploader(InputStream is, long length, int chunkSize)}, but
+     * Identical to {@link #getChunkedUploader(InputStream, long, int)}, but
      * provides a default chunkSize of 4mb
      */
     public ChunkedUploader getChunkedUploader(InputStream is, long length) {
@@ -732,21 +731,6 @@ public class DropboxAPI<SESS_T extends Session> {
      * Creates a ChunkedUploader using this DropboxAPI's credentials, to upload a
      * file using the chunked upload protocol.
      *
-     * Expected use:
-     * <pre>
-     *     DropboxAPI api = ...
-     *
-     *     File bigFile = new File("99mb.avi");
-     *     DropboxAPI.ChunkedUploader uploader = api.getChunkedUploader(new FileInputStream(bigFile), bigFile.length());
-     *     while(!uploader.isComplete()) {
-     *         try {
-     *             uploader.upload();
-     *         } catch (DropboxException e) {
-     *             // retry or abort logic here: continue to retry, or break to abort
-     *         }
-     *     }
-     * </pre>
-     *
      * @param is An inputstream providing the source of the data to be uploaded
      * @param length The number of bytes to upload.
      * @param chunkSize The default size of each chunk to be uploaded.
@@ -755,6 +739,7 @@ public class DropboxAPI<SESS_T extends Session> {
     public ChunkedUploader getChunkedUploader(InputStream is, long length, int chunkSize) {
         return new ChunkedUploader(is, length, chunkSize);
     }
+
     /**
      * Represents a single chunked upload in progress. Uploads bytes from the given
      * InputStream to dropbox using the chunked upload protocol. Completion of the
@@ -764,21 +749,30 @@ public class DropboxAPI<SESS_T extends Session> {
      * Expected use:
      * <pre>
      *     DropboxAPI api = ...
-     *
      *     File bigFile = new File("99mb.avi");
-     *     DropboxAPI.ChunkedUploader uploader = api.getChunkedUploader(new FileInputStream(bigFile), bigFile.length());
-     *     while(!uploader.isComplete()) {
-     *         try {
-     *             uploader.upload();
-     *         } catch (DropboxException e) {
-     *             // retry or abort logic here: continue to retry, or break to abort
+     *     FileInputStream in = new FileInputStream(bigFile);
+     *     try {
+     *         DropboxAPI.ChunkedUploader uploader = api.getChunkedUploader(in, bigFile.length());
+     *         int retryCounter = 0;
+     *         while(!uploader.isComplete()) {
+     *             try {
+     *                 uploader.upload();
+     *             } catch (DropboxException e) {
+     *                 if (retryCounter > MAX_RETRIES) break;  // Give up after a while.
+     *                 retryCounter++;
+     *                 // Maybe wait a few seconds before retrying?
+     *             }
      *         }
+     *     } finally {
+     *         in.close();
      *     }
      * </pre>
      */
     public class ChunkedUploader {
         private String uploadId;
         private long offset = 0;
+
+        private static final int DEFAULT_CHUNK_SIZE = 4 * 1024 * 1024;  // 4 MB
 
         private byte[] lastChunk = null;
         private InputStream stream;
@@ -795,8 +789,9 @@ public class DropboxAPI<SESS_T extends Session> {
             this.chunkSize = chunkSize;
         }
         ChunkedUploader(InputStream is, long length) {
-            this(is, length, 4 * 1024 * 1024); // 4mb
+            this(is, length, DEFAULT_CHUNK_SIZE); // 4mb
         }
+
         /**
          * Returns the last-known byte offset that the server expects to receive. Used
          * to find the appropriate range of bytes to next upload. May be out of date
@@ -819,18 +814,17 @@ public class DropboxAPI<SESS_T extends Session> {
 
         /**
          * Whether or not this ChunkedUploader is active and has not yet been aborted. If you want
-         * to find out whether the upload has completed successfully, see {@link isComplete()}.
+         * to find out whether the upload has completed successfully, see {@link #isComplete()}.
          */
         public boolean getActive() {
             return active;
         }
+
         /**
          * Aborts this chunked upload if it was already in progress. Actively aborts the
          * in-progress http request if called in the middle of uploading a chunk. The
          * original call to upload() will exit with a DropboxPartialFileException. An upload
          * which is aborted cannot be resumed.
-         *
-         * @return true if the upload was in progress, false otherwise.
          */
         public void abort() {
             synchronized(this) {
@@ -842,16 +836,17 @@ public class DropboxAPI<SESS_T extends Session> {
         }
 
         /**
-         * Convenience wrapper around {@link upload(int chunkSize, ProgressListener listener)}
+         * Convenience wrapper around {@link #upload(ProgressListener)}
          * defaulting to a chunk size of 4 megabytes and no progress listener.
          *
          * @throws DropboxException If there was a transmission error
          * @throws IOException If there was a problem reading from the given InputStream.
          * @throws DropboxPartialFileException if the request was canceled before completion.
          */
-        public void upload() throws DropboxException, IOException{
-            upload(4*1024*1024, null);
+        public void upload() throws DropboxException, IOException {
+            upload(null);
         }
+
         /**
          * Uploads multiple chunks of data to the server until the upload is complete or an
          * error occurs.
@@ -862,28 +857,36 @@ public class DropboxAPI<SESS_T extends Session> {
          * This gives the user an opportunity to resume the upload by calling this method again,
          * or aborting and abandoning it.
          *
-         * @param chunkSize The size of each chunk to upload
-         * @param listener A Listener that is notified with progress updates as the upload happens; can be null
+         * @param listener A ProgressListener (can be {@code null}) that will be notified of upload
+         *                 progress.  The progress notifications will be for the entire file.
          *
          * @throws DropboxException If there was a transmission error
          * @throws IOException If there was a problem reading from the given InputStream.
          * @throws DropboxPartialFileException if the request was canceled before completion.
          */
-        public void upload(int chunkSize, ProgressListener listener) throws DropboxException, IOException {
+        public void upload(ProgressListener listener) throws DropboxException, IOException {
             while (offset < targetLength) {
 
                 int nextChunkSize = (int)Math.min(chunkSize, targetLength - offset);
 
+                ProgressListener adjustedListener = null;
+                if (listener != null) {
+                    adjustedListener = new ProgressListener.Adjusted(listener, offset, targetLength);
+                }
+
                 if (lastChunk == null) {
                     lastChunk = new byte[nextChunkSize];
-                    stream.read(lastChunk);
+                    int bytesRead = stream.read(lastChunk);
+                    if (bytesRead < lastChunk.length) {
+                        throw new IllegalStateException("InputStream ended after " + (offset + bytesRead) + " bytes, expecting " + targetLength + " bytes.");
+                    }
                 }
                 try {
                     synchronized(this) {
                         if(!active) {
                             throw new DropboxPartialFileException(0);
                         }
-                        lastRequest = chunkedUploadRequest(new ByteArrayInputStream(lastChunk), lastChunk.length, listener, offset, uploadId);
+                        lastRequest = chunkedUploadRequest(new ByteArrayInputStream(lastChunk), lastChunk.length, adjustedListener, offset, uploadId);
                     }
 
                     ChunkedUploadResponse resp = lastRequest.upload();
@@ -943,6 +946,9 @@ public class DropboxAPI<SESS_T extends Session> {
      *
      * @param is A stream containing the data to be uploaded.
      * @param length The number of bytes to upload.
+     * @param listener A ProgressListener (can be {@code null}) that will be notified of upload
+     *                 progress.  The progress will be for this individual file chunk (starting
+     *                 at zero bytes and ending at {@code length} bytes).
      * @param offset The offset into the file that the contents of the these bytes belongs to.
      * @param uploadId The unique ID identifying this upload to the server.
      * @return A ChunkedUploadRequest which can be used to upload a single chunk of data to Dropbox.
@@ -1017,7 +1023,9 @@ public class DropboxAPI<SESS_T extends Session> {
                     throw e;
                 }
             }
-            Map<String, Object> fields = (Map<String, Object>)RESTUtility.parseAsJSON(hresp);
+            Map fields_ = (Map)RESTUtility.parseAsJSON(hresp);
+            @SuppressWarnings("unchecked")
+            Map<String,Object> fields = (Map<String,Object>) fields_;
             return new ChunkedUploadResponse(fields);
         }
     }
@@ -2192,7 +2200,9 @@ public class DropboxAPI<SESS_T extends Session> {
         session.sign(req);
 
         HttpResponse hresp = RESTUtility.execute(session, req);
-        Map<String, Object> json = (Map<String, Object>)RESTUtility.parseAsJSON(hresp);
+        Map json_ = (Map) RESTUtility.parseAsJSON(hresp);
+        @SuppressWarnings("unchecked")
+        Map<String,Object> json = (Map<String,Object>) json_;
         return new Entry(json);
     }
 
