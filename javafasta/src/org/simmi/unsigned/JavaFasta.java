@@ -169,6 +169,10 @@ public class JavaFasta extends JApplet {
 		if( parentApplet != null ) this.parentApplet = parentApplet;
 	}
 	
+	public void selectAll() {
+		if( table != null ) table.selectAll();
+	}
+	
 	public void setStatus() {
 		int r = table.getSelectedRow();
 		if( r != -1 ) {
@@ -687,6 +691,11 @@ public class JavaFasta extends JApplet {
 		if( seq.getLength() > getMax() ) setMax( seq.getLength() );
 	}
 	
+	public void clearAll() {
+		lseq.clear();
+		setMax( 0 );
+	}
+	
 	public void addAnnotation( Annotation ann ) {
 		lann.add( ann );
 	}
@@ -852,6 +861,10 @@ public class JavaFasta extends JApplet {
 	   			 val += 70;
 	   		}
 		}
+	}
+	
+	public void exportFasta() throws IOException, UnavailableServiceException {
+		exportFasta( table, lseq );
 	}
 	
 	public void exportFasta( JTable table, List<Sequence> lseq ) throws IOException, UnavailableServiceException {
@@ -1108,9 +1121,11 @@ public class JavaFasta extends JApplet {
 	}
 	
 	public void updateView() {
-		table.tableChanged( new TableModelEvent( table.getModel() ) );
-		atable.tableChanged( new TableModelEvent( atable.getModel() ) );
-		c.updateCoords();
+		if( table != null ) {
+			table.tableChanged( new TableModelEvent( table.getModel() ) );
+			atable.tableChanged( new TableModelEvent( atable.getModel() ) );
+			c.updateCoords();
+		}
 	}
 	
 	public void delete() {
@@ -1136,9 +1151,7 @@ public class JavaFasta extends JApplet {
 		initGui( this );
 	}
 	
-	public void clearCharAt( int x, int y ) {
-		int r = table.convertRowIndexToModel(y);
-		Sequence s = lseq.get(r);
+	public void clearCharAt( int x, Sequence s ) {
 		if( x < s.getStart() ) s.setStart( s.getStart()-1 );
 		else {
 			int val = x-s.getStart();
@@ -1148,9 +1161,13 @@ public class JavaFasta extends JApplet {
 		}
 	}
 	
-	public void deleteCharAt( int x, int y ) {
+	public void clearCharAt( int x, int y ) {
 		int r = table.convertRowIndexToModel(y);
 		Sequence s = lseq.get(r);
+		clearCharAt( x, s );
+	}
+	
+	public void deleteCharAt( int x, Sequence s ) {
 		if( x < s.getStart() ) s.setStart( s.getStart()-1 );
 		else {
 			int val = x-s.getStart();
@@ -1160,11 +1177,14 @@ public class JavaFasta extends JApplet {
 		}
 	}
 	
-	public char getCharAt( int x, int y ) {
-		char c = ' ';
-		
+	public void deleteCharAt( int x, int y ) {
 		int r = table.convertRowIndexToModel(y);
 		Sequence s = lseq.get(r);
+		deleteCharAt( x, s );
+	}
+	
+	public char getCharAt( int x, Sequence s ) {
+		char c = ' ';
 		if( x >= s.getStart() && x < s.getEnd() ) {
 			int val = x-s.getStart();
 			if( val < s.getLength() ) c = s.sb.charAt( val );
@@ -1172,8 +1192,13 @@ public class JavaFasta extends JApplet {
 				System.err.println();
 			}
 		}
-		
 		return c;
+	}
+	
+	public char getCharAt( int x, int y ) {
+		int r = table.convertRowIndexToModel(y);
+		Sequence s = lseq.get(r);
+		return getCharAt( x, s );
 	}
 	
 	public void clearConservedSites( Map<String,Collection<Sequence>> specmap ) {
@@ -1290,8 +1315,8 @@ public class JavaFasta extends JApplet {
 		while( i < max-min ) {
 			boolean rem = true;
 			for( Sequence seq : seqset ) {
-				int r = table.convertRowIndexToView( seq.index );
-				char c = getCharAt(i, r);
+				//int r = table.convertRowIndexToView( seq.index );
+				char c = getCharAt(i, seq);
 				/*if( c2 != '.' && c2 != '-' && c2 != ' ' ) {
 					rem = false;
 					break;
@@ -1305,8 +1330,7 @@ public class JavaFasta extends JApplet {
 			}
 			if( !rem ) {
 				for( Sequence seq : seqset ) {
-					int r = table.convertRowIndexToView( seq.index );
-					clearCharAt(i, r);
+					clearCharAt(i, seq);
 				}
 			}
 			i++;
@@ -1316,7 +1340,7 @@ public class JavaFasta extends JApplet {
 			seq.checkLengths();
 		}
 		
-		c.repaint();
+		if( c != null ) c.repaint();
 	}
 	
 	public void updateIndexes() {
@@ -1600,6 +1624,12 @@ public class JavaFasta extends JApplet {
 	
 	public String getPhylip( boolean numeric ) {
 		return Sequence.getPhylip( this.getSequences(), numeric );
+	}
+	
+	public void nameReplace( String one, String two ) {
+		for( Sequence seq : lseq ) {
+			seq.setName( seq.getName().replace( one, two ) );
+		}
 	}
 	
 	public double[] distanceMatrixNumeric( boolean excludeGaps, double[] ent ) {
