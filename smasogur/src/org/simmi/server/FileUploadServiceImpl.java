@@ -4,6 +4,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URLDecoder;
 import java.security.GeneralSecurityException;
 import java.security.PrivateKey;
 import java.util.Map.Entry;
@@ -157,6 +158,7 @@ public class FileUploadServiceImpl extends HttpServlet {
                 String 			cont = item.getContentType();
 
                 String name = item.getFieldName();
+                name = URLDecoder.decode(name, "UTF-8");
                 InputStream stream = item.openStream();
 
                 ByteArrayOutputStream out = new ByteArrayOutputStream();

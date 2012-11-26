@@ -779,9 +779,13 @@ public class Smasogur implements EntryPoint {
 				public void onSubmitComplete(SubmitCompleteEvent event) {
 					String subm = event.getResults();
 					console("ermi " + subm + "  " + uid);
-					if( subm.startsWith("http") ) {
-						fileLoad( file.getName(), subm, null, uid );
+					int i = subm.lastIndexOf("http");
+					if( i >= 0 ) {
+						int k = subm.indexOf( "<", i+1 );
+						if( k == -1 ) k = subm.length();
+						fileLoad( URL.decode( file.getName() ), subm.substring(i, k).trim(), null, uid );
 					}
+					uploadButton.setEnabled( false );
 				}
 	    	  });
 	    	  
@@ -790,6 +794,8 @@ public class Smasogur implements EntryPoint {
 	  		  file.addChangeHandler( new ChangeHandler() {
 	  			@Override
 	  			public void onChange(ChangeEvent event) {
+	  				uploadButton.setEnabled( true );
+	  				
 	  				String filename = file.getFilename();
 	  				int i = filename.lastIndexOf('/');
 	  				int k = filename.lastIndexOf('\\');
@@ -810,6 +816,7 @@ public class Smasogur implements EntryPoint {
 	  			}
 	  		  });
 	    	  uploadButton = new SubmitButton("Upload");
+	    	  uploadButton.setEnabled( false );
 	    	  //if( uid == null || uid.length() < 2 ) uploadButton.setEnabled( false );
 	    	  
 	    	  /*uploadButton.addClickHandler( new ClickHandler() {

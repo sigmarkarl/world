@@ -12,19 +12,20 @@ import com.google.gwt.event.dom.client.MouseDownEvent;
 import com.google.gwt.event.dom.client.MouseDownHandler;
 import com.google.gwt.event.logical.shared.ResizeEvent;
 import com.google.gwt.event.logical.shared.ResizeHandler;
+import com.google.gwt.typedarrays.shared.Uint8Array;
 import com.google.gwt.user.client.Random;
 import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.ui.RootPanel;
 
 import elemental.client.Browser;
-import elemental.dom.LocalMediaStream;
+import elemental.events.Event;
+import elemental.events.EventListener;
+import elemental.html.AudioBuffer;
 import elemental.html.AudioContext;
-import elemental.html.AudioGainNode;
-import elemental.html.AudioParam;
-import elemental.html.Navigator;
-import elemental.html.NavigatorUserMediaSuccessCallback;
-import elemental.html.Oscillator;
-import elemental.util.Mappable;
+import elemental.html.JavaScriptAudioNode;
+import elemental.html.MediaElement;
+import elemental.html.MediaElementAudioSourceNode;
+import elemental.html.RealtimeAnalyserNode;
 
 /**
  * Entry point classes define <code>onModuleLoad()</code>.
@@ -86,6 +87,74 @@ public class Childsplay implements EntryPoint {
 		}
 	}
 	
+	public native void loadAudioIn( AudioContext acontext ) /*-{
+		var s = this;
+		function onError( error ) {
+			$wnd.console.log( 'err ' + error.code, error );
+		}
+		function onSuccess( stream ) {
+			var audio = $doc.querySelector('audio');
+			audio.src = $wnd.URL.createObjectURL( stream );
+			
+			var analyser = acontext.createAnalyser();
+			analyser.smoothingTimeConstant = 0.3;
+        	analyser.fftSize = 1024;
+        	
+        	javascriptNode = acontext.createJavaScriptNode(2048, 1, 1);
+        	
+        	javascriptNode.onaudioprocess = function() {
+		 
+		        // get the average, bincount is fftsize / 2
+		        var array =  new Uint8Array(analyser.frequencyBinCount);
+		        analyser.getByteFrequencyData(array);
+		        var average = getAverageVolume(array)
+		 
+		        // clear the current state
+		        ctx.clearRect(0, 0, 60, 130);
+		 
+		        // set the fill style
+		        ctx.fillStyle=gradient;
+		 
+		        // create the meters
+		        ctx.fillRect(0,130-average,25,130);
+		    }
+		    
+		     function getAverageVolume(array) {
+		        var values = 0;
+		        var average;
+		 
+		        var length = array.length;
+		 
+		        // get all the frequency amplitudes
+		        for (var i = 0; i < length; i++) {
+		            values += array[i];
+		        }
+		 
+		        average = values / length;
+		        return average;
+		    }
+			//s.@org.simmi.client.Childsplay::audioContinue(Lelemental/html/MediaElement;)( audio );
+		}
+		$wnd.navigator.webkitGetUserMedia( {audio: true}, onSuccess, onError )
+	}-*/;
+	
+	AudioContext acontext;
+	public void audioContinue( MediaElement me ) {
+		MediaElementAudioSourceNode measn = acontext.createMediaElementSource( me );
+		AudioBuffer ab = acontext.createBuffer( null, true );
+		
+		final Uint8Array array;
+		final RealtimeAnalyserNode ran = acontext.createAnalyser();
+		final JavaScriptAudioNode jsan = acontext.createJavaScriptNode(2048);
+		jsan.setOnaudioprocess( new EventListener() {
+			@Override
+			public void handleEvent(Event evt) {
+				//ran.getFloatFrequencyData(array);
+			}
+		});
+		//measn.connect(destination, output, input)
+	}
+	
 	/**
 	 * This is the entry point method.
 	 */
@@ -99,14 +168,16 @@ public class Childsplay implements EntryPoint {
 		st.setBorderWidth(0.0, Unit.PX);
 		
 		final elemental.html.Window wnd = Browser.getWindow();
-		AudioContext acontext = wnd.newAudioContext();
-		final AudioGainNode agn = acontext.createGainNode();
+		acontext = wnd.newAudioContext();
+		/*final AudioGainNode agn = acontext.createGainNode();
 		final Oscillator osc = acontext.createOscillator();
 		osc.setType( Oscillator.SINE );
 		osc.connect( (AudioParam)agn, 0 );
-		agn.connect( (AudioParam)acontext.getDestination(), 0 );
+		agn.connect( (AudioParam)acontext.getDestination(), 0 );*/
 		
-		Navigator nv = wnd.getNavigator();
+		loadAudioIn( acontext );
+		
+		/*Navigator nv = wnd.getNavigator();
 		Mappable mbl = new Mappable() {
 			
 			@Override
@@ -114,18 +185,27 @@ public class Childsplay implements EntryPoint {
 			
 			@Override
 			public Object at(String key) {
+				wnd.getConsole().log(key);
 				if( key.equals("audio") ) return true;
-				return null;
+				return false;
 			}
 		};
-		nv.webkitGetUserMedia( mbl, new NavigatorUserMediaSuccessCallback() {
+		
+		NavigatorUserMediaSuccessCallback onSuccess = new NavigatorUserMediaSuccessCallback() {
 			@Override
 			public boolean onNavigatorUserMediaSuccessCallback(LocalMediaStream stream) {
 				wnd.getConsole().log("succ");
-				//console("ookok");
+				
 				return false;
 			}
-		});
+		};
+		NavigatorUserMediaErrorCallback onError = new NavigatorUserMediaErrorCallback() {
+			@Override
+			public boolean onNavigatorUserMediaErrorCallback(NavigatorUserMediaError error) {
+				return false;
+			}
+		};*/
+		//nv.webkitGetUserMedia( mbl, onSuccess, onError );
 		
 		Window.enableScrolling( false );
 		int w = Window.getClientWidth();
@@ -158,9 +238,9 @@ public class Childsplay implements EntryPoint {
 					next = Random.nextInt( ff.length );
 				}
 				float fval = ff[ next ];
-				osc.getFrequency().setValue( fval );
-				agn.getGain().setValue( (900.0f-fval)/800.0f );
-				osc.noteOn( 0 );
+				//osc.getFrequency().setValue( fval );
+				//agn.getGain().setValue( (900.0f-fval)/800.0f );
+				//osc.noteOn( 0 );
 				doRandom( canvas.getContext2d() );
 				prev = next;
 			}
@@ -169,8 +249,8 @@ public class Childsplay implements EntryPoint {
 		canvas.addMouseDownHandler( new MouseDownHandler() {
 			@Override
 			public void onMouseDown(MouseDownEvent event) {
-				osc.getFrequency().setValue( (float)(Random.nextDouble()*500.0+100.0) );
-				osc.noteOn( 0 );
+				//osc.getFrequency().setValue( (float)(Random.nextDouble()*500.0+100.0) );
+				//osc.noteOn( 0 );
 				doRandom( canvas.getContext2d() );
 			}
 		});
