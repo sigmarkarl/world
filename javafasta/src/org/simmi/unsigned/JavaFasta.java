@@ -48,6 +48,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
+import javafx.scene.web.WebEngineBuilder;
+
 import javax.imageio.ImageIO;
 import javax.jnlp.FileContents;
 import javax.jnlp.FileOpenService;
@@ -90,6 +92,7 @@ import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
 import javax.swing.table.TableModel;
 import javax.swing.table.TableRowSorter;
+import javax.xml.ws.WebEndpoint;
 
 import netscape.javascript.JSObject;
 
@@ -3201,8 +3204,16 @@ public class JavaFasta extends JApplet {
 			public void actionPerformed(ActionEvent e) {
 				StringBuilder	sb = distanceMatrix( false );
 				System.err.println("about to call showTree");
-				JSObject jso = JSObject.getWindow( parentApplet );
-				jso.call("showTree", new Object[] {sb.toString()} );
+				
+				boolean failed = false;
+				try {
+					JSObject jso = JSObject.getWindow( parentApplet );
+					jso.call("showTree", new Object[] {sb.toString()} );
+				} catch( Exception e1 ) {
+					failed = true;
+				}
+				
+				
 				/*String urlstr = Base64.encodeBase64URLSafeString( sb.toString().getBytes() );
 				try {
 					URI treeuri = new URI( "http://webconnectron.appspot.com/Treedraw.html?dist="+urlstr );
