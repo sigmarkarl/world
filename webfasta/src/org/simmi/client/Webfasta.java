@@ -76,6 +76,7 @@ import com.google.gwt.user.client.ui.VerticalPanel;
 import elemental.client.Browser;
 import elemental.events.Event;
 import elemental.events.EventListener;
+import elemental.events.MessageEvent;
 import elemental.html.Console;
 
 /**
@@ -1154,6 +1155,10 @@ public class Webfasta implements EntryPoint {
 	public native int bb( JavaScriptObject jo, int ind ) /*-{
 		return jo.charCodeAt(ind);
 	}-*/;
+	
+	public native int fastTree( elemental.dom.Element e, String tree ) /*-{
+		e.postMessage( tree );
+	}-*/;
 
 	public class Selection {
 		int x;
@@ -1229,8 +1234,28 @@ public class Webfasta implements EntryPoint {
 	int						mousex;
 	int						mousey;
 	
+	public void handleMessage() {
+		elemental.dom.Element e = Browser.getDocument().getElementById("listener");
+		e.addEventListener( "message", new EventListener() {
+			@Override
+			public void handleEvent(Event evt) {
+				MessageEvent me = (MessageEvent)evt;
+				Browser.getWindow().getConsole().log("jelp");
+				treestr = (String)me.getData();
+				myPopup = Browser.getWindow().open("http://webconnectron.appspot.com/Treedraw.html?callback=webfasta", "TreeDraw");
+				/*if( myPopup != null && treestr != null ) {
+					myPopup.postMessage( treestr, "*" );
+					treestr = null;
+				}*/
+			}
+		}, true);
+	}
+	
 	elemental.html.Window	myPopup = null;
+	String					treestr = null;
 	public void onModuleLoad() {
+		handleMessage();
+		
 		elemental.html.Window wnd = Browser.getWindow();
 		wnd.addEventListener("message", new EventListener() {
 			@Override
@@ -1239,12 +1264,12 @@ public class Webfasta implements EntryPoint {
 				console.log("ok");
 				
 				//evt.
-				if( myPopup != null ) {
-					String expstr = exportString();
-					//myPopup.postMessage( expstr, "*" );
+				if( myPopup != null && treestr != null ) {
+					myPopup.postMessage( treestr, "*" );
+					treestr = null;
 				}
 			}
-		}, false);
+		}, true);
 		
 		ccol.put('A', "#ff0000");
 		ccol.put('a', "#ff0000");
@@ -1686,10 +1711,23 @@ public class Webfasta implements EntryPoint {
 			}
 		});
 		MenuBar	tpopup = new MenuBar(true);
-		tpopup.addItem("NJTree", new Command() {
+		tpopup.addItem("NJTree (JavaScript)", new Command() {
 			@Override
 			public void execute() {
+				treestr = exportString();
 				myPopup = Browser.getWindow().open("http://webconnectron.appspot.com/Treedraw.html?callback=webfasta", "TreeDraw");
+			}
+		});
+		tpopup.addItem("NACLTree (C)", new Command() {
+			@Override
+			public void execute() {
+				elemental.dom.Element e = Browser.getDocument().getElementById("fasttree");
+				String fasta = "f" + exportString();
+				fastTree( e, fasta );
+				//Browser.getWindow().getConsole().log( e );
+				//elemental.html.EmbedElement ee = (elemental.html.EmbedElement)e;
+				
+				//myPopup = Browser.getWindow().open("http://webconnectron.appspot.com/Treedraw.html?callback=webfasta", "TreeDraw");
 			}
 		});
 		MenuBar	hpopup = new MenuBar(true);
