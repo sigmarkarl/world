@@ -2715,12 +2715,7 @@ public class JavaFasta extends JApplet {
 				for( int r : rr ) {
 					int k = table.convertRowIndexToModel( r );
 					Sequence seq = lseq.get( k );
-					StringBuilder	sb = seq.sb;
-					for( int i = 0; i < seq.getLength()/2; i++ ) {
-						char c = sb.charAt(i);
-						sb.setCharAt( i, sb.charAt(seq.getLength()-1-i) );
-						sb.setCharAt( seq.getLength()-1-i, c );
-					}
+					seq.reverse();
 					if( seq.revcomp == 1 ) {
 						seq.name = seq.name.substring(0, seq.name.length()-8);
 						seq.revcomp = 0;
@@ -2740,16 +2735,6 @@ public class JavaFasta extends JApplet {
 			}
 		});
 		
-		final Map<Character,Character>	complimentMap = new HashMap<Character,Character>();
-		complimentMap.put( 'A', 'T' );
-		complimentMap.put( 'T', 'A' );
-		complimentMap.put( 'G', 'C' );
-		complimentMap.put( 'C', 'G' );
-		complimentMap.put( 'a', 't' );
-		complimentMap.put( 't', 'a' );
-		complimentMap.put( 'g', 'c' );
-		complimentMap.put( 'c', 'g' );
-		
 		popup.add( new AbstractAction("Compliment") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -2757,11 +2742,7 @@ public class JavaFasta extends JApplet {
 				for( int r : rr ) {
 					int k = table.convertRowIndexToModel( r );
 					Sequence seq = lseq.get( k );
-					StringBuilder	sb = seq.sb;
-					for( int i = 0; i < seq.getLength(); i++ ) {
-						char c = sb.charAt(i);
-						sb.setCharAt( i, complimentMap.get(c) );
-					}
+					seq.complement();
 					if( seq.revcomp == 1 ) {
 						seq.name = seq.name.substring(0, seq.name.length()-8)+"_reversecompliment";
 						seq.revcomp = 3;
@@ -2787,47 +2768,7 @@ public class JavaFasta extends JApplet {
 				for( int r : rr ) {
 					int k = table.convertRowIndexToModel( r );
 					Sequence seq = lseq.get( k );
-					StringBuilder	sb = seq.sb;
-					
-					int i1 = sb.indexOf("T");
-					int i2 = sb.indexOf("U");
-					
-					if( i1 == -1 ) i1 = sb.length();
-					if( i2 == -1 ) i2 = sb.length();
-					
-					while( i1 < sb.length() || i2 < sb.length() ) {
-						while( i1 < i2 ) {
-							sb.setCharAt(i1, 'U');
-							i1 = sb.indexOf("T", i1+1);
-							if( i1 == -1 ) i1 = sb.length();
-						}
-						
-						while( i2 < i1 ) {
-							sb.setCharAt(i2, 'T');
-							i2 = sb.indexOf("U", i2+1);
-							if( i2 == -1 ) i2 = sb.length();
-						}
-					}
-					
-					i1 = sb.indexOf("t");
-					i2 = sb.indexOf("u");
-					
-					if( i1 == -1 ) i1 = sb.length();
-					if( i2 == -1 ) i2 = sb.length();
-					
-					while( i1 < sb.length() || i2 < sb.length() ) {
-						while( i1 < i2 ) {
-							sb.setCharAt(i1, 'u');
-							i1 = sb.indexOf("t", i1+1);
-							if( i1 == -1 ) i1 = sb.length();
-						}
-						
-						while( i2 < i1 ) {
-							sb.setCharAt(i2, 't');
-							i2 = sb.indexOf("u", i2+1);
-							if( i2 == -1 ) i2 = sb.length();
-						}
-					}
+					seq.utReplace();
 				}
 				c.repaint();
 			}
