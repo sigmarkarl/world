@@ -155,18 +155,23 @@ public class Serifier {
 		return mapHit;
 	}
 	
-	public static int doMapHitStuff( Map<String,String> mapHit, InputStream is, OutputStream os, Set<String> filter ) throws IOException {
+	public int doMapHitStuff( Map<String,String> mapHit, InputStream is, OutputStream os, Set<String> filter ) throws IOException {
 		return doMapHitStuff(mapHit, is, os, "_", filter);
 	}
 	
-	public static boolean checkFilter( Collection<String> filter, String maphitstr ) {
+	public boolean checkFilter( Collection<String> filter, String maphitstr ) {
 		for( String str : filter ) {
 			if( maphitstr.contains( str ) ) return true;
 		}
 		return false;
 	}
 	
-	public static int doMapHitStuff( Map<String,String> mapHit, InputStream is, OutputStream os, String sep, Collection<String> filter ) throws IOException {
+	public int doMapHitStuff( Map<String,String> mapHit, InputStream is, OutputStream os, String sep, Collection<String> filter ) throws IOException {
+		initMaps();
+		Map[] maps = {snaedis1heatmap,snaedis2heatmap,snaedis3heatmap,snaedis4heatmap,snaedis5heatmap,snaedis6heatmap,snaedis7heatmap,snaedis8heatmap};
+		Map[] phmaps = {snaedis1phmap,snaedis2phmap,snaedis3phmap,snaedis4phmap,snaedis5phmap,snaedis6phmap,snaedis7phmap,snaedis8phmap};
+		Map[] colormaps = {snaedis1colormap,snaedis2colormap,snaedis3colormap,snaedis4colormap,snaedis5colormap,snaedis6colormap,snaedis7colormap,snaedis8colormap};
+		
 		int nseq = 0;
 		PrintStream pr = new PrintStream( os );
 		BufferedReader br = new BufferedReader( new InputStreamReader( is ) );
@@ -186,7 +191,15 @@ public class Serifier {
 					
 					if( filter == null || checkFilter( filter, maphitstr ) ) {
 						nseq++;
-						pr.println( ">" + maphitstr + sep + name ); //+ sep + mapHit.get(name) );
+						
+						i = line.lastIndexOf('_');
+						if( i != -1 ) i = line.lastIndexOf('_', i-1);
+						if( i == -1 ) i = line.length();
+						String cont = line.substring(1,i);
+						
+						String newline = colorAdd( maphitstr, maps, phmaps, colormaps, cont, cont );
+						//pr.println( ">" + maphitstr + sep + name ); //+ sep + mapHit.get(name) );
+						pr.println( ">" + newline + sep + name );
 						include = true;
 					} else include = false;
 				} else include = false;
@@ -1139,65 +1152,8 @@ public class Serifier {
 						if( i == -1 ) i = line.length();
 						String cont = line.substring(1,i);
 						
-						boolean check = false;
-						int k = 0;
-						for( Map m : maps ) {
-							//System.err.println( sub );
-							boolean bsub = m.containsKey(sub);
-							boolean bcont = m.containsKey(cont);
-							if( bsub || bcont ) {
-								sub = bsub ? sub : cont;
-								double dval = (double)m.get( sub );
-								double tval = (dval-50.0)/40.0;
-								
-								int red = (int)(tval*255.0);
-								int green = (int)((1.0-tval)*255.0);
-								int blue = 0;
-								
-								String rstr = Integer.toString(red, 16);
-								String gstr = Integer.toString(green, 16);
-								String bstr = Integer.toString(blue, 16);
-								
-								String allstr = (rstr.length() == 1 ? "0"+rstr : rstr) + (gstr.length() == 1 ? "0"+gstr : gstr) + (bstr.length() == 1 ? "0"+bstr : bstr);
-								
-								
-								Map phmap = phmaps[k];
-								double phval = (double)phmap.get( sub );
-								double tphval = (phval-5.0)/4.0;
-								
-								red = (int)(tphval*255.0);
-								green = 0;
-								blue = (int)((1.0-tphval)*255.0);
-								
-								rstr = Integer.toString(red, 16);
-								gstr = Integer.toString(green, 16);
-								bstr = Integer.toString(blue, 16);
-								
-								String phstr = (rstr.length() == 1 ? "0"+rstr : rstr) + (gstr.length() == 1 ? "0"+gstr : gstr) + (bstr.length() == 1 ? "0"+bstr : bstr);
-
-								
-								
-								Map colormap = colormaps[k];
-								String[] csplit = ((String)colormap.get( sub )).split("\t");
-								
-								red = (int)(Double.parseDouble(csplit[0])*255.0);
-								green = (int)(Double.parseDouble(csplit[1])*255.0);
-								blue = (int)(Double.parseDouble(csplit[2])*255.0);
-								
-								rstr = Integer.toString(red, 16);
-								gstr = Integer.toString(green, 16);
-								bstr = Integer.toString(blue, 16);
-								
-								String cstr = (rstr.length() == 1 ? "0"+rstr : rstr) + (gstr.length() == 1 ? "0"+gstr : gstr) + (bstr.length() == 1 ? "0"+bstr : bstr);
-								
-								check = true;
-								//fw.write( line+"[#"+allstr+"]-----[#"+phstr+"];"+sub+"[#"+cstr+"]\n" );
-								fw.write( line+(idstr != null ? "[#"+idstr+"];" : "")+sub+"[#"+cstr+"]\n" );
-								break;
-							}
-							k++;
-						}
-						if( !check ) fw.write( line + "\n" );//line.replace( ">", ">"+s.getName().replace(".fna", "")+"_" )+"\n" );
+						String newline = colorAdd( line, maps, phmaps, colormaps, sub, cont );
+						fw.write( newline + "\n" );
 						nseq++;
 					} else fw.write( line+"\n" );
 					line = br.readLine();
@@ -1216,6 +1172,69 @@ public class Serifier {
 		}
 		
 		return retlseq;
+	}
+	
+	public String colorAdd( String line, Map[] maps, Map[] phmaps, Map[] colormaps, String sub, String cont ) {
+		String ret = line;
+		
+		int k = 0;
+		for( Map m : maps ) {
+			//System.err.println( sub );
+			boolean bsub = m.containsKey(sub);
+			boolean bcont = m.containsKey(cont);
+			if( bsub || bcont ) {
+				sub = bsub ? sub : cont;
+				double dval = (double)m.get( sub );
+				double tval = (dval-50.0)/40.0;
+				
+				int red = (int)(tval*255.0);
+				int green = (int)((1.0-tval)*255.0);
+				int blue = 0;
+				
+				String rstr = Integer.toString(red, 16);
+				String gstr = Integer.toString(green, 16);
+				String bstr = Integer.toString(blue, 16);
+				
+				String allstr = (rstr.length() == 1 ? "0"+rstr : rstr) + (gstr.length() == 1 ? "0"+gstr : gstr) + (bstr.length() == 1 ? "0"+bstr : bstr);
+				
+				Map phmap = phmaps[k];
+				double phval = (double)phmap.get( sub );
+				double tphval = (phval-5.0)/4.0;
+				
+				red = (int)(tphval*255.0);
+				green = 0;
+				blue = (int)((1.0-tphval)*255.0);
+				
+				rstr = Integer.toString(red, 16);
+				gstr = Integer.toString(green, 16);
+				bstr = Integer.toString(blue, 16);
+				
+				String phstr = (rstr.length() == 1 ? "0"+rstr : rstr) + (gstr.length() == 1 ? "0"+gstr : gstr) + (bstr.length() == 1 ? "0"+bstr : bstr);
+				
+				Map colormap = colormaps[k];
+				String[] csplit = ((String)colormap.get( sub )).split("\t");
+				
+				red = (int)(Double.parseDouble(csplit[0])*255.0);
+				green = (int)(Double.parseDouble(csplit[1])*255.0);
+				blue = (int)(Double.parseDouble(csplit[2])*255.0);
+				
+				rstr = Integer.toString(red, 16);
+				gstr = Integer.toString(green, 16);
+				bstr = Integer.toString(blue, 16);
+				
+				String cstr = (rstr.length() == 1 ? "0"+rstr : rstr) + (gstr.length() == 1 ? "0"+gstr : gstr) + (bstr.length() == 1 ? "0"+bstr : bstr);
+				
+				ret = line+"[#FFFFFF]-----[#"+allstr+"]-----[#"+phstr+"]"; //"+sub+"[#"+cstr+"]";
+				//ret = line+"[#"+allstr+"]-----[#"+phstr+"];"+sub+"[#"+cstr+"]";
+				//check = true;
+				//fw.write( line+"[#"+allstr+"]-----[#"+phstr+"];"+sub+"[#"+cstr+"]\n" );
+				//fw.write( line+(idstr != null ? "[#"+idstr+"];" : "")+sub+"[#"+cstr+"]\n" );
+				break;
+			}
+			k++;
+		}
+		//if( !check ) fw.write( line + "\n" );//line.replace( ">", ">"+s.getName().replace(".fna", "")+"_" )+"\n" );
+		return ret;
 	}
 	
 	public void corr() {

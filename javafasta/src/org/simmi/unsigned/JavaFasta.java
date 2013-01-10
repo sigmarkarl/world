@@ -47,6 +47,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
+import javafx.scene.web.WebEngineBuilder;
+
 import javax.imageio.ImageIO;
 import javax.jnlp.FileContents;
 import javax.jnlp.FileOpenService;
@@ -89,6 +91,7 @@ import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
 import javax.swing.table.TableModel;
 import javax.swing.table.TableRowSorter;
+import javax.xml.ws.WebEndpoint;
 
 import netscape.javascript.JSObject;
 
@@ -2593,12 +2596,13 @@ public class JavaFasta extends JApplet {
 				for( int r : rr ) {
 					int k = table.convertRowIndexToModel( r );
 					Sequence seq = serifier.lseq.get( k );
-					StringBuilder	sb = seq.sb;
+					/*StringBuilder	sb = seq.sb;
 					for( int i = 0; i < seq.getLength()/2; i++ ) {
 						char c = sb.charAt(i);
 						sb.setCharAt( i, sb.charAt(seq.getLength()-1-i) );
 						sb.setCharAt( seq.getLength()-1-i, c );
-					}
+					}*/
+					seq.reverse();
 					if( seq.revcomp == 1 ) {
 						seq.name = seq.name.substring(0, seq.name.length()-8);
 						seq.revcomp = 0;
@@ -2618,16 +2622,6 @@ public class JavaFasta extends JApplet {
 			}
 		});
 		
-		final Map<Character,Character>	complimentMap = new HashMap<Character,Character>();
-		complimentMap.put( 'A', 'T' );
-		complimentMap.put( 'T', 'A' );
-		complimentMap.put( 'G', 'C' );
-		complimentMap.put( 'C', 'G' );
-		complimentMap.put( 'a', 't' );
-		complimentMap.put( 't', 'a' );
-		complimentMap.put( 'g', 'c' );
-		complimentMap.put( 'c', 'g' );
-		
 		popup.add( new AbstractAction("Compliment") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -2635,11 +2629,12 @@ public class JavaFasta extends JApplet {
 				for( int r : rr ) {
 					int k = table.convertRowIndexToModel( r );
 					Sequence seq = serifier.lseq.get( k );
-					StringBuilder	sb = seq.sb;
+					/*StringBuilder	sb = seq.sb;
 					for( int i = 0; i < seq.getLength(); i++ ) {
 						char c = sb.charAt(i);
 						sb.setCharAt( i, complimentMap.get(c) );
-					}
+					}*/
+					seq.complement();
 					if( seq.revcomp == 1 ) {
 						seq.name = seq.name.substring(0, seq.name.length()-8)+"_reversecompliment";
 						seq.revcomp = 3;
@@ -2665,7 +2660,8 @@ public class JavaFasta extends JApplet {
 				for( int r : rr ) {
 					int k = table.convertRowIndexToModel( r );
 					Sequence seq = serifier.lseq.get( k );
-					StringBuilder	sb = seq.sb;
+					
+					/*StringBuilder	sb = seq.sb;
 					
 					int i1 = sb.indexOf("T");
 					int i2 = sb.indexOf("U");
@@ -2705,7 +2701,8 @@ public class JavaFasta extends JApplet {
 							i2 = sb.indexOf("u", i2+1);
 							if( i2 == -1 ) i2 = sb.length();
 						}
-					}
+					}*/
+					seq.utReplace();
 				}
 				c.repaint();
 			}
@@ -3083,8 +3080,16 @@ public class JavaFasta extends JApplet {
 			public void actionPerformed(ActionEvent e) {
 				StringBuilder	sb = distanceMatrix( false );
 				System.err.println("about to call showTree");
-				JSObject jso = JSObject.getWindow( parentApplet );
-				jso.call("showTree", new Object[] {sb.toString()} );
+				
+				boolean failed = false;
+				try {
+					JSObject jso = JSObject.getWindow( parentApplet );
+					jso.call("showTree", new Object[] {sb.toString()} );
+				} catch( Exception e1 ) {
+					failed = true;
+				}
+				
+				
 				/*String urlstr = Base64.encodeBase64URLSafeString( sb.toString().getBytes() );
 				try {
 					URI treeuri = new URI( "http://webconnectron.appspot.com/Treedraw.html?dist="+urlstr );

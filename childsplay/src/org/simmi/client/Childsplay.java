@@ -42,8 +42,7 @@ public class Childsplay implements EntryPoint {
 	/**
 	 * Create a remote service proxy to talk to the server-side Greeting service.
 	 */
-	private final GreetingServiceAsync greetingService = GWT
-			.create(GreetingService.class);
+	private final GreetingServiceAsync greetingService = GWT.create(GreetingService.class);
 
 	long counter = 0;	
 	public void doRandom( Context2d context ) {
@@ -95,15 +94,15 @@ public class Childsplay implements EntryPoint {
 		function onSuccess( stream ) {
 			var audio = $doc.querySelector('audio');
 			audio.src = $wnd.URL.createObjectURL( stream );
-			
+			console.log("mmmuuu2");
 			var analyser = acontext.createAnalyser();
 			analyser.smoothingTimeConstant = 0.3;
         	analyser.fftSize = 1024;
-        	
+        	console.log("mmmuuu3");
         	javascriptNode = acontext.createJavaScriptNode(2048, 1, 1);
-        	
+        	console.log("mmmuuu4");
         	javascriptNode.onaudioprocess = function() {
-		 
+		 		console.log("mmmuuu");
 		        // get the average, bincount is fftsize / 2
 		        var array =  new Uint8Array(analyser.frequencyBinCount);
 		        analyser.getByteFrequencyData(array);
@@ -135,7 +134,8 @@ public class Childsplay implements EntryPoint {
 		    }
 			//s.@org.simmi.client.Childsplay::audioContinue(Lelemental/html/MediaElement;)( audio );
 		}
-		$wnd.navigator.webkitGetUserMedia( {audio: true}, onSuccess, onError )
+		$wnd.navigator.webkitGetUserMedia( {audio: true}, onSuccess, onError );
+		console.log("mmmuuu5");
 	}-*/;
 	
 	AudioContext acontext;
@@ -224,6 +224,13 @@ public class Childsplay implements EntryPoint {
 				canvas.setSize( w+"px", h+"px" );
 				canvas.setCoordinateSpaceWidth( w );
 				canvas.setCoordinateSpaceHeight( h );
+			}
+		});canvas.addMouseDownHandler( new MouseDownHandler() {
+			@Override
+			public void onMouseDown(MouseDownEvent event) {
+				//osc.getFrequency().setValue( (float)(Random.nextDouble()*500.0+100.0) );
+				//osc.noteOn( 0 );
+				doRandom( canvas.getContext2d() );
 			}
 		});
 		
