@@ -5,8 +5,7 @@
 	<inherits name="elemental.Elemental" />
 
 	<add-linker name="xsiframe" />
-	<set-configuration-property name="devModeRedirectEnabled"
-		value="true" />
+	<set-configuration-property name="devModeRedirectEnabled" value="true" />
 
 	<source path="client" />
 	<entry-point class="org.simmi.client.Guitartuner"></entry-point>

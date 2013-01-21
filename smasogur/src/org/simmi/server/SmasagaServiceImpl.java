@@ -15,6 +15,7 @@ import java.nio.CharBuffer;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -95,6 +96,9 @@ public class SmasagaServiceImpl extends RemoteServiceServlet implements SmasagaS
 			smasaga.setPoem( poem == null ? false : (Boolean)poem );
 			Object tobecontinued = e.getProperty("continue");
 			smasaga.setContinue( tobecontinued == null ? false : (Boolean)tobecontinued );
+			
+			Object date = e.getProperty("timestamp");
+			smasaga.setDate( date == null ? null : (Date)date );
 			
 			String sagaKey = KeyFactory.keyToString(e.getKey());
 			sagaMap.put( sagaKey, smasaga );
@@ -396,7 +400,6 @@ public class SmasagaServiceImpl extends RemoteServiceServlet implements SmasagaS
 			}
 			is.close();
 			
-			System.err.println( "erm" );
 			System.err.println( s );
 			
 			Map<String,String>	json = new HashMap<String,String>();
@@ -449,7 +452,7 @@ public class SmasagaServiceImpl extends RemoteServiceServlet implements SmasagaS
     }
 
 	@Override
-	public String saveShortStory(Saga saga, String filename, String fileurl, String binary) {
+	public Saga saveShortStory(Saga saga, String filename, String fileurl, String binary) {
 		String urlstr = fileurl;
 		//if( filename.startsWith("http") ) urlstr = filename;
 		//else urlstr = "http://dl.dropbox.com/u/10024658/"+URLEncoder.encode(filename, "UTF-8");
@@ -490,10 +493,15 @@ public class SmasagaServiceImpl extends RemoteServiceServlet implements SmasagaS
 		smasaga.setProperty("truestory", saga.getTruestory());
 		smasaga.setProperty("adventure", saga.getAdventure());
 		
+		Date date = new Date(System.currentTimeMillis());
+		smasaga.setProperty("timestamp", date);
+		
 		DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
 		Key key = datastore.put( smasaga );
+		saga.setKey( KeyFactory.keyToString(key) );
+		saga.setDate( date );
 		
-		return KeyFactory.keyToString(key);
+		return saga;
 	}
 
 	@Override
@@ -533,6 +541,8 @@ public class SmasagaServiceImpl extends RemoteServiceServlet implements SmasagaS
 			smasaga.setHistorical( (Boolean)ent.getProperty("historical") );
 			smasaga.setTruestory( (Boolean)ent.getProperty("truestory") );
 			smasaga.setAdventure( (Boolean)ent.getProperty("adventure") );
+			
+			smasaga.setDate( (Date)ent.getProperty("timestamp") );
 			
 			return smasaga;
 		} catch (EntityNotFoundException e) {

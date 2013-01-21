@@ -130,7 +130,7 @@ public class Childsplay implements EntryPoint {
 		        }
 		 
 		        average = values / length;
-		        return average;
+		        return average;analyser.
 		    }
 			//s.@org.simmi.client.Childsplay::audioContinue(Lelemental/html/MediaElement;)( audio );
 		}

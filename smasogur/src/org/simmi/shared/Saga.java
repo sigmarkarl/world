@@ -1,6 +1,7 @@
 package org.simmi.shared;
 
 import java.io.Serializable;
+import java.util.Date;
 
 public class Saga implements Serializable {
 
@@ -32,6 +33,7 @@ public class Saga implements Serializable {
 	private String		language;
 	private String		url;
 	private String		key;
+	private Date		date;
 	
 	int					gradeSum;
 	int					gradeNum;
@@ -235,5 +237,13 @@ public class Saga implements Serializable {
 	
 	public void setContinue( boolean tobecontined ) {
 		this.tobecontinued = tobecontined;
+	}
+	
+	public void setDate( Date date ) {
+		this.date = date;
+	}
+	
+	public Date getDate() {
+		return date;
 	}
 }

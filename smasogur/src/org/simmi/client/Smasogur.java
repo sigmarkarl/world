@@ -298,6 +298,7 @@ public class Smasogur implements EntryPoint {
 		
 		com.google.gwt.dom.client.Element elem = Document.get().createElement("fb:login-button");
 		elem.setAttribute("width", "200");
+		elem.setAttribute("height", "100");
 		//elem.setAttribute("layout", "standard");
 		//elem.setAttribute("font", "arial");
 		elem.setAttribute("show-faces", "true");
@@ -430,19 +431,19 @@ public class Smasogur implements EntryPoint {
 		//final String fnameDecoded = URL.decode( fileName );
 		
 		console("fl "+fileUrl);
-		final Saga smasaga = new Saga( fileName, "Unkown", uid, "Unknown", "English", "");
+		final Saga saga = new Saga( fileName, "Unkown", uid, "Unknown", "English", "");
 		setStatus( "Saving file" );
-		smasagaService.saveShortStory( smasaga, fileName, fileUrl, binaryString, new AsyncCallback<String>() {
+		smasagaService.saveShortStory( saga, fileName, fileUrl, binaryString, new AsyncCallback<Saga>() {
 			@Override
 			public void onFailure(Throwable caught) {
 				console( caught.getMessage() );
 			}
 
 			@Override
-			public void onSuccess(String result) {
-				console("in fl "+result);
+			public void onSuccess(Saga smasaga) {
+				//console("in fl "+result);
 				
-				smasaga.setKey( result );
+				//smasaga.setKey( result );
 				sogur.add( smasaga );
 				
 				setStatus( "File saved" );
@@ -456,23 +457,23 @@ public class Smasogur implements EntryPoint {
 				} else {
 					data.setValue(r, 3, gradeStr.get( (int)Math.round( (double)smasaga.getGradeSum()/(double)smasaga.getGradeNum() ) ) );
 				}
-				data.setValue(r, 4, smasaga.getGradeNum());
-				
-				data.setValue( r, 5, smasaga.getLove() );
-				data.setValue( r, 6, smasaga.getHorror() );
-				data.setValue( r, 7, smasaga.getScience() );
-				data.setValue( r, 8, smasaga.getChildren() );
-				data.setValue( r, 9, smasaga.getAdolescent() );
-				data.setValue( r, 10, smasaga.getHistorical() );
-				data.setValue( r, 11, smasaga.getTruestory() );
-				data.setValue( r, 12, smasaga.getErotic() );
-				data.setValue( r, 13, smasaga.getComedy() );
-				data.setValue( r, 14, smasaga.getTragedy() );
-				data.setValue( r, 15, smasaga.getSupernatural() );
-				data.setValue( r, 16, smasaga.getCriminal() );
-				data.setValue( r, 17, smasaga.getAdventure() );
-				data.setValue( r, 18, smasaga.getPoem() );
-				data.setValue( r, 19, smasaga.getContinue() );
+				data.setValue( r, 4, smasaga.getDate() );
+				data.setValue(r, 5, smasaga.getGradeNum());
+				data.setValue( r, 6, smasaga.getLove() );
+				data.setValue( r, 7, smasaga.getHorror() );
+				data.setValue( r, 8, smasaga.getScience() );
+				data.setValue( r, 9, smasaga.getChildren() );
+				data.setValue( r, 10, smasaga.getAdolescent() );
+				data.setValue( r, 11, smasaga.getHistorical() );
+				data.setValue( r, 12, smasaga.getTruestory() );
+				data.setValue( r, 13, smasaga.getErotic() );
+				data.setValue( r, 14, smasaga.getComedy() );
+				data.setValue( r, 15, smasaga.getTragedy() );
+				data.setValue( r, 16, smasaga.getSupernatural() );
+				data.setValue( r, 17, smasaga.getCriminal() );
+				data.setValue( r, 18, smasaga.getAdventure() );
+				data.setValue( r, 19, smasaga.getPoem() );
+				data.setValue( r, 20, smasaga.getContinue() );
 				
 				view = DataView.create( data );
 				table.draw( view, options );
@@ -553,15 +554,19 @@ public class Smasogur implements EntryPoint {
 			}
 	  	});
   	  
-	  	SimplePanel log = new SimplePanel();
-	  	SimplePanel gug = new SimplePanel();
+	  	final SimplePanel log = new SimplePanel();
+	  	log.setSize("400px", "100px");
+	  	Style style = log.getElement().getStyle();
+	  	style.setPadding(20.0, Unit.PX);
+	  	
+	  	/*SimplePanel gug = new SimplePanel();
    	  	com.google.gwt.dom.client.Element plus = Document.get().createElement("g:plusone");
  		plus.setAttribute("size", "small");
- 		gug.getElement().appendChild( plus );
+ 		gug.getElement().appendChild( plus );*/
  		  
-   	  	final HorizontalPanel	sharehp = new HorizontalPanel();
-   	  	sharehp.add( log );
-   	  	sharehp.add( gug );
+   	  	//final HorizontalPanel	sharehp = new HorizontalPanel();
+   	  	//sharehp.add( log );
+   	  	//sharehp.add( gug );
    	  	
 		Runnable onLoadCallback = new Runnable() {
 	      public void run() {
@@ -593,6 +598,7 @@ public class Smasogur implements EntryPoint {
 	    	  data.addColumn( ColumnType.STRING, "Author");
 	    	  data.addColumn( ColumnType.STRING, "Language");
 	    	  data.addColumn( ColumnType.STRING, "Grade");
+	    	  data.addColumn( ColumnType.DATE, "Date");
 	    	  data.addColumn( ColumnType.NUMBER, "Comments");
 	    	  data.addColumn( ColumnType.BOOLEAN, "Love");
 	    	  data.addColumn( ColumnType.BOOLEAN, "Horror");
@@ -697,23 +703,23 @@ public class Smasogur implements EntryPoint {
 						} else {
 							data.setValue(r, 3, gradeStr.get( (int)Math.round( (double)smasaga.getGradeSum()/(double)smasaga.getGradeNum() ) ) );
 						}
-						data.setValue(r, 4, smasaga.getGradeNum());
-						
-						data.setValue( r, 5, smasaga.getLove() );
-						data.setValue( r, 6, smasaga.getHorror() );
-						data.setValue( r, 7, smasaga.getScience() );
-						data.setValue( r, 8, smasaga.getChildren() );
-						data.setValue( r, 9, smasaga.getAdolescent() );
-						data.setValue( r, 10, smasaga.getHistorical() );
-						data.setValue( r, 11, smasaga.getTruestory() );
-						data.setValue( r, 12, smasaga.getErotic() );
-						data.setValue( r, 13, smasaga.getComedy() );
-						data.setValue( r, 14, smasaga.getTragedy() );
-						data.setValue( r, 15, smasaga.getSupernatural() );
-						data.setValue( r, 16, smasaga.getCriminal() );
-						data.setValue( r, 17, smasaga.getAdventure() );
-						data.setValue( r, 18, smasaga.getPoem() );
-						data.setValue( r, 19, smasaga.getContinue() );
+						data.setValue( r, 4, smasaga.getDate());
+						data.setValue(r, 5, smasaga.getGradeNum());
+						data.setValue( r, 6, smasaga.getLove() );
+						data.setValue( r, 7, smasaga.getHorror() );
+						data.setValue( r, 8, smasaga.getScience() );
+						data.setValue( r, 9, smasaga.getChildren() );
+						data.setValue( r, 10, smasaga.getAdolescent() );
+						data.setValue( r, 11, smasaga.getHistorical() );
+						data.setValue( r, 12, smasaga.getTruestory() );
+						data.setValue( r, 13, smasaga.getErotic() );
+						data.setValue( r, 14, smasaga.getComedy() );
+						data.setValue( r, 15, smasaga.getTragedy() );
+						data.setValue( r, 16, smasaga.getSupernatural() );
+						data.setValue( r, 17, smasaga.getCriminal() );
+						data.setValue( r, 18, smasaga.getAdventure() );
+						data.setValue( r, 19, smasaga.getPoem() );
+						data.setValue( r, 20, smasaga.getContinue() );
 						
 						//smasaga.getf
 						//data.setValue( r, 3, smasaga.getUrl() );
@@ -759,7 +765,7 @@ public class Smasogur implements EntryPoint {
 	    	  subvp.add( title );
 	    	  HTML subtitle = new HTML("<h4>Brought to you by The Basement At 5 o'Clock reading club<h4/>");
 	    	  subvp.add( subtitle );
-	    	  subvp.add( sharehp );
+	    	  subvp.add( log );
 	    	  
 	    	  final FormPanel fp = new FormPanel();
 	    	  fp.setAction( "/smasogur/FileUpload" );

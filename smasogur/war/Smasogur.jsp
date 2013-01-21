@@ -64,6 +64,8 @@
 	</script>
 	<script type="text/javascript" src="//pagead2.googlesyndication.com/pagead/show_ads.js">
 	</script>
+	<br>
+	<g:plusone></g:plusone>
 	</div>
 	
     <!-- OPTIONAL: include this if you want history support -->
