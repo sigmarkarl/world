@@ -37,12 +37,16 @@ public class Sequences implements Comparable<Sequences> {
 		return nseq;
 	}
 	
-	String user;
-	String name;
-	String type;
-	String path;
-	Integer nseq;
-	String _key;
+	public void setNSeq( int count ) {
+		nseq = count;
+	}
+	
+	public String user;
+	public String name;
+	public String type;
+	public String path;
+	public Integer nseq;
+	public String _key;
 	
 	@Override
 	public int compareTo(Sequences o) {

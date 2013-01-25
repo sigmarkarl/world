@@ -112,6 +112,10 @@ public class JavaFasta extends JApplet {
 		parentApplet = applet;
 	}
 	
+	public JavaFasta() {
+		this.serifier = new Serifier();
+	}
+	
 	public JavaFasta( Serifier serifier ) { this.serifier = serifier; }
 	
 	public List<Sequence> getEditedSequences() {
@@ -121,6 +125,14 @@ public class JavaFasta extends JApplet {
 		}
 		
 		return es;
+	}
+	
+	public Serifier getSerifier() {
+		return serifier;
+	}
+	
+	public void setSerifier( Serifier s ) {
+		this.serifier = s;
 	}
 	
 	/*public void checkMaxMin() {
@@ -809,8 +821,8 @@ public class JavaFasta extends JApplet {
 	public void exportFasta( JTable table, List<Sequence> lseq ) throws IOException, UnavailableServiceException {
 		 FileSaveService fss = null;
          FileContents fileContents = null;
-         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-         OutputStreamWriter	osw = new OutputStreamWriter( baos );
+         //ByteArrayOutputStream baos = new ByteArrayOutputStream();
+         //OutputStreamWriter	osw = new OutputStreamWriter( baos );
     	 
          List<Sequence> seqlist = new ArrayList<Sequence>();
     	 int[] rr = table.getSelectedRows();
@@ -819,9 +831,9 @@ public class JavaFasta extends JApplet {
     		 Sequence seq = lseq.get(i);
     		 seqlist.add( seq );
     	 }
-    	 serifier.writeFasta( seqlist, osw, getSelectedRect() );
-    	 osw.close();
-    	 baos.close();
+    	 //serifier.writeFasta( seqlist, osw, getSelectedRect() );
+    	 //osw.close();
+    	 //baos.close();
 
     	 try {
     		 fss = (FileSaveService)ServiceManager.lookup("javax.jnlp.FileSaveService");
@@ -830,19 +842,24 @@ public class JavaFasta extends JApplet {
     	 }
     	 
          if (fss != null) {
-        	 ByteArrayInputStream bais = new ByteArrayInputStream( baos.toByteArray() );
+        	 ByteArrayInputStream bais = new ByteArrayInputStream( null );//baos.toByteArray() );
              fileContents = fss.saveFileDialog(null, null, bais, "export.fasta");
              bais.close();
              OutputStream os = fileContents.getOutputStream(true);
-             os.write( baos.toByteArray() );
+             //os.write( baos.toByteArray() );
              os.close();
          } else {
         	 JFileChooser jfc = new JFileChooser();
         	 if( jfc.showSaveDialog( parentApplet ) == JFileChooser.APPROVE_OPTION ) {
         		 File f = jfc.getSelectedFile();
-        		 FileOutputStream fos = new FileOutputStream( f );
-        		 fos.write( baos.toByteArray() );
-        		 fos.close();
+        		 //FileOutputStream fos = new FileOutputStream( f );
+        		 //fos.write( baos.toByteArray() );
+        		 
+        		 FileWriter fw = new FileWriter( f );
+        		 serifier.writeFasta( seqlist, fw, getSelectedRect() );
+        		 fw.close();
+        		 
+        		 //fos.close();
         		 
         		 Desktop.getDesktop().browse( f.toURI() );
         	 }

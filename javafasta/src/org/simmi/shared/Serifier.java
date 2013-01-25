@@ -4,6 +4,7 @@ import java.awt.Rectangle;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
@@ -11,21 +12,23 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.io.PrintStream;
 import java.io.Writer;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.zip.GZIPInputStream;
 
 import org.simmi.shared.Sequence.Annotation;
@@ -90,7 +93,341 @@ public class Serifier {
 		this.consensus = seq;
 	}
 	
+	private void writeSimplifiedCluster( OutputStream os, Map<Set<String>,Set<Map<String,Set<String>>>>	clusterMap ) throws IOException {
+		OutputStreamWriter	fos = new OutputStreamWriter( os );
+		for( Set<String> set : clusterMap.keySet() ) {
+			Set<Map<String,Set<String>>>	mapset = clusterMap.get( set );
+			fos.write( set.toString()+"\n" );
+			int i = 0;
+			for( Map<String,Set<String>> erm : mapset ) {
+				fos.write((i++)+"\n");
+				
+				for( String erm2 : erm.keySet() ) {
+					Set<String>	erm3 = erm.get(erm2);
+					fos.write("\t"+erm2+"\n");
+					fos.write("\t\t"+erm3.toString()+"\n");
+				}
+			}
+		}
+		fos.close();
+	}
+	
+	private Map<Set<String>,Set<Map<String,Set<String>>>> initCluster( Collection<Set<String>>	total, Set<String> species ) {
+		Map<Set<String>,Set<Map<String,Set<String>>>> clusterMap = new HashMap<Set<String>,Set<Map<String,Set<String>>>>();
+		
+		for( Set<String>	t : total ) {
+			Set<String>	teg = new HashSet<String>();
+			for( String e : t ) {
+				int ind = e.indexOf('_');
+				if( e.contains("_JL2_") ) ind = e.indexOf('_', ind+1);
+				
+				if( ind != -1 ) {
+					String str = e.substring( 0, ind );
+					/*if( joinmap.containsKey( str ) ) {
+						str = joinmap.get(str);
+					}*/
+					teg.add( str );
+					
+					species.add(str);
+				} else {
+					System.err.println("");
+				}
+			}
+			
+			Set<Map<String,Set<String>>>	setmap;
+			if( clusterMap.containsKey( teg ) ) {
+				setmap = clusterMap.get( teg );
+			} else {
+				setmap = new HashSet<Map<String,Set<String>>>();
+				clusterMap.put( teg, setmap );
+			}
+			
+			Map<String,Set<String>>	submap = new HashMap<String,Set<String>>();
+			setmap.add( submap );
+			
+			for( String e : t ) {
+				int ind = e.indexOf('_');
+				if( e.contains("_JL2_") ) ind = e.indexOf('_', ind+1);
+				
+				String str = e.substring( 0, ind );
+				/*if( joinmap.containsKey( str ) ) {
+					str = joinmap.get(str);
+				}*/
+				
+				Set<String>	set;
+				if( submap.containsKey( str ) ) {
+					set = submap.get(str);
+				} else {
+					set = new HashSet<String>();
+					submap.put( str, set );
+				}
+				set.add( e );
+			}
+		}
+		
+		return clusterMap;
+	}
+	
+	private void writeClusters( OutputStream os, List<Set<String>> cluster ) throws IOException {
+		OutputStreamWriter	fos = new OutputStreamWriter( os );
+		for( Set<String> set : cluster ) {
+			fos.write( set.toString()+"\n" );
+		}
+		fos.close();
+	}
+	
+	public List<Set<String>> makeBlastCluster( final InputStream is, final OutputStream os, int clustermap ) {
+		List<Set<String>>	total = new ArrayList<Set<String>>();
+		try {
+			Set<String>	species = new TreeSet<String>();
+			
+			if( clustermap%2 == 0 ) {
+				joinBlastSets( is, null, true, total, 0.0 );
+			} else {
+				joinBlastSetsThermus( is, null, true, total );
+			}
+			
+			if( clustermap/2 == 0 ) {
+				Map<Set<String>,Set<Map<String,Set<String>>>>	clusterMap = initCluster( total, species );
+			
+				//if( writeSimplifiedCluster != null ) 
+				writeSimplifiedCluster( os, clusterMap );
+				//writeBlastAnalysis( clusterMap, species );
+			} else if( os != null ) {
+				writeClusters( os, total );
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
+		return total;
+	}
+	
+	private void joinSets( Set<String> all, List<Set<String>> total ) {		
+		Set<String> cont = null;
+		Set<Set<String>>	rem = new HashSet<Set<String>>();
+		for( Set<String>	check : total ) {			
+			for( String aval : all ) {
+				if( check.contains(aval) ) {
+					if( cont == null ) {
+						cont = check;
+						check.addAll( all );
+					} else {
+						cont.addAll( check );
+						rem.add( check );
+					}
+					break;
+				}
+			}
+		}
+		
+		for( Set<String> erm : rem ) {
+			int ind = -1;
+			int count = 0;
+			for( Set<String> ok : total ) {
+				if( ok.size() == erm.size() && ok.containsAll(erm) ) {
+					ind = count;
+					break;
+				}
+				count++;
+			}
+			
+			if( ind != -1 ) {
+				total.remove( ind );
+			}
+		}
+		
+		rem.clear();
+		if( cont == null ) {
+			if( total.contains( all ) ) {
+				System.err.println("fuckfuckfuck");
+			}
+			total.add( all );
+		}
+		
+		/*Set<String>	erm = new HashSet<String>();
+		for( Set<String> ss : total ) {
+			for( String s : ss ) {
+				if( erm.contains( s ) ) {
+					break;
+				}
+			}
+			erm.addAll( ss );
+		}*/
+	}
+	
+	public void joinBlastSetsThermus( InputStream is, String write, boolean union, List<Set<String>> total ) throws IOException {
+		FileWriter fw = write == null ? null : new FileWriter( write ); //new FileWriter("/home/sigmar/blastcluster.txt");
+		BufferedReader	br = new BufferedReader( new InputStreamReader( is ) );
+			
+		String line = br.readLine();
+		int cnt = 0;
+		while( line != null ) {
+			if( line.startsWith("Sequences prod") ) {
+				line = br.readLine();
+				Set<String>	all = new HashSet<String>();
+				while( line != null && !line.startsWith(">") ) {
+					String trim = line.trim();
+					if( trim.startsWith("o.prof") || trim.startsWith("m.hydro") || trim.startsWith("mt.silv") || trim.startsWith("mt.ruber") || trim.startsWith("t.RLM") || trim.startsWith("t.spCCB") || trim.startsWith("t.arci") || trim.startsWith("t.scoto") || trim.startsWith("t.antr") || trim.startsWith("t.aqua") || trim.startsWith("t.t") || trim.startsWith("t.egg") || trim.startsWith("t.island") || trim.startsWith("t.oshi") || trim.startsWith("t.brock") || trim.startsWith("t.fili") || trim.startsWith("t.igni") || trim.startsWith("t.kawa") ) {
+						int millind = trim.indexOf('#');
+						if( millind == -1 ) millind = trim.indexOf('.', 5);
+						String val = trim.substring( 0, millind-1 );
+						if( val.length() < 2 ) {
+							System.err.println();
+						}
+						//int v = val.indexOf("contig");
+						all.add( val.replace(".fna", "") );
+					}
+					line = br.readLine();
+				}
+				
+				//if( fw != null ) fw.write( all.toString()+"\n" );
+				
+				if( union ) joinSets( all, total );
+				//else intersectSets( all, total );
+				
+				if( line == null ) break;
+			}
+			
+			if( cnt++ % 100000 == 0 ) {
+				System.err.println( cnt );
+			}
+			line = br.readLine();
+		}
+		if( fw != null ) {
+			for( Set<String> all : total ) {
+				fw.write( all.toString()+"\n" );
+			}
+			fw.close();
+		}
+	}
+	
+	public void joinBlastSets( InputStream is, String write, boolean union, List<Set<String>> total, double evalue ) throws IOException {
+		FileWriter fw = write == null ? null : new FileWriter( write ); //new FileWriter("/home/sigmar/blastcluster.txt");
+		BufferedReader	br = new BufferedReader( new InputStreamReader( is ) );
+		
+		String line = br.readLine();
+		int cnt = 0;
+		while( line != null ) {
+			if( line.startsWith("Sequences prod") ) {
+				line = br.readLine();
+				Set<String>	all = new HashSet<String>();
+				while( line != null && !line.startsWith(">") && !line.startsWith("Lambda") && !line.startsWith("Query") && !line.startsWith("Effect") ) {
+					String trim = line.trim();
+					
+					String[] split = trim.split("[\t ]+");
+					//int v = val.indexOf("contig");
+					if( split[0].length() > 0 ) {
+						double val = 100.0;
+						try {
+							val = Double.parseDouble( split[ split.length-1 ] );
+						} catch( Exception e ) {
+							System.err.println( line );
+							e.printStackTrace();
+						}
+						if( val <= evalue ) all.add( split[0] );
+					}
+					
+					line = br.readLine();
+				}
+				
+				if( union ) joinSets( all, total );
+				//else intersectSets( all, total );
+				
+				if( line == null ) break;
+			}
+			
+			/*if( cnt++ % 100000 == 0 ) {
+				System.err.println( cnt );
+			}*/
+			line = br.readLine();
+		}
+		
+		if( fw != null ) {
+			for( Set<String> all : total ) {
+				fw.write( all.toString()+"\n" );
+			}
+			fw.close();
+		}
+	}
+	
+	public List<Sequences> splitit( int nspin, Sequences seqs, File dir ) {
+		List<Sequences>	retlseq = new ArrayList<Sequences>();
+		
+		try {
+			File inf = new File( new URI(seqs.getPath() ) );
+			String name = inf.getName();
+			int ind = name.lastIndexOf('.');
+			
+			String sff = name;
+			String sf2 = "";
+			if( ind != -1 ) {
+				sff = name.substring(0, ind);
+				sf2 = name.substring(ind+1,name.length());
+			}
+			
+			int spin = (int)Math.ceil( (double)seqs.getNSeq()/(double)nspin );
+			
+			int i = 0;
+			FileWriter 		fw = null;
+			File			of = null;
+			FileReader 		fr = new FileReader( inf );
+			BufferedReader 	br = new BufferedReader( fr );
+			String line = br.readLine();
+			while( line != null ) {
+				if( line.startsWith(">") ) {
+					if( i%spin == 0 ) {
+						if( fw != null ) {
+							fw.close();
+							
+							//if( applet != null ) {
+								name = of.getName();
+								ind = name.lastIndexOf('.');
+								name = name.substring(0,ind);
+								//addSequences(name, seqs.getType(), of.toURI().toString(), spin);
+								Sequences nseqs = new Sequences( "", name, seqs.getType(), of.toURI().toString(), spin );
+								nseqs.setKey( "" );
+								retlseq.add( nseqs );
+							//}
+						}
+						of = new File( dir, sff + "_" + (i/spin+1) + "." + sf2 );
+						fw = new FileWriter( of );
+					}
+					i++;
+				}
+				fw.write( line+"\n" );
+				
+				line = br.readLine();
+			}
+			br.close();
+			if( fw != null ) {
+				fw.close();
+				//if( applet != null ) {
+					name = of.getName();
+					ind = name.lastIndexOf('.');
+					name = name.substring(0,ind);
+					//addSequences(name, seqs.getType(), of.toURI().toString(), i%spin);
+					Sequences nseqs = new Sequences( "", name, seqs.getType(), of.toURI().toString(), spin );
+					nseqs.setKey( "" );
+					retlseq.add( nseqs );
+				//}
+			}
+		} catch (URISyntaxException e1) {
+			e1.printStackTrace();
+		} catch (FileNotFoundException e1) {
+			e1.printStackTrace();
+		} catch (IOException e1) {
+			e1.printStackTrace();
+		}
+		
+		return retlseq;
+	}
+	
 	public static Map<String,String> mapNameHit( InputStream blasti, int idfilt, boolean includePerc ) throws IOException {
+		return mapNameHit( blasti, idfilt, includePerc, false );
+	}
+	
+	public static Map<String,String> mapNameHit( InputStream blasti, int idfilt, boolean includePerc, boolean includeLen ) throws IOException {
 		Map<String,String>	mapHit = new HashMap<String,String>();
 		
 		BufferedReader br = new BufferedReader( new InputStreamReader( blasti ) );
@@ -101,13 +438,29 @@ public class Serifier {
 			if( trim.startsWith("Query=") ) {
 				current = null;
 				String name = trim.substring(6).trim();
+				
+				String len = "";
+				line = br.readLine();
+				while( !line.startsWith("Length") ) {
+					line = br.readLine();
+				}
+				len = line.substring(7);
+				
 				line = br.readLine();
 				while( line != null ) {
 					while( line != null && (!line.startsWith(">") && !line.contains("No hits") && !line.startsWith("Query=")) ) {
 						line = br.readLine();
 					}
 					if( line != null ) {
-						if( line.startsWith("Query") ) break;
+						if( line.startsWith("Query") ) {
+							/*line = br.readLine();
+							while( !line.startsWith("Length") ) {
+								line = br.readLine();
+							}
+							len = line.substring(7);*/
+							
+							break;
+						}
 						
 						if( line.startsWith(">") ) {
 							String newcurrent = line.substring(1).trim();
@@ -134,7 +487,9 @@ public class Serifier {
 								if( i == -1 ) i = newcurrent.length();
 								newcurrent = newcurrent.substring(i+1);
 								
-								mapHit.put( name, includePerc ? newcurrent+"_"+idstr+"%" : newcurrent );
+								String mapstr = includePerc ? newcurrent+"_"+idstr+"%" : newcurrent;
+								mapstr = includeLen ? mapstr+"_"+len : mapstr;
+								mapHit.put( name, mapstr );
 							}
 						}
 						
@@ -146,7 +501,15 @@ public class Serifier {
 					}
 				}
 				if( line == null ) break;
-				else if( line.startsWith("Query") ) continue;
+				else if( line.startsWith("Query") ) {
+					/*line = br.readLine();
+					while( !line.startsWith("Length") ) {
+						line = br.readLine();
+					}
+					len = line.substring(7);*/
+					
+					continue;
+				}
 			}
 			line = br.readLine();
 		}
@@ -214,7 +577,7 @@ public class Serifier {
 		return nseq;
 	}
 	
-	public Sequences blastRename( Sequences seqs, String s, File f ) {
+	public Sequences blastRename( Sequences seqs, String s, File f, boolean includeLen ) {
 		Sequences ret = null;
 		try {
 			URI uri = new URI( seqs.getPath() );
@@ -224,7 +587,7 @@ public class Serifier {
 				is = new GZIPInputStream( is );
 			}
 			
-			Map<String,String> nameHitMap = mapNameHit( new FileInputStream(s), 0, true );
+			Map<String,String> nameHitMap = mapNameHit( new FileInputStream(s), 0, true, includeLen );
 			/*System.err.println( nameHitMap.size() );
 			for( String key : nameHitMap.keySet() ) {
 				System.err.println( key + "    " + nameHitMap.get(key) );
@@ -246,6 +609,74 @@ public class Serifier {
 		return ret;
 	}
 	
+	public Sequences filtit( int nspin, Sequences seqs, File dir ) {
+		Sequences ret = null;
+		try {
+			File inf = new File( new URI(seqs.getPath() ) );
+			String name = inf.getName();
+			int ind = name.lastIndexOf('.');
+			
+			String sff = name;
+			String sf2 = "";
+			if( ind != -1 ) {
+				sff = name.substring(0, ind);
+				sf2 = name.substring(ind+1,name.length());
+			}
+			
+			//int spin = (int)Math.ceil( (double)seqs.getNSeq()/(double)nspin );
+			
+			StringBuilder 	include = new StringBuilder();
+			String			current = null;
+			int i = 0;
+			
+			File			of = dir.isDirectory() ? new File( dir, sff + "_lenfilt." + sf2 ) : dir;
+			FileWriter 		fw = new FileWriter( of );
+			
+			FileReader 		fr = new FileReader( inf );
+			BufferedReader 	br = new BufferedReader( fr );
+			String line = br.readLine();
+			while( line != null ) {
+				if( line.startsWith(">") ) {
+					if( include.length() >= nspin ) {
+						i++;
+						fw.write( current + "\n" );
+						for( int k = 0; k < include.length(); k+=70 ) {
+							fw.write( include.substring(k, Math.min(include.length(), k+70))+"\n" );
+						}
+					}
+					current = line;
+					include.delete(0, include.length());
+				} else include.append( line );
+				
+				line = br.readLine();
+			}
+			br.close();
+			if( fw != null ) {
+				fw.close();
+				
+				name = of.getName();
+				ind = name.lastIndexOf('.');
+				name = name.substring(0,ind);
+				Sequences nseqs = new Sequences( "", name, seqs.getType(), of.toURI().toString(), i );
+				ret = nseqs;
+				/*if( applet != null ) {
+					name = of.getName();
+					ind = name.lastIndexOf('.');
+					name = name.substring(0,ind);
+					applet.addSequences(name, seqs.getType(), of.toURI().toString(), i);
+				}*/
+			}									
+		} catch (URISyntaxException e1) {
+			e1.printStackTrace();
+		} catch (FileNotFoundException e1) {
+			e1.printStackTrace();
+		} catch (IOException e1) {
+			e1.printStackTrace();
+		}
+		
+		return ret;
+	}
+	
 	public void addSequences( Sequences seqs ) {
 		sequences.add( seqs );
 	}
@@ -254,6 +685,22 @@ public class Serifier {
 		Sequences seqs = new Sequences( "", name, type, path, nseq );
 		seqs.setKey( "" );
 		addSequences( seqs );
+	}
+	
+	public int countSequences( File fasta ) throws IOException {
+		FileReader fr = new FileReader( fasta );
+		BufferedReader br = new BufferedReader( fr );
+		String line = br.readLine();
+		int nseq = 0;
+		while( line != null ) {
+			if( line.startsWith(">") ) {
+				nseq++;
+			}
+			line = br.readLine();
+		}
+		br.close();
+		
+		return nseq;
 	}
 	
 	public void appendSequenceInJavaFasta( Sequences seqs, Map<String,Sequence> contset, boolean namefix ) {
@@ -533,7 +980,15 @@ public class Serifier {
 		
 		i = arglist.indexOf("-blast");
 		if( i >= 0 ) {
-			Sequences ret = blastRename( this.sequences.get(0), args[i+1], outf );
+			Sequences ret = blastRename( this.sequences.get(0), args[i+1], outf, false );
+			
+			appendSequenceInJavaFasta(ret, null, true);
+			writeFasta( lseq, new FileWriter( outf ), null);
+		}
+		
+		i = arglist.indexOf("-blastwl");
+		if( i >= 0 ) {
+			Sequences ret = blastRename( this.sequences.get(0), args[i+1], outf, true );
 			
 			appendSequenceInJavaFasta(ret, null, true);
 			writeFasta( lseq, new FileWriter( outf ), null);
@@ -555,6 +1010,53 @@ public class Serifier {
 				appendSequenceInJavaFasta( seqs, null, true);
 			}
 			writeFasta( lseq, new FileWriter( outf ), null);
+		}
+		
+		i = arglist.indexOf("-split");
+		if( i >= 0 ) {
+			int splnum = Integer.parseInt( args[i+1] );
+			
+			for( Sequences seqs : this.sequences ) {
+				seqs.setNSeq( countSequences( inf ) );
+				List<Sequences> retlseqs = splitit( splnum, seqs, outf == null ? new File(".") : outf );
+				/*for( Sequences nseqs : retlseqs ) {
+					appendSequenceInJavaFasta( nseqs, null, true);
+					File noutf = new File( nseqs.getPath() );
+					writeFasta( lseq, new FileWriter( noutf ), null );
+				}*/
+			}
+		}
+		
+		i = arglist.indexOf("-lenfilt");
+		if( i >= 0 ) {
+			int lfilt = Integer.parseInt( args[i+1] );
+			
+			for( Sequences seqs : this.sequences ) {
+				filtit(lfilt, seqs, outf);
+				//seqs.setNSeq( countSequences( inf ) );
+				//List<Sequences> retlseqs = splitit( splnum, seqs, outf == null ? new File(".") : outf );
+				/*for( Sequences nseqs : retlseqs ) {
+					appendSequenceInJavaFasta( nseqs, null, true);
+					File noutf = new File( nseqs.getPath() );
+					writeFasta( lseq, new FileWriter( noutf ), null );
+				}*/
+			}
+		}
+		
+		i = arglist.indexOf("-clust");
+		if( i >= 0 ) {
+			int splnum = Integer.parseInt( args[i+1] );
+			
+			makeBlastCluster( new FileInputStream( inf ), new FileOutputStream( outf ), splnum );
+			//for( Sequences seqs : this.sequences ) {
+				//seqs.setNSeq( countSequences( inf ) );
+				//List<Sequences> retlseqs = splitit( splnum, seqs, outf == null ? new File(".") : outf );
+				/*for( Sequences nseqs : retlseqs ) {
+					appendSequenceInJavaFasta( nseqs, null, true);
+					File noutf = new File( nseqs.getPath() );
+					writeFasta( lseq, new FileWriter( noutf ), null );
+				}*/
+			//}
 		}
 	}
 	
@@ -885,7 +1387,7 @@ public class Serifier {
 		snaedis5phmap.put( "816_vondugil_vatn", 9.0 );
 		
 		
-		
+				
 		snaedis6colormap = new HashMap<String,String>();
 		snaedis6colormap.put( "817_vondugil_jardvegur", "1.0\t0.0\t0.0\n" );
 		snaedis6colormap.put( "817_vondugil_vatn", "1.0\t0.0\t0.0\n" );
@@ -955,7 +1457,7 @@ public class Serifier {
 		snaedis7phmap.put( "847_hurdarbak_jardvegur", 8.0 );
 		snaedis7phmap.put( "847_hurdarbak_vatn", 8.0 );
 		snaedis7phmap.put( "848_kleppjarnsreykir_jardvegur", 8.0 );
-		snaedis7phmap.put( "848_kleppjarnsreykir_vatn", 8.8 );
+		snaedis7phmap.put( "848_kleppjarnsreykir_vatn", 8.0 );
 		snaedis7phmap.put( "848_kleppjarnsreykir_lifmassi", 8.0 );
 		snaedis7phmap.put( "849_kleppjarnsreykir_jardvegur", 7.5 );
 		snaedis7phmap.put( "849_kleppjarnsreykir_vatn", 7.5 );
