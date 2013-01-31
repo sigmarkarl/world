@@ -47,8 +47,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
-import javafx.scene.web.WebEngineBuilder;
-
 import javax.imageio.ImageIO;
 import javax.jnlp.FileContents;
 import javax.jnlp.FileOpenService;
@@ -91,7 +89,6 @@ import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
 import javax.swing.table.TableModel;
 import javax.swing.table.TableRowSorter;
-import javax.xml.ws.WebEndpoint;
 
 import netscape.javascript.JSObject;
 
