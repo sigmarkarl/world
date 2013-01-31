@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.zip.GZIPInputStream;
@@ -41,6 +42,36 @@ public class Serifier {
 	List<Sequences>		sequences = new ArrayList<Sequences>();
 	public void setSequencesList( List<Sequences> sequences ) {
 		this.sequences = sequences;
+	}
+	
+	public Map<String,StringBuilder> concat( List<String> urls ) throws IOException {
+		final Map<String,StringBuilder>	seqmap = new HashMap<String,StringBuilder>();
+		
+		for( String path : urls ) {
+			URL url = new URL( path );
+			StringBuilder	sb = null;
+			InputStream is = url.openStream();
+			BufferedReader	br = new BufferedReader( new InputStreamReader(is) );
+			String line = br.readLine();
+			while( line != null ) {
+				if( line.startsWith(">") ) {
+					String subline = line.substring(1);
+					if( seqmap.containsKey( subline ) ) {
+						sb = seqmap.get( subline );
+					} else {
+						sb = new StringBuilder();
+						seqmap.put( subline, sb );
+					}
+				} else {
+					if( sb != null ) sb.append( line );
+				}
+				
+				line = br.readLine();
+			}
+			br.close();
+		}
+		
+		return seqmap;
 	}
 	
 	public List<Sequences> getSequencesList() {
@@ -1025,6 +1056,49 @@ public class Serifier {
 					writeFasta( lseq, new FileWriter( noutf ), null );
 				}*/
 			}
+		}
+		
+		i = arglist.indexOf("-concrand");
+		if( i >= 0 ) {
+			int cnum = Integer.parseInt( args[i+1] );
+			Random r = new Random();
+			for( int l = 0; l < 1000; l++ ) {
+				List<String>	urls = new ArrayList<String>();
+				for( int k = 0; k < cnum; k++ ) {
+					Sequences seqs = this.sequences.get( r.nextInt( this.sequences.size() ) );
+					urls.add( seqs.getPath() );
+				}
+				Map<String,StringBuilder> smap = concat( urls );
+				
+				FileWriter fw = new FileWriter( new File( outf, "conc"+cnum+"_"+l+".fasta" ) );
+				for( String key : smap.keySet() ) {
+					fw.write( ">"+key+"\n" );
+					StringBuilder sb = smap.get( key );
+					for (int k = 0; k < sb.length(); k += 70) {
+						fw.append(sb.substring(k, Math.min(k + 70, sb.length())) + "\n");
+					}
+				}
+				fw.close();
+			}
+		}
+		
+		i = arglist.indexOf("-conc");
+		if( i >= 0 ) {
+			List<String>	urls = new ArrayList<String>();
+			for( Sequences seqs : this.sequences ) {
+				urls.add( seqs.getPath() );
+			}
+			Map<String,StringBuilder> smap = concat( urls );
+			
+			FileWriter fw = new FileWriter( outf );
+			for( String key : smap.keySet() ) {
+				fw.write( ">"+key+"\n" );
+				StringBuilder sb = smap.get( key );
+				for (int k = 0; k < sb.length(); k += 70) {
+					fw.append(sb.substring(k, Math.min(k + 70, sb.length())) + "\n");
+				}
+			}
+			fw.close();
 		}
 		
 		i = arglist.indexOf("-lenfilt");
