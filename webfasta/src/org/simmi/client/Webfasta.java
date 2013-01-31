@@ -1885,6 +1885,13 @@ public class Webfasta implements EntryPoint {
 					draw(xstart, ystart);
 				} else if (mousey < columnHeight) {
 					inRuler = true;
+					
+					if( event.isShiftKeyDown() && xsellen > 0 ) {
+						//xselloc = (mousex + xstart) / basewidth;
+						dragging = true;
+						xsellen = (mousex + xstart) / basewidth - xselloc;
+						draw(xstart, ystart);
+					}
 				}
 			}
 		});
