@@ -1,0 +1,12 @@
+{
+  "content":[
+              {
+                "title":"Diet pill",
+                "item_id":"dipill",
+                "description":"Eat more, grow less!",
+                "price":60,
+                "image_url":"http:\/\/www.facebook.com\/images\/gifts\/21.png"
+              }
+            ],
+  "method":"payments_get_items"
+}

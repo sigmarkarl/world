@@ -1,0 +1,12 @@
+{
+  "content":[
+              {
+                "title":"Extra life",
+                "item_id":"extlif",
+                "description":"Get one chance of passing through if hitting a worm",
+                "price":10,
+                "image_url":"http:\/\/www.facebook.com\/images\/gifts\/21.png"
+              }
+            ],
+  "method":"payments_get_items"
+}

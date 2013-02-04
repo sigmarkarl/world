@@ -1,0 +1,12 @@
+{
+  "content":[
+              {
+                "title":"Lorentz contraction",
+                "item_id":"lorcon",
+                "description":"As a stationary observer watching your worm in a 3D wormkowski space, you experience a relativistic length contraction in the direction of the worm movement",
+                "price":50,
+                "image_url":"http:\/\/www.facebook.com\/images\/gifts\/21.png"
+              }
+            ],
+  "method":"payments_get_items"
+}

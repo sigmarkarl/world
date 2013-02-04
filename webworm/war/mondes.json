@@ -1,0 +1,12 @@
+{
+  "content":[
+              {
+                "title":"Ad monolith destroyer",
+                "item_id":"mondes",
+                "description":"If you could just get rid of the monolith from the film 2001: A Space Odyssey and make the film understandable. Besides, it probably just contained ads anyways",
+                "price":10,
+                "image_url":"http:\/\/www.facebook.com\/images\/gifts\/21.png"
+              }
+            ],
+  "method":"payments_get_items"
+}

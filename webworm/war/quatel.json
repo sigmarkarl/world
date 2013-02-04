@@ -1,0 +1,12 @@
+{
+  "content":[
+              {
+                "title":"Quantum teleportation",
+                "item_id":"quatel",
+                "description":"As your worm exists in information space it is subject to the law of entanglement-assisted teleportation resulting in the ability to travel through the walls",
+                "price":40,
+                "image_url":"http:\/\/www.facebook.com\/images\/gifts\/21.png"
+              }
+            ],
+  "method":"payments_get_items"
+}

@@ -1,0 +1,12 @@
+{
+  "content":[
+              {
+                "title":"Critical angle",
+                "item_id":"criang",
+                "description":"Your worm is able to make more steep turns",
+                "price":30,
+                "image_url":"http:\/\/www.facebook.com\/images\/gifts\/21.png"
+              }
+            ],
+  "method":"payments_get_items"
+}
