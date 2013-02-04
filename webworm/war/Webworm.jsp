@@ -236,7 +236,7 @@
     
      <div id="fb-root"></div>
      <div id="content" style="float: left"></div>
-<%if( str == null ) {%>
+<!-- if( str == null ) { -->
     <div id="ads" style="float: right">
     <script type="text/javascript"><!--
 		google_ad_client = "ca-pub-7204381538404733";
@@ -247,7 +247,7 @@
 	</script>
 	<script type="text/javascript" src="//pagead2.googlesyndication.com/pagead/show_ads.js"></script>
     </div>
-<%} else {%>
+<!--} else {-->
 	<div id="ads">
 	<script type="text/javascript"><!--
 		google_ad_client = "ca-pub-7204381538404733";
@@ -259,7 +259,7 @@
 	</script>
 	<script type="text/javascript" src="//pagead2.googlesyndication.com/pagead/show_ads.js"></script>
 	</div>
-<%}%>
+<!--} -->
 
   </body>
 </html>

@@ -61,6 +61,8 @@ import com.google.gwt.user.client.ui.TextBox;
 import com.google.gwt.user.client.ui.VerticalPanel;
 import com.google.gwt.user.client.ui.Widget;
 
+import elemental.client.Browser;
+
 /**
  * Entry point classes define <code>onModuleLoad()</code>.
  */
@@ -145,7 +147,7 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 	
 	public void makeHighScore( final int score, final Worm worm ) {		
 		DialogBox	db = new DialogBox();
-		db.setText("Congratulations, you have the highscore amoung your friends! ("+score+")");
+		db.setText("Congratulations, you have the highscore among your friends! ("+score+")");
 		//final TextBox		tb = new TextBox();
 		//tb.setWidth("400px");
 		//tb.setText( name );
@@ -576,6 +578,7 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 	}
 	
 	public int offset = 30;
+	public int adw = 160;
 	public void updateCoordinates( Canvas cv, boolean init ) {
 		final Context2d context = cv.getContext2d();
 		if( init ) {
@@ -806,10 +809,12 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 	}-*/;
 	
 	Set<String>	powerset = new HashSet<String>();
-	public void getSuperPowers( String uid, String power ) {
+	public void getSuperPowers( final String uid, final String power ) {
 		greetingService.greetServer( uid, power, new AsyncCallback<String>() {
 			@Override
 			public void onSuccess(String result) {
+				Browser.getWindow().getConsole().log("powerset: "+result + " " + power + " " + uid);
+				
 				String[] split = result.split("\t");
 				powerset = new HashSet<String>( Arrays.asList( split ) );
 					
@@ -1037,6 +1042,38 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 	public void putFriend( String uid, String name ) {
 		fuids.put( Long.parseLong( uid ), name );
 	}
+	
+	public void resize( RootPanel rp, int ww, int hh ) {
+		w = ww;
+		h = hh;
+		rp.setWidth( w+"px" );
+		rp.setHeight( h+"px" );
+		
+		//console( w + " " + Window.getClientWidth() + " " + h + " " + Window.getClientHeight() );
+		//rp.setWidth( (w-100)+"px" );
+		//rp.setHeight( (h-100)+"px" );
+		updateCoordinates( cv, true );
+		
+		/*if( popup != null ) {
+			if( h >= 720 && w >= 720 ) {
+				popup.setPopupPosition(0, (h-600)/2);
+				popup.show();
+			} else popup.hide();
+		}*/
+		
+		if( info.isVisible() && w > info.getOffsetWidth() && h > info.getOffsetHeight() ) {
+			info.setPopupPosition( (w-info.getOffsetWidth())/2, (h-info.getOffsetHeight())/2 );
+		} else info.hide();
+		
+		if( w*h <= 320*480 ) {
+			lorcon = true;
+			criang = true;
+		} else {
+			if( !powerset.contains("lorcon") ) lorcon = false;
+			if( !powerset.contains("criang") ) criang = false;
+			delay = 40;
+		}
+	}
 
 	int				w, h;
 	Canvas			cv;
@@ -1093,7 +1130,7 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 		extlifEl.removeFromParent();
 		
 		if( fbuid != null ) {
-			offset = 120;
+			//offset = 120;
 			
 			final Button mondesAnc = new Button("Buy");
 			mondesAnc.addClickHandler( new ClickHandler() {
@@ -1220,7 +1257,7 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 		//fp.add( cv );
 		
 		worms = new HashSet<Worm>();
-		w = Window.getClientWidth()-160;
+		w = Window.getClientWidth()-adw;
 		h = Window.getClientHeight();		
 		rp.setWidth( w+"px" );
 		rp.setHeight( h+"px" );
@@ -1237,35 +1274,9 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 		Window.addResizeHandler( new ResizeHandler() {
 			@Override
 			public void onResize(ResizeEvent event) {
-				w = event.getWidth()-160;
-				h = event.getHeight();
-				rp.setWidth( w+"px" );
-				rp.setHeight( h+"px" );
-				
-				//console( w + " " + Window.getClientWidth() + " " + h + " " + Window.getClientHeight() );
-				//rp.setWidth( (w-100)+"px" );
-				//rp.setHeight( (h-100)+"px" );
-				updateCoordinates( cv, true );
-				
-				/*if( popup != null ) {
-					if( h >= 720 && w >= 720 ) {
-						popup.setPopupPosition(0, (h-600)/2);
-						popup.show();
-					} else popup.hide();
-				}*/
-				
-				if( info.isVisible() && w > info.getOffsetWidth() && h > info.getOffsetHeight() ) {
-					info.setPopupPosition( (w-info.getOffsetWidth())/2, (h-info.getOffsetHeight())/2 );
-				} else info.hide();
-				
-				if( w*h <= 320*480 ) {
-					lorcon = true;
-					criang = true;
-				} else {
-					if( !powerset.contains("lorcon") ) lorcon = false;
-					if( !powerset.contains("criang") ) criang = false;
-					delay = 40;
-				}
+				int w = event.getWidth()-adw;
+				int h = event.getHeight();
+				resize( rp, w, h );
 			}
 		});
 		
@@ -1467,8 +1478,13 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 						public void onValueChange( ValueChangeEvent<Boolean> event) {
 							mondes = event.getValue();
 							
-							if( mondes = true ) popup.hide();
-							else popup.show();
+							adw = mondes ? 0 : 160;
+							final Element ads = Document.get().getElementById("ads");
+							ads.getStyle().setDisplay( mondes ? Display.NONE : Display.BLOCK );
+							
+							resize( rp, Window.getClientWidth()-adw, Window.getClientHeight() );
+							//if( mondes = true ) popup.hide();
+							//else popup.show();
 						}
 					};
 					

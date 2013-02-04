@@ -523,8 +523,9 @@ public class Smasogur implements EntryPoint {
 		
 		int w = Window.getClientWidth();
 		int h = Window.getClientHeight();
-		if( fbuid == null ) module.setSize(w+"px", h+"px");
-		else module.setWidth("758px");
+		module.setSize(w+"px", h+"px");
+		//if( fbuid == null ) module.setSize(w+"px", h+"px");
+		//else module.setWidth("758px");
 		
 		final VerticalPanel	subvp = new VerticalPanel();
   	  	subvp.setWidth("100%");
@@ -542,8 +543,9 @@ public class Smasogur implements EntryPoint {
 			public void onResize(ResizeEvent event) {
 	  			int w = event.getWidth();
 	  			int h = event.getHeight();
-				if( fbuid == null ) module.setSize(w+"px", h+"px");
-				else module.setWidth("758px");
+	  			module.setSize(w+"px", h+"px");
+				//if( fbuid == null ) module.setSize(w+"px", h+"px");
+				//else module.setWidth("758px");
 				subvp.setWidth("100%");
 				
 				if( table != null ) {
@@ -617,11 +619,14 @@ public class Smasogur implements EntryPoint {
 	    	  data.addColumn( ColumnType.BOOLEAN, "Tobecont");
 	    	  
 	    	  options = Options.create();
-	    	  if( fbuid != null ) options.setWidth("758px");
+	    	  int w = Window.getClientWidth();
+    		  options.setWidth((w-20)+"px");
+    		  
+	    	  /*if( fbuid != null ) options.setWidth("758px");
 	    	  else {
 	    		  int w = Window.getClientWidth();
 	    		  options.setWidth((w-20)+"px");
-	    	  }
+	    	  }*/
 	    	  options.setHeight("360px");
 	    	  options.setAllowHtml( true );
 	    	  

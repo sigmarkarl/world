@@ -144,14 +144,17 @@ public class PayServiceImpl extends HttpServlet {
 		pw.println("</html>");*/
 		
 		InputStream is = null;
-		if( orderInfo.contains("lorcon") ) is = this.getServletContext().getResourceAsStream("/lorcon.json");
-		else if( orderInfo.contains("quatel") ) is = this.getServletContext().getResourceAsStream("/quatel.json");
-		else if( orderInfo.contains("criang") ) is = this.getServletContext().getResourceAsStream("/criang.json");
-		else if( orderInfo.contains("deflec") ) is = this.getServletContext().getResourceAsStream("/deflec.json");
-		else if( orderInfo.contains("luck") ) is = this.getServletContext().getResourceAsStream("/luck.json");
-		else if( orderInfo.contains("dipill") ) is = this.getServletContext().getResourceAsStream("/dipill.json");
-		else if( orderInfo.contains("extlif") ) is = this.getServletContext().getResourceAsStream("/extlif.json");
-		else if( orderInfo.contains("mondes") ) is = this.getServletContext().getResourceAsStream("/mondes.json");
+		
+		if( orderInfo != null ) {
+			if( orderInfo.contains("lorcon") ) is = this.getServletContext().getResourceAsStream("/lorcon.json");
+			else if( orderInfo.contains("quatel") ) is = this.getServletContext().getResourceAsStream("/quatel.json");
+			else if( orderInfo.contains("criang") ) is = this.getServletContext().getResourceAsStream("/criang.json");
+			else if( orderInfo.contains("deflec") ) is = this.getServletContext().getResourceAsStream("/deflec.json");
+			else if( orderInfo.contains("luck") ) is = this.getServletContext().getResourceAsStream("/luck.json");
+			else if( orderInfo.contains("dipill") ) is = this.getServletContext().getResourceAsStream("/dipill.json");
+			else if( orderInfo.contains("extlif") ) is = this.getServletContext().getResourceAsStream("/extlif.json");
+			else if( orderInfo.contains("mondes") ) is = this.getServletContext().getResourceAsStream("/mondes.json");
+		}
 		
 		if( is != null ) {
 			BufferedReader br = new BufferedReader( new InputStreamReader( is ) );
@@ -161,7 +164,7 @@ public class PayServiceImpl extends HttpServlet {
 				pw.println( line );
 				line = br.readLine();
 			}
-			pw.close();
 		}
+		pw.close();
 	}
 }

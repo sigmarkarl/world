@@ -46,6 +46,9 @@ public class GreetingServiceImpl extends RemoteServiceServlet implements Greetin
 				Object lorcon = e.getProperty("lorcon");
 				if( lorcon != null && (Boolean)lorcon ) powers.add( "lorcon" );
 				
+				Object mondes = e.getProperty("mondes");
+				if( mondes != null && (Boolean)mondes ) powers.add( "mondes" );
+				
 				Object luck = e.getProperty("luck");
 				if( luck != null && (Boolean)luck ) powers.add( "luck" );
 				
@@ -71,6 +74,7 @@ public class GreetingServiceImpl extends RemoteServiceServlet implements Greetin
 					save.setProperty("criang", powers.contains("criang"));
 					save.setProperty("quatel", powers.contains("quatel"));
 					save.setProperty("lorcon", powers.contains("lorcon"));
+					save.setProperty("mondes", powers.contains("mondes"));
 					save.setProperty("luck", powers.contains("luck"));
 					save.setProperty("extlif", powers.contains("extlif"));
 					save.setProperty("dipill", powers.contains("dipill"));
