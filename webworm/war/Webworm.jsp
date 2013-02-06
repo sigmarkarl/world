@@ -247,19 +247,19 @@
 	</script>
 	<script type="text/javascript" src="//pagead2.googlesyndication.com/pagead/show_ads.js"></script>
     </div>
-<!--} else {-->
+<!--} else {
 	<div id="ads">
-	<script type="text/javascript"><!--
+	<script type="text/javascript"><
 		google_ad_client = "ca-pub-7204381538404733";
 		/* Webworm FBCanvas */
 		google_ad_slot = "0213973952";
 		google_ad_width = 728;
 		google_ad_height = 90;
-		//-->
+		//>
 	</script>
 	<script type="text/javascript" src="//pagead2.googlesyndication.com/pagead/show_ads.js"></script>
 	</div>
-<!--} -->
+} -->
 
   </body>
 </html>
