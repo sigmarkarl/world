@@ -790,7 +790,8 @@ public class Smasogur implements EntryPoint {
 				public void onSubmitComplete(SubmitCompleteEvent event) {
 					String subm = event.getResults();
 					console("ermi " + subm + "  " + uid);
-					int i = subm.lastIndexOf("http");
+					int i = subm.lastIndexOf("http:");
+					if( i == -1 ) i = subm.lastIndexOf("https:");
 					if( i >= 0 ) {
 						int k = subm.indexOf( "<", i+1 );
 						if( k == -1 ) k = subm.length();

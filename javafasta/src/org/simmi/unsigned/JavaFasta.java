@@ -839,12 +839,27 @@ public class JavaFasta extends JApplet {
     	 }
     	 
          if (fss != null) {
-        	 ByteArrayInputStream bais = new ByteArrayInputStream( null );//baos.toByteArray() );
+        	 ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        	 OutputStreamWriter	osw = new OutputStreamWriter( baos );
+        	 serifier.writeFasta( seqlist, osw, getSelectedRect() );
+        	 osw.close();
+        	 baos.close();
+        	 
+        	 String str = baos.toString();
+        	 JSObject obj = JSObject.getWindow( parentApplet );
+        	 obj.call("blobstuff", new Object[] {str, "text/plain"});
+        	 
+        	 /*        	 
+        	 ByteArrayInputStream bais = new ByteArrayInputStream( baos.toByteArray() );        	 
              fileContents = fss.saveFileDialog(null, null, bais, "export.fasta");
              bais.close();
+             
              OutputStream os = fileContents.getOutputStream(true);
+             osw = new OutputStreamWriter( os );
+             serifier.writeFasta(seqlist, osw, getSelectedRect() );
+             osw.close();
              //os.write( baos.toByteArray() );
-             os.close();
+             os.close();*/
          } else {
         	 JFileChooser jfc = new JFileChooser();
         	 if( jfc.showSaveDialog( parentApplet ) == JFileChooser.APPROVE_OPTION ) {

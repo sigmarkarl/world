@@ -24,6 +24,8 @@ import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.services.drive.Drive;
+import com.google.api.services.drive.Drive.Files;
+import com.google.api.services.drive.Drive.Files.Insert;
 import com.google.api.services.drive.Drive.Files.List;
 import com.google.api.services.drive.DriveScopes;
 import com.google.api.services.drive.model.File;
@@ -96,13 +98,14 @@ public class FileUploadServiceImpl extends HttpServlet {
 		  .setTransport(httpTransport)
 		  .setJsonFactory(jsonFactory)
 		  .setServiceAccountId(SERVICE_ACCOUNT_EMAIL)
-		  .setServiceAccountScopes(DriveScopes.DRIVE_FILE)
+		  .setServiceAccountScopes(DriveScopes.DRIVE)
 		  .setServiceAccountPrivateKeyFromP12File( file )
 		  //.setServiceAccountPrivateKey( pk )
 		  .build();
 		
 		//Create a new authorized API client
 	    Drive service = new Drive.Builder(httpTransport, jsonFactory, credential).build();
+	    //.setHttpRequestInitializer(credential).build();
 
 	    //Insert a file
 	    File body = new File();
@@ -114,7 +117,9 @@ public class FileUploadServiceImpl extends HttpServlet {
 	    //FileContent mediaContent = new FileContent("text/plain", fileContent);
 	    ByteArrayContent bac = new ByteArrayContent( "text/plain", bb );
 	    
-	    File f = service.files().insert(body, bac).execute();
+	    Files files = service.files();
+	    Insert insert = files.insert(body, bac);
+	    File f = insert.execute();
 	    List l = service.files().list();
 	    for( Entry<String,Object> ent : l.entrySet() ) {
 	    	System.err.println( ent.getKey() + "  " + ent.getValue() );

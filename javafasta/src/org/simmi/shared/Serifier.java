@@ -981,6 +981,89 @@ public class Serifier {
 			//ex
 		}
 		
+		i = arglist.indexOf("-matrix");
+		if( i >= 0 ) {
+			int sec = 1;
+			Map<String,Map<String,Integer>>	mset = new HashMap<String,Map<String,Integer>>();
+			Set<String>				allset = new HashSet<String>();
+			for( Sequences seqs : this.sequences ) {
+				URI uri = new URI(seqs.path);
+				File f = new File( uri );
+				FileReader fr = new FileReader( f );
+				BufferedReader br = new BufferedReader( fr );
+				String line = br.readLine();
+				while( line != null ) {
+					if( line.startsWith(">") ) {
+						int perci = line.indexOf('%');
+						int nind = line.lastIndexOf('_', perci);
+						String name = line.substring(1, nind);
+						
+						Map<String,Integer>	locset;
+						if( !mset.containsKey(name) ) {
+							locset = new HashMap<String,Integer>();
+							mset.put( name, locset );
+						} else {
+							locset = mset.get( name );
+						}
+						
+						int semi = line.indexOf(';');
+						int stri = line.indexOf('_', semi+1);
+						int endi = line.lastIndexOf('_');
+						endi = line.lastIndexOf('_',endi-1);
+						endi = line.lastIndexOf('_',endi-1);
+						
+						String locname = line.substring(stri+1,endi);
+						if( locset.containsKey( locname ) ) {
+							locset.put( locname, locset.get(locname) | sec );
+						} else {
+							locset.put( locname, sec );
+						}
+						allset.add( locname );
+					}
+					line = br.readLine();
+				}
+				br.close();
+				fr.close();
+				
+				sec <<= 1;
+			}
+			
+			List<String>	loclist = new ArrayList<String>( allset );
+			FileWriter fw = new FileWriter( outf );
+			for( String loc : loclist ) {
+				fw.write( "\t"+loc );
+			}
+			for( String key : mset.keySet() ) {
+				Map<String,Integer> locmap = mset.get(key);
+				
+				fw.write( "\n"+key );
+				for( String loc : loclist ) {
+					if( !locmap.containsKey(loc) ) fw.write( "\t0" );
+					else {
+						fw.write( "\t"+locmap.get(loc) );
+					}
+				}
+			}
+			fw.write("\n");
+			fw.close();
+		}
+		
+		i = arglist.indexOf("-fix");
+		if( i >= 0 ) {
+			FileWriter fw = new FileWriter( outf );
+			FileReader fr = new FileReader( inf );
+			BufferedReader br = new BufferedReader( fr );
+			String line = br.readLine();
+			while( line != null ) {
+				if( line.startsWith(">") ) fw.write( line+"\n" );
+				else fw.write( line.replace(" ", "").replace('.', '-')+"\n" );
+				line = br.readLine();
+			}
+			fw.close();
+			br.close();
+			fr.close();
+		}
+		
 		i = arglist.indexOf("-trim");
 		if( i >= 0 ) {
 			FileWriter fw = new FileWriter(outf);
