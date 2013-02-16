@@ -541,10 +541,23 @@ public class Serifier {
 					
 					continue;
 				}
+			} else if( trim.startsWith("Query >") ) {
+				String name = trim.substring(7).trim();
+				
+				line = br.readLine();
+				line = br.readLine();
+				String[] split = line.trim().split("[ ]+");
+				mapHit.put(name, split[2] );
 			}
 			line = br.readLine();
 		}
 		br.close();
+		
+		System.err.println( mapHit.size() );
+		for( String s : mapHit.keySet() ) {
+			System.err.println( s + "  " + mapHit.get(s) );
+			break;
+		}
 		
 		return mapHit;
 	}
@@ -574,9 +587,10 @@ public class Serifier {
 		while( line != null ) {
 			if( line.startsWith(">") ) {
 				String name = line.substring(1).trim();
-				int i = name.indexOf(' ');
-				if( i == -1 ) i = name.length();
-				name = name.substring(0,i);
+				//int i = name.indexOf(' ');
+				//if( i == -1 ) i = name.length();
+				//name = name.substring(0,i);
+				//System.err.println( "muu "+name );
 				if( mapHit.containsKey(name) ) {
 					String maphitstr = mapHit.get(name);
 					System.err.println( maphitstr );
@@ -586,7 +600,7 @@ public class Serifier {
 					if( filter == null || checkFilter( filter, maphitstr ) ) {
 						nseq++;
 						
-						i = line.lastIndexOf('_');
+						int i = line.lastIndexOf('_');
 						if( i != -1 ) i = line.lastIndexOf('_', i-1);
 						if( i == -1 ) i = line.length();
 						String cont = line.substring(1,i);
@@ -625,8 +639,8 @@ public class Serifier {
 				break;
 			}*/
 			
-			String[] filter = { "Thermus", "Meiothermus" };
-			int nseq = doMapHitStuff( nameHitMap, is, new FileOutputStream(f), ";", Arrays.asList(filter) );
+			//String[] filter = { "Thermus", "Meiothermus" };
+			int nseq = doMapHitStuff( nameHitMap, is, new FileOutputStream(f), ";", null ); //Arrays.asList(filter) );
 			
 			ret = new Sequences( "", f.getName(), seqs.getType(), f.toURI().toString(), nseq );
 			//if( sapplet != null ) sapplet.addSequences( f.getName(), seqs.getType(), f.toURI().toString(), nseq );
@@ -750,6 +764,7 @@ public class Serifier {
 							Collections.sort(seq.getAnnotations());
 						if( contset != null ) contset.put(cont, seq);
 					}
+					//System.err.println( seqs.getName() );
 					if( /*rr.length == 1*/ namefix ) cont = line.replace( ">", "" );
 					else cont = line.replace( ">", seqs.getName()+"_" );
 					dna = new StringBuilder();
@@ -909,12 +924,18 @@ public class Serifier {
 	
 	public Map<String,String> makeFset( String trim ) throws URISyntaxException, IOException {
 		boolean nofile = false;
-		URL url;
+		
+		File f = new File( trim );
+		if( !f.exists() ) nofile = true;
+		
+		/*URL url;
 		try {
-			url = new URL( trim );
+			File f = new File( trim );
+			if( f.exists() ) url = f.toURI().toURL();
+			else url = new URL( trim );
 		} catch( Exception exc ) {
 			nofile = true;
-		}
+		}*/
 		Map<String,String> fset = new HashMap<String,String>();
 		if( nofile ) {
 			String[] farray = { trim };
@@ -923,8 +944,8 @@ public class Serifier {
 			}
 			//fset.addAll( Arrays.asList( farray ) );
 		} else {
-			File fl = new File( new URI(trim) );
-			FileReader fr = new FileReader( fl );
+			//File fl = new File( new URI(trim) );
+			FileReader fr = new FileReader( f );
 			BufferedReader br = new BufferedReader( fr );
 			String line = br.readLine();
 			if( !trim.contains("454ReadStatus") ) {
@@ -943,7 +964,7 @@ public class Serifier {
 					/*if( line.contains("ingletons") ) {
 						fset.add( line.split("[\t ]+")[0] );
 					}*/								
-					if( line.contains("Singleton") ) { 
+					if( line.contains("Singleton") ) {
 						String[] split = line.split("[\t ]+");
 						//if( split.length > 1 ) fset.put( split[0], split[1] );
 						fset.put( split[0], null );
@@ -961,6 +982,7 @@ public class Serifier {
 		List<String>	arglist = Arrays.asList(args);
 		//System.err.println( arglist );
 		
+		initMaps();
 		int i = arglist.indexOf("-in");
 		File inf = null;
 		if( i >= 0 ) {
@@ -979,6 +1001,157 @@ public class Serifier {
 		if( i >= 0 ) {
 			outf = new File( args[i+1] );
 			//ex
+		}
+		
+		// matrix med location vs species count ur fasta file
+		i = arglist.indexOf("-ermat");
+		if( i >= 0 ) {
+			Map<String,Map<String,Integer>>	mset = new HashMap<String,Map<String,Integer>>();
+			Map<String,Integer>				allcount = new HashMap<String,Integer>();
+			Map<String,Integer>				seqcount = new HashMap<String,Integer>();
+			
+			File seqf = new File( args[i+1] );
+			FileReader seqfr = new FileReader( seqf );
+			BufferedReader seqbr = new BufferedReader( seqfr );
+			String sline = seqbr.readLine();
+			while( sline != null ) {
+				if( sline.startsWith(">") ) {
+					int u = sline.indexOf("_lenfilt");
+					String loc = sline.substring(1,u);
+					if( !seqcount.containsKey( loc ) ) {
+						seqcount.put( loc, 1 );
+					} else seqcount.put( loc, seqcount.get(loc)+1 );
+				}
+				sline = seqbr.readLine();
+			}
+			seqfr.close();
+			
+			FileReader fr = new FileReader( inf );
+			BufferedReader br = new BufferedReader( fr );
+			String line = br.readLine();
+			while( line != null ) {
+				if( line.startsWith(">") ) {
+					String[] split = line.split(";");
+					String spec = split[0];
+					int id = spec.indexOf('[');
+					spec = spec.substring(1, id);
+					
+					String loc = split[1];
+					id = loc.indexOf("_lenfilt");
+					loc = loc.substring(0, id);
+					
+					if( !allcount.containsKey( loc ) ) {
+						allcount.put( loc, 1 );
+					} else allcount.put( loc, allcount.get(loc)+1 );
+					
+					Map<String,Integer>	submset;
+					if( !mset.containsKey(spec) ) {
+						submset = new HashMap<String,Integer>();
+						mset.put( spec, submset );
+					} else submset = mset.get( spec );
+					
+					if( !submset.containsKey(loc) ) {
+						submset.put( loc, 1 );
+					} else {
+						submset.put( loc, submset.get(loc)+1 );
+					}
+				}
+				line = br.readLine();
+			}
+			br.close();
+			
+			Map<String,String>	namemap = new HashMap<String,String>();
+			File nseqf = new File( args[i+2] );
+			FileReader nseqfr = new FileReader( nseqf );
+			BufferedReader nseqbr = new BufferedReader( nseqfr );
+			String nsline = nseqbr.readLine();
+			while( nsline != null ) {
+				if( nsline.startsWith(">") ) {
+					int u = nsline.indexOf(' ');
+					String spc = nsline.substring(1,u);
+					if( spc.indexOf('.') != -1 ) {
+						if( mset.containsKey(spc) ) {
+							int li = nsline.lastIndexOf(';');
+							String strval = nsline.substring(li+1, nsline.length());
+							if( strval.contains("uncult") ) {
+								strval = nsline.substring(nsline.lastIndexOf(';', li-1)+1, nsline.length());
+							}
+							namemap.put(spc, strval);
+						}
+					}
+				}
+				nsline = nseqbr.readLine();
+			}
+			nseqfr.close();
+			
+			List<String>	loclist = new ArrayList<String>( allcount.keySet() );
+			FileWriter fw = new FileWriter( outf );
+			for( String loc : loclist ) {
+				fw.write( "\t"+loc );
+			}
+			fw.write("\ttotal");
+			for( String key : mset.keySet() ) {
+				Map<String,Integer> locmap = mset.get(key);
+				
+				int count = 0;
+				double temp = 0.0;
+				double pH = 0.0;
+				fw.write( "\n"+(namemap.containsKey(key) ? namemap.get(key) + " ("+key+")" : key) );
+				for( String loc : loclist ) {
+					if( !locmap.containsKey(loc) ) fw.write( "\t0" );
+					else {
+						int val = locmap.get(loc);
+						
+						temp += val*snaedisheatmap.get(loc);
+						pH += val*snaedisphmap.get(loc);
+						fw.write( "\t"+val );
+						count += val;
+					}
+				}
+				fw.write( "\t"+count );
+				
+				fw.write( "\t"+(temp/count) );
+				fw.write( "\t"+(pH/count) );
+			}
+			fw.write("\ntotal Thermaceae");
+			int total = 0;
+			for( String loc : loclist ) {
+				int val = allcount.get(loc);
+				fw.write( "\t"+val );
+				total += val;
+			}
+			fw.write( "\t"+total );
+			total = 0;
+			fw.write("\ntotal sequences");
+			for( String loc : loclist ) {
+				int val = seqcount.get(loc);
+				fw.write( "\t"+val );
+				total += val;
+			}
+			fw.write( "\t"+total );
+			
+			double avg = 0;
+			fw.write("\ntemp");
+			for( String loc : loclist ) {
+				if( !snaedisheatmap.containsKey( loc ) ) {
+					System.err.println("ok "+loc);
+				}
+				double val = snaedisheatmap.get(loc);
+				fw.write( "\t"+val );
+				avg += val;
+			}
+			fw.write( "\t"+(avg/loclist.size()) );
+			
+			avg = 0;
+			fw.write("\npH");
+			for( String loc : loclist ) {
+				double val = snaedisphmap.get(loc);
+				fw.write( "\t"+val );
+				avg += val;
+			}
+			fw.write( "\t"+(avg/loclist.size()) );
+			
+			fw.close();
 		}
 		
 		i = arglist.indexOf("-matrix");
@@ -1056,12 +1229,35 @@ public class Serifier {
 			String line = br.readLine();
 			while( line != null ) {
 				if( line.startsWith(">") ) fw.write( line+"\n" );
-				else fw.write( line.replace(" ", "").replace('.', '-')+"\n" );
+				else fw.write( line.replace(" ", "").replace('.', '-').replace('U', 'T')+"\n" );
 				line = br.readLine();
 			}
 			fw.close();
 			br.close();
 			fr.close();
+		}
+		
+		i = arglist.indexOf("-extract");
+		if( i >= 0 ) {
+			Map<String,String>	tagmap = new HashMap<String,String>();
+			File f = new File( args[i+1] );
+			FileReader fr = new FileReader( f );
+			BufferedReader br = new BufferedReader( fr );
+			String line = br.readLine();
+			while( line != null ) {
+				String[] split = line.split(",");
+				tagmap.put( split[1], split[0] );
+				line = br.readLine();
+			}
+			br.close();
+			fr.close();
+			
+			//int len = 0;
+			//i = arglist.indexOf("-lenfilt");
+			//if( i != -1 ) len = Integer.parseInt(args[i+1]);
+			i = arglist.indexOf("-primer");
+			String primer = args[i+1];
+			extractSequences(inf, tagmap, primer, outf);
 		}
 		
 		i = arglist.indexOf("-trim");
@@ -1092,7 +1288,29 @@ public class Serifier {
 			fw.close();
 		}
 		
+		i = arglist.indexOf("-rename");
+		if( i >= 0 ) {
+			/*Sequences ret = blastRename( this.sequences.get(0), args[i+1], outf, false );
+			
+			appendSequenceInJavaFasta(ret, null, true);
+			writeFasta( lseq, new FileWriter( outf ), null);*/
+			
+			FileWriter fw = new FileWriter( outf );
+			FileReader fr = new FileReader( inf );
+			trimFasta( new BufferedReader(fr), fw, makeFset(args[i+1]), false, false );
+			fr.close();
+			fw.close();
+		}
+		
 		i = arglist.indexOf("-blast");
+		if( i >= 0 ) {
+			Sequences ret = blastRename( this.sequences.get(0), args[i+1], outf, false );
+			
+			appendSequenceInJavaFasta(ret, null, true);
+			writeFasta( lseq, new FileWriter( outf ), null);
+		}
+		
+		i = arglist.indexOf("-usearch");
 		if( i >= 0 ) {
 			Sequences ret = blastRename( this.sequences.get(0), args[i+1], outf, false );
 			
@@ -1119,11 +1337,14 @@ public class Serifier {
 		
 		i = arglist.indexOf("-join");
 		if( i >= 0 ) {
-			List<Sequences> retlseqs = join( outf, this.sequences );
-			for( Sequences seqs : retlseqs ) {
-				appendSequenceInJavaFasta( seqs, null, true);
+			boolean val = true;
+			if( i+1 < args.length && !args[i+1].startsWith("-") ) val = false;
+			List<Sequences> retlseqs = join( outf, this.sequences, val );
+			/*for( Sequences seqs : retlseqs ) {
+				System.err.println( seqs.getName() );
+				appendSequenceInJavaFasta( seqs, null, val);
 			}
-			writeFasta( lseq, new FileWriter( outf ), null);
+			writeFasta( lseq, new FileWriter( outf ), null);*/
 		}
 		
 		i = arglist.indexOf("-split");
@@ -1761,7 +1982,100 @@ public class Serifier {
 		return treestr;
 	}
 	
-	public List<Sequences> join( File f, List<Sequences> lseqs ) {
+	static class erm implements Comparable<erm> {
+		public erm( String prim, int cnt ) {
+			this.primer = prim;
+			this.count = cnt;
+		}
+		
+		String	primer;
+		int		count;
+		
+		@Override
+		public int compareTo(erm o) {
+			return count - o.count;
+		}
+	}
+	
+	private boolean primermatch( String theprimer, String primer, int err ) {
+		int count = 0;
+		
+		for( int i = 0; i < theprimer.length(); i++ ) {
+			char c = theprimer.charAt(i);
+			if( c != 'N' ) count += (c != primer.charAt(i)) ? 1 : 0; 
+		}
+		
+		return count <= err;
+	}
+	
+	public void extractSequences( File f, Map<String,String> tagmap, String theprimer, File out ) {
+		Map<String,FileWriter>	filemap = new HashMap<String,FileWriter>();
+		Map<String,Integer>	mstr = new HashMap<String,Integer>();
+		try {
+			FileReader fr = new FileReader( f );
+			BufferedReader br = new BufferedReader( fr );
+			String line = br.readLine();
+			while( line != null ) {
+				if( line.startsWith(">") ) {
+					String name = line;
+					line = br.readLine();
+					String tag = line.substring(0,10);
+					String primer = line.substring(10, 10+theprimer.length());
+					if( mstr.containsKey(primer) ) {
+						mstr.put( primer, mstr.get(primer)+1 );
+					} else mstr.put( primer, 1 );
+					
+					if( tagmap.containsKey( tag ) ) {
+						if( primermatch( theprimer, primer, 1 ) ) {
+							FileWriter ofw;
+							if( !filemap.containsKey( tag ) ) {
+								File of = new File( out, tagmap.get(tag)+".fasta" );
+								ofw = new FileWriter( of );
+								filemap.put( tag, ofw );
+							} else {
+								ofw = filemap.get( tag );
+							}
+							ofw.write( name+"\n" );
+							int cnt = 0;
+							line = line.substring( 10+theprimer.length() );
+							while( line != null && !line.startsWith(">") ) {
+								for( int i = 0; i < line.length(); i++ ) {
+									ofw.write( line.charAt(i) );
+									cnt++;
+									if( cnt % 70 == 0 ) ofw.write('\n');
+								}
+								line = br.readLine();
+							}
+							if( cnt % 70 != 0 ) ofw.write('\n');
+						}
+					} //else line = br.readLine();
+				} else line = br.readLine();
+			}
+			br.close();
+			fr.close();
+			
+			for( String tag : filemap.keySet() ) {
+				filemap.get(tag).close();
+			}
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
+		List<erm>	erml = new ArrayList<erm>();
+		for( String primer : mstr.keySet() ) {
+			erml.add( new erm( primer, mstr.get(primer) ) );
+			//System.err.println( primer + "  " + mstr.get(primer) );
+		}
+		Collections.sort( erml );
+		
+		for( erm hey : erml ) {
+			System.err.println( hey.primer + "  " + hey.count );
+		}
+	}
+	
+	public List<Sequences> join( File f, List<Sequences> lseqs, boolean simple ) {
 		List<Sequences>	retlseq = new ArrayList<Sequences>();
 		
 		initMaps();
@@ -1784,35 +2098,39 @@ public class Serifier {
 				String line = br.readLine();
 				while( line != null ) {
 					if( line.startsWith(">") ) {
-						int pe = line.indexOf('%');
-						String idstr = null;
-						if( pe != -1 ) {
-							int pi = line.lastIndexOf('_', pe);
-							int perc = Integer.parseInt( line.substring(pi+1, pe) );
+						if( simple ) {
+							fw.write( line.replace( ">", ">"+s.getName().replace(".fna", "")+"_" )+"\n" );
+						} else {
+							int pe = line.indexOf('%');
+							String idstr = null;
+							if( pe != -1 ) {
+								int pi = line.lastIndexOf('_', pe);
+								int perc = Integer.parseInt( line.substring(pi+1, pe) );
+								
+								int red = (int)( (perc-95.0)*200.0/5.0+50.0 );
+								int green = (int)( (perc-95.0)*200.0/5.0+50.0 );
+								int blue = (int)( (perc-95.0)*200.0/5.0+50.0 );
+								
+								String rstr = Integer.toString(red, 16);
+								String gstr = Integer.toString(green, 16);
+								String bstr = Integer.toString(blue, 16);
+								
+								idstr = (rstr.length() == 1 ? "0"+rstr : rstr) + (gstr.length() == 1 ? "0"+gstr : gstr) + (bstr.length() == 1 ? "0"+bstr : bstr);
+							}
 							
-							int red = (int)( (perc-95.0)*200.0/5.0+50.0 );
-							int green = (int)( (perc-95.0)*200.0/5.0+50.0 );
-							int blue = (int)( (perc-95.0)*200.0/5.0+50.0 );
+							//fw.write( line.replace( ">", ">"+s.getName().replace(".fna", "")+"_" )+"\n" );
+							int i = s.getName().indexOf("_F_Good");
+							if( i == -1 ) i = s.getName().length();
+							String sub = s.getName().substring(0,i);
 							
-							String rstr = Integer.toString(red, 16);
-							String gstr = Integer.toString(green, 16);
-							String bstr = Integer.toString(blue, 16);
+							i = line.lastIndexOf('_');
+							if( i != -1 ) i = line.lastIndexOf('_', i-1);
+							if( i == -1 ) i = line.length();
+							String cont = line.substring(1,i);
 							
-							idstr = (rstr.length() == 1 ? "0"+rstr : rstr) + (gstr.length() == 1 ? "0"+gstr : gstr) + (bstr.length() == 1 ? "0"+bstr : bstr);
+							String newline = colorAdd( line, maps, phmaps, colormaps, sub, cont );
+							fw.write( newline + "\n" );
 						}
-						
-						//fw.write( line.replace( ">", ">"+s.getName().replace(".fna", "")+"_" )+"\n" );
-						int i = s.getName().indexOf("_F_Good");
-						if( i == -1 ) i = s.getName().length();
-						String sub = s.getName().substring(0,i);
-						
-						i = line.lastIndexOf('_');
-						if( i != -1 ) i = line.lastIndexOf('_', i-1);
-						if( i == -1 ) i = line.length();
-						String cont = line.substring(1,i);
-						
-						String newline = colorAdd( line, maps, phmaps, colormaps, sub, cont );
-						fw.write( newline + "\n" );
 						nseq++;
 					} else fw.write( line+"\n" );
 					line = br.readLine();
@@ -1955,8 +2273,10 @@ public class Serifier {
 		int nseq = 0;
 		
 		Set<String> keyset;
-		if( filterset instanceof Map ) keyset = (Set<String>)((Map) filterset).keySet();
-		else keyset = (Set<String>)filterset;
+		if( filterset instanceof Map ) {
+			keyset = (Set<String>)((Map) filterset).keySet();
+		} else keyset = (Set<String>)filterset;
+		System.err.println(keyset.size());
 		
 		String line = br.readLine();
 		String seqname = null;
@@ -1975,8 +2295,10 @@ public class Serifier {
 						bw.write( seqname+"\n" );
 					}
 				} else {
+					//System.err.println( line );
 					seqname = null;
 					for( String f : keyset ) {
+						//System.err.println( f );
 						if( (endswith && line.endsWith(f)) || (!endswith && line.contains(f)) ) {
 							Object swap = (filterset instanceof Map) ? ((Map)filterset).get(f) : null;
 							
