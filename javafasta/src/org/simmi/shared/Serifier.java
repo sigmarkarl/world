@@ -1260,6 +1260,21 @@ public class Serifier {
 			extractSequences(inf, tagmap, primer, outf);
 		}
 		
+		i = arglist.indexOf("-cut");
+		if( i >= 0 ) {
+			int cutval = Integer.parseInt(args[i+1]);
+			
+			for( Sequences seqs : this.sequences ) {
+				appendSequenceInJavaFasta( seqs, null, true);
+			}
+			writeFasta( lseq, new FileWriter( outf ), new Rectangle(0,0,cutval,0) );
+			/*FileWriter fw = new FileWriter(outf);
+			FileReader fr = new FileReader( inf );
+			trimFasta( new BufferedReader(fr), fw, makeFset(args[i+1]), false, false );
+			fr.close();
+			fw.close();*/
+		}
+		
 		i = arglist.indexOf("-trim");
 		if( i >= 0 ) {
 			FileWriter fw = new FileWriter(outf);
