@@ -978,6 +978,37 @@ public class Serifier {
 		return fset;
 	}
 	
+	private String filt( String str, int val ) {
+		if( val == 1 ) {
+			return str.substring( str.lastIndexOf('_')+1, str.length() );
+		} else if( val == 2 ) {
+			return str.substring( str.indexOf('_')+1, str.lastIndexOf('_') );
+		} else if( val == 3 ) {
+			return str.substring( 0, str.lastIndexOf('_') );
+		} else if( val == 4 ) {
+			String nstr = str.substring( str.indexOf('_')+1, str.lastIndexOf('_') );
+			if( nstr.contains("geysir") ) return "geysir";
+			else if( nstr.contains("reykjadalir") || nstr.contains("vondugil") || nstr.contains("hrafntinnusker") ) return "fridland";
+			else if( nstr.contains("deildartunguhver") || nstr.contains("kleppjarnsreykir") || nstr.contains("hurdarbak") ) return "borgarfjordur";
+			else return nstr;
+		}
+		
+		return str;
+	}
+	
+	public boolean isin( String allloc, String loc, int tval ) {
+		if( tval == 4 ) {
+			if( allloc.contains("reykjadalir") || allloc.contains("vondugil") || allloc.contains("hrafntinnusker") ) {
+				if( loc.contains("fridland") ) return true;
+				return false;
+			} else if( allloc.contains("deildartunguhver") || allloc.contains("kleppjarnsreykir") || allloc.contains("hurdarbak") ) {
+				if( loc.contains("borgarfjordur") ) return true;
+				return false;
+			}
+		}
+		return allloc.contains( loc );
+	}
+	
 	public void parse( String[] args ) throws IOException, URISyntaxException {
 		List<String>	arglist = Arrays.asList(args);
 		//System.err.println( arglist );
@@ -1007,8 +1038,14 @@ public class Serifier {
 		i = arglist.indexOf("-ermat");
 		if( i >= 0 ) {
 			Map<String,Map<String,Integer>>	mset = new HashMap<String,Map<String,Integer>>();
+			Map<String,Map<String,Integer>>	allmset = new HashMap<String,Map<String,Integer>>();
 			Map<String,Integer>				allcount = new HashMap<String,Integer>();
 			Map<String,Integer>				seqcount = new HashMap<String,Integer>();
+			
+			int tval = Integer.parseInt( args[i+3] );
+			
+			List<String>	allloclist = new ArrayList<String>();
+			Set<String>		alllocset = new HashSet<String>();
 			
 			File seqf = new File( args[i+1] );
 			FileReader seqfr = new FileReader( seqf );
@@ -1018,6 +1055,8 @@ public class Serifier {
 				if( sline.startsWith(">") ) {
 					int u = sline.indexOf("_lenfilt");
 					String loc = sline.substring(1,u);
+					alllocset.add( loc );
+					loc = filt( loc, tval );
 					if( !seqcount.containsKey( loc ) ) {
 						seqcount.put( loc, 1 );
 					} else seqcount.put( loc, seqcount.get(loc)+1 );
@@ -1025,6 +1064,7 @@ public class Serifier {
 				sline = seqbr.readLine();
 			}
 			seqfr.close();
+			allloclist.addAll( alllocset );
 			
 			FileReader fr = new FileReader( inf );
 			BufferedReader br = new BufferedReader( fr );
@@ -1036,9 +1076,10 @@ public class Serifier {
 					int id = spec.indexOf('[');
 					spec = spec.substring(1, id);
 					
-					String loc = split[1];
-					id = loc.indexOf("_lenfilt");
-					loc = loc.substring(0, id);
+					String allloc = split[1];
+					id = allloc.indexOf("_lenfilt");
+					allloc = allloc.substring(0, id);
+					String loc = filt( allloc, tval );
 					
 					if( !allcount.containsKey( loc ) ) {
 						allcount.put( loc, 1 );
@@ -1054,6 +1095,19 @@ public class Serifier {
 						submset.put( loc, 1 );
 					} else {
 						submset.put( loc, submset.get(loc)+1 );
+					}
+					
+					Map<String,Integer>	suballmset;
+					if( !allmset.containsKey(spec) ) {
+						suballmset = new HashMap<String,Integer>();
+						allmset.put( spec, suballmset );
+					} else suballmset = allmset.get( spec );
+					
+					if( !suballmset.containsKey(allloc) ) {
+						//System.err.println( "allloc "+allloc + suballmset.get(allloc) );
+						suballmset.put( allloc, 1 );
+					} else {
+						suballmset.put( allloc, suballmset.get(allloc)+1 );
 					}
 				}
 				line = br.readLine();
@@ -1089,29 +1143,44 @@ public class Serifier {
 			for( String loc : loclist ) {
 				fw.write( "\t"+loc );
 			}
-			fw.write("\ttotal");
+			fw.write("\ttotal\tavg temp\tavg pH");
 			for( String key : mset.keySet() ) {
 				Map<String,Integer> locmap = mset.get(key);
+				Map<String,Integer> alllocmap = allmset.get(key);
+				
+				/*System.err.println( alllocmap.size()  );
+				for( String str : alllocmap.keySet() ) {
+					System.err.println( str );
+				}*/
 				
 				int count = 0;
 				double temp = 0.0;
 				double pH = 0.0;
+				
 				fw.write( "\n"+(namemap.containsKey(key) ? namemap.get(key) + " ("+key+")" : key) );
 				for( String loc : loclist ) {
 					if( !locmap.containsKey(loc) ) fw.write( "\t0" );
 					else {
 						int val = locmap.get(loc);
 						
-						temp += val*snaedisheatmap.get(loc);
-						pH += val*snaedisphmap.get(loc);
+						for( String allloc : alllocmap.keySet() ) {
+							if( isin( allloc, loc, tval ) ) {
+							//if( allloc.contains( loc ) ) {
+								//System.err.println( allloc + "  " + loc );
+								int nval = alllocmap.get(allloc);
+								temp += nval*snaedisheatmap.get(allloc);
+								pH += nval*snaedisphmap.get(allloc);
+							}
+						}
+						
 						fw.write( "\t"+val );
 						count += val;
 					}
 				}
 				fw.write( "\t"+count );
 				
-				fw.write( "\t"+(temp/count) );
-				fw.write( "\t"+(pH/count) );
+				fw.write( "\t"+Math.round(10.0*temp/count)/10.0 );
+				fw.write( "\t"+Math.round(10.0*pH/count)/10.0 );
 			}
 			fw.write("\ntotal Thermaceae");
 			int total = 0;
@@ -1133,24 +1202,39 @@ public class Serifier {
 			double avg = 0;
 			fw.write("\ntemp");
 			for( String loc : loclist ) {
-				if( !snaedisheatmap.containsKey( loc ) ) {
-					System.err.println("ok "+loc);
+				double val = 0;
+				int count = 0;
+				for( String allloc : allloclist) {
+					if( isin( allloc, loc, tval ) ) {
+					//if( allloc.contains(loc) ) {
+						val += snaedisheatmap.get(allloc);
+						count++;
+					}
 				}
-				double val = snaedisheatmap.get(loc);
-				fw.write( "\t"+val );
+				val /= count;
+				fw.write( "\t"+Math.round(10.0*val)/10.0 );
 				avg += val;
 			}
-			fw.write( "\t"+(avg/loclist.size()) );
+			fw.write( "\t"+Math.round(10.0*avg/allloclist.size())/10.0 );
 			
 			avg = 0;
 			fw.write("\npH");
 			for( String loc : loclist ) {
-				double val = snaedisphmap.get(loc);
-				fw.write( "\t"+val );
+				double val = 0;
+				int count = 0;
+				for( String allloc : allloclist) {
+					if( isin( allloc, loc, tval ) ) {
+					//if( allloc.contains(loc) ) {
+						val += snaedisphmap.get(allloc);
+						count++;
+					}
+				}
+				val /= count;
+				fw.write( "\t"+Math.round(10.0*val)/10.0 );
 				avg += val;
 			}
-			fw.write( "\t"+(avg/loclist.size()) );
-			
+			fw.write( "\t"+Math.round(10.0*avg/allloclist.size())/10.0 );
+			fw.write( "\n" );
 			fw.close();
 		}
 		
@@ -2314,6 +2398,18 @@ public class Serifier {
 					seqname = null;
 					for( String f : keyset ) {
 						//System.err.println( f );
+						//HM2RNR208JBGXL
+						//HM2RNR208JM87F
+						/*if( f.contains("HM2RNR208JM87F") && line.contains("HM2RNR208JM87F") ) {
+							System.err.println( "muu " + line );
+							System.err.println( "muu " + f );
+							System.err.println( line.contains(f) );
+						}
+						if( f.contains("HM2RNR208JBGXL") && line.contains("HM2RNR208JBGXL") ) {
+							System.err.println( "muu " + line );
+							System.err.println( "muu " + f );
+							System.err.println( line.contains(f) );
+						}*/
 						if( (endswith && line.endsWith(f)) || (!endswith && line.contains(f)) ) {
 							Object swap = (filterset instanceof Map) ? ((Map)filterset).get(f) : null;
 							
@@ -2324,6 +2420,7 @@ public class Serifier {
 							break;
 						}
 					}
+					//if( seqname == null ) System.err.println( "not found " + line + endswith );
 				}
 			} else if( seqname != null ) {
 				bw.write( line+"\n" );
@@ -2332,6 +2429,8 @@ public class Serifier {
 			line = br.readLine();
 		}
 		br.close();
+		//bw.close();
+		System.err.println( nseq );
 		
 		return nseq;
 	}
