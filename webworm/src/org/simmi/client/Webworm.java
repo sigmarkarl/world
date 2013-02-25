@@ -42,7 +42,6 @@ import com.google.gwt.event.logical.shared.ValueChangeEvent;
 import com.google.gwt.event.logical.shared.ValueChangeHandler;
 import com.google.gwt.media.client.Audio;
 import com.google.gwt.user.client.Random;
-import com.google.gwt.user.client.Timer;
 import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.rpc.AsyncCallback;
 import com.google.gwt.user.client.ui.Anchor;
@@ -1074,10 +1073,52 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 			delay = 40;
 		}
 	}
+	
+	public native void init() /*-{
+		$wnd.requestAnimationFrame = $wnd.requestAnimationFrame || $wnd.mozRequestAnimationFrame || $wnd.webkitRequestAnimationFrame || $wnd.msRequestAnimationFrame;
+		$wnd.cancelAnimationFrame = $wnd.cancelAnimationFrame || $wnd.mozCancelAnimationFrame;
+		
+		var s = this;
+		$wnd.step = function( time ) {
+			s.@org.simmi.client.Webworm::step(D)( time );
+		}
+	}-*/;
+	
+	TextBox	timebox;
+	long count = 0;
+	int	currentFrame;
+	public void step( double time ) {
+		//Browser.getWindow().getConsole().log( "erm" );
+		if( worms.size() == 0 ) {
+			//Browser.getWindow().getConsole().log("io");
+			drawStartMessage( cv.getContext2d() );
+			cancelAnimationFrame( currentFrame );
+			return;
+			//this.cancel();
+		}
+		if( !pause ) {
+			Context2d context = cv.getContext2d();
+			for( Worm w : worms ) {
+				w.advance( context );
+			}
+			if( (count++)%50 == 0 ) {
+				if( timebox != null ) timebox.setText( ""+(count/50) );
+			}
+			requestAnimationFrame();
+		}
+	}
+	
+	public native void cancelAnimationFrame( int id) /*-{
+		$wnd.cancelAnimationFrame( id );
+	}-*/;
+	
+	public native int requestAnimationFrame() /*-{
+		return $wnd.requestAnimationFrame( $wnd.step );
+	}-*/;
 
 	int				w, h;
 	Canvas			cv;
-	Timer 			timer;
+	//Timer 			timer;
 	Set<Worm>		worms;
 	HorizontalPanel	hscore;
 	PopupPanel		popup;
@@ -1098,6 +1139,8 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 		final Widget deflecWidget;
 		final Widget dipillWidget;
 		final Widget extlifWidget;
+		
+		init();
 		
 		String fbuid = null;
 		NodeList<Element> nl = Document.get().getElementsByTagName("meta");
@@ -1280,33 +1323,24 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 			}
 		});
 		
-		final TextBox	timebox = new TextBox();
+		timebox = new TextBox();
 		timebox.setReadOnly( true );
 		timebox.setPixelSize( 32, 10 );
 		timebox.setSize( "32px", "10px" );
 		
-		timer = new Timer() {
+		//requestAnimationFrame();
+		/*timer = new Timer() {
 			long count = 0;
 			@Override
 			public void run() {
-				if( worms.size() == 0 ) {
-					drawStartMessage( cv.getContext2d() );
-					this.cancel();
-				}
-				if( !pause ) {
-					Context2d context = cv.getContext2d();
-					for( Worm w : worms ) {
-						w.advance( context );
-					}
-					if( (count++)%50 == 0 ) timebox.setText( ""+(count/50) );
-				}
+				step();
 			}
 			
 			public void cancel() {
 				super.cancel();
 				count = 0;
 			}
-		};
+		};*/
 		
 		String useragent = Window.Navigator.getUserAgent();
 		cv.addMouseDownHandler( this );
@@ -1754,21 +1788,21 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 			@Override
 			public void onClick(ClickEvent event) {
 				audio.setEnabled( true );
-				audio.setSrc("flabb2.mp3");
+				audio.setSrc("flabb2.webm");
 			}
 		});
 		rhaps.addClickHandler( new ClickHandler() {
 			@Override
 			public void onClick(ClickEvent event) {
 				audio.setEnabled( true );
-				audio.setSrc("hey.mp3");
+				audio.setSrc("hey.webm");
 			}
 		});
 		etude.addClickHandler( new ClickHandler() {
 			@Override
 			public void onClick(ClickEvent event) {
 				audio.setEnabled( true );
-				audio.setSrc("etude.mp3");
+				audio.setSrc("etude.webm");
 			}
 		});
 		faudio.addClickHandler( new ClickHandler() {
@@ -1796,7 +1830,7 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 		info.add( infov );
 		
 		audio = Audio.createIfSupported();
-		audio.setSrc("flabb2.mp3");
+		audio.setSrc("flabb2.webm");
 		audio.setLoop( true );
 		audio.getAudioElement().setAttribute("loop", "true");
 		
@@ -1813,6 +1847,7 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 	Audio audio = null;
 	public void playMusic() {
 		if( audio != null && audio.isEnabled() && audio.isPaused() ) {
+			audio.setCurrentTime(0.0);
 			audio.play();
 		}
 	}
@@ -1825,11 +1860,14 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 			worms.add( new Worm("#00ff00", KeyCodes.KEY_LEFT, KeyCodes.KEY_RIGHT, KeyCodes.KEY_LEFT, KeyCodes.KEY_RIGHT ) );
 			updateCoordinates(cv, false);
 			
-			if( timer != null ) {
+			/*if( timer != null ) {
 				info.hide();
 				cv.setFocus( true );
 				timer.scheduleRepeating( delay );
-			}
+			}*/
+			info.hide();
+			cv.setFocus( true );
+			currentFrame = requestAnimationFrame();
 		} else if( ws == 1 ) {
 			Worm w = null;
 			for( Worm ww : worms ) {
@@ -1908,11 +1946,14 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 			worms.add( new Worm("#00ff00", KeyCodes.KEY_LEFT, KeyCodes.KEY_RIGHT, KeyCodes.KEY_LEFT, KeyCodes.KEY_RIGHT, angle ) );
 			updateCoordinates(cv, false);
 			
-			if( timer != null ) {
+			/*if( timer != null ) {
 				info.hide();
 				cv.setFocus( true );
 				timer.scheduleRepeating( delay );
-			}
+			}*/
+			info.hide();
+			cv.setFocus( true );
+			currentFrame = requestAnimationFrame();
 		} else {
 			Worm w = null;
 			for( Worm wrm : worms ) {
