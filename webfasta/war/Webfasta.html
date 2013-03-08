@@ -24,6 +24,15 @@
     <!-- If you add any GWT meta tags, they must   -->
     <!-- be added before this line.                -->
     <!--                                           -->
+    <script type="text/javascript" src="https://www.google.com/jsapi"></script>
+    <script>
+    	window.chartIsReady = false;
+    	google.load("visualization", "1", {packages:["corechart"]});
+		google.setOnLoadCallback( chartReady );
+		function chartReady() {
+			window.chartIsReady = true;
+		}
+	</script>
     <script type="text/javascript" language="javascript" src="webfasta/webfasta.nocache.js"></script>
   </head>
 

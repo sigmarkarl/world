@@ -56,8 +56,13 @@ import com.google.gwt.event.dom.client.MouseUpEvent;
 import com.google.gwt.event.dom.client.MouseUpHandler;
 import com.google.gwt.event.dom.client.MouseWheelEvent;
 import com.google.gwt.event.dom.client.MouseWheelHandler;
+import com.google.gwt.event.logical.shared.CloseEvent;
+import com.google.gwt.event.logical.shared.CloseHandler;
 import com.google.gwt.event.logical.shared.ResizeEvent;
 import com.google.gwt.event.logical.shared.ResizeHandler;
+import com.google.gwt.event.logical.shared.ValueChangeEvent;
+import com.google.gwt.event.logical.shared.ValueChangeHandler;
+import com.google.gwt.typedarrays.client.Float64ArrayNative;
 import com.google.gwt.typedarrays.client.Int8ArrayNative;
 import com.google.gwt.typedarrays.shared.ArrayBuffer;
 import com.google.gwt.typedarrays.shared.Int8Array;
@@ -66,6 +71,7 @@ import com.google.gwt.user.client.Element;
 import com.google.gwt.user.client.Timer;
 import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.ui.Button;
+import com.google.gwt.user.client.ui.CheckBox;
 import com.google.gwt.user.client.ui.DialogBox;
 import com.google.gwt.user.client.ui.FileUpload;
 import com.google.gwt.user.client.ui.FormPanel;
@@ -73,6 +79,7 @@ import com.google.gwt.user.client.ui.HTMLPanel;
 import com.google.gwt.user.client.ui.HorizontalPanel;
 import com.google.gwt.user.client.ui.IntegerBox;
 import com.google.gwt.user.client.ui.MenuBar;
+import com.google.gwt.user.client.ui.PopupPanel;
 import com.google.gwt.user.client.ui.ResizeLayoutPanel;
 import com.google.gwt.user.client.ui.RootPanel;
 import com.google.gwt.user.client.ui.SplitLayoutPanel;
@@ -173,8 +180,7 @@ public class Webfasta implements EntryPoint {
 				enc4 = 64;
 			}
 
-			output = output + _keyStr.charAt(enc1) + _keyStr.charAt(enc2)
-					+ _keyStr.charAt(enc3) + _keyStr.charAt(enc4);
+			output = output + _keyStr.charAt(enc1) + _keyStr.charAt(enc2) + _keyStr.charAt(enc3) + _keyStr.charAt(enc4);
 		}
 
 		return output;
@@ -574,6 +580,18 @@ public class Webfasta implements EntryPoint {
 	List<Sequence> val = new ArrayList<Sequence>();
 	Map<String, SequenceOld> seqmap = new HashMap<String, SequenceOld>();
 	int max = 0;
+	
+	public int getMin() {
+		return 0;
+	}
+	
+	public int getMax() {
+		return max;
+	}
+	
+	public int getDiff() {
+		return max;
+	}
 
 	public void fileLoaded(Int8Array cont) {
 		int start = 0;
@@ -1008,8 +1026,7 @@ public class Webfasta implements EntryPoint {
 
 		context.setFillStyle("rgba( 30, 100, 255, 0.5)");
 		if (xen - xsn > 0)
-			context.fillRect(xsn, ys - ystartLocal + columnHeight, xen - xsn,
-					ye - ys);
+			context.fillRect(xsn, ys - ystartLocal + columnHeight, xen - xsn, ye - ys);
 	}
 
 	public native JsArrayInteger getSortInfo(JavaScriptObject t) /*-{
@@ -1388,6 +1405,22 @@ public class Webfasta implements EntryPoint {
 	int xselloc = 0;
 	int xsellen = 0;
 
+	public native void line( String name, Float64ArrayNative fa, Element popup, int width, int height, String ax, String ay ) /*-{
+		var arr = [ [ax, ay] ];
+		//var fa = new Float64Array( arraybuf );
+		for( i = 0; i < fa.length; i++ ) {
+			arr[i+1] = [i, fa[i]];
+		}
+        var data = $wnd.google.visualization.arrayToDataTable(arr);
+        var options = {};
+        options['title'] = name;
+        options['width'] = width;
+        options['height'] = height;
+		
+        var chart = new $wnd.google.visualization.LineChart( popup );
+        chart.draw(data, options);
+	}-*/;
+	
 	public void handleMessage() {
 		elemental.dom.Element e = Browser.getDocument().getElementById(
 				"listener");
@@ -2118,6 +2151,121 @@ public class Webfasta implements EntryPoint {
 			public void execute() {
 				basecolors = !basecolors;
 				draw(xstart, ystart);
+			}
+		});
+		vpopup.addSeparator();
+		vpopup.addItem("Clear point-mutations", new Command() {
+			@Override
+			public void execute() {
+				Map<Character,Integer>	shanmap = new HashMap<Character,Integer>(); 
+				for( int x = getMin(); x < getMax(); x++ ) {
+					shanmap.clear();
+					int total = val.size();
+					for( int y = 0; y < total; y++ ) {
+						char c = charAt(x, y);
+						int val = 0;
+						if( shanmap.containsKey(c) ) val = shanmap.get(c);
+						shanmap.put( c, val+1 );
+					}
+					
+					for( char c : shanmap.keySet() ) {
+						int count = shanmap.get( c );
+						if( count == 1 ) {
+							char maxc = ' ';
+							int lastcount = 0;
+							for( char subc : shanmap.keySet() ) {
+								int subcount = shanmap.get( subc );
+								if( subcount > lastcount ) maxc = subc;
+							}
+							for( int y = 0; y < total; y++ ) {
+								setCharAt(x, y, maxc);
+							}
+						}
+					}
+					
+					/*double res = 0.0;
+					for( char c : shanmap.keySet() ) {
+						int val = shanmap.get(c);
+						double p = (double)val/(double)total;
+						res -= p*Math.log(p)/Math.log(2.0);
+					}
+					d[x-getMin()] = res;*/
+				}
+			}
+		});
+		vpopup.addItem("Draw Shannon", new Command() {
+			@Override
+			public void execute() {
+				String command = "command";
+				final double[] d = new double[ getDiff() ];
+				Map<Character,Integer>	shanmap = new HashMap<Character,Integer>(); 
+				for( int x = getMin(); x < getMax(); x++ ) {
+					shanmap.clear();
+					int total = val.size();
+					for( int y = 0; y < total; y++ ) {
+						char c = charAt(x, y);
+						int val = 0;
+						if( shanmap.containsKey(c) ) val = shanmap.get(c);
+						shanmap.put( c, val+1 );
+					}
+					double res = 0.0;
+					for( char c : shanmap.keySet() ) {
+						int val = shanmap.get(c);
+						double p = (double)val/(double)total;
+						res -= p*Math.log(p)/Math.log(2.0);
+					}
+					d[x-getMin()] = res;
+				}
+				
+				final CheckBox			cb = new CheckBox("Filter blocks");
+				final IntegerBox		sp = new IntegerBox();
+				sp.setValue( 10 );
+				//final JSpinner 	sp = new JSpinner( new SpinnerNumberModel(10, 2, 100, 1) );
+				sp.setEnabled( false );
+				cb.addValueChangeHandler( new ValueChangeHandler<Boolean>() {
+					@Override
+					public void onValueChange(ValueChangeEvent<Boolean> event) {
+						sp.setEnabled( event.getValue() );	
+					}
+				});
+				DialogBox db = new DialogBox( true, true );
+				VerticalPanel	vp = new VerticalPanel();
+				vp.setSize(400+"px", 50+"px");
+				vp.add( cb );
+				vp.add( sp );
+				db.add( vp );
+				db.center();
+				//Object[] message = new Object[] { cb, sp };
+				//JOptionPane.showMessageDialog(parentApplet, message);
+				
+				db.addCloseHandler( new CloseHandler<PopupPanel>() {
+					
+					@Override
+					public void onClose(CloseEvent<PopupPanel> event) {
+						double[] td = d;
+						if( cb.getValue() ) {
+							int val = (Integer)sp.getValue();
+							double[] old = d;
+							double sum = 0.0;
+							for( int k = 0; k < val; k++ ) {
+								sum += old[k];
+							}
+							td = new double[ old.length-val ];
+							for( int i = 0; i < d.length; i++ ) {
+								td[i] = sum/(double)val;
+								sum += -td[i]+td[i+val];
+							}
+						}
+						
+						Float64ArrayNative fa = Float64ArrayNative.create(td.length);
+						for( int i = 0; i < td.length; i++ ) {
+							fa.set(i, td[i]);
+						}
+						PopupPanel pp = new PopupPanel(true);
+						line( "line", fa, pp.getElement(), 640, 480, "mu", "ma" );
+						pp.center();
+					}
+				});
 			}
 		});
 		vpopup.addSeparator();
