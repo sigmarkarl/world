@@ -3224,15 +3224,14 @@ public class JavaFasta extends JApplet {
 				
 				double[] old = d;
 				double sum = 0.0;
-				for( int k = 0; k < winsize; k++ ) {
+				for( int k = 0; k < Math.min( old.length, winsize ); k++ ) {
 					sum += old[k];
 				}
 				d = new double[ old.length-winsize ];
 				for( int i = 0; i < d.length; i++ ) {
 					d[i] = sum/(double)winsize;
-					sum += -d[i]+d[i+winsize];
+					sum += -d[i]+old[i+winsize];
 				}
-				
 				
 				int i = 0;
 				while( i < max-min ) {
