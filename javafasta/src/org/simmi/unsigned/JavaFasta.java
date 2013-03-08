@@ -846,10 +846,10 @@ public class JavaFasta extends JApplet {
         	 baos.close();
         	 
         	 String str = baos.toString();
-        	 JSObject obj = JSObject.getWindow( parentApplet );
+        	 netscape.javascript.JSObject obj = netscape.javascript.JSObject.getWindow( parentApplet );
         	 obj.call("blobstuff", new Object[] {str, "text/plain"});
         	 
-        	 /*        	 
+        	 /*
         	 ByteArrayInputStream bais = new ByteArrayInputStream( baos.toByteArray() );        	 
              fileContents = fss.saveFileDialog(null, null, bais, "export.fasta");
              bais.close();
