@@ -44,7 +44,12 @@ import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.FetchOptions;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
+import com.google.appengine.api.datastore.PreparedQuery;
 import com.google.appengine.api.datastore.Query;
+import com.google.appengine.api.datastore.Query.SortDirection;
+import com.google.appengine.api.users.User;
+import com.google.appengine.api.users.UserService;
+import com.google.appengine.api.users.UserServiceFactory;
 import com.google.gwt.user.server.rpc.RemoteServiceServlet;
 
 public class SmasagaServiceImpl extends RemoteServiceServlet implements SmasagaService {
@@ -56,9 +61,16 @@ public class SmasagaServiceImpl extends RemoteServiceServlet implements SmasagaS
 
 	@Override
 	public Saga[] getAllShortstories() {
+		UserService userService = UserServiceFactory.getUserService();
+    	User user = userService.getCurrentUser();
+    	//user.
+		
 		DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
 		Query query = new Query("smasaga");
-		List<Entity> soguEntities = datastore.prepare( query ).asList(FetchOptions.Builder.withDefaults());
+		//query.add
+		query.addSort("timestamp", SortDirection.DESCENDING);
+		PreparedQuery pq = datastore.prepare( query );
+		List<Entity> soguEntities = pq.asList(FetchOptions.Builder.withDefaults());
 		Saga[] smasogur = new Saga[ soguEntities.size() ];
 		
 		Map<String,Saga>	sagaMap = new HashMap<String,Saga>();
@@ -98,12 +110,21 @@ public class SmasagaServiceImpl extends RemoteServiceServlet implements SmasagaS
 			smasaga.setContinue( tobecontinued == null ? false : (Boolean)tobecontinued );
 			
 			Object date = e.getProperty("timestamp");
+			/*this.log(smasaga.getName() + " check date " + date);
+			if( date == null ) {
+				GregorianCalendar gc = new GregorianCalendar(2013, 0, 1);
+				date = gc.getTime();
+				e.setProperty("timestamp", date);
+				this.log(smasaga.getName() + " set date " + date);
+				datastore.put(e);
+				//date = new Date()
+			}*/
 			smasaga.setDate( date == null ? null : (Date)date );
 			
 			String sagaKey = KeyFactory.keyToString(e.getKey());
 			sagaMap.put( sagaKey, smasaga );
 			
-			smasaga.setKey( sagaKey );			
+			smasaga.setKey( sagaKey );
 			smasogur[i++] = smasaga;
 		}
 		

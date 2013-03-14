@@ -320,6 +320,7 @@ public class Smasogur implements EntryPoint {
 		console( "about to set userid " + val );
 		
 		uid = val;
+		if( (uid == null || uid.length() == 0) && (guid != null && guid.length() > 0) ) uid = guid;
 		//if( uploadButton != null ) uploadButton.setEnabled( uid != null && uid.length() > 1 );
 	}
 	
@@ -444,11 +445,11 @@ public class Smasogur implements EntryPoint {
 				//console("in fl "+result);
 				
 				//smasaga.setKey( result );
-				sogur.add( smasaga );
+				sogur.add(0, smasaga);
 				
 				setStatus( "File saved" );
-				int r = data.getNumberOfRows();
-				data.addRow();
+				int r = 0;//data.getNumberOfRows();
+				data.insertRows(0, 1);
 				data.setFormattedValue(r, 0, "<a href=\"Smasaga.jsp?smasaga="+smasaga.getKey()+"\" target=\"_blank\">"+smasaga.getName()+"</a>" );
 				data.setValue(r, 1, smasaga.getAuthorSynonim());
 				data.setValue(r, 2, smasaga.getLanguage());
@@ -493,6 +494,9 @@ public class Smasogur implements EntryPoint {
 	List<Saga>	sogur;
 	FocusPanel	focuspanel;
 	String 		fbuid = null;
+	String 		guid = null;
+	String		login = null;
+	String		logout = null;
 	public void onModuleLoad() {
 		final Console	console = Browser.getWindow().getConsole();
 		final RootPanel module = RootPanel.get();
@@ -508,16 +512,38 @@ public class Smasogur implements EntryPoint {
   	  	//final VerticalPanel vp = new VerticalPanel();
   	  	//vp.setSize("100%", "100%");
   	  	
+		//Console console = Browser.getWindow().getConsole();
+		
 		NodeList<com.google.gwt.dom.client.Element> nl = Document.get().getElementsByTagName("meta");
 		int i;
 		for( i = 0; i < nl.getLength(); i++ ) {
 			com.google.gwt.dom.client.Element e = nl.getItem(i);
 			String prop = e.getAttribute("property");
+			
+			console.log("mu mu "+prop);
 			if( prop.equals("erm") ) {
 				//setUserId( e.getAttribute("content") );
 				fbuid = e.getAttribute("content");
 				if( fbuid != null ) uid = fbuid;
-				break;
+				//break;
+			} else if( prop.equals("guid") ) {
+				console.log("guid");
+				//setUserId( e.getAttribute("content") );
+				guid = e.getAttribute("content");
+				if( guid != null ) {
+					uid = guid;
+				}
+				//break;
+			} else if( prop.equals("login") ) {
+				//setUserId( e.getAttribute("content") );
+				login = e.getAttribute("content");
+				//if( login != null ) uid = guid;
+				//break;
+			} else if( prop.equals("logout") ) {
+				//setUserId( e.getAttribute("content") );
+				logout = e.getAttribute("content");
+				//if( guid != null ) uid = guid;
+				//break;
 			}
 		}
 		
@@ -557,7 +583,7 @@ public class Smasogur implements EntryPoint {
 	  	});
   	  
 	  	final SimplePanel log = new SimplePanel();
-	  	log.setSize("400px", "100px");
+	  	log.setSize("400px", "70px");
 	  	Style style = log.getElement().getStyle();
 	  	style.setPadding(20.0, Unit.PX);
 	  	
@@ -746,11 +772,14 @@ public class Smasogur implements EntryPoint {
 	    	  //vp.setVerticalAlignment( VerticalPanel.ALIGN_MIDDLE );
 	    	  //vp.setHorizontalAlignment( VerticalPanel.ALIGN_CENTER );	    	  
 	    	  
+	    	  final HTML loginrecommend = new HTML("Login through Google or Facebook is highly recommended. You can delete your shortstories, choose an author name and make changes to the story metadata.");
+	    	  loginrecommend.setWidth("100%");
+	    	  
 	    	  final HTML html = new HTML();
 	    	  //html.setText( "DragÃ°u skrÃ¡na meÃ° smÃ¡sÃ¶gunni Ã¾inni Ã­ tÃ¶fluna. <br>Ef Ã¾Ãº ert logguÃ°/loggaÃ°ur innÃ¡ facebook er rÃ©ttur hÃ¶fundur skrÃ¡Ã°ur. <br>ÃžÃº getur valiÃ° hÃ¶fundarnafn, nafniÃ° Ã¡ raunverulegum hÃ¶fundi Ã¾arf ekki aÃ° vera valiÃ°" );
 	    	  html.setHTML( "Drag-drop the file containing your short story into the table. " +
 	    			"The file can be in a format of your choice. For example pdf for text and mp3 for audiobooks.<br>" +
-	    	  		"If you are logged into facebook, you are registered as the author. " +
+	    	  		"If you are logged in, you are registered as the author. " +
 	    	  		"You can choose you own authorname, it doesn't have to be your real name" );
 	    	  html.setWidth("100%");
 	    	  //html.getElement().getStyle().setMargin(20.0, Unit.PX);
@@ -771,6 +800,11 @@ public class Smasogur implements EntryPoint {
 	    	  HTML subtitle = new HTML("<h4>Brought to you by The Basement At 5 o'Clock reading club<h4/>");
 	    	  subvp.add( subtitle );
 	    	  subvp.add( log );
+	    	  if( logout != null && logout.length() > 0 ) {
+	    		  subvp.add( new Anchor( "Sign out", logout ) );
+	    	  } else if( login != null && login.length() > 0 ) {
+	    		  subvp.add( new Anchor( "Sign in with Google", login ) );
+	    	  }
 	    	  
 	    	  final FormPanel fp = new FormPanel();
 	    	  fp.setAction( "/smasogur/FileUpload" );
@@ -789,7 +823,7 @@ public class Smasogur implements EntryPoint {
 				@Override
 				public void onSubmitComplete(SubmitCompleteEvent event) {
 					String subm = event.getResults();
-					console("ermi " + subm + "  " + uid);
+					console("ermi " + subm + " uid " + uid);
 					int i = subm.lastIndexOf("http:");
 					if( i == -1 ) i = subm.lastIndexOf("https:");
 					if( i >= 0 ) {
@@ -854,6 +888,7 @@ public class Smasogur implements EntryPoint {
 	    	  filehp.add( deleteButton );
 	    	  fp.add( filehp );
 	    	  
+	    	  subvp.add( loginrecommend );
 	    	  subvp.add( html );
 	    	  //if( uid != null && uid.length() > 0 ) 
 	    	  subvp.add( fp );

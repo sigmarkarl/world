@@ -13,6 +13,7 @@ import com.google.gwt.canvas.dom.client.Context2d;
 import com.google.gwt.canvas.dom.client.ImageData;
 import com.google.gwt.core.client.EntryPoint;
 import com.google.gwt.core.client.GWT;
+import com.google.gwt.core.client.JsArray;
 import com.google.gwt.dom.client.Document;
 import com.google.gwt.dom.client.Element;
 import com.google.gwt.dom.client.Node;
@@ -21,6 +22,7 @@ import com.google.gwt.dom.client.ScriptElement;
 import com.google.gwt.dom.client.Style;
 import com.google.gwt.dom.client.Style.Display;
 import com.google.gwt.dom.client.Style.Unit;
+import com.google.gwt.dom.client.Touch;
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
 import com.google.gwt.event.dom.client.KeyCodes;
@@ -34,6 +36,12 @@ import com.google.gwt.event.dom.client.MouseMoveEvent;
 import com.google.gwt.event.dom.client.MouseMoveHandler;
 import com.google.gwt.event.dom.client.MouseUpEvent;
 import com.google.gwt.event.dom.client.MouseUpHandler;
+import com.google.gwt.event.dom.client.TouchEndEvent;
+import com.google.gwt.event.dom.client.TouchEndHandler;
+import com.google.gwt.event.dom.client.TouchMoveEvent;
+import com.google.gwt.event.dom.client.TouchMoveHandler;
+import com.google.gwt.event.dom.client.TouchStartEvent;
+import com.google.gwt.event.dom.client.TouchStartHandler;
 import com.google.gwt.event.logical.shared.CloseEvent;
 import com.google.gwt.event.logical.shared.CloseHandler;
 import com.google.gwt.event.logical.shared.ResizeEvent;
@@ -65,7 +73,7 @@ import elemental.client.Browser;
 /**
  * Entry point classes define <code>onModuleLoad()</code>.
  */
-public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, MouseMoveHandler, KeyDownHandler, KeyUpHandler {
+public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, MouseMoveHandler, KeyDownHandler, KeyUpHandler, TouchStartHandler, TouchEndHandler, TouchMoveHandler {
 	/**
 	 * The message displayed to the user when the server cannot be reached or
 	 * returns an error.
@@ -1346,6 +1354,9 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 		cv.addMouseDownHandler( this );
 		cv.addMouseUpHandler( this );
 		cv.addMouseMoveHandler( this );
+		cv.addTouchStartHandler( this );
+		cv.addTouchEndHandler( this );
+		cv.addTouchMoveHandler( this );
 		
 		if( useragent.contains("MSIE") ) {
 			ieSpec();
@@ -1931,14 +1942,9 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 	}
 	
 	boolean		mousedown = false;
-
-	@Override
-	public void onMouseDown(MouseDownEvent event) {
-		mousedown = true;
-		
-		int x = event.getX();
-		int y = event.getY();
-		
+	boolean		touchdown = false;
+	
+	public void mouseTouch( int x, int y ) {
 		if( worms.size() == 0 ) {
 			playMusic();
 			
@@ -1964,6 +1970,16 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 			w.setTarget( x, y );
 		}
 	}
+	
+	@Override
+	public void onMouseDown(MouseDownEvent event) {
+		mousedown = true;
+		
+		int x = event.getX();
+		int y = event.getY();
+		
+		mouseTouch( x, y );
+	}
 
 	@Override
 	public void onMouseMove(MouseMoveEvent event) {
@@ -1984,5 +2000,44 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 	@Override
 	public void onMouseUp(MouseUpEvent event) {
 		mousedown = false;
+	}
+
+	@Override
+	public void onTouchMove(TouchMoveEvent event) {
+		Touch touch = event.getTouches().get(0);
+		int x = touch.getClientX();
+		int y = touch.getClientY();
+		//int x = event.getX();
+		//int y = event.getY();
+		
+		Worm w = null;
+		for( Worm wrm : worms ) {
+			w = wrm;
+			break;
+		}
+		
+		w.setTarget( x, y );
+	}
+
+	@Override
+	public void onTouchEnd(TouchEndEvent event) {
+		touchdown = false;
+	}
+
+	@Override
+	public void onTouchStart(TouchStartEvent event) {
+		touchdown = true;
+		
+		//event.get
+		JsArray<Touch>	touches = event.getTouches();
+		if( touches.length() > 1 ) {
+			pause = !pause;
+		} else {
+			Touch touch = event.getTouches().get(0);
+			int x = touch.getClientX();
+			int y = touch.getClientY();
+			
+			mouseTouch( x, y );
+		}
 	}
 }
