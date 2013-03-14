@@ -1099,12 +1099,13 @@ public class Serifier {
 			Map<String,Integer>				allcount = new HashMap<String,Integer>();
 			Map<String,Integer>				seqcount = new HashMap<String,Integer>();
 			
-			int tval = Integer.parseInt( args[i+3] );
+			//int tval = Integer.parseInt( args[i+3] );
+			int tval = Integer.parseInt( args[i+1] );
 			
 			List<String>	allloclist = new ArrayList<String>();
 			Set<String>		alllocset = new HashSet<String>();
 			
-			File seqf = new File( args[i+1] );
+			/*File seqf = new File( args[i+1] );
 			FileReader seqfr = new FileReader( seqf );
 			BufferedReader seqbr = new BufferedReader( seqfr );
 			String sline = seqbr.readLine();
@@ -1121,7 +1122,7 @@ public class Serifier {
 				sline = seqbr.readLine();
 			}
 			seqfr.close();
-			allloclist.addAll( alllocset );
+			allloclist.addAll( alllocset );*/
 			
 			FileReader fr = new FileReader( inf );
 			BufferedReader br = new BufferedReader( fr );
@@ -1132,6 +1133,9 @@ public class Serifier {
 					String spec = split[0];
 					int id = spec.indexOf('[');
 					spec = spec.substring(1, id);
+					
+					// genotypespec
+					spec = br.readLine();
 					
 					String allloc = split[1];
 					id = allloc.indexOf("_lenfilt");
@@ -1160,7 +1164,8 @@ public class Serifier {
 						allmset.put( spec, suballmset );
 					} else suballmset = allmset.get( spec );
 					
-					if( !suballmset.containsKey(allloc) ) {loc = filt( loc, tval );
+					if( !suballmset.containsKey(allloc) ) {
+						//loc = filt( loc, tval );
 						//System.err.println( "allloc "+allloc + suballmset.get(allloc) );
 						suballmset.put( allloc, 1 );
 					} else {
@@ -1172,15 +1177,19 @@ public class Serifier {
 			br.close();
 			
 			Map<String,String>	namemap = new HashMap<String,String>();
-			File nseqf = new File( args[i+2] );
-			FileReader nseqfr = new FileReader( nseqf );
+			//File nseqf = new File( args[i+2] );
+			FileReader nseqfr = new FileReader( inf );//nseqf );
 			BufferedReader nseqbr = new BufferedReader( nseqfr );
 			String nsline = nseqbr.readLine();
 			while( nsline != null ) {
 				if( nsline.startsWith(">") ) {
 					int u = nsline.indexOf(' ');
 					String spc = nsline.substring(1,u);
-					if( spc.indexOf('.') != -1 ) {
+					// gtspec
+					spc = nseqbr.readLine();
+					
+					//if( spc.indexOf('.') != -1 ) {
+						//System.err.println( spc + "  " + mset.keySet() );
 						if( mset.containsKey(spc) ) {
 							int li = nsline.lastIndexOf(';');
 							String strval = nsline.substring(li+1, nsline.length());
@@ -1189,11 +1198,12 @@ public class Serifier {
 							}
 							namemap.put(spc, strval);
 						}
-					}
+					//}
 				}
 				nsline = nseqbr.readLine();
 			}
 			nseqfr.close();
+			System.err.println( namemap.keySet() );
 			
 			List<String>	loclist = new ArrayList<String>( allcount.keySet() );
 			FileWriter fw = new FileWriter( outf );
@@ -1214,7 +1224,8 @@ public class Serifier {
 				double temp = 0.0;
 				double pH = 0.0;
 				
-				fw.write( "\n"+(namemap.containsKey(key) ? namemap.get(key) + " ("+key+")" : key) );
+				//fw.write( "\n"+(namemap.containsKey(key) ? namemap.get(key) + " ("+key+")" : key) );
+				fw.write( "\n"+key );
 				for( String loc : loclist ) {
 					if( !locmap.containsKey(loc) ) fw.write( "\t0" );
 					else {
@@ -1250,7 +1261,8 @@ public class Serifier {
 			total = 0;
 			fw.write("\ntotal sequences");
 			for( String loc : loclist ) {
-				int val = seqcount.get(loc);
+				//System.err.println("loc "+loc + " " + seqcount);
+				int val = seqcount.containsKey(loc) ? seqcount.get(loc) : -1;
 				fw.write( "\t"+val );
 				total += val;
 			}
@@ -1309,8 +1321,13 @@ public class Serifier {
 				while( line != null ) {
 					if( line.startsWith(">") ) {
 						int perci = line.indexOf('%');
-						int nind = line.lastIndexOf('_', perci);
-						String name = line.substring(1, nind);
+						String name;
+						if( perci == -1 ) {
+							name = br.readLine();
+						} else {
+							int nind = line.lastIndexOf('_', perci);
+							name = line.substring(1, nind);
+						}
 						
 						Map<String,Integer>	locset;
 						if( !mset.containsKey(name) ) {

@@ -73,6 +73,7 @@ import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.ui.Button;
 import com.google.gwt.user.client.ui.CheckBox;
 import com.google.gwt.user.client.ui.DialogBox;
+import com.google.gwt.user.client.ui.DoubleBox;
 import com.google.gwt.user.client.ui.FileUpload;
 import com.google.gwt.user.client.ui.FormPanel;
 import com.google.gwt.user.client.ui.HTMLPanel;
@@ -2191,6 +2192,104 @@ public class Webfasta implements EntryPoint {
 					}
 					d[x-getMin()] = res;*/
 				}
+			}
+		});
+		vpopup.addItem("Shannon threshold", new Command() {
+			@Override
+			public void execute() {
+				final double[] d = new double[ getDiff() ];
+				Map<Character,Integer>	shanmap = new HashMap<Character,Integer>(); 
+				for( int x = getMin(); x < getMax(); x++ ) {
+					shanmap.clear();
+					int total = val.size();
+					for( int y = 0; y < total; y++ ) {
+						char c = charAt(x, y);
+						int val = 0;
+						if( shanmap.containsKey(c) ) val = shanmap.get(c);
+						shanmap.put( c, val+1 );
+					}
+					double res = 0.0;
+					for( char c : shanmap.keySet() ) {
+						int val = shanmap.get(c);
+						double p = (double)val/(double)total;
+						res -= p*Math.log(p)/Math.log(2.0);
+					}
+					d[x-getMin()] = res;
+				}
+				
+				Browser.getWindow().getConsole().log("ermerm");
+				
+				final CheckBox			cb = new CheckBox("Filter blocks");
+				final IntegerBox		sp = new IntegerBox();
+				sp.setValue( 10 );
+				//final JSpinner 	sp = new JSpinner( new SpinnerNumberModel(10, 2, 100, 1) );
+				sp.setEnabled( false );
+				cb.addValueChangeHandler( new ValueChangeHandler<Boolean>() {
+					@Override
+					public void onValueChange(ValueChangeEvent<Boolean> event) {
+						sp.setEnabled( event.getValue() );	
+					}
+				});
+				
+				final DoubleBox	dbox = new DoubleBox();
+				dbox.setValue( 0.1 );
+				final CheckBox	cbox = new CheckBox("Inverted");
+				
+				DialogBox db = new DialogBox( true, true );
+				VerticalPanel	vp = new VerticalPanel();
+				vp.setSize(400+"px", 50+"px");
+				vp.add( cb );
+				vp.add( sp );
+				db.add( vp );
+				
+				vp.add( cbox );
+				vp.add( dbox );
+				
+				Browser.getWindow().getConsole().log("mu");
+				db.center();
+				//Object[] message = new Object[] { cb, sp };
+				//JOptionPane.showMessageDialog(parentApplet, message);
+				
+				db.addCloseHandler( new CloseHandler<PopupPanel>() {
+					
+					@Override
+					public void onClose(CloseEvent<PopupPanel> event) {
+						double[] td = d;
+						if( cb.getValue() ) {
+							int val = (Integer)sp.getValue();
+							double[] old = d;
+							double sum = 0.0;
+							for( int k = 0; k < val; k++ ) {
+								sum += old[k];
+							}
+							td = new double[ old.length-val ];
+							for( int i = 0; i < d.length; i++ ) {
+								td[i] = sum/(double)val;
+								sum += -td[i]+td[i+val];
+							}
+						}
+						double dval = dbox.getValue();
+						boolean inv = cbox.getValue();
+						for( int x = 0; x < td.length; x++ ) {
+							if( (!inv && td[x] < dval) || (inv && td[x] > dval) ) {
+								for( int y = 0; y < val.size(); y++ ) {
+									setCharAt(x, y, '-');
+								}
+							}
+						}
+						
+						/*Float64ArrayNative fa = Float64ArrayNative.create(td.length);
+						for( int i = 0; i < td.length; i++ ) {
+							fa.set(i, td[i]);
+						}
+						PopupPanel pp = new PopupPanel(true);
+						line( "line", fa, pp.getElement(), 640, 480, "mu", "ma" );
+						pp.center();*/
+						
+						resetMax();
+						draw(xstart, ystart);
+					}
+				});
 			}
 		});
 		vpopup.addItem("Draw Shannon", new Command() {
