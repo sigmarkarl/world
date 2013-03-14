@@ -1,5 +1,8 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ page import="com.google.gwt.user.server.Base64Utils" %>
+<%@ page import="com.google.appengine.api.users.User" %>
+<%@ page import="com.google.appengine.api.users.UserService" %>
+<%@ page import="com.google.appengine.api.users.UserServiceFactory" %>
 
 <!doctype html>
 <!-- The DOCTYPE declaration above will set the    -->
@@ -44,7 +47,18 @@
 	    		}
 	    	}
 	    }
-	}%>
+	} else {
+		UserService userService = UserServiceFactory.getUserService();
+    	User user = userService.getCurrentUser();
+    	if (user != null) {%>
+	    	<meta property="guid" content="<%=user.getUserId()%>" />
+	    	<meta property="logout" content="<%=userService.createLogoutURL(request.getRequestURI())%>" /><%
+      		//pageContext.setAttribute("user", user);
+      	} else {%>
+      		<meta property="login" content="<%=userService.createLoginURL(request.getRequestURI())%>" /><%
+      	}
+	}
+	%>
     <link type="text/css" rel="stylesheet" href="Smasogur.css">
     <title>Short stories</title>
     <script type="text/javascript" src="https://apis.google.com/js/plusone.js">

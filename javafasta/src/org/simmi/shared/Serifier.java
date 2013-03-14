@@ -2413,6 +2413,8 @@ public class Serifier {
 				String cstr = (rstr.length() == 1 ? "0"+rstr : rstr) + (gstr.length() == 1 ? "0"+gstr : gstr) + (bstr.length() == 1 ? "0"+bstr : bstr);
 				//System.err.println( cstr );
 				
+				//ret = line+"[#"+cstr+"]"; //"+sub+"[#"+cstr+"]";
+				//ret = line+"[#FFFFFF]-----[#"+allstr+"]";//;-----[#"+phstr+"]"; //"+sub+"[#"+cstr+"]";
 				if( specOnly ) ret = line+"[#"+allstr+"];"+cont; //"+sub+"[#"+cstr+"]";
 				else ret = line+"[#"+cstr+"];"+cont;
 				//ret = line+"[#FFFFFF]-----[#"+allstr+"]-----[#"+phstr+"]"; //"+sub+"[#"+cstr+"]";

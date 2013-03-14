@@ -32,8 +32,9 @@ public class Guitartuner implements EntryPoint {
 	public native void anal( AudioContext acontext, LocalMediaStream stream, RealtimeAnalyserNode analyser, AudioDestinationNode adst ) /*-{
 		try {
 			var ss = acontext.createMediaStreamSource( stream );
-			ss.connect( analyser );
-			analyser.connect( adst );
+			ss.connect( adst );
+			//ss.connect( analyser );
+			//analyser.connect( adst );
 			
 			$wnd.console.log('jujuuff');
 		} catch( e ) {
@@ -48,7 +49,6 @@ public class Guitartuner implements EntryPoint {
 		final elemental.html.Window 		wnd = Browser.getWindow();
 		Navigator 			nvg = wnd.getNavigator();
 		
-		final AudioContext acontext = wnd.newAudioContext();
 		nvg.webkitGetUserMedia( audio(), new NavigatorUserMediaSuccessCallback() {
 			@Override
 			public boolean onNavigatorUserMediaSuccessCallback(LocalMediaStream stream) {
@@ -58,8 +58,9 @@ public class Guitartuner implements EntryPoint {
 				
 				final Uint8Array ua = ok( 1024 );
 				
-				final RealtimeAnalyserNode rtan = acontext.createAnalyser();
-				rtan.setFftSize( 1024 );
+				final AudioContext acontext = wnd.newAudioContext();
+				//final RealtimeAnalyserNode rtan = acontext.createAnalyser();
+				//rtan.setFftSize( 1024 );
 				/*JavaScriptAudioNode analyser = acontext.createJavaScriptNode(4096);
 				analyser.setOnaudioprocess( new EventListener() {
 					@Override
@@ -73,7 +74,7 @@ public class Guitartuner implements EntryPoint {
 					}
 				});*/
 				
-				anal( acontext, stream, rtan, acontext.getDestination() );
+				anal( acontext, stream, null, acontext.getDestination() );
 				//microphone.connect(analyser, 0,0);
 				//rtan.connect(analyser, 0,0);
 		        //rtan.connect(acontext.getDestination(), 0, 0);
@@ -83,9 +84,10 @@ public class Guitartuner implements EntryPoint {
 					public boolean onRequestAnimationFrameCallback(double time) {
 						if( ra != null ) {
 							//rtan.getByteFrequencyData( ua );
-							rtan.getByteTimeDomainData(ua);
+							//rtan.getByteTimeDomainData(ua);
+							//stream.
 							
-							wnd.getConsole().log(" m "+ua.numberAt( 128 ) );
+							//wnd.getConsole().log(" m "+ua.numberAt( 128 ) );
 							
 							wnd.webkitRequestAnimationFrame( ra );
 							return true;
