@@ -474,12 +474,26 @@ public class Webfasta implements EntryPoint {
 		}
 
 		public void utReplace() {
-			for (int i = 0; i < getLength() / 2; i++) {
+			for (int i = 0; i < getLength(); i++) {
 				char c = charAt(i);
 				if( c == 't' ) setCharAt(i, 'u');
 				else if( c == 'u' ) setCharAt(i, 't');
 				else if( c == 'T' ) setCharAt(i, 'U');
 				else if( c == 'U' ) setCharAt(i, 'T');
+			}
+		}
+		
+		public void caseSwap() {
+			for (int i = 0; i < getLength(); i++) {
+				char c = charAt(i);
+				setCharAt(i, Character.isUpperCase(c) ? Character.toLowerCase(c) : Character.toUpperCase(c) );
+			}
+		}
+		
+		public void upperCase() {
+			for (int i = 0; i < getLength(); i++) {
+				char c = charAt(i);
+				setCharAt(i, Character.toUpperCase(c) );
 			}
 		}
 		
@@ -1798,6 +1812,28 @@ public class Webfasta implements EntryPoint {
 				draw(xstart, ystart);
 			}
 		});
+		epopup.addItem("Case swap", new Command() {
+			@Override
+			public void execute() {
+				for (Sequence seq : val) {
+					if (seq.isSelected()) {
+						seq.caseSwap();
+					}
+				}
+				draw(xstart, ystart);
+			}
+		});
+		epopup.addItem("Uppercase", new Command() {
+			@Override
+			public void execute() {
+				for (Sequence seq : val) {
+					if (seq.isSelected()) {
+						seq.upperCase();
+					}
+				}
+				draw(xstart, ystart);
+			}
+		});
 		epopup.addSeparator();
 		epopup.addItem("Trim names", new Command() {
 			@Override
@@ -2150,6 +2186,63 @@ public class Webfasta implements EntryPoint {
 			@Override
 			public void execute() {
 				basecolors = !basecolors;
+				draw(xstart, ystart);
+			}
+		});
+		vpopup.addSeparator();
+		vpopup.addItem("Pairwise-align wo-gaps", new Command() {
+			@Override
+			public void execute() {
+				Sequence seq1 = null;
+				Sequence seq2 = null;
+				
+				for( int i : selset ) {
+					if( seq1 == null ) seq1 = val.get(i);
+					else {
+						seq2 = val.get(i);
+						break;
+					}
+				}
+				console( "noo" );
+				if( seq1 != null && seq2 != null ) {
+					int max = 0;
+					int i1 = 0;
+					int i2 = 0;
+					
+					console( "starting" );
+					for( int i = 0; i < seq1.getLength()+seq2.getLength()-1; i++ ) {
+						int k1 = Math.max( 0, i - seq2.getLength() );
+						int k2 = Math.max( 0, seq2.getLength() - i );
+						int len = Math.min( seq2.getLength()-k2, seq1.getLength()-k1 );
+						
+						console( "ind "+k1+"  "+k2 );
+						
+						int count = 0;
+						for( int x = 0; x < len; x++ ) {
+							char c1 = seq1.charAt(x+k1);
+							char c2 = seq2.charAt(x+k2);
+							
+							if( c1 == c2 ) count++;
+							else {
+								if( count > max ) {
+									max = count;
+									i1 = k1;
+									i2 = k2;
+								}
+								
+								count = 0;
+							}
+						}
+						
+						if( count > max ) {
+							max = count;
+							i1 = k1;
+							i2 = k2;
+						}
+					}
+					console( i1 + "  " + i2 );
+				}
+				
 				draw(xstart, ystart);
 			}
 		});
