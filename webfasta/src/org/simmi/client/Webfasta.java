@@ -434,13 +434,13 @@ public class Webfasta implements EntryPoint {
 
 		@Override
 		public char charAt(int i) {
-			int ind = i - start;
+			int ind = i;// - start;
 			if (ind >= 0 && ind < getLength())
 				return (char) content.get(seqstart + ind); // char2String.get(
 															// content.charAt(
 															// seqstart+i ) );
 
-			return '-';
+			return ' ';
 		}
 
 		@Override
@@ -784,8 +784,7 @@ public class Webfasta implements EntryPoint {
 			}
 
 			context.setFillStyle("#FFFFFF");
-			context.fillRect(cw - scrollBarWidth, columnHeight, scrollBarWidth,
-					ch);
+			context.fillRect(cw - scrollBarWidth, columnHeight, scrollBarWidth, ch);
 			context.fillRect(0, ch - scrollBarHeight, cw, scrollBarHeight);
 
 			tcontext.setFillStyle("#FFFFFF");
@@ -944,15 +943,11 @@ public class Webfasta implements EntryPoint {
 
 		int xs = Math.max(0, ((xstartLocal + xloc) / basewidth) * basewidth);
 		int ys = Math.max(0, ((ystartLocal + yloc) / unitheight) * unitheight);
-		int xe = ((xstartLocal + xloc + canvasWidth) / basewidth + 1)
-				* basewidth;
-		int ye = Math.min(
-				((ystartLocal + yloc + canvasHeight) / unitheight + 1)
+		int xe = ((xstartLocal + xloc + canvasWidth) / basewidth + 1) * basewidth;
+		int ye = Math.min( ((ystartLocal + yloc + canvasHeight) / unitheight + 1)
 						* unitheight, val.size() * unitheight);
 
-		context.fillRect(xs - xstartLocal, ys - ystartLocal + unitheight, xe
-				- xs, ye - ys);
-
+		context.fillRect(xs - xstartLocal, ys - ystartLocal + unitheight, xe - xs, ye - ys);
 		context.setFillStyle("#222222");
 
 		if (basecolors) {
@@ -968,11 +963,12 @@ public class Webfasta implements EntryPoint {
 				 * context.setFillStyle("#222222"); }
 				 */
 
-				for (int x = xs; x < Math.min(seq.getLength() * basewidth, xe); x += basewidth) {
+				for (int x = xs; x < Math.min(seq.getEnd()/*seq.getLength()*/ * basewidth, xe); x += basewidth) {
 					int k = x / basewidth;
 					int xx = k * basewidth;
 
-					char c = seq.charAt(k);
+					//if( i == 2 ) console( ""+k );
+					char c = seq.charAt(k - seq.getStart());
 					// if( x == xs )
 					// Browser.getWindow().getConsole().log("char "+c);
 					Integer baseloc = mccol.get(c);
@@ -1012,13 +1008,12 @@ public class Webfasta implements EntryPoint {
 					context.setFillStyle("#222222");
 				}
 
-				for (int x = xs; x < Math.min(seq.getLength() * basewidth, xe); x += basewidth) {
+				for (int x = xs; x < Math.min(seq.getEnd() * basewidth, xe); x += basewidth) {
 					int k = x / basewidth;
 					int xx = k * basewidth;
 
-					char c = seq.charAt(k);
-					context.fillText(c + "", (xx - xstartLocal), yy + 2.0
-							* unitheight - 3.0 - ystartLocal);
+					char c = seq.charAt(k - seq.getStart());
+					context.fillText(c + "", (xx - xstartLocal), yy + 2.0 * unitheight - 3.0 - ystartLocal);
 					/*
 					 * if( ann != null && ann[x] != 0 ) { Annotation a =
 					 * seq.getAnnotations().get(ann[x]-1); context.setFillStyle(
@@ -1329,7 +1324,7 @@ public class Webfasta implements EntryPoint {
 	public char charAt(int x, int y) {
 		if (y < val.size()) {
 			Sequence seq = val.get(y);
-			if (x >= seq.getStart() && x < seq.getStart() + seq.getLength()) {
+			if (x >= seq.getStart() && x < seq.getEnd()) {
 				return seq.charAt(x - seq.getStart());
 			}
 		}
@@ -2182,6 +2177,44 @@ public class Webfasta implements EntryPoint {
 				db.center();
 			}
 		});
+		vpopup.addItem("Set offset", new Command() {
+			@Override
+			public void execute() {
+				DialogBox db = new DialogBox();
+				db.setAutoHideEnabled(true);
+				db.setText("Offset");
+
+				final IntegerBox ib = new IntegerBox();
+				ib.addChangeHandler(new ChangeHandler() {
+					@Override
+					public void onChange(ChangeEvent event) {
+						for( Sequence seq : val ) {
+							if( seq.isSelected() ) {
+								seq.setStart(ib.getValue());
+							}
+						}
+						draw(xstart, ystart);
+					}
+				});
+				VerticalPanel vp = new VerticalPanel();
+				vp.add(ib);
+
+				HorizontalPanel hp = new HorizontalPanel();
+				/*Button wlb = new Button("<<");
+				hp.add(wlb);
+				Button slb = new Button("<");
+				hp.add(slb);
+				Button srb = new Button(">");
+				hp.add(srb);
+				Button wrb = new Button(">>");
+				hp.add(wrb);*/
+
+				vp.add(hp);
+
+				db.add(vp);
+				db.center();
+			}
+		});
 		vpopup.addItem("Base colors", new Command() {
 			@Override
 			public void execute() {
@@ -2196,14 +2229,13 @@ public class Webfasta implements EntryPoint {
 				Sequence seq1 = null;
 				Sequence seq2 = null;
 				
-				for( int i : selset ) {
-					if( seq1 == null ) seq1 = val.get(i);
+				for( Sequence seq : val ) {
+					if( seq1 == null ) seq1 = seq;
 					else {
-						seq2 = val.get(i);
+						seq2 = seq;
 						break;
 					}
-				}
-				console( "noo" );
+				}				
 				if( seq1 != null && seq2 != null ) {
 					int max = 0;
 					int i1 = 0;
@@ -2214,8 +2246,6 @@ public class Webfasta implements EntryPoint {
 						int k1 = Math.max( 0, i - seq2.getLength() );
 						int k2 = Math.max( 0, seq2.getLength() - i );
 						int len = Math.min( seq2.getLength()-k2, seq1.getLength()-k1 );
-						
-						console( "ind "+k1+"  "+k2 );
 						
 						int count = 0;
 						for( int x = 0; x < len; x++ ) {
