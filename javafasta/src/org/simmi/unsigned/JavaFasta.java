@@ -1656,18 +1656,6 @@ public class JavaFasta extends JApplet {
 		};
 	}
 	
-	public void removeAllGaps( List<Sequence> seqlist ) {
-		for( Sequence seq : seqlist ) {
-			int i = 0;
-			while( i < seq.sb.length() ) {
-				if( seq.sb.charAt(i) == '-' ) seq.sb.deleteCharAt(i);
-				else i++;
-			}
-		}
-		
-		serifier.checkMaxMin();
-	}
-	
 	int[]	currentRowSelection;
 	Point	p;
 	public void initGui( Container cnt ) {
@@ -2817,7 +2805,7 @@ public class JavaFasta extends JApplet {
 					Sequence seq = serifier.lseq.get( k );
 					seqlist.add( seq );
 				}
-				removeAllGaps( seqlist );
+				serifier.removeAllGaps( seqlist );
 				updateView();
 				
 				c.repaint();

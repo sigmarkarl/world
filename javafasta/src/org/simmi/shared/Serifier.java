@@ -794,6 +794,18 @@ public class Serifier {
 		}
 	}
 	
+	public void removeAllGaps( List<Sequence> seqlist ) {
+		for( Sequence seq : seqlist ) {
+			int i = 0;
+			while( i < seq.sb.length() ) {
+				if( seq.sb.charAt(i) == '-' ) seq.sb.deleteCharAt(i);
+				else i++;
+			}
+		}
+		
+		checkMaxMin();
+	}
+	
 	public void removeGaps( List<Sequence> seqlist ) {
 		int min = Integer.MAX_VALUE;
 		int max = Integer.MIN_VALUE;
@@ -1105,7 +1117,7 @@ public class Serifier {
 			List<String>	allloclist = new ArrayList<String>();
 			Set<String>		alllocset = new HashSet<String>();
 			
-			/*File seqf = new File( args[i+1] );
+			File seqf = new File( args[i+2] );
 			FileReader seqfr = new FileReader( seqf );
 			BufferedReader seqbr = new BufferedReader( seqfr );
 			String sline = seqbr.readLine();
@@ -1122,7 +1134,7 @@ public class Serifier {
 				sline = seqbr.readLine();
 			}
 			seqfr.close();
-			allloclist.addAll( alllocset );*/
+			allloclist.addAll( alllocset );
 			
 			FileReader fr = new FileReader( inf );
 			BufferedReader br = new BufferedReader( fr );
@@ -1135,7 +1147,7 @@ public class Serifier {
 					spec = spec.substring(1, id);
 					
 					// genotypespec
-					spec = br.readLine();
+					//spec = br.readLine();
 					
 					String allloc = split[1];
 					id = allloc.indexOf("_lenfilt");
@@ -1274,14 +1286,28 @@ public class Serifier {
 				double val = 0;
 				int count = 0;
 				for( String allloc : allloclist) {
+					//System.err.println( allloc + "  " + loc );
+					//System.err.println( snaedisheatmap );
 					if( isin( allloc, loc, tval ) ) {
-					//if( allloc.contains(loc) ) {
-						val += snaedisheatmap.get(allloc);
-						count++;
+						
+						//if( allloc.contains(loc) ) {
+							val += snaedisheatmap.get(allloc);
+							count++;
+						//}
 					}
 				}
 				val /= count;
-				fw.write( "\t"+Math.round(10.0*val)/10.0 );
+				
+				double var = 0.0;
+				for( String allloc : allloclist) {
+					if( isin( allloc, loc, tval ) ) {
+						double diff = val-snaedisheatmap.get(allloc);
+						var = diff*diff;
+					}
+				}
+				var /= count;
+				
+				fw.write( "\t"+Math.round(10.0*val)/10.0+"+-"+Math.round(10.0*Math.sqrt(var))/10.0 );
 				avg += val;
 			}
 			fw.write( "\t"+Math.round(10.0*avg/allloclist.size())/10.0 );
@@ -1299,7 +1325,18 @@ public class Serifier {
 					}
 				}
 				val /= count;
-				fw.write( "\t"+Math.round(10.0*val)/10.0 );
+				
+				double var = 0.0;
+				for( String allloc : allloclist) {
+					if( isin( allloc, loc, tval ) ) {
+						double diff = val-snaedisphmap.get(allloc);
+						var = diff*diff;
+					}
+				}
+				var /= count;
+				
+				//fw.write( "\t"+Math.round(10.0*val)/10.0 );
+				fw.write( "\t"+Math.round(10.0*val)/10.0+"+-"+Math.round(10.0*Math.sqrt(var))/10.0 );
 				avg += val;
 			}
 			fw.write( "\t"+Math.round(10.0*avg/allloclist.size())/10.0 );
@@ -1416,6 +1453,24 @@ public class Serifier {
 			i = arglist.indexOf("-primer");
 			String primer = args[i+1];
 			extractSequences(inf, tagmap, primer, outf);
+		}
+		
+		i = arglist.indexOf("-removegaps");
+		if( i >= 0 ) {
+			for( Sequences seqs : this.sequences ) {
+				appendSequenceInJavaFasta( seqs, null, true);
+			}
+			removeGaps( lseq );
+			writeFasta( lseq, new FileWriter( outf ), null );
+		}
+		
+		i = arglist.indexOf("-removeallgaps");
+		if( i >= 0 ) {
+			for( Sequences seqs : this.sequences ) {
+				appendSequenceInJavaFasta( seqs, null, true);
+			}
+			removeAllGaps( lseq );
+			writeFasta( lseq, new FileWriter( outf ), null );
 		}
 		
 		i = arglist.indexOf("-cut");
@@ -1541,8 +1596,12 @@ public class Serifier {
 		i = arglist.indexOf("-join");
 		if( i >= 0 ) {
 			boolean val = true;
-			if( i+1 < args.length && !args[i+1].startsWith("-") ) val = false;
-			List<Sequences> retlseqs = join( outf, this.sequences, val );
+			String mappingfile = null;
+			if( i+1 < args.length && !args[i+1].startsWith("-") ) {
+				//val = false;
+				mappingfile = args[i+1];
+			}
+			List<Sequences> retlseqs = join( outf, this.sequences, val, mappingfile );
 			/*for( Sequences seqs : retlseqs ) {
 				System.err.println( seqs.getName() );
 				appendSequenceInJavaFasta( seqs, null, val);
@@ -1606,6 +1665,11 @@ public class Serifier {
 				}
 			}
 			fw.close();
+		}
+		
+		i = arglist.indexOf("-addtag");
+		if( i >= 0 ) {
+			String addtag = args[i+1];
 		}
 		
 		i = arglist.indexOf("-lenfilt");
@@ -2278,7 +2342,7 @@ public class Serifier {
 		}
 	}
 	
-	public List<Sequences> join( File f, List<Sequences> lseqs, boolean simple ) {
+	public List<Sequences> join( File f, List<Sequences> lseqs, boolean simple, String mappingfile ) {
 		List<Sequences>	retlseq = new ArrayList<Sequences>();
 		
 		initMaps();
@@ -2287,6 +2351,24 @@ public class Serifier {
 		Map[] colormaps = {snaedis1colormap,snaedis2colormap,snaedis3colormap,snaedis4colormap,snaedis5colormap,snaedis6colormap,snaedis7colormap,snaedis8colormap};
 		
 		try {
+			Map<String,String>	ftagmap = new HashMap<String,String>();
+			
+			if( mappingfile != null ) {
+				File ff = new File( mappingfile );
+				FileReader	fr = new FileReader( ff );
+				BufferedReader	br2 = new BufferedReader( fr );
+				String nline = br2.readLine();
+				while( nline != null ) {
+					String[] split = nline.split("\t");
+					
+					ftagmap.put( split[0], split[1] );
+					
+					nline = br2.readLine();
+				}
+				br2.close();
+				fr.close();
+			}
+			
 			FileWriter fw = new FileWriter( f );
 			String seqtype = "nucl";
 			String joinname = f.getName();
@@ -2301,7 +2383,12 @@ public class Serifier {
 				String line = br.readLine();
 				while( line != null ) {
 					if( line.startsWith(">") ) {
-						if( simple ) {
+						if( mappingfile != null ) {							
+							fw.write( line+"\n" );
+							line = br.readLine();
+							if( ftagmap.containsKey(s.getName()) ) fw.write( ftagmap.get(s.getName())+line+"\n" );
+							else fw.write( "simmi"+line+"\n" );
+						} else if( simple ) {
 							fw.write( line.replace( ">", ">"+s.getName().replace(".fna", "")+"_" )+"\n" );
 						} else {
 							int pe = line.indexOf('%');
