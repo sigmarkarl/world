@@ -19,6 +19,11 @@ import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
 import com.google.gwt.event.logical.shared.ResizeEvent;
 import com.google.gwt.event.logical.shared.ResizeHandler;
+import com.google.gwt.http.client.Request;
+import com.google.gwt.http.client.RequestBuilder;
+import com.google.gwt.http.client.RequestCallback;
+import com.google.gwt.http.client.RequestException;
+import com.google.gwt.http.client.Response;
 import com.google.gwt.i18n.client.DateTimeFormat;
 import com.google.gwt.json.client.JSONNumber;
 import com.google.gwt.json.client.JSONObject;
@@ -44,6 +49,8 @@ import com.google.gwt.user.datepicker.client.DateBox;
 import com.google.gwt.user.datepicker.client.DatePicker;
 import com.google.gwt.user.datepicker.client.DefaultCalendarView;
 import com.google.gwt.user.datepicker.client.MonthSelector;
+
+import elemental.client.Browser;
 
 /**
  * Entry point classes define <code>onModuleLoad()</code>.
@@ -780,6 +787,25 @@ public class Frislbok implements EntryPoint {
 	VerticalPanel	sibanchors;
 	public void onModuleLoad() {
 		final RootPanel root = RootPanel.get();
+		
+		RequestBuilder rb = new RequestBuilder(RequestBuilder.GET,"http://www.islendingabok.is/is_app/");
+		String requestData = "login/user=sigmar1&pwd=linsan sonar";
+		try {
+			rb.sendRequest( requestData, new RequestCallback() {
+				@Override
+				public void onResponseReceived(Request request, Response response) {
+					Browser.getWindow().getConsole().log( response.getText() );
+				}
+				
+				@Override
+				public void onError(Request request, Throwable exception) {
+					Browser.getWindow().getConsole().log( exception.getMessage() );
+				}
+			});
+		} catch (RequestException e1) {
+			e1.printStackTrace();
+		}
+		
 		
 		Style rootstyle = root.getElement().getStyle();
 		rootstyle.setMargin(0.0, Unit.PX);
