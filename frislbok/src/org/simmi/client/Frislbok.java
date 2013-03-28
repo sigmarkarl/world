@@ -19,15 +19,12 @@ import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
 import com.google.gwt.event.logical.shared.ResizeEvent;
 import com.google.gwt.event.logical.shared.ResizeHandler;
-import com.google.gwt.http.client.Request;
-import com.google.gwt.http.client.RequestBuilder;
-import com.google.gwt.http.client.RequestCallback;
-import com.google.gwt.http.client.RequestException;
-import com.google.gwt.http.client.Response;
 import com.google.gwt.i18n.client.DateTimeFormat;
 import com.google.gwt.json.client.JSONNumber;
 import com.google.gwt.json.client.JSONObject;
+import com.google.gwt.json.client.JSONParser;
 import com.google.gwt.json.client.JSONString;
+import com.google.gwt.json.client.JSONValue;
 import com.google.gwt.user.client.Timer;
 import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.rpc.AsyncCallback;
@@ -379,6 +376,7 @@ public class Frislbok implements EntryPoint {
 		}*/
 	}
 	
+	Map<String,Person>	islbokidPerson = new HashMap<String,Person>();
 	Map<String,Person>	fbuidPerson = new HashMap<String,Person>();
 	public void newCurrentPerson( String puid, String username, String name, String dateOfBirth, String gender, JsArrayMixed family ) {	
 		//Person person = new Person( name, dateOfBirth, gender );
@@ -777,6 +775,7 @@ public class Frislbok implements EntryPoint {
 		}
 	}
 
+	String			islbok_session;
 	TextBox			personName;
 	DateBox			dateBox;
 	RadioButton		maleButton;
@@ -788,23 +787,109 @@ public class Frislbok implements EntryPoint {
 	public void onModuleLoad() {
 		final RootPanel root = RootPanel.get();
 		
-		RequestBuilder rb = new RequestBuilder(RequestBuilder.GET,"http://www.islendingabok.is/is_app/");
-		String requestData = "login/user=sigmar1&pwd=linsan sonar";
+		String user = "sigmar1";
+		String pass = "linsan sonar";
+		
+		Browser.getWindow().getConsole().log( "about to login" );
+		frislbokService.login( user, pass, new AsyncCallback<String>() {
+			@Override
+			public void onFailure(Throwable caught) {
+				Browser.getWindow().getConsole().log( caught.getMessage() );
+			}
+
+			@Override
+			public void onSuccess(String result) {
+				Browser.getWindow().getConsole().log( result );
+				String[] split = result.split(",");
+				final String session = split[0].trim();
+				final String islbokid = split[1].trim();
+				
+				islbok_session = session;
+				
+				frislbokService.fetchFromIslbokId( islbokid, new AsyncCallback<Person>() {
+					@Override
+					public void onFailure(Throwable caught) {
+						
+					}
+
+					@Override
+					public void onSuccess(Person result) {
+						if( result == null ) {
+							frislbokService.islbok_get( session, islbokid, new AsyncCallback<String>() {
+								@Override
+								public void onFailure(Throwable caught) {
+									Browser.getWindow().getConsole().log( caught.getMessage() );
+								}
+
+								@Override
+								public void onSuccess(String result) {
+									Browser.getWindow().getConsole().log( result );
+									JSONValue jsonval = JSONParser.parseLenient( result );
+									JSONObject jsonobj = jsonval.isObject();
+									if( jsonobj != null ) {
+										JSONString name = jsonobj.get("name").isString();
+										JSONString dob = jsonobj.get("dob").isString();
+										JSONNumber gender = jsonobj.get("gender").isNumber();
+										
+										String dateofbirth = dob.stringValue();
+										DateTimeFormat dateformat = null;
+										//DateTimeFormat.PredefinedFormat.YEAR_MONTH_DAY
+										if( dateofbirth.length() == 8 ) dateformat = DateTimeFormat.getFormat("yyyyMMdd");
+										else if( dateofbirth.length() == 6 ) dateformat = DateTimeFormat.getFormat("yyyyMM");
+										else if( dateofbirth.length() == 4 ) dateformat = DateTimeFormat.getFormat("yyyy");
+										
+										Browser.getWindow().getConsole().log("ok" + dateformat.getPattern() + "  " + dateofbirth);
+										Date date = dateformat == null ? null : dateformat.parse(dateofbirth);
+										
+										String namestr = name.stringValue();
+										int genderval = (int)gender.doubleValue();
+										final Person person = new Person( namestr, date, genderval );
+										
+										frislbokService.savePerson( person, new AsyncCallback<String>() {
+											@Override
+											public void onSuccess(String result) {
+												person.setKey( result );
+												setCurrentPerson( person );
+											}
+											
+											@Override
+											public void onFailure(Throwable caught) {
+												
+											}
+										});
+									}
+								}
+							});
+						} else {
+							setCurrentPerson( result );
+						}
+					}
+				});
+				
+				//Browser.getWindow().getConsole().log( "about to islget"+session+" "+uid );
+			}
+		});
+		
+		/*String query = "login?user="+user+"&pwd="+URL.encode(pass);
+		String qurl = "http://www.islendingabok.is/ib_app/"+query;
+		Browser.getWindow().getConsole().log( qurl );
+		RequestBuilder rb = new RequestBuilder(RequestBuilder.GET,qurl);
+		String requestData = "";
 		try {
 			rb.sendRequest( requestData, new RequestCallback() {
 				@Override
 				public void onResponseReceived(Request request, Response response) {
-					Browser.getWindow().getConsole().log( response.getText() );
+					Browser.getWindow().getConsole().log( "ok "+response.getText() );
 				}
 				
 				@Override
 				public void onError(Request request, Throwable exception) {
-					Browser.getWindow().getConsole().log( exception.getMessage() );
+					Browser.getWindow().getConsole().log( "er "+exception.getMessage() );
 				}
 			});
 		} catch (RequestException e1) {
 			e1.printStackTrace();
-		}
+		}*/
 		
 		
 		Style rootstyle = root.getElement().getStyle();

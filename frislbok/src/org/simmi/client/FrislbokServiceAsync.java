@@ -16,4 +16,13 @@ public interface FrislbokServiceAsync {
 
 	void savePersonArray(Person[] persons, AsyncCallback<String> callback);
 
+	void login(String user, String password, AsyncCallback<String> callback);
+
+	void islbok_get(String session, String id, AsyncCallback<String> callback);
+
+	void islbok_children(String session, String id,
+			AsyncCallback<String> callback);
+
+	void fetchFromIslbokId(String islbokid, AsyncCallback<Person> callback);
+
 }

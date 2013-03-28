@@ -1,21 +1,49 @@
 package org.simmi.client;
 
-import java.io.Serializable;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
 
-public class Person implements Serializable {
-	private static final long serialVersionUID = 1L;
+import com.google.gwt.user.client.rpc.IsSerializable;
+
+public class Person implements IsSerializable {
+	//private static final long serialVersionUID = 1L;
 	
 	String	name;
 	int		gender;
 	Date	dateOfBirth;
 	String	comment;
 	String	key;
+	String	islbokid;
+	String	islbokuser;
+	String	islbokpass;
 	String	facebookid;
 	String	facebookusername;
 	String	fbwriter;
+	
+	public String getIslbokid() {
+		return islbokid;
+	}
+
+	public void setIslbokid(String islbokid) {
+		this.islbokid = islbokid;
+	}
+
+	public String getIslbokuser() {
+		return islbokuser;
+	}
+
+	public void setIslbokuser(String islbokuser) {
+		this.islbokuser = islbokuser;
+	}
+
+	public String getIslbokpass() {
+		return islbokpass;
+	}
+
+	public void setIslbokpass(String islbokpass) {
+		this.islbokpass = islbokpass;
+	}
 	
 	public String getFacebookid() {
 		return facebookid;
@@ -97,9 +125,14 @@ public class Person implements Serializable {
 	Person			mother;
 	Set<Person>		children;
 	Set<Person>		siblings;
+	Set<Person>		mates;
 	
 	public boolean isMale() {
-		return true;
+		return gender == 1;
+	}
+	
+	public boolean isFemale() {
+		return gender == 2;
 	}
 	
 	public Person getFather() {

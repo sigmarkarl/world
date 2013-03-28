@@ -19,6 +19,10 @@ public interface FrislbokService extends RemoteService {
 		}
 	}
 	
+	public String islbok_children( String session, String id );
+	public String islbok_get( String session, String id );
+	public String login( String user, String password );
+	public Person fetchFromIslbokId( String islbokid );
 	public Person fetchFromFacebookId( String uid );
 	public Person fetchFromKeyString( String key );
 	//public Person[] fetchFromKeySet( Set<Key> keyset );

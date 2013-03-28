@@ -1,5 +1,11 @@
 package org.simmi.server;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLEncoder;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
@@ -19,6 +25,7 @@ import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.api.datastore.PreparedQuery;
 import com.google.appengine.api.datastore.Query;
 import com.google.appengine.api.datastore.Query.FilterOperator;
+import com.google.appengine.api.datastore.Query.FilterPredicate;
 import com.google.gwt.user.server.rpc.RemoteServiceServlet;
 
 public class FrislbokServiceImpl extends RemoteServiceServlet implements FrislbokService {
@@ -30,7 +37,8 @@ public class FrislbokServiceImpl extends RemoteServiceServlet implements Frislbo
 		
 		DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
 		Query query = new Query("person");
-		query.addFilter("facebookid", FilterOperator.EQUAL, uid);
+		FilterPredicate	filter = new FilterPredicate("islbokid", FilterOperator.EQUAL, uid);
+		query.setFilter( filter );
 		PreparedQuery pq = datastore.prepare( query );
 		List<Entity> personEntities = pq.asList( FetchOptions.Builder.withDefaults() );
 		
@@ -40,8 +48,8 @@ public class FrislbokServiceImpl extends RemoteServiceServlet implements Frislbo
 			Date 	dateOfBirth = (Date)e.getProperty("dateofbirth");
 			Long 	gender = (Long)e.getProperty("gender");
 			String	comment = (String)e.getProperty("comment");
-			String	fatherKey = (String)e.getProperty("father");
-			String	motherKey = (String)e.getProperty("mother");
+			//String	fatherKey = (String)e.getProperty("father");
+			//String	motherKey = (String)e.getProperty("mother");
 			String	fbuser = (String)e.getProperty("fbuser");
 			String	fbwriter = (String)e.getProperty("fbwriter");
 			
@@ -151,5 +159,117 @@ public class FrislbokServiceImpl extends RemoteServiceServlet implements Frislbo
 		}
 		
 		return null;
+	}
+
+	@Override
+	public String login(String user, String password) {
+		try {
+			String query = "login?user="+user+"&pwd="+URLEncoder.encode( password, "UTF8" );
+			//String query = URLEncoder.encode( stuff, "UTF8" );
+			URL url = new URL( "http://www.islendingabok.is/ib_app/"+query );
+			//System.err.println( query );
+			InputStream is = url.openStream();
+			ByteArrayOutputStream	baos = new ByteArrayOutputStream();
+			
+			int c = is.read();
+			while( c != -1 ) {
+				baos.write( c );
+				c = is.read();
+			}
+			is.close();
+			return baos.toString();
+		} catch (MalformedURLException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+
+	@Override
+	public String islbok_get(String session, String id) {
+		try {
+			String query = "get?session="+session+"&id="+id;
+			//String query = URLEncoder.encode( stuff, "UTF8" );
+			String urlstr = "http://www.islendingabok.is/ib_app/"+query;
+			
+			URL url = new URL( urlstr );
+			InputStream is = url.openStream();
+			ByteArrayOutputStream	baos = new ByteArrayOutputStream();
+			
+			int c = is.read();
+			while( c != -1 ) {
+				baos.write( c );
+				c = is.read();
+			}
+			is.close();
+			return baos.toString( "iso-8859-1" );
+		} catch (MalformedURLException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+
+	@Override
+	public String islbok_children(String session, String id) {
+		try {
+			String query = "children?session="+session+"&id="+id;
+			//String query = URLEncoder.encode( stuff, "UTF8" );
+			String urlstr = "http://www.islendingabok.is/ib_app/"+query;
+			
+			URL url = new URL( urlstr );
+			InputStream is = url.openStream();
+			ByteArrayOutputStream	baos = new ByteArrayOutputStream();
+			
+			int c = is.read();
+			while( c != -1 ) {
+				baos.write( c );
+				c = is.read();
+			}
+			is.close();
+			return baos.toString( "iso-8859-1" );
+		} catch (MalformedURLException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+
+	@Override
+	public Person fetchFromIslbokId(String islbokid) {
+		Person retPerson = null;
+		
+		DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
+		Query query = new Query("person");
+		FilterPredicate	filter = new FilterPredicate("islbokid", FilterOperator.EQUAL, islbokid);
+		query.setFilter( filter );
+		PreparedQuery pq = datastore.prepare( query );
+		List<Entity> personEntities = pq.asList( FetchOptions.Builder.withDefaults() );
+		
+		if( personEntities.size() > 0 ) {
+			Entity 	e = personEntities.get(0);
+			String 	name = (String)e.getProperty("name");
+			Date 	dateOfBirth = (Date)e.getProperty("dateofbirth");
+			Long 	gender = (Long)e.getProperty("gender");
+			String	comment = (String)e.getProperty("comment");
+			/*String	fatherKey = (String)e.getProperty("father");
+			String	motherKey = (String)e.getProperty("mother");
+			String	fbuser = (String)e.getProperty("fbuser");
+			String	fbwriter = (String)e.getProperty("fbwriter");*/
+			
+			retPerson = new Person( name, dateOfBirth, gender.intValue() );
+			retPerson.setComment( comment );
+			retPerson.setKey( KeyFactory.keyToString(e.getKey()) );
+			retPerson.setIslbokid( islbokid );
+			//retPerson.setFacebookUsername( fbuser );
+			//retPerson.setFbwriter( fbwriter );
+			
+			return retPerson;
+		}
+		
+		return retPerson;
 	}
 }
