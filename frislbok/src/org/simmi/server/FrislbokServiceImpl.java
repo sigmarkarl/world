@@ -255,17 +255,24 @@ public class FrislbokServiceImpl extends RemoteServiceServlet implements Frislbo
 			Date 	dateOfBirth = (Date)e.getProperty("dateofbirth");
 			Long 	gender = (Long)e.getProperty("gender");
 			String	comment = (String)e.getProperty("comment");
-			/*String	fatherKey = (String)e.getProperty("father");
+			String	fatherKey = (String)e.getProperty("father");
 			String	motherKey = (String)e.getProperty("mother");
 			String	fbuser = (String)e.getProperty("fbuser");
-			String	fbwriter = (String)e.getProperty("fbwriter");*/
+			String	fbwriter = (String)e.getProperty("fbwriter");
 			
 			retPerson = new Person( name, dateOfBirth, gender.intValue() );
 			retPerson.setComment( comment );
 			retPerson.setKey( KeyFactory.keyToString(e.getKey()) );
 			retPerson.setIslbokid( islbokid );
-			//retPerson.setFacebookUsername( fbuser );
-			//retPerson.setFbwriter( fbwriter );
+			retPerson.setFacebookUsername( fbuser );
+			retPerson.setFbwriter( fbwriter );
+			
+			Person mother = new Person();
+			mother.setKey( motherKey );
+			retPerson.setMother( mother );
+			Person father = new Person();
+			father.setKey( fatherKey );
+			retPerson.setFather( father );
 			
 			return retPerson;
 		}
