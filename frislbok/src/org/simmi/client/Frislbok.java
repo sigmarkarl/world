@@ -20,6 +20,7 @@ import com.google.gwt.event.dom.client.ClickHandler;
 import com.google.gwt.event.logical.shared.ResizeEvent;
 import com.google.gwt.event.logical.shared.ResizeHandler;
 import com.google.gwt.i18n.client.DateTimeFormat;
+import com.google.gwt.json.client.JSONArray;
 import com.google.gwt.json.client.JSONNumber;
 import com.google.gwt.json.client.JSONObject;
 import com.google.gwt.json.client.JSONParser;
@@ -306,7 +307,7 @@ public class Frislbok implements EntryPoint {
 	
 	int		fbCount = 0;
 	Person	currentPerson;
-	public void setCurrentPerson( Person person ) {
+	public void setCurrentPerson( final Person person ) {
 		//Window.alert( person.getName() + " " + person.getDateOfBirth() + " " + person.getGender() );
 		
 		removeCurrentChilds();
@@ -327,7 +328,7 @@ public class Frislbok implements EntryPoint {
 			facebookAnchor.setEnabled( false );
 		}
 		
-		Person mother = person.getMother();
+		final Person mother = person.getMother();
 		if( mother == null ) {
 			motherAnchor.setText("Skrá");
 			//motherAnchor.setHref("");
@@ -336,15 +337,16 @@ public class Frislbok implements EntryPoint {
 			if( motherName != null && motherName.length() > 0 ) {
 				motherAnchor.setText( motherName );
 			} else {
-				motherAnchor.setText( "Nafnlaus" );
-				if( mother.getIslbokid() != null ) recursiveIslbokFetch( mother.getIslbokid(), person );
+				if( mother.getIslbokid() != null ) {
+					if( mother.getIslbokid().equals("-10") ) motherAnchor.setText( "Skra" );
+					else recursiveIslbokFetch( mother.getIslbokid(), person );
+				} else motherAnchor.setText( "Nafnlaus" );
 			}
 			//motherAnchor.setText( motherName != null && motherName.length() > 0 ? motherName : "Nafnlaus" );
 			//motherAnchor.setHref( mother.getKey() );
 		}
 		
-		Person father = person.getFather();
-		Browser.getWindow().getConsole().log("ok "+father);
+		final Person father = person.getFather();
 		if( father == null ) {
 			fatherAnchor.setText("Skrá");
 			//fatherAnchor.setHref("");
@@ -352,26 +354,149 @@ public class Frislbok implements EntryPoint {
 			//recursiveIslbokFetch(islbokid, child)
 		} else {
 			String fatherName = father.getName();
+			//Browser.getWindow().getConsole().log("ok "+fatherName+" n "+father.getIslbokid());
 			if( fatherName != null && fatherName.length() > 0 ) {
 				fatherAnchor.setText(  fatherName );
 			} else {
-				fatherAnchor.setText( "Nafnlaus" );
-				if( father.getIslbokid() != null ) recursiveIslbokFetch( father.getIslbokid(), person );
+				//fatherAnchor.setText( "Nafnlaus" );
+				if( father.getIslbokid() != null ) {
+					if( father.getIslbokid().equals("-10") ) fatherAnchor.setText( "Skra" );
+					else recursiveIslbokFetch( father.getIslbokid(), person );
+				} else fatherAnchor.setText( "Nafnlaus" );
 			}
 			//fatherAnchor.setHref( father.getKey() );
 		}
 		
 		Set<Person> children = person.getChildren();
 		if( children == null ) {
-			
+			frislbokService.islbok_children( islbok_session, person.getIslbokid(), new AsyncCallback<String>() {
+				@Override
+				public void onFailure(Throwable caught) {}
+				
+				@Override
+				public void onSuccess(String result) {
+					JSONValue 	jsonval = JSONParser.parseLenient( result );
+					JSONArray	jsonarray = jsonval.isArray();
+					if( jsonarray != null ) {
+						for( int i = 0; i < jsonarray.size(); i++ ) {
+							JSONValue jsonvalue = jsonarray.get(i);
+							JSONObject jsonobj = jsonvalue.isObject();
+							if( jsonobj != null ) {
+								Person child = jsonPersonParse( jsonobj );
+								addCurrentChild( child );
+							}
+						}
+					}
+				}
+			});
 		} else {
 			for( Person child : children ) {
 				String childName = child.getName();
+				//Browser.getWindow().getConsole().log( childName );
 				if( childName == null || childName.length() == 0 ) {
-					if( child.getIslbokid() != null ) recursiveIslbokFetch( child.getIslbokid(), null );
-				}
+					if( child.getIslbokid() != null ) {
+						recursiveIslbokFetchChilds( child.getIslbokid() );
+					}
+				} else addCurrentChild( child );
 			}
 		}
+		
+		Set<Person> siblings = person.getSiblings();
+		if( siblings == null ) {
+			final String motherislbokid = mother.getIslbokid();
+			//Browser.getWindow().getConsole().log( "bl " + motherislbokid );
+			frislbokService.islbok_children(islbok_session, motherislbokid, new AsyncCallback<String>() {
+				@Override
+				public void onFailure(Throwable caught) {}
+
+				@Override
+				public void onSuccess(String result) {
+					//Browser.getWindow().getConsole().log( "bl " + result + " " + motherislbokid );
+					JSONValue 	jsonval = JSONParser.parseLenient( result );
+					JSONArray	jsonarray = jsonval.isArray();
+					if( jsonarray != null ) {
+						for( int i = 0; i < jsonarray.size(); i++ ) {
+							JSONValue jsonvalue = jsonarray.get(i);
+							JSONObject jsonobj = jsonvalue.isObject();
+							if( jsonobj != null ) {
+								Person child = jsonPersonParse( jsonobj );
+								person.addSibling( child );
+								//Browser.getWindow().getConsole().log( sibling.getName() + "  " + sibling.getMother().getIslbokid() + "  " + person.getMother().getIslbokid() );
+								if( mother.getIslbokid().equals(child.getMother().getIslbokid()) ) {
+									mother.addChild( child );
+								}
+							}
+						}
+					}
+				}
+			});
+			Browser.getWindow().getConsole().log( "ft " + father.getIslbokid() );
+			frislbokService.islbok_children(islbok_session, father.getIslbokid(), new AsyncCallback<String>() {
+				@Override
+				public void onFailure(Throwable caught) {}
+
+				@Override
+				public void onSuccess(String result) {
+					JSONValue 	jsonval = JSONParser.parseLenient( result );
+					JSONArray	jsonarray = jsonval.isArray();
+					if( jsonarray != null ) {
+						for( int i = 0; i < jsonarray.size(); i++ ) {
+							JSONValue jsonvalue = jsonarray.get(i);
+							JSONObject jsonobj = jsonvalue.isObject();
+							if( jsonobj != null ) {
+								Person child = jsonPersonParse( jsonobj );
+								person.addSibling( child );
+								//Browser.getWindow().getConsole().log( sibling.getName() + "  " + sibling.getMother().getIslbokid() + "  " + person.getMother().getIslbokid() );
+								if( father.getIslbokid().equals(child.getFather().getIslbokid()) ) {
+									father.addChild( child );
+								}
+							}
+						}
+					}
+				}
+			});
+			/*frislbokService.islbok_siblings( islbok_session, person.getIslbokid(), new AsyncCallback<String>() {
+				@Override
+				public void onFailure(Throwable caught) {}
+				
+				@Override
+				public void onSuccess(String result) {
+					Browser.getWindow().getConsole().log( "siblings " + result );
+					JSONValue 	jsonval = JSONParser.parseLenient( result );
+					JSONArray	jsonarray = jsonval.isArray();
+					if( jsonarray != null ) {
+						for( int i = 0; i < jsonarray.size(); i++ ) {
+							JSONValue jsonvalue = jsonarray.get(i);
+							JSONObject jsonobj = jsonvalue.isObject();
+							if( jsonobj != null ) {
+								Person sibling = jsonPersonParse( jsonobj );
+								person.addSibling( sibling );
+								//Browser.getWindow().getConsole().log( sibling.getName() + "  " + sibling.getMother().getIslbokid() + "  " + person.getMother().getIslbokid() );
+								if( person.getMother().getIslbokid().equals(sibling.getMother().getIslbokid()) ) {
+									person.getMother().addChild( sibling );
+								}
+								if( person.getFather().getIslbokid().equals(sibling.getFather().getIslbokid()) ) {
+									person.getFather().addChild( sibling );
+								}
+							}
+						}
+					}
+					if( person.getMother().getChildren() == null ) {
+						
+					}
+					//Browser.getWindow().getConsole().log( person.getMother().getName() + "  " + person.getMother().getChildren().size() );
+				}
+			});*/
+		}/* else {
+			for( Person sibling : siblings ) {
+				String siblingName = sibling.getName();
+				if( childName == null || childName.length() == 0 ) {
+					if( child.getIslbokid() != null ) {
+						recursiveIslbokFetchChilds( child.getIslbokid() );
+					}
+				} else addCurrentChild( person );
+			}
+		}*/
 	}
 	
 	public void removeCurrentChilds() {
@@ -386,7 +511,7 @@ public class Frislbok implements EntryPoint {
 				setCurrentPerson( child );
 			}
 		});
-		childrenPanel.insert( childAnchor, 1 );
+		childrenPanel.insert( childAnchor, childrenPanel.getWidgetCount()-1 );
 	}
 	
 	public void setCurrentMother( Person mother ) {
@@ -811,7 +936,83 @@ public class Frislbok implements EntryPoint {
 		}
 	}
 	
-	public void recursiveIslbokFetchChild( final String islbokid ) {
+	public void recursiveIslbokFetchSiblings( final String islbokid ) {
+		if( islbokidPerson.containsKey( islbokid ) ) {
+			Person result = islbokidPerson.get( islbokid );
+			//addCurrentSibling( result );
+		} else {
+			frislbokService.fetchFromIslbokId( islbokid, new AsyncCallback<Person>() {
+				@Override
+				public void onFailure(Throwable caught) { Browser.getWindow().getConsole().log( caught.getMessage() ); }
+	
+				@Override
+				public void onSuccess(Person result) {
+					if( result == null ) {
+						frislbokService.islbok_get( islbok_session, islbokid, new AsyncCallback<String>() {
+							@Override
+							public void onFailure(Throwable caught) { Browser.getWindow().getConsole().log( caught.getMessage() ); }
+	
+							@Override
+							public void onSuccess(String result) {
+								//Browser.getWindow().getConsole().log( result );
+								
+								boolean fail = false;
+								JSONValue jsonval = null;
+								try {
+									jsonval = JSONParser.parseLenient( result );
+								} catch( Exception e ) {
+									fail = true;
+								}
+								
+								if( fail ) {
+									int lasti = -1;
+									boolean inside = false;
+									StringBuilder sb = new StringBuilder( result );
+									for( int i = 0; i < result.length(); i++ ) {
+										char c = sb.charAt(i);
+										if( c == '"' ) {
+											if( inside ) {
+												if( lasti != -1 ) {
+													sb.replace(lasti, lasti+1, "\\\"");
+													i+=1;
+													lasti = i;
+												} else lasti = i;
+											} else {
+												inside = true;
+											}
+										} else if( c == ',' || c == ':' ) {
+											inside = false;
+											lasti = -1;
+										}
+										//Browser.getWindow().getConsole().log( "fail " + i );
+									}
+									result = sb.toString();
+									//Browser.getWindow().getConsole().log( "fail " + result );
+									jsonval = JSONParser.parseLenient( result );
+								}
+								
+								//JSONArray	jsonarray = jsonval.isArray();
+								
+								JSONObject jsonobj = jsonval.isObject();
+								Person person = jsonPersonParse( jsonobj );
+									
+									/*final Person mother = new Person();
+									mother.setIslbokid( motherislbokid.stringValue() );
+									person.setMother( mother );
+									final Person father = new Person();
+									father.setIslbokid( fatherislbokid.stringValue() );
+									person.setFather( father );*/
+							}
+						});
+					} else {
+						//addCurrentSibling( result );
+					}
+				}
+			});
+		}
+	}
+	
+	public void recursiveIslbokFetchChilds( final String islbokid ) {
 		if( islbokidPerson.containsKey( islbokid ) ) {
 			Person result = islbokidPerson.get( islbokid );
 			addCurrentChild( result );
@@ -829,7 +1030,7 @@ public class Frislbok implements EntryPoint {
 	
 							@Override
 							public void onSuccess(String result) {
-								Browser.getWindow().getConsole().log( result );
+								//Browser.getWindow().getConsole().log( result );
 								
 								boolean fail = false;
 								JSONValue jsonval = null;
@@ -866,39 +1067,13 @@ public class Frislbok implements EntryPoint {
 									jsonval = JSONParser.parseLenient( result );
 								}
 								
+								//JSONArray	jsonarray = jsonval.isArray();
+								
 								JSONObject jsonobj = jsonval.isObject();
-								if( jsonobj != null ) {
-									JSONString name = jsonobj.get("name").isString();
-									
-									JSONString dob = jsonobj.get("dob").isString();
-									JSONNumber gender = jsonobj.get("gender").isNumber();
-									JSONString text = jsonobj.get("text").isString();
-									
-									JSONNumber motherislbokid = jsonobj.get("mother").isNumber();
-									JSONNumber fatherislbokid = jsonobj.get("father").isNumber();
-									
-									String dateofbirth = dob.stringValue();
-									DateTimeFormat dateformat = null;
-									//DateTimeFormat.PredefinedFormat.YEAR_MONTH_DAY
-									if( dateofbirth.length() == 8 ) {
-										if( dateofbirth.endsWith("0000") ) {
-											dateofbirth = dateofbirth.substring(0,4);
-											dateformat = DateTimeFormat.getFormat("yyyy");
-										} else if( dateofbirth.endsWith("00") ) {
-											dateofbirth = dateofbirth.substring(0,6);
-											dateformat = DateTimeFormat.getFormat("yyyyMM");
-										} else dateformat = DateTimeFormat.getFormat("yyyyMMdd");
-									}
-									else if( dateofbirth.length() == 6 ) dateformat = DateTimeFormat.getFormat("yyyyMM");
-									else if( dateofbirth.length() == 4 ) dateformat = DateTimeFormat.getFormat("yyyy");
-									
-									Date date = dateformat == null ? null : dateformat.parse(dateofbirth);
-									
-									String namestr = name.stringValue();
-									int genderval = (int)gender.doubleValue();
-									final Person person = new Person( namestr, date, genderval );
-									person.setComment( text.stringValue() );
-									setPersonIslbokId( person, islbokid );
+								Person person = jsonPersonParse( jsonobj );
+								if( person != null ) {
+									addCurrentChild( person );
+								}
 									
 									/*final Person mother = new Person();
 									mother.setIslbokid( motherislbokid.stringValue() );
@@ -906,49 +1081,158 @@ public class Frislbok implements EntryPoint {
 									final Person father = new Person();
 									father.setIslbokid( fatherislbokid.stringValue() );
 									person.setFather( father );*/
-									
-									if( child == null ) {
-										setCurrentPerson( person );
-										recursiveIslbokFetch( Long.toString((long)fatherislbokid.doubleValue()), person );
-										recursiveIslbokFetch( Long.toString((long)motherislbokid.doubleValue()), person );
-									} else {
-										if( person.isMale() ) setCurrentFather( person );
-										else setCurrentMother( person );
-										
-										Person father = new Person();
-										father.setGender( 1 );
-										setPersonIslbokId( father, Long.toString( (long)fatherislbokid.doubleValue() ) );
-										person.setParent( father );
-										Person mother = new Person();
-										mother.setGender( 2 );
-										setPersonIslbokId( mother, Long.toString( (long)motherislbokid.doubleValue() ) );
-										person.setParent( mother );
-										
-										child.setParent( person );
-									}
-								}
 							}
 						});
 					} else {
-						if( child == null ) {
-							setCurrentPerson( result );
-							if( result.getMother() != null && result.getMother().getIslbokid() != null ) {
-								recursiveIslbokFetch( result.getMother().getIslbokid(), result );
-							}
-							if( result.getFather() != null && result.getFather().getIslbokid() != null ) {
-								recursiveIslbokFetch( result.getFather().getIslbokid(), result );
-							}
-	
-						} else {
-							if( result.isMale() ) setCurrentFather( result );
-							else setCurrentMother( result );
-							
-							child.setParent( result );
-						}
+						addCurrentChild( result );
 					}
 				}
 			});
 		}
+	}
+
+	public Person jsonPersonParse( JSONObject jsonobj ) {
+		if( jsonobj != null ) {
+			JSONString name = jsonobj.get("name").isString();
+			
+			JSONString dob = jsonobj.get("dob").isString();
+			JSONNumber gender = jsonobj.get("gender").isNumber();
+			JSONString text = jsonobj.get("text").isString();
+			JSONNumber id = jsonobj.get("id").isNumber();
+			
+			JSONNumber motherislbokid = jsonobj.get("mother").isNumber();
+			JSONNumber fatherislbokid = jsonobj.get("father").isNumber();
+			
+			String dateofbirth = dob.stringValue();
+			DateTimeFormat dateformat = null;
+			//DateTimeFormat.PredefinedFormat.YEAR_MONTH_DAY
+			if( dateofbirth.length() == 8 ) {
+				if( dateofbirth.endsWith("0000") ) {
+					dateofbirth = dateofbirth.substring(0,4);
+					dateformat = DateTimeFormat.getFormat("yyyy");
+				} else if( dateofbirth.endsWith("00") ) {
+					dateofbirth = dateofbirth.substring(0,6);
+					dateformat = DateTimeFormat.getFormat("yyyyMM");
+				} else dateformat = DateTimeFormat.getFormat("yyyyMMdd");
+			}
+			else if( dateofbirth.length() == 6 ) dateformat = DateTimeFormat.getFormat("yyyyMM");
+			else if( dateofbirth.length() == 4 ) dateformat = DateTimeFormat.getFormat("yyyy");
+			
+			Date date = dateformat == null ? null : dateformat.parse(dateofbirth);
+			
+			String namestr = name.stringValue();
+			int genderval = (int)gender.doubleValue();
+			final Person person = new Person( namestr, date, genderval );
+			setPersonIslbokId( person, Long.toString( (long)id.doubleValue() ) );
+			person.setComment( text.stringValue() );
+			
+			Person father = new Person();
+			father.setGender( 1 );
+			setPersonIslbokId( father, Long.toString( (long)fatherislbokid.doubleValue() ) );
+			person.setParent( father );
+			Person mother = new Person();
+			mother.setGender( 2 );
+			setPersonIslbokId( mother, Long.toString( (long)motherislbokid.doubleValue() ) );
+			person.setParent( mother );
+			
+			return person;
+		}
+		return null;
+	}
+	
+	public void subRecursiveIslbokFetch( final String islbokid, final Person child ) {
+		frislbokService.fetchFromIslbokId( islbokid, new AsyncCallback<Person>() {
+			@Override
+			public void onFailure(Throwable caught) { Browser.getWindow().getConsole().log( caught.getMessage() ); }
+
+			@Override
+			public void onSuccess(Person result) {
+				if( result == null ) {
+					frislbokService.islbok_get( islbok_session, islbokid, new AsyncCallback<String>() {
+						@Override
+						public void onFailure(Throwable caught) { Browser.getWindow().getConsole().log( caught.getMessage() ); }
+
+						@Override
+						public void onSuccess(String result) {
+							//Browser.getWindow().getConsole().log( result );
+							
+							boolean fail = false;
+							JSONValue jsonval = null;
+							try {
+								jsonval = JSONParser.parseLenient( result );
+							} catch( Exception e ) {
+								fail = true;
+							}
+							
+							if( fail ) {
+								int lasti = -1;
+								boolean inside = false;
+								StringBuilder sb = new StringBuilder( result );
+								for( int i = 0; i < result.length(); i++ ) {
+									char c = sb.charAt(i);
+									if( c == '"' ) {
+										if( inside ) {
+											if( lasti != -1 ) {
+												sb.replace(lasti, lasti+1, "\\\"");
+												i+=1;
+												lasti = i;
+											} else lasti = i;
+										} else {
+											inside = true;
+										}
+									} else if( c == ',' || c == ':' ) {
+										inside = false;
+										lasti = -1;
+									}
+									//Browser.getWindow().getConsole().log( "fail " + i );
+								}
+								result = sb.toString();
+								//Browser.getWindow().getConsole().log( "fail " + result );
+								jsonval = JSONParser.parseLenient( result );
+							}
+							
+							JSONObject jsonobj = jsonval.isObject();
+							Person person = jsonPersonParse(jsonobj);
+							if( person != null ) {								
+								/*final Person mother = new Person();
+								mother.setIslbokid( motherislbokid.stringValue() );
+								person.setMother( mother );
+								final Person father = new Person();
+								father.setIslbokid( fatherislbokid.stringValue() );
+								person.setFather( father );*/
+								
+								if( child == null ) {
+									setCurrentPerson( person );
+									recursiveIslbokFetch( person.getFather().getIslbokid(), person );
+									recursiveIslbokFetch( person.getMother().getIslbokid(), person );
+								} else {
+									if( person.isMale() ) setCurrentFather( person );
+									else setCurrentMother( person );
+									
+									child.setParent( person );
+								}
+							}
+						}
+					});
+				} else {
+					if( child == null ) {
+						setCurrentPerson( result );
+						if( result.getMother() != null && result.getMother().getIslbokid() != null ) {
+							recursiveIslbokFetch( result.getMother().getIslbokid(), result );
+						}
+						if( result.getFather() != null && result.getFather().getIslbokid() != null ) {
+							recursiveIslbokFetch( result.getFather().getIslbokid(), result );
+						}
+
+					} else {
+						if( result.isMale() ) setCurrentFather( result );
+						else setCurrentMother( result );
+						
+						child.setParent( result );
+					}
+				}
+			}
+		});
 	}
 	
 	public void recursiveIslbokFetch( final String islbokid, final Person child ) {
@@ -963,144 +1247,17 @@ public class Frislbok implements EntryPoint {
 					recursiveIslbokFetch( result.getFather().getIslbokid(), result );
 				}
 			} else {
-				if( result.isMale() ) setCurrentFather( result );
-				else setCurrentMother( result );
-				
-				child.setParent( result );
+				if( result.getName() == null ) {
+					subRecursiveIslbokFetch( islbokid, child );
+				} else {
+					if( result.isMale() ) setCurrentFather( result );
+					else setCurrentMother( result );
+					
+					child.setParent( result );
+				}
 			}
 		} else {
-			frislbokService.fetchFromIslbokId( islbokid, new AsyncCallback<Person>() {
-				@Override
-				public void onFailure(Throwable caught) { Browser.getWindow().getConsole().log( caught.getMessage() ); }
-	
-				@Override
-				public void onSuccess(Person result) {
-					if( result == null ) {
-						frislbokService.islbok_get( islbok_session, islbokid, new AsyncCallback<String>() {
-							@Override
-							public void onFailure(Throwable caught) { Browser.getWindow().getConsole().log( caught.getMessage() ); }
-	
-							@Override
-							public void onSuccess(String result) {
-								Browser.getWindow().getConsole().log( result );
-								
-								boolean fail = false;
-								JSONValue jsonval = null;
-								try {
-									jsonval = JSONParser.parseLenient( result );
-								} catch( Exception e ) {
-									fail = true;
-								}
-								
-								if( fail ) {
-									int lasti = -1;
-									boolean inside = false;
-									StringBuilder sb = new StringBuilder( result );
-									for( int i = 0; i < result.length(); i++ ) {
-										char c = sb.charAt(i);
-										if( c == '"' ) {
-											if( inside ) {
-												if( lasti != -1 ) {
-													sb.replace(lasti, lasti+1, "\\\"");
-													i+=1;
-													lasti = i;
-												} else lasti = i;
-											} else {
-												inside = true;
-											}
-										} else if( c == ',' || c == ':' ) {
-											inside = false;
-											lasti = -1;
-										}
-										//Browser.getWindow().getConsole().log( "fail " + i );
-									}
-									result = sb.toString();
-									//Browser.getWindow().getConsole().log( "fail " + result );
-									jsonval = JSONParser.parseLenient( result );
-								}
-								
-								JSONObject jsonobj = jsonval.isObject();
-								if( jsonobj != null ) {
-									JSONString name = jsonobj.get("name").isString();
-									
-									JSONString dob = jsonobj.get("dob").isString();
-									JSONNumber gender = jsonobj.get("gender").isNumber();
-									JSONString text = jsonobj.get("text").isString();
-									
-									JSONNumber motherislbokid = jsonobj.get("mother").isNumber();
-									JSONNumber fatherislbokid = jsonobj.get("father").isNumber();
-									
-									String dateofbirth = dob.stringValue();
-									DateTimeFormat dateformat = null;
-									//DateTimeFormat.PredefinedFormat.YEAR_MONTH_DAY
-									if( dateofbirth.length() == 8 ) {
-										if( dateofbirth.endsWith("0000") ) {
-											dateofbirth = dateofbirth.substring(0,4);
-											dateformat = DateTimeFormat.getFormat("yyyy");
-										} else if( dateofbirth.endsWith("00") ) {
-											dateofbirth = dateofbirth.substring(0,6);
-											dateformat = DateTimeFormat.getFormat("yyyyMM");
-										} else dateformat = DateTimeFormat.getFormat("yyyyMMdd");
-									}
-									else if( dateofbirth.length() == 6 ) dateformat = DateTimeFormat.getFormat("yyyyMM");
-									else if( dateofbirth.length() == 4 ) dateformat = DateTimeFormat.getFormat("yyyy");
-									
-									Date date = dateformat == null ? null : dateformat.parse(dateofbirth);
-									
-									String namestr = name.stringValue();
-									int genderval = (int)gender.doubleValue();
-									final Person person = new Person( namestr, date, genderval );
-									person.setComment( text.stringValue() );
-									setPersonIslbokId( person, islbokid );
-									
-									/*final Person mother = new Person();
-									mother.setIslbokid( motherislbokid.stringValue() );
-									person.setMother( mother );
-									final Person father = new Person();
-									father.setIslbokid( fatherislbokid.stringValue() );
-									person.setFather( father );*/
-									
-									if( child == null ) {
-										setCurrentPerson( person );
-										recursiveIslbokFetch( Long.toString((long)fatherislbokid.doubleValue()), person );
-										recursiveIslbokFetch( Long.toString((long)motherislbokid.doubleValue()), person );
-									} else {
-										if( person.isMale() ) setCurrentFather( person );
-										else setCurrentMother( person );
-										
-										Person father = new Person();
-										father.setGender( 1 );
-										setPersonIslbokId( father, Long.toString( (long)fatherislbokid.doubleValue() ) );
-										person.setParent( father );
-										Person mother = new Person();
-										mother.setGender( 2 );
-										setPersonIslbokId( mother, Long.toString( (long)motherislbokid.doubleValue() ) );
-										person.setParent( mother );
-										
-										child.setParent( person );
-									}
-								}
-							}
-						});
-					} else {
-						if( child == null ) {
-							setCurrentPerson( result );
-							if( result.getMother() != null && result.getMother().getIslbokid() != null ) {
-								recursiveIslbokFetch( result.getMother().getIslbokid(), result );
-							}
-							if( result.getFather() != null && result.getFather().getIslbokid() != null ) {
-								recursiveIslbokFetch( result.getFather().getIslbokid(), result );
-							}
-	
-						} else {
-							if( result.isMale() ) setCurrentFather( result );
-							else setCurrentMother( result );
-							
-							child.setParent( result );
-						}
-					}
-				}
-			});
+			subRecursiveIslbokFetch( islbokid, child );
 		}
 	}
 
@@ -1122,7 +1279,6 @@ public class Frislbok implements EntryPoint {
 		String user = "sigmar1";
 		String pass = "linsan sonar";
 		
-		Browser.getWindow().getConsole().log( "about to login" );
 		frislbokService.login( user, pass, new AsyncCallback<String>() {
 			@Override
 			public void onFailure(Throwable caught) {

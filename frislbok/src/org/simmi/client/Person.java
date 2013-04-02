@@ -110,8 +110,8 @@ public class Person implements IsSerializable {
 	}
 
 	public Person() {
-		children = new HashSet<Person>();
-		siblings = new HashSet<Person>();
+		//children = new HashSet<Person>();
+		//siblings = new HashSet<Person>();
 	}
 	
 	public Person( String name, Date dateOfBirth, int gender ) {
@@ -148,11 +148,17 @@ public class Person implements IsSerializable {
 	}
 	
 	public void setFather( Person father ) {
+		if( this.father != null ) {
+			father.addChildren( this.father.getChildren() );
+		}
 		this.father = father;
 		father.addChild( this );
 	}
 	
 	public void setMother( Person mother ) {
+		if( this.mother != null ) {
+			mother.addChildren( this.mother.getChildren() );
+		}
 		this.mother = mother;
 		mother.addChild( this );
 	}
@@ -166,8 +172,14 @@ public class Person implements IsSerializable {
 		this.children = children;
 	}
 	
+	public void addChildren( Set<Person> newchildren ) {
+		if( this.children == null ) this.children = new HashSet<Person>();
+		if( newchildren != null ) this.children.addAll( newchildren );
+	}
+	
 	public boolean addChild( Person child ) {
-		if( this.children.add( child ) ) {
+		if( children == null ) children = new HashSet<Person>();
+		if( children.add( child ) ) {
 			child.setParent( this );
 			return true;
 		}
@@ -183,8 +195,19 @@ public class Person implements IsSerializable {
 		this.siblings = siblings;
 	}
 	
+	@Override
+	public boolean equals( Object other ) {
+		if( other!= null ) {
+			Person otherPerson = (Person)other;
+			return this.getIslbokid().equals(otherPerson.getIslbokid()) || this.getFacebookid().equals(otherPerson.getFacebookid()) || this.getKey().equals(otherPerson.getKey());
+		}
+		
+		return false;
+	}
+	
 	public void addSibling( Person sibling ) {
-		if( this.siblings.add( sibling ) ) sibling.addSibling( this );
+		if( siblings == null ) siblings = new HashSet<Person>();
+		if( !this.equals(sibling) && siblings.add( sibling ) ) sibling.addSibling( this );
 	}
 	
 	public int hashCode() {

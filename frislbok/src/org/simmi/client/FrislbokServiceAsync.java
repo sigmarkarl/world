@@ -20,8 +20,9 @@ public interface FrislbokServiceAsync {
 
 	void islbok_get(String session, String id, AsyncCallback<String> callback);
 
-	void islbok_children(String session, String id,
-			AsyncCallback<String> callback);
+	void islbok_children(String session, String id, AsyncCallback<String> callback);
+	
+	void islbok_siblings(String session, String id, AsyncCallback<String> callback);
 
 	void fetchFromIslbokId(String islbokid, AsyncCallback<Person> callback);
 
