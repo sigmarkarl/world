@@ -30,11 +30,14 @@ import com.google.gwt.user.client.Timer;
 import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.rpc.AsyncCallback;
 import com.google.gwt.user.client.ui.Anchor;
+import com.google.gwt.user.client.ui.Button;
 import com.google.gwt.user.client.ui.Grid;
 import com.google.gwt.user.client.ui.HTML;
 import com.google.gwt.user.client.ui.HTMLTable.CellFormatter;
 import com.google.gwt.user.client.ui.HorizontalPanel;
+import com.google.gwt.user.client.ui.Image;
 import com.google.gwt.user.client.ui.Label;
+import com.google.gwt.user.client.ui.PopupPanel;
 import com.google.gwt.user.client.ui.PushButton;
 import com.google.gwt.user.client.ui.RadioButton;
 import com.google.gwt.user.client.ui.RootPanel;
@@ -405,7 +408,7 @@ public class Frislbok implements EntryPoint {
 		if( siblings == null ) {
 			final String motherislbokid = mother.getIslbokid();
 			//Browser.getWindow().getConsole().log( "bl " + motherislbokid );
-			frislbokService.islbok_children(islbok_session, motherislbokid, new AsyncCallback<String>() {
+			/*frislbokService.islbok_children(islbok_session, motherislbokid, new AsyncCallback<String>() {
 				@Override
 				public void onFailure(Throwable caught) {}
 
@@ -454,8 +457,8 @@ public class Frislbok implements EntryPoint {
 						}
 					}
 				}
-			});
-			/*frislbokService.islbok_siblings( islbok_session, person.getIslbokid(), new AsyncCallback<String>() {
+			});*/
+			frislbokService.islbok_siblings( islbok_session, person.getIslbokid(), new AsyncCallback<String>() {
 				@Override
 				public void onFailure(Throwable caught) {}
 				
@@ -486,7 +489,7 @@ public class Frislbok implements EntryPoint {
 					}
 					//Browser.getWindow().getConsole().log( person.getMother().getName() + "  " + person.getMother().getChildren().size() );
 				}
-			});*/
+			});
 		}/* else {
 			for( Person sibling : siblings ) {
 				String siblingName = sibling.getName();
@@ -735,6 +738,15 @@ public class Frislbok implements EntryPoint {
 	
 	public native void console( String msg ) /*-{
 		$wnd.console.log( msg );
+	}-*/;
+	
+	public native void loadGoogleMaps( Element el ) /*-{
+		var mapOptions = {
+	          center: new $wnd.google.maps.LatLng( 64.82, -18.79 ),
+	          zoom: 6,
+	          mapTypeId: $wnd.google.maps.MapTypeId.ROADMAP
+	    };
+	    var map = new $wnd.google.maps.Map(el, mapOptions);
 	}-*/;
 	
 	boolean done = false;
@@ -1382,6 +1394,22 @@ public class Frislbok implements EntryPoint {
 		
 		subvp.add( parentPanel );
 		
+		VerticalPanel	imagePanel = new VerticalPanel();
+		imagePanel.setHorizontalAlignment( VerticalPanel.ALIGN_CENTER );
+		Image	face = new Image("dummy_face.jpg");
+		face.addClickHandler( new ClickHandler() {
+			@Override
+			public void onClick(ClickEvent event) {
+				
+			}
+		});
+		face.setPixelSize(64, 64);
+		imagePanel.add( face );
+		Label clicklabel = new Label("Tvíklikk til að skipta út mynd");
+		clicklabel.getElement().getStyle().setFontSize(9.0, Unit.PX);
+		imagePanel.add( clicklabel );
+		subvp.add( imagePanel );
+		
 		HorizontalPanel	personPanel = new HorizontalPanel();
 		personPanel.setSpacing( 10 );
 		Label			personLabel = new Label("Nafn:");
@@ -1440,6 +1468,11 @@ public class Frislbok implements EntryPoint {
 		
 		subvp.add( childrenPanel );
 		
+		HorizontalPanel	optionsPanel = new HorizontalPanel();
+		optionsPanel.setSpacing(5);
+		optionsPanel.setHorizontalAlignment( HorizontalPanel.ALIGN_CENTER );
+		subvp.add( optionsPanel );
+		
 		HorizontalPanel	disclPanel = new HorizontalPanel();
 		disclPanel.setSpacing( 10 );
 		Anchor	smasogur = new Anchor("http://smasogurnar.appspot.com");
@@ -1460,6 +1493,27 @@ public class Frislbok implements EntryPoint {
 		e.setAttribute("async", "true");
 		e.setAttribute("src", "http://connect.facebook.net/en_US/all.js" );
 		Document.get().getElementById("fb-root").appendChild(e);
+		
+		Button showmap = new Button("Hvaðan af landinu");
+		showmap.addClickHandler( new ClickHandler() {
+			@Override
+			public void onClick(ClickEvent event) {
+				PopupPanel pp = new PopupPanel();
+				pp.setSize("800px", "600px");
+				pp.setAutoHideEnabled(true);
+				pp.setAutoHideOnHistoryEventsEnabled( true );
+				
+				SimplePanel	sp = new SimplePanel();
+				loadGoogleMaps( sp.getElement() );
+				pp.add( sp );
+				
+				pp.center();
+			}
+		});
+		Button shareaccount = new Button("Deila aðgangi");
+		
+		optionsPanel.add( showmap );
+		optionsPanel.add( shareaccount );
 		
 		root.add(overall);
 	}
