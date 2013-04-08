@@ -6,10 +6,19 @@ import com.google.gwt.core.client.EntryPoint;
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.dom.client.Style;
 import com.google.gwt.dom.client.Style.Unit;
+import com.google.gwt.dom.client.Touch;
 import com.google.gwt.event.dom.client.KeyDownEvent;
 import com.google.gwt.event.dom.client.KeyDownHandler;
 import com.google.gwt.event.dom.client.MouseDownEvent;
 import com.google.gwt.event.dom.client.MouseDownHandler;
+import com.google.gwt.event.dom.client.TouchCancelEvent;
+import com.google.gwt.event.dom.client.TouchCancelHandler;
+import com.google.gwt.event.dom.client.TouchEndEvent;
+import com.google.gwt.event.dom.client.TouchEndHandler;
+import com.google.gwt.event.dom.client.TouchMoveEvent;
+import com.google.gwt.event.dom.client.TouchMoveHandler;
+import com.google.gwt.event.dom.client.TouchStartEvent;
+import com.google.gwt.event.dom.client.TouchStartHandler;
 import com.google.gwt.event.logical.shared.ResizeEvent;
 import com.google.gwt.event.logical.shared.ResizeHandler;
 import com.google.gwt.typedarrays.shared.Uint8Array;
@@ -22,9 +31,12 @@ import elemental.events.Event;
 import elemental.events.EventListener;
 import elemental.html.AudioBuffer;
 import elemental.html.AudioContext;
+import elemental.html.AudioGainNode;
+import elemental.html.AudioParam;
 import elemental.html.JavaScriptAudioNode;
 import elemental.html.MediaElement;
 import elemental.html.MediaElementAudioSourceNode;
+import elemental.html.Oscillator;
 import elemental.html.RealtimeAnalyserNode;
 
 /**
@@ -45,7 +57,7 @@ public class Childsplay implements EntryPoint {
 	private final GreetingServiceAsync greetingService = GWT.create(GreetingService.class);
 
 	long counter = 0;	
-	public void doRandom( Context2d context ) {
+	public void doRandom( Context2d context, int x, int y ) {
 		int w = context.getCanvas().getWidth();
 		int h = context.getCanvas().getHeight();
 		if( ++counter % 100 == 0 ) context.clearRect( 0, 0, w, h );
@@ -54,14 +66,16 @@ public class Childsplay implements EntryPoint {
 		context.setFillStyle( color );
 		context.setStrokeStyle("#000000");
 		int type = Random.nextInt( 3 );
-		int x = Random.nextInt( w );
-		int y = Random.nextInt( h );
+		if( x == -1 ) x = Random.nextInt( w );
+		if( y == -1 ) y = Random.nextInt( h );
 		int r = Random.nextInt( 250 )+50;
 		if( type == 0 ) {
 			context.save();
-			context.scale( Random.nextDouble()+0.5, Random.nextDouble()+0.5 );
+			double scalex = Random.nextDouble()+0.5;
+			double scaley = Random.nextDouble()+0.5;
+			context.scale( scalex, scaley );
 			context.beginPath();
-			context.arc( x, y, r, 0, 2.0*Math.PI );
+			context.arc( x/scalex, y/scaley, r, 0, 2.0*Math.PI );
 			context.fill();
 			context.restore();
 			context.stroke();
@@ -73,12 +87,14 @@ public class Childsplay implements EntryPoint {
 			context.strokeRect(x-rx/2.0, y-ry/2.0, rx, ry);
 		} else {
 			context.save();
-			context.scale( Random.nextDouble()+0.5, Random.nextDouble()+0.5 );
+			double scalex = Random.nextDouble()+0.5;
+			double scaley = Random.nextDouble()+0.5;
+			context.scale( scalex, scaley );
 			context.beginPath();
-			context.moveTo(x, y-r/2.0);
-			context.lineTo(x+r/2.0, y+r/2.0);
-			context.lineTo(x-r/2.0, y+r/2.0);
-			context.lineTo(x, y-r/2.0);
+			context.moveTo(x/scalex, y/scaley-r/2.0);
+			context.lineTo(x/scalex+r/2.0, y/scaley+r/2.0);
+			context.lineTo(x/scalex-r/2.0, y/scaley+r/2.0);
+			context.lineTo(x/scalex, y/scaley-r/2.0);
 			context.restore();
 			context.fill();
 			context.stroke();
@@ -130,7 +146,7 @@ public class Childsplay implements EntryPoint {
 		        }
 		 
 		        average = values / length;
-		        return average;analyser.
+		        return average;
 		    }
 			//s.@org.simmi.client.Childsplay::audioContinue(Lelemental/html/MediaElement;)( audio );
 		}
@@ -138,7 +154,8 @@ public class Childsplay implements EntryPoint {
 		console.log("mmmuuu5");
 	}-*/;
 	
-	AudioContext acontext;
+	AudioContext acontext = null;
+	Oscillator osc = null;
 	public void audioContinue( MediaElement me ) {
 		MediaElementAudioSourceNode measn = acontext.createMediaElementSource( me );
 		AudioBuffer ab = acontext.createBuffer( null, true );
@@ -155,6 +172,10 @@ public class Childsplay implements EntryPoint {
 		//measn.connect(destination, output, input)
 	}
 	
+	public native boolean checkAudioSupport() /*-{
+		return $wnd.AudioContext || $wnd.webkitAudioContext;
+	}-*/;
+	
 	/**
 	 * This is the entry point method.
 	 */
@@ -168,14 +189,17 @@ public class Childsplay implements EntryPoint {
 		st.setBorderWidth(0.0, Unit.PX);
 		
 		final elemental.html.Window wnd = Browser.getWindow();
-		acontext = wnd.newAudioContext();
-		/*final AudioGainNode agn = acontext.createGainNode();
-		final Oscillator osc = acontext.createOscillator();
-		osc.setType( Oscillator.SINE );
-		osc.connect( (AudioParam)agn, 0 );
-		agn.connect( (AudioParam)acontext.getDestination(), 0 );*/
+		if( checkAudioSupport() ) {
+			acontext = wnd.newAudioContext();
+			
+			final AudioGainNode agn = acontext.createGainNode();
+			osc = acontext.createOscillator();
+			osc.setType( Oscillator.SINE );
+			osc.connect( (AudioParam)agn, 0 );
+			agn.connect( (AudioParam)acontext.getDestination(), 0 );
+		} else Browser.getWindow().getConsole().log("Audio not supported");
 		
-		loadAudioIn( acontext );
+		//if( acontext != null ) loadAudioIn( acontext );
 		
 		/*Navigator nv = wnd.getNavigator();
 		Mappable mbl = new Mappable() {
@@ -225,12 +249,45 @@ public class Childsplay implements EntryPoint {
 				canvas.setCoordinateSpaceWidth( w );
 				canvas.setCoordinateSpaceHeight( h );
 			}
-		});canvas.addMouseDownHandler( new MouseDownHandler() {
+		});
+		
+		canvas.addTouchStartHandler( new TouchStartHandler() {
+			@Override
+			public void onTouchStart(TouchStartEvent event) {
+				Touch touch = event.getTouches().get(0);
+				doRandom( canvas.getContext2d(), touch.getClientX(), touch.getClientY() );
+			}
+		});
+		
+		canvas.addTouchMoveHandler( new TouchMoveHandler() {
+			@Override
+			public void onTouchMove(TouchMoveEvent event) {
+				
+			}
+		});
+		
+		canvas.addTouchEndHandler( new TouchEndHandler() {
+			@Override
+			public void onTouchEnd(TouchEndEvent event) {
+				
+			}
+		});
+		
+		canvas.addTouchCancelHandler( new TouchCancelHandler() {
+			@Override
+			public void onTouchCancel(TouchCancelEvent event) {
+				
+			}
+		});
+		
+		canvas.addMouseDownHandler( new MouseDownHandler() {
 			@Override
 			public void onMouseDown(MouseDownEvent event) {
-				//osc.getFrequency().setValue( (float)(Random.nextDouble()*500.0+100.0) );
-				//osc.noteOn( 0 );
-				doRandom( canvas.getContext2d() );
+				if( osc != null ) {
+					osc.getFrequency().setValue( (float)(Random.nextDouble()*500.0+100.0) );
+					osc.noteOn( 0 );
+				}
+				doRandom( canvas.getContext2d(), event.getClientX(), event.getClientY() );
 			}
 		});
 		
@@ -248,19 +305,19 @@ public class Childsplay implements EntryPoint {
 				//osc.getFrequency().setValue( fval );
 				//agn.getGain().setValue( (900.0f-fval)/800.0f );
 				//osc.noteOn( 0 );
-				doRandom( canvas.getContext2d() );
+				doRandom( canvas.getContext2d(), -1, -1 );
 				prev = next;
 			}
 		});
 		
-		canvas.addMouseDownHandler( new MouseDownHandler() {
+		/*canvas.addMouseDownHandler( new MouseDownHandler() {
 			@Override
 			public void onMouseDown(MouseDownEvent event) {
 				//osc.getFrequency().setValue( (float)(Random.nextDouble()*500.0+100.0) );
 				//osc.noteOn( 0 );
 				doRandom( canvas.getContext2d() );
 			}
-		});
+		});*/
 		
 		rp.add( canvas );
 	}

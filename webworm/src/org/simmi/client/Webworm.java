@@ -50,6 +50,7 @@ import com.google.gwt.event.logical.shared.ValueChangeEvent;
 import com.google.gwt.event.logical.shared.ValueChangeHandler;
 import com.google.gwt.media.client.Audio;
 import com.google.gwt.user.client.Random;
+import com.google.gwt.user.client.Timer;
 import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.rpc.AsyncCallback;
 import com.google.gwt.user.client.ui.Anchor;
@@ -418,7 +419,7 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 				}
 			}
 			
-			//if( worms.size() == 0 ) timer.cancel();
+			if( timer != null && worms.size() == 0 ) timer.cancel();
 		}
 		
 		public void setTarget( int x, int y ) {
@@ -1082,7 +1083,7 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 		}
 	}
 	
-	public native void init() /*-{
+	public native boolean init() /*-{
 		$wnd.requestAnimationFrame = $wnd.requestAnimationFrame || $wnd.mozRequestAnimationFrame || $wnd.webkitRequestAnimationFrame || $wnd.msRequestAnimationFrame;
 		$wnd.cancelAnimationFrame = $wnd.cancelAnimationFrame || $wnd.mozCancelAnimationFrame;
 		
@@ -1090,6 +1091,8 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 		$wnd.step = function( time ) {
 			s.@org.simmi.client.Webworm::step(D)( time );
 		}
+		
+		return $wnd.requestAnimationFrame == null;
 	}-*/;
 	
 	TextBox	timebox;
@@ -1100,7 +1103,8 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 		if( worms.size() == 0 ) {
 			//Browser.getWindow().getConsole().log("io");
 			drawStartMessage( cv.getContext2d() );
-			cancelAnimationFrame( currentFrame );
+			if( timer == null ) cancelAnimationFrame( currentFrame );
+			else timer.cancel(); //dunno
 			return;
 			//this.cancel();
 		}
@@ -1112,7 +1116,7 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 			if( (count++)%50 == 0 ) {
 				if( timebox != null ) timebox.setText( ""+(count/50) );
 			}
-			requestAnimationFrame();
+			if( timer == null ) requestAnimationFrame();
 		}
 	}
 	
@@ -1126,7 +1130,7 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 
 	int				w, h;
 	Canvas			cv;
-	//Timer 			timer;
+	Timer 			timer = null;
 	Set<Worm>		worms;
 	HorizontalPanel	hscore;
 	PopupPanel		popup;
@@ -1148,7 +1152,7 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 		final Widget dipillWidget;
 		final Widget extlifWidget;
 		
-		init();
+		boolean nreq = init();
 		
 		String fbuid = null;
 		NodeList<Element> nl = Document.get().getElementsByTagName("meta");
@@ -1337,18 +1341,20 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 		timebox.setSize( "32px", "10px" );
 		
 		//requestAnimationFrame();
-		/*timer = new Timer() {
-			long count = 0;
-			@Override
-			public void run() {
-				step();
-			}
-			
-			public void cancel() {
-				super.cancel();
-				count = 0;
-			}
-		};*/
+		if( nreq ) {
+			timer = new Timer() {
+				long count = 0;
+				@Override
+				public void run() {
+					step( 0 );
+				}
+				
+				public void cancel() {
+					super.cancel();
+					count = 0;
+				}
+			};
+		}
 		
 		String useragent = Window.Navigator.getUserAgent();
 		cv.addMouseDownHandler( this );
@@ -1871,11 +1877,11 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 			worms.add( new Worm("#00ff00", KeyCodes.KEY_LEFT, KeyCodes.KEY_RIGHT, KeyCodes.KEY_LEFT, KeyCodes.KEY_RIGHT ) );
 			updateCoordinates(cv, false);
 			
-			/*if( timer != null ) {
+			if( timer != null ) {
 				info.hide();
 				cv.setFocus( true );
 				timer.scheduleRepeating( delay );
-			}*/
+			}
 			info.hide();
 			cv.setFocus( true );
 			currentFrame = requestAnimationFrame();
@@ -1915,7 +1921,7 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 		if( keycode == ' ' ) {
 			pause = !pause;
 		} else if( keycode == KeyCodes.KEY_ESCAPE ) {
-			//timer.cancel();
+			if( timer != null ) timer.cancel();
 			Set<Worm>	wset = new HashSet<Worm>( worms );
 			for( Worm w : wset ) {
 				w.kill();
@@ -1952,11 +1958,11 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler, Mo
 			worms.add( new Worm("#00ff00", KeyCodes.KEY_LEFT, KeyCodes.KEY_RIGHT, KeyCodes.KEY_LEFT, KeyCodes.KEY_RIGHT, angle ) );
 			updateCoordinates(cv, false);
 			
-			/*if( timer != null ) {
+			if( timer != null ) {
 				info.hide();
 				cv.setFocus( true );
 				timer.scheduleRepeating( delay );
-			}*/
+			}
 			info.hide();
 			cv.setFocus( true );
 			currentFrame = requestAnimationFrame();
