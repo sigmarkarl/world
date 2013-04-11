@@ -1228,13 +1228,15 @@ public class Frislbok implements EntryPoint {
 			@Override
 			public void onSuccess(Person result) {
 				if( result == null ) {
+					Browser.getWindow().getConsole().log( "about to fuck" );
+					
 					frislbokService.islbok_get( islbok_session, islbokid, new AsyncCallback<String>() {
 						@Override
 						public void onFailure(Throwable caught) { Browser.getWindow().getConsole().log( caught.getMessage() ); }
 
 						@Override
 						public void onSuccess(String result) {
-							//Browser.getWindow().getConsole().log( result );
+							Browser.getWindow().getConsole().log( "islbok get result " + result );
 							
 							boolean fail = false;
 							JSONValue jsonval = null;
@@ -1439,6 +1441,7 @@ public class Frislbok implements EntryPoint {
 
 			@Override
 			public void onSuccess(String result) {
+				Browser.getWindow().getConsole().log( "ancres get "+ result );
 				boolean fail = false;
 				JSONValue jsonval = null;
 				try {
@@ -1477,9 +1480,9 @@ public class Frislbok implements EntryPoint {
 				JSONObject jsonobj = jsonval.isObject();
 				Person person = jsonPersonParse( jsonobj );
 				
-				renameNode.setName( person.getName() );
-				
 				int dob = person.getDateOfBirth().getYear()+1900;
+				renameNode.setName( person.getName()+" ["+dob+"]" );
+				
 				if( prevyear == 0 ) renameNode.seth( 25.0 );
 				else renameNode.seth( prevyear-dob );
 				

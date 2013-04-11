@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.net.URLConnection;
 import java.net.URLEncoder;
 import java.util.Date;
 import java.util.HashSet;
@@ -161,14 +162,34 @@ public class FrislbokServiceImpl extends RemoteServiceServlet implements Frislbo
 		return null;
 	}
 
+	//Cookie[] cookies = null;
+	String cookiestr = "";
 	@Override
 	public String login(String user, String password) {
+		//cookies = this.getThreadLocalRequest().getCookies();
+		//CookieManager cm = new CookieManager();
+		
 		try {
 			String query = "login?user="+user+"&pwd="+URLEncoder.encode( password, "UTF8" );
 			//String query = URLEncoder.encode( stuff, "UTF8" );
 			URL url = new URL( "http://www.islendingabok.is/ib_app/"+query );
+			URLConnection uc = url.openConnection();
+			uc.connect();
+			
+			String headerName=null;
+			for (int i=1; (headerName = uc.getHeaderFieldKey(i))!=null; i++) {
+			 	this.log( headerName );
+				if (headerName.equalsIgnoreCase("Set-Cookie")) {               
+			 		String cookie = uc.getHeaderField(i);
+			 		cookie = cookie.substring(0, cookie.indexOf(";"));
+			 		//String cookieName = cookie.substring(0, cookie.indexOf("="));
+			 		//String cookieValue = cookie.substring(cookie.indexOf("=") + 1, cookie.length());
+			 		if( cookiestr.length() == 0 ) cookiestr = cookie;
+			 		else cookiestr += "; "+cookie;
+			 	}
+			}
 			//System.err.println( query );
-			InputStream is = url.openStream();
+			InputStream is = uc.getInputStream();
 			ByteArrayOutputStream	baos = new ByteArrayOutputStream();
 			
 			int c = is.read();
@@ -194,7 +215,13 @@ public class FrislbokServiceImpl extends RemoteServiceServlet implements Frislbo
 			String urlstr = "http://www.islendingabok.is/ib_app/"+query;
 			
 			URL url = new URL( urlstr );
-			InputStream is = url.openStream();
+			URLConnection urlconn = url.openConnection();
+			if( cookiestr != null ) {
+				//this.log("ok "+cookies.length);
+				this.log(cookiestr);
+				urlconn.setRequestProperty("Cookie", cookiestr);
+			}
+			InputStream is = urlconn.getInputStream();
 			ByteArrayOutputStream	baos = new ByteArrayOutputStream();
 			
 			int c = is.read();
@@ -220,7 +247,13 @@ public class FrislbokServiceImpl extends RemoteServiceServlet implements Frislbo
 			String urlstr = "http://www.islendingabok.is/ib_app/"+query;
 			
 			URL url = new URL( urlstr );
-			InputStream is = url.openStream();
+			URLConnection urlconn = url.openConnection();
+			if( cookiestr != null ) {
+				//this.log("ok "+cookies.length);
+				this.log(cookiestr);
+				urlconn.setRequestProperty("Cookie", cookiestr);
+			}
+			InputStream is = urlconn.getInputStream();
 			ByteArrayOutputStream	baos = new ByteArrayOutputStream();
 			
 			int c = is.read();
@@ -283,6 +316,10 @@ public class FrislbokServiceImpl extends RemoteServiceServlet implements Frislbo
 		
 		return retPerson;
 	}
+	
+	public Person parseIslbokPerson( String jsonPerson ) {
+		return null;
+	}
 
 	@Override
 	public String islbok_siblings(String session, String id) {
@@ -292,7 +329,13 @@ public class FrislbokServiceImpl extends RemoteServiceServlet implements Frislbo
 			String urlstr = "http://www.islendingabok.is/ib_app/"+query;
 			
 			URL url = new URL( urlstr );
-			InputStream is = url.openStream();
+			URLConnection urlconn = url.openConnection();
+			if( cookiestr != null ) {
+				//this.log("ok "+cookies.length);
+				this.log(cookiestr);
+				urlconn.setRequestProperty("Cookie", cookiestr);
+			}
+			InputStream is = urlconn.getInputStream();
 			ByteArrayOutputStream	baos = new ByteArrayOutputStream();
 			
 			int c = is.read();
@@ -318,7 +361,13 @@ public class FrislbokServiceImpl extends RemoteServiceServlet implements Frislbo
 			String urlstr = "http://www.islendingabok.is/ib_app/"+query;
 			
 			URL url = new URL( urlstr );
-			InputStream is = url.openStream();
+			URLConnection urlconn = url.openConnection();
+			if( cookiestr != null ) {
+				//this.log("ok "+cookies.length);
+				this.log(cookiestr);
+				urlconn.setRequestProperty("Cookie", cookiestr);
+			}
+			InputStream is = urlconn.getInputStream();
 			ByteArrayOutputStream	baos = new ByteArrayOutputStream();
 			
 			int c = is.read();
