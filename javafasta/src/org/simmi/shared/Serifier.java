@@ -515,8 +515,10 @@ public class Serifier {
 								name = name.substring(0,i);
 								
 								i = newcurrent.lastIndexOf(';');
-								if( i == -1 ) i = newcurrent.length();
+								//if( i == -1 ) i = newcurrent.length()-1;
 								newcurrent = newcurrent.substring(i+1);
+								
+								if( newcurrent.indexOf("Thermus") != -1 ) newcurrent = newcurrent.substring( newcurrent.indexOf("Thermus"), newcurrent.indexOf("strain")-1 ).replace(' ', '_');
 								
 								String mapstr = includePerc ? newcurrent+"_"+idstr+"%" : newcurrent;
 								mapstr = includeLen ? mapstr+"_"+len : mapstr;
@@ -605,9 +607,9 @@ public class Serifier {
 						if( i == -1 ) i = line.length();
 						String cont = line.substring(1,i);
 						
-						String newline = colorAdd( maphitstr, maps, phmaps, colormaps, cont, cont, null, false );
-						//pr.println( ">" + maphitstr + sep + name ); //+ sep + mapHit.get(name) );
-						pr.println( ">" + newline + sep + name );
+						//String newline = colorAdd( maphitstr, maps, phmaps, colormaps, cont, cont, null, false );
+						//pr.println( ">" + newline + sep + name );
+						pr.println( ">" + maphitstr + sep + name ); //+ sep + mapHit.get(name) );
 						include = true;
 					} else include = false;
 				} else include = false;
