@@ -466,7 +466,7 @@ public class Serifier {
 		String current;
 		while( line != null ) {
 			String trim = line.trim();
-			if( trim.startsWith("Query=") ) {
+			if( trim.startsWith("Query=") || trim.startsWith("Query >") ) {
 				current = null;
 				String name = trim.substring(6).trim();
 				
@@ -518,7 +518,11 @@ public class Serifier {
 								//if( i == -1 ) i = newcurrent.length()-1;
 								newcurrent = newcurrent.substring(i+1);
 								
-								if( newcurrent.indexOf("Thermus") != -1 ) newcurrent = newcurrent.substring( newcurrent.indexOf("Thermus"), newcurrent.indexOf("strain")-1 ).replace(' ', '_');
+								System.out.println(newcurrent);
+								if( newcurrent.indexOf("Thermus") != -1 ) {
+									System.out.println(newcurrent);
+									newcurrent = newcurrent.substring( newcurrent.indexOf("Thermus"), newcurrent.indexOf("strain")-1 ).replace(' ', '_');
+								}
 								
 								String mapstr = includePerc ? newcurrent+"_"+idstr+"%" : newcurrent;
 								mapstr = includeLen ? mapstr+"_"+len : mapstr;
@@ -595,7 +599,7 @@ public class Serifier {
 				//System.err.println( "muu "+name );
 				if( mapHit.containsKey(name) ) {
 					String maphitstr = mapHit.get(name);
-					System.err.println( maphitstr );
+					//System.err.println( maphitstr );
 					int li = maphitstr.lastIndexOf(';');
 					if( li != -1 ) maphitstr = maphitstr.substring(li+1);
 					
@@ -2642,7 +2646,7 @@ public class Serifier {
 							Object swap = (filterset instanceof Map) ? ((Map)filterset).get(f) : null;
 							
 							nseq++;
-							if( swap != null ) bw.write( ">"+swap+"_"+f+"\n" );
+							if( swap != null ) bw.write( ">"+swap/*+"_"+f*/+"\n" );
 							else bw.write( line+"\n" );
 							seqname = line;
 							break;
