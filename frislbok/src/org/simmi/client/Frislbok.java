@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.simmi.shared.TreeUtil;
+
 import com.google.gwt.core.client.EntryPoint;
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.core.client.JsArrayMixed;
@@ -52,6 +54,10 @@ import com.google.gwt.user.datepicker.client.DefaultCalendarView;
 import com.google.gwt.user.datepicker.client.MonthSelector;
 
 import elemental.client.Browser;
+import elemental.events.Event;
+import elemental.events.EventListener;
+import elemental.events.MessageEvent;
+import elemental.html.Console;
 
 /**
  * Entry point classes define <code>onModuleLoad()</code>.
@@ -194,49 +200,103 @@ public class Frislbok implements EntryPoint {
 		return elem;
 	}
 	
+	public native void naut( String uid ) /*-{
+		var ths = this;
+		var qStr = 'SELECT uid2 FROM friend WHERE uid1 = '+uid;
+		//$wnd.alert( qStr );
+		//ths.@org.simmi.client.Frislbok::fbFetchPersonInfo(Ljava/lang/String;)( uid );
+		
+		$wnd.FB.api(
+			{
+				method: 'fql.query',
+				query: qStr
+			},
+			function(response) {
+				//var uids = uid;
+				var uids = '('+uid;
+				for( ind in response ) {
+					uids += ','+response[ind].uid2;
+					//break;
+				}
+				uids += ')';
+				
+				//ths.@org.simmi.client.Frislbok::fbFetchPersonInfo(Ljava/lang/String;)( uids );
+				//ths.@org.simmi.client.Frislbok::fbFetchFamilyInfo(Ljava/lang/String;)( uids );
+				$wnd.console.log( uids );
+				ths.@org.simmi.client.Frislbok::setUids(Ljava/lang/String;)( uids );
+			}
+		);
+	}-*/;
+	
 	public native void checkLoginStatus() /*-{
 		var ths = this;
 		$wnd.console.log( "starting login check" );
 		
 		$wnd.fbAsyncInit = function() {
 	    	$wnd.FB.init({appId: '126977324050932', status: true, cookie: true, xfbml: true});
-	    	
+	    	$wnd.console.log( "init fb" );
 	    	try {
 				$wnd.FB.getLoginStatus( function(response) {
 					$wnd.console.log( "inside login response" );
 					try {
 						$wnd.FB.XFBML.parse();
-						if (response.session) {
-							//ths.@org.simmi.client.Frislbok::setUserId(Ljava/lang/String;)( response.session.uid );
-							//$wnd.FB.
-							var uid = response.session.uid;
-							var qStr = 'SELECT uid2 FROM friend WHERE uid1 = '+uid;
-							//$wnd.alert( qStr );
-							
-							$wnd.FB.api(
-								{
-									method: 'fql.query',
-									query: qStr
-								},
-								function(response) {
-									//var uids = uid;
-									var uids = '('+uid;
-									for( ind in response ) {
-										uids += ','+response[ind].uid2;
-										//break;
-									}
-									uids += ')';
-									
-									//ths.@org.simmi.client.Frislbok::fbFetchPersonInfo(Ljava/lang/String;)( uids );
-									//ths.@org.simmi.client.Frislbok::fbFetchFamilyInfo(Ljava/lang/String;)( uids );
-									
-									ths.@org.simmi.client.Frislbok::setUids(Ljava/lang/String;)( uids );
-								}
-							);
-						} else {
-							ths.@org.simmi.client.Frislbok::setUserId(Ljava/lang/String;)( "" );
-						    //$wnd.FB.login();
-						}
+					    if (response.status === 'connected') {
+					    	$wnd.console.log( "start check" );
+					    	var uid = response.authResponse.userID;
+					    	$wnd.console.log( "start check"+uid );
+					        ths.@org.simmi.client.Frislbok::naut(Ljava/lang/String;)(uid);
+					    } else if (response.status === 'not_authorized') {
+					       	$wnd.FB.login(function(response) {
+						        if (response.authResponse) {
+						        	var uid = response.authResponse.userID;
+						            ths.@org.simmi.client.Frislbok::naut(Ljava/lang/String;)(uid);
+						        } else {
+						            // cancelled
+						        }
+						    });
+					    } else {
+					        $wnd.FB.login(function(response) {
+						        if (response.authResponse) {
+						        	var uid = response.authResponse.userID;
+						            ths.@org.simmi.client.Frislbok::naut(Ljava/lang/String;)(uid);
+						        } else {
+						            // cancelled
+						        }
+						    });
+					    }
+	
+//						if (response.session) {
+//							//ths.@org.simmi.client.Frislbok::setUserId(Ljava/lang/String;)( response.session.uid );
+//							//$wnd.FB.
+//							var uid = response.session.uid;
+//							var qStr = 'SELECT uid2 FROM friend WHERE uid1 = '+uid;
+//							//$wnd.alert( qStr );
+//							
+//							$wnd.FB.api(
+//								{
+//									method: 'fql.query',
+//									query: qStr
+//								},
+//								function(response) {
+//									//var uids = uid;
+//									var uids = '('+uid;
+//									for( ind in response ) {
+//										uids += ','+response[ind].uid2;
+//										//break;
+//									}
+//									uids += ')';
+//									
+//									//ths.@org.simmi.client.Frislbok::fbFetchPersonInfo(Ljava/lang/String;)( uids );
+//									//ths.@org.simmi.client.Frislbok::fbFetchFamilyInfo(Ljava/lang/String;)( uids );
+//									$wnd.console.log( uids );
+//									ths.@org.simmi.client.Frislbok::setUids(Ljava/lang/String;)( uids );
+//								}
+//							);
+//						} else {
+//							$wnd.console.log( 'mu' );
+//							ths.@org.simmi.client.Frislbok::setUserId(Ljava/lang/String;)( "" );
+//						    //$wnd.FB.login();
+//						}
 					} catch( e ) {
 						$wnd.console.log( e );
 					}
@@ -246,6 +306,14 @@ public class Frislbok implements EntryPoint {
 				$wnd.console.log( e );
 			}
 	  	};
+	  	
+	  	(function(d){
+		     var js, id = 'facebook-jssdk', ref = d.getElementsByTagName('script')[0];
+		     if (d.getElementById(id)) {return;}
+		     js = d.createElement('script'); js.id = id; js.async = true;
+		     js.src = "//connect.facebook.net/en_US/all.js";
+		     ref.parentNode.insertBefore(js, ref);
+		}($doc));
 		
 		$wnd.console.log( "past login check" );
 	}-*/;
@@ -1160,13 +1228,15 @@ public class Frislbok implements EntryPoint {
 			@Override
 			public void onSuccess(Person result) {
 				if( result == null ) {
+					Browser.getWindow().getConsole().log( "about to fuck" );
+					
 					frislbokService.islbok_get( islbok_session, islbokid, new AsyncCallback<String>() {
 						@Override
 						public void onFailure(Throwable caught) { Browser.getWindow().getConsole().log( caught.getMessage() ); }
 
 						@Override
 						public void onSuccess(String result) {
-							//Browser.getWindow().getConsole().log( result );
+							Browser.getWindow().getConsole().log( "islbok get result " + result );
 							
 							boolean fail = false;
 							JSONValue jsonval = null;
@@ -1247,6 +1317,62 @@ public class Frislbok implements EntryPoint {
 		});
 	}
 	
+	public void subRecursiveFacebookFetch( final String fbid, final Person child ) {
+		frislbokService.fetchFromFacebookId( fbid, new AsyncCallback<Person>() {
+			@Override
+			public void onFailure(Throwable caught) { Browser.getWindow().getConsole().log( caught.getMessage() ); }
+
+			@Override
+			public void onSuccess(Person result) {
+				if( result == null ) {
+					fbFetchPersonInfo( fbid );
+				} else {
+					if( child == null ) {
+						setCurrentPerson( result );
+						if( result.getMother() != null && result.getMother().getFacebookid() != null ) {
+							recursiveFacebookFetch( result.getMother().getFacebookid(), result );
+						}
+						if( result.getFather() != null && result.getFather().getFacebookid() != null ) {
+							recursiveFacebookFetch( result.getFather().getFacebookid(), result );
+						}
+
+					} else {
+						if( result.isMale() ) setCurrentFather( result );
+						else setCurrentMother( result );
+						
+						child.setParent( result );
+					}
+				}
+			}
+		});
+	}
+	
+	public void recursiveFacebookFetch( final String fbid, final Person child ) {
+		if( fbuidPerson.containsKey( fbid ) ) {
+			Person result = islbokidPerson.get( fbid );
+			if( child == null ) {
+				setCurrentPerson( result );
+				if( result.getMother() != null && result.getMother().getIslbokid() != null ) {
+					recursiveIslbokFetch( result.getMother().getIslbokid(), result );
+				}
+				if( result.getFather() != null && result.getFather().getIslbokid() != null ) {
+					recursiveIslbokFetch( result.getFather().getIslbokid(), result );
+				}
+			} else {
+				if( result.getName() == null ) {
+					subRecursiveFacebookFetch( fbid, child );
+				} else {
+					if( result.isMale() ) setCurrentFather( result );
+					else setCurrentMother( result );
+					
+					child.setParent( result );
+				}
+			}
+		} else {
+			subRecursiveFacebookFetch( fbid, child );
+		}
+	}
+	
 	public void recursiveIslbokFetch( final String islbokid, final Person child ) {
 		if( islbokidPerson.containsKey( islbokid ) ) {
 			Person result = islbokidPerson.get( islbokid );
@@ -1285,8 +1411,202 @@ public class Frislbok implements EntryPoint {
 	VerticalPanel	sibanchors;
 	HorizontalPanel	childrenPanel;
 	
+	elemental.html.Window myPopup = null;
+	String treestr = null;
+	public void handleMessage() {
+		elemental.dom.Element e = Browser.getDocument().getElementById("listener");
+		e.addEventListener("message", new EventListener() {
+			@Override
+			public void handleEvent(Event evt) {
+				MessageEvent me = (MessageEvent) evt;
+				Browser.getWindow().getConsole().log("jelp");
+				treestr = (String)me.getData();
+				myPopup = Browser.getWindow().open("http://webconnectron.appspot.com/Treedraw.html?callback=frislbok","TreeDraw");
+				/*
+				 * if( myPopup != null && treestr != null ) {
+				 * myPopup.postMessage( treestr, "*" ); treestr = null; }
+				 */
+			}
+		}, true);
+	}
+	
+	int count = 0;
+	public void recursiveNodeRename( final TreeUtil.Node renameNode, final int total, final boolean map, final int prevyear ) {
+		count++;
+		Browser.getWindow().getConsole().log( "count "+count+"  "+total );
+		String islbokid = renameNode.getName().trim();
+		if( !islbokid.equals("999999") ) frislbokService.islbok_get(islbok_session, islbokid, new AsyncCallback<String>() {
+			@Override
+			public void onFailure(Throwable caught) {}
+
+			@Override
+			public void onSuccess(String result) {
+				Browser.getWindow().getConsole().log( "ancres get "+ result );
+				boolean fail = false;
+				JSONValue jsonval = null;
+				try {
+					jsonval = JSONParser.parseLenient( result );
+				} catch( Exception e ) {
+					fail = true;
+				}
+				
+				if( fail ) {
+					int lasti = -1;
+					boolean inside = false;
+					StringBuilder sb = new StringBuilder( result );
+					for( int i = 0; i < result.length(); i++ ) {
+						char c = sb.charAt(i);
+						if( c == '"' ) {
+							if( inside ) {
+								if( lasti != -1 ) {
+									sb.replace(lasti, lasti+1, "\\\"");
+									i+=1;
+									lasti = i;
+								} else lasti = i;
+							} else {
+								inside = true;
+							}
+						} else if( c == ',' || c == ':' ) {
+							inside = false;
+							lasti = -1;
+						}
+					}
+					result = sb.toString();
+					jsonval = JSONParser.parseLenient( result );
+				}
+				
+				//JSONArray	jsonarray = jsonval.isArray();
+				
+				JSONObject jsonobj = jsonval.isObject();
+				Person person = jsonPersonParse( jsonobj );
+				
+				int dob = person.getDateOfBirth().getYear()+1900;
+				renameNode.setName( person.getName()+" ["+dob+"]" );
+				
+				if( prevyear == 0 ) renameNode.seth( 25.0 );
+				else renameNode.seth( prevyear-dob );
+				
+				if( map ) {
+					Browser.getWindow().getConsole().log( person.getName() + " " + person.getComment() );
+					renameNode.setMeta( person.getComment() );
+				}
+				
+				for( TreeUtil.Node n : renameNode.getNodes() ) {
+					recursiveNodeRename( n, total, map, dob );
+				}
+				
+				//Browser.getWindow().getConsole().log( "count "+count+"  "+total );
+				if( count == total ) {
+					if( !map ) {
+						treestr = renameNode.getRoot().toString();
+						Browser.getWindow().getConsole().log( treestr );
+						myPopup = Browser.getWindow().open("http://webconnectron.appspot.com/Treedraw.html?callback=frislbok","TreeDraw");
+					} else {
+						PopupPanel pp = new PopupPanel();
+						pp.setSize("800px", "600px");
+						pp.setAutoHideEnabled(true);
+						pp.setAutoHideOnHistoryEventsEnabled( true );
+						
+						SimplePanel	sp = new SimplePanel();
+						loadGoogleMaps( sp.getElement() );
+						pp.add( sp );
+						
+						pp.center();
+					}
+				}
+			}
+		});
+		else {
+			for( TreeUtil.Node n : renameNode.getNodes() ) {
+				recursiveNodeRename( n, total, map, prevyear+25 );
+			}
+			
+			if( count == total ) {
+				if( !map ) {
+					treestr = renameNode.getRoot().toString();
+					//Browser.getWindow().getConsole().log( treestr );
+					myPopup = Browser.getWindow().open("http://webconnectron.appspot.com/Treedraw.html?callback=frislbok","TreeDraw");
+				} else {
+					PopupPanel pp = new PopupPanel();
+					pp.setSize("800px", "600px");
+					pp.setAutoHideEnabled(true);
+					pp.setAutoHideOnHistoryEventsEnabled( true );
+					
+					SimplePanel	sp = new SimplePanel();
+					loadGoogleMaps( sp.getElement() );
+					pp.add( sp );
+					
+					pp.center();
+				}
+			}
+		}
+	}
+	
+	public void exportPhylo( final boolean map ) {
+		Browser.getWindow().getConsole().log("cur "+currentPerson);
+		if( currentPerson != null ) frislbokService.islbok_ancestors( islbok_session, currentPerson.getIslbokid(), new AsyncCallback<String>() {
+			@Override
+			public void onFailure(Throwable caught) {
+				Browser.getWindow().getConsole().log("ancerr "+caught.getMessage());
+			}
+
+			@Override
+			public void onSuccess(String result) {
+				Browser.getWindow().getConsole().log("anc "+result);
+				TreeUtil tu = new TreeUtil();
+				//treestr = 
+				tu.parseNodeList( result.substring(1, result.length()-1) );
+				count = 0;
+				recursiveNodeRename( tu.getNode(), tu.getNode().countLeaves()*2-1, map, 0 );
+				Browser.getWindow().getConsole().log("anc2 "+treestr);
+				//treestr = tu.getNode().toString();
+				//myPopup = Browser.getWindow().open("http://webconnectron.appspot.com/Treedraw.html?callback=webfasta","TreeDraw");
+			}
+		});
+	}
+	
 	public void onModuleLoad() {
 		final RootPanel root = RootPanel.get();
+		
+		//handleMessage();
+		elemental.html.Window wnd = Browser.getWindow();
+		wnd.addEventListener("message", new EventListener() {
+			@Override
+			public void handleEvent(Event evt) {
+				MessageEvent me = (MessageEvent) evt;
+				String dstr = (String)me.getData();
+
+				Console console = Browser.getWindow().getConsole();
+				console.log("okbleh");
+				console.log(dstr);
+
+				if (dstr.equals("ready")) {
+					elemental.html.Window source = myPopup;// me.getSource();
+					console.log(dstr + " " + source);
+					console.log(source.getName());
+
+					if (treestr != null) {
+						source.postMessage(treestr, "*");
+						treestr = null;
+					}
+				} /*else if (dstr.startsWith("propagate")) {
+					int fi = dstr.indexOf('{');
+					int li = dstr.indexOf('}');
+					String substr = dstr.substring(fi + 1, li);
+					String[] split = substr.split(",");
+					Set<String> splitset = new HashSet<String>(Arrays
+							.asList(split));
+					for (Sequence seq : val) {
+						SequenceOld so = (SequenceOld) seq;
+						String name = seq.getName();
+						// console.log("trying "+name);
+						if (splitset.contains(name))
+							so.setSelected(true);
+					}
+					draw(xstart, ystart);
+				}*/
+			}
+		}, true);
 		
 		String user = "sigmar1";
 		String pass = "linsan sonar";
@@ -1487,33 +1807,35 @@ public class Frislbok implements EntryPoint {
 		fbpanel.getElement().appendChild( loginButton() );
 		subvp.add( fbpanel );
 		
-		checkLoginStatus();
+		//checkLoginStatus(); Facebook
 		
-		Element e = Document.get().createElement("script");
+		/*Element e = Document.get().createElement("script");
 		e.setAttribute("async", "true");
 		e.setAttribute("src", "http://connect.facebook.net/en_US/all.js" );
-		Document.get().getElementById("fb-root").appendChild(e);
+		Document.get().getElementById("fb-root").appendChild(e);*/
 		
 		Button showmap = new Button("Hvaðan af landinu");
 		showmap.addClickHandler( new ClickHandler() {
 			@Override
 			public void onClick(ClickEvent event) {
-				PopupPanel pp = new PopupPanel();
-				pp.setSize("800px", "600px");
-				pp.setAutoHideEnabled(true);
-				pp.setAutoHideOnHistoryEventsEnabled( true );
-				
-				SimplePanel	sp = new SimplePanel();
-				loadGoogleMaps( sp.getElement() );
-				pp.add( sp );
-				
-				pp.center();
+				exportPhylo( true );
 			}
 		});
 		Button shareaccount = new Button("Deila aðgangi");
+		Button phylo = new Button("Sýna ættartré");
+		phylo.addClickHandler( new ClickHandler() {
+			@Override
+			public void onClick(ClickEvent event) {
+				Browser.getWindow().getConsole().log("anc ermerm");
+				exportPhylo( false );
+				//treestr = exportPhylo();
+				//myPopup = Browser.getWindow().open("http://webconnectron.appspot.com/Treedraw.html?callback=webfasta","TreeDraw");
+			}
+		});
 		
 		optionsPanel.add( showmap );
 		optionsPanel.add( shareaccount );
+		optionsPanel.add( phylo );
 		
 		root.add(overall);
 	}

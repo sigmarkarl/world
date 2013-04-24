@@ -20,6 +20,8 @@ public class Person implements IsSerializable {
 	String	facebookid;
 	String	facebookusername;
 	String	fbwriter;
+	String	geocode;
+	String	imgurl;
 	
 	public String getIslbokid() {
 		return islbokid;

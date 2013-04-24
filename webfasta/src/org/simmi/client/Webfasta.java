@@ -1431,8 +1431,7 @@ public class Webfasta implements EntryPoint {
 	}-*/;
 	
 	public void handleMessage() {
-		elemental.dom.Element e = Browser.getDocument().getElementById(
-				"listener");
+		elemental.dom.Element e = Browser.getDocument().getElementById("listener");
 		e.addEventListener("message", new EventListener() {
 			@Override
 			public void handleEvent(Event evt) {

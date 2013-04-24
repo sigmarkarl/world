@@ -466,7 +466,7 @@ public class Serifier {
 		String current;
 		while( line != null ) {
 			String trim = line.trim();
-			if( trim.startsWith("Query=") ) {
+			if( trim.startsWith("Query=") || trim.startsWith("Query >") ) {
 				current = null;
 				String name = trim.substring(6).trim();
 				
@@ -515,8 +515,14 @@ public class Serifier {
 								name = name.substring(0,i);
 								
 								i = newcurrent.lastIndexOf(';');
-								if( i == -1 ) i = newcurrent.length();
+								//if( i == -1 ) i = newcurrent.length()-1;
 								newcurrent = newcurrent.substring(i+1);
+								
+								System.out.println(newcurrent);
+								if( newcurrent.indexOf("Thermus") != -1 ) {
+									System.out.println(newcurrent);
+									newcurrent = newcurrent.substring( newcurrent.indexOf("Thermus"), newcurrent.indexOf("strain")-1 ).replace(' ', '_');
+								}
 								
 								String mapstr = includePerc ? newcurrent+"_"+idstr+"%" : newcurrent;
 								mapstr = includeLen ? mapstr+"_"+len : mapstr;
@@ -593,7 +599,7 @@ public class Serifier {
 				//System.err.println( "muu "+name );
 				if( mapHit.containsKey(name) ) {
 					String maphitstr = mapHit.get(name);
-					System.err.println( maphitstr );
+					//System.err.println( maphitstr );
 					int li = maphitstr.lastIndexOf(';');
 					if( li != -1 ) maphitstr = maphitstr.substring(li+1);
 					
@@ -605,9 +611,9 @@ public class Serifier {
 						if( i == -1 ) i = line.length();
 						String cont = line.substring(1,i);
 						
-						String newline = colorAdd( maphitstr, maps, phmaps, colormaps, cont, cont, null, false );
-						//pr.println( ">" + maphitstr + sep + name ); //+ sep + mapHit.get(name) );
-						pr.println( ">" + newline + sep + name );
+						//String newline = colorAdd( maphitstr, maps, phmaps, colormaps, cont, cont, null, false );
+						//pr.println( ">" + newline + sep + name );
+						pr.println( ">" + maphitstr + sep + name ); //+ sep + mapHit.get(name) );
 						include = true;
 					} else include = false;
 				} else include = false;
@@ -2640,7 +2646,7 @@ public class Serifier {
 							Object swap = (filterset instanceof Map) ? ((Map)filterset).get(f) : null;
 							
 							nseq++;
-							if( swap != null ) bw.write( ">"+swap+"_"+f+"\n" );
+							if( swap != null ) bw.write( ">"+swap/*+"_"+f*/+"\n" );
 							else bw.write( line+"\n" );
 							seqname = line;
 							break;

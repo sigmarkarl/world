@@ -2227,6 +2227,38 @@ public class JavaFasta extends JApplet {
 				}
 			}
 		});
+		popup.add( new AbstractAction("Rename duplicates") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				int[] rr = table.getSelectedRows();
+				for( int i = 0; i < rr.length; i++ ) {
+					Sequence seq = serifier.lseq.get( rr[i] );
+					String seqstr = seq.getName();
+					
+					int count = 0;
+					for( int n = i+1; n < rr.length; n++ ) {
+						Sequence seq2 = serifier.lseq.get(n);
+						String seqstr2 = seq2.getName();
+						
+						if( seqstr.compareTo( seqstr2 ) == 0 ) {
+							int curi = seqstr2.indexOf('[');
+							if( curi == -1 ) {
+								seqstr2 += "_"+(++count);
+							} else {
+								seqstr2 = seqstr2.substring(0,curi)+"_"+(++count)+seqstr2.substring(curi, seqstr2.length());
+							}
+							seq2.setName( seqstr2 );
+							//removee.add( seq2 );
+							//removei.add( n );
+						}
+					}
+				}
+					//sortseqs.removeAll( removei );
+				//serifier.lseq.removeAll( removee );
+				//updateIndexes();
+				table.tableChanged( new TableModelEvent( table.getModel() ) );
+			}
+		});
 		popup.add( new AbstractAction("Remove duplicates") {
 			@Override
 			public void actionPerformed(ActionEvent e) {

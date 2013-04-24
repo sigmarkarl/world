@@ -26,4 +26,6 @@ public interface FrislbokServiceAsync {
 
 	void fetchFromIslbokId(String islbokid, AsyncCallback<Person> callback);
 
+	void islbok_ancestors(String session, String id, AsyncCallback<String> callback);
+
 }

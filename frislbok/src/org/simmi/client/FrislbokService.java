@@ -29,5 +29,6 @@ public interface FrislbokService extends RemoteService {
 	public Person[] fetchFromKeyStringArray(String[] keys);
 	public String savePerson( Person person );
 	public String savePersonArray( Person[] persons );
-	String islbok_siblings(String session, String id);
+	public String islbok_siblings(String session, String id);
+	public String islbok_ancestors( String session, String id );
 }
