@@ -37,6 +37,14 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.nio.ByteBuffer;
+import java.nio.file.FileSystems;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.PathMatcher;
+import java.nio.file.Paths;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -3008,6 +3016,27 @@ public class JavaFasta extends JApplet {
 				}
 			}
 		});
+		popup.add( new AbstractAction("Open directory") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				JFileChooser	jfc = new JFileChooser();
+				jfc.setFileSelectionMode( JFileChooser.DIRECTORIES_ONLY );
+		    	if( jfc.showOpenDialog( parentApplet ) == JFileChooser.APPROVE_OPTION ) {
+		    		File f = jfc.getSelectedFile();
+		    		
+		    		Path startingDir = Paths.get( f.toURI() );
+		            String pattern = "*.ab1";
+
+		            Finder finder = new Finder(pattern);
+		            try {
+						Files.walkFileTree(startingDir, finder);
+					} catch (IOException e1) {
+						e1.printStackTrace();
+					}
+		            finder.done();
+		    	}
+			}
+		});
 		popup.add( new AbstractAction("Export") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -3984,5 +4013,57 @@ public class JavaFasta extends JApplet {
 	
 	public Rectangle getSelectedRect() {
 		return c == null ? null : c.selectedRect;
+	}
+	
+	public class Finder extends SimpleFileVisitor<Path> {
+	    private final PathMatcher matcher;
+	    private int numMatches = 0;
+	
+	    public Finder(String pattern) {
+	        matcher = FileSystems.getDefault().getPathMatcher("glob:" + pattern);
+	    }
+	
+	    // Compares the glob pattern against
+	    // the file or directory name.
+	    void find(Path file) {
+	        Path name = file.getFileName();
+	        if (name != null && matcher.matches(name)) {
+	        	try {
+					JavaFasta.this.addAbiSequence( name.toString(), Files.newInputStream(file) );
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+	            numMatches++;
+	            System.out.println(file);
+	        }
+	    }
+	
+	    // Prints the total number of
+	    // matches to standard out.
+	    void done() {
+	        System.out.println("Matched: " + numMatches);
+	    }
+	
+	    // Invoke the pattern matching
+	    // method on each file.
+	    @Override
+	    public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
+	        find(file);
+	        return FileVisitResult.CONTINUE;
+	    }
+	
+	    // Invoke the pattern matching
+	    // method on each directory.
+	    @Override
+	    public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
+	        find(dir);
+	        return FileVisitResult.CONTINUE;
+	    }
+	
+	    @Override
+	    public FileVisitResult visitFileFailed(Path file, IOException exc) {
+	        System.err.println(exc);
+	        return FileVisitResult.CONTINUE;
+	    }
 	}
 }

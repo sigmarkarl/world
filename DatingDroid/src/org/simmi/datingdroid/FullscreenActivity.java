@@ -132,7 +132,6 @@ public class FullscreenActivity extends Activity {
 
 		          // make request to the /me API
 		          Request.executeMeRequestAsync(session, new Request.GraphUserCallback() {
-
 		            // callback after Graph API response with user object
 		            @Override
 		            public void onCompleted(GraphUser user, Response response) {
@@ -142,6 +141,8 @@ public class FullscreenActivity extends Activity {
 		              }
 		            }
 		          });
+		        } else {
+		        	System.err.println();
 		        }
 		      }
 		});
@@ -160,7 +161,7 @@ public class FullscreenActivity extends Activity {
 	/**
 	 * Touch listener to use for in-layout UI controls to delay hiding the
 	 * system UI. This is to prevent the jarring behavior of controls going away
-	 * while interacting with activity UI.
+	 * while interacting with activity UI.			
 	 */
 	View.OnTouchListener mDelayHideTouchListener = new View.OnTouchListener() {
 		@Override
