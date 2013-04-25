@@ -402,6 +402,7 @@ public class FullscreenActivity extends Activity {
 		});*/
 		
 		//myWebView.loadUrl("http://nutritiondb.appspot.com");
+		//myWebView.loadUrl("http://130.208.252.7:8888/");
 		//myWebView.loadUrl("http://192.168.1.66:8888/");
 
 		// Set up an instance of SystemUiHider to control the system UI for
