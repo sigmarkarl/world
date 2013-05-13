@@ -166,6 +166,7 @@ public class FullscreenActivity extends Activity {
 		}
 	};
 	
+	Map<String,String>	groupIdMap = new HashMap<String,String>();
 	Map<String,Column> nutrmap = new HashMap<String,Column>();
 	Map<String,FoodInfo> foodmap = new HashMap<String,FoodInfo>();
 	List<FoodInfo>	lfoodinfo = new ArrayList<FoodInfo>();
@@ -218,6 +219,22 @@ public class FullscreenActivity extends Activity {
 			return lcolumnwidth.get( i );
 		}
 		
+		@JavascriptInterface
+		public int getGroupCount() {
+			return groupIdMap.size();
+		}
+		
+		@JavascriptInterface
+		public String getGroup( int i ) {
+			int k = 0;
+			for( String group : groupIdMap.keySet() ) {
+				if( k == i ) return group;
+				k++;
+			}
+			
+			return null;
+		}
+		
 		/*@JavascriptInterface
 		public int getLength() {
 			return split.length;
@@ -231,6 +248,7 @@ public class FullscreenActivity extends Activity {
 	private static final JsonFactory JSON_FACTORY = new JacksonFactory();
 	private static Fusiontables fusiontables;
 	
+	NutData nutdata = null;
 	private class fetchNutrTask extends AsyncTask<Object,Integer,Long> {
 		@Override
 		protected Long doInBackground(Object... arg0) {
@@ -248,9 +266,7 @@ public class FullscreenActivity extends Activity {
 				}
 				baos.close();
 				
-				NutData nutdata = new NutData( baos.toString() );
-				myWebView.addJavascriptInterface( nutdata, "nutdata" );
-				myWebView.loadUrl("http://192.168.1.66:8888/");
+				nutdata = new NutData( baos.toString() );
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
@@ -271,11 +287,25 @@ public class FullscreenActivity extends Activity {
 		fusiontables = new Fusiontables.Builder( HTTP_TRANSPORT, JSON_FACTORY, credential ).setApplicationName("NutritionDroid").setFusiontablesRequestInitializer(fri).build();
 		final Query query = fusiontables.query();
 		
-		String sql = "SELECT Id,Unit,Name FROM 129hFkqxrJnhaRTPDS1COEGs5d2q0dBasWg9gOJM";
+		String sql = "SELECT Id,Name FROM 1ysVkwxLAO7U4F-ULp58q4P5DqcD70V_MpiKuJ4U";
 		SqlGet sqlget = query.sqlGet( sql );
 		
 		Sqlresponse 		sqlresp = sqlget.execute();
 		List<List<Object>> 	rowObjs = sqlresp.getRows();
+		
+		System.err.println( "rows " + rowObjs.size() );
+		if( rowObjs != null ) for( List<Object> row : rowObjs ) {
+			String idstr = (String)row.get(0);
+			String namestr = (String)row.get(1);
+
+			groupIdMap.put( idstr.substring(1, idstr.length()-1), namestr.substring(1, namestr.length()-1 ) );
+		}
+		
+		sql = "SELECT Id,Unit,Name FROM 129hFkqxrJnhaRTPDS1COEGs5d2q0dBasWg9gOJM";
+		sqlget = query.sqlGet( sql );
+		
+		sqlresp = sqlget.execute();
+		rowObjs = sqlresp.getRows();
 		
 		System.err.println( "rows " + rowObjs.size() );
 		if( rowObjs != null ) for( List<Object> row : rowObjs ) {
@@ -293,15 +323,15 @@ public class FullscreenActivity extends Activity {
 			nutrmap.put( idShort, col );
 		}
 		
-		fusiontables = new Fusiontables.Builder( HTTP_TRANSPORT, JSON_FACTORY, credential ).setApplicationName("NutritionDroid").setFusiontablesRequestInitializer(fri).build();
-		Query query2 = fusiontables.query();
-		sql = "SELECT FoodId,NutrId,Value FROM 1NXpzVjOWmM9AXPOb173Z7fZmGrpUlISH3P6DBdo";
-		sqlget = query2.sqlGet( sql );
-		sqlresp = sqlget.execute();
-		rowObjs = sqlresp.getRows();
+		/*fusiontables = new Fusiontables.Builder( HTTP_TRANSPORT, JSON_FACTORY, credential ).setApplicationName("NutritionDroid").setFusiontablesRequestInitializer(fri).build();
+		//Query query2 = fusiontables.query();
+		String	sql2 = "SELECT FoodId,NutrId FROM 1NXpzVjOWmM9AXPOb173Z7fZmGrpUlISH3P6DBdo";
+		SqlGet sqlget2 = query.sqlGet( sql2 );
+		Sqlresponse sqlresp2 = sqlget2.execute();
+		List<List<Object>> rowObjs2 = sqlresp2.getRows();
 		
-		System.err.println( "rows2 " + rowObjs.size() );
-		if( rowObjs != null ) for( List<Object> row : rowObjs ) {
+		System.err.println( "rows2 " + rowObjs2.size() );
+		if( rowObjs2 != null ) for( List<Object> row : rowObjs2 ) {
 			String foodidstr = (String)row.get(0);
 			String nutridstr = (String)row.get(1);
 			double val = (Double)row.get(2);
@@ -319,7 +349,7 @@ public class FullscreenActivity extends Activity {
 					break;
 				}
 			}
-		}
+		}*/
 	}
 	
 	WebView myWebView = null;
@@ -339,6 +369,16 @@ public class FullscreenActivity extends Activity {
 		//webSettings.setSaveFormData( false );
 		
 		new fetchNutrTask().execute();
+		
+		while( nutdata == null ) {
+			try {
+				Thread.sleep(200);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
+		myWebView.addJavascriptInterface( nutdata, "nutdata" );
+		myWebView.loadUrl("http://130.208.252.7:8887/");
 		
 		/*Session.openActiveSession(this, true, new Session.StatusCallback() {
 		    // callback when session changes state
