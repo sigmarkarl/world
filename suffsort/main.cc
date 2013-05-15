@@ -66,6 +66,23 @@ inline int strcmpsim( char* b1, char* b2 ) {
 	return b1[i] - b2[i];
 }
 
+char* buffer;
+long long buffersize;
+inline int strcmpsimdbg( char* b1, char* b2, long long off ) {
+	int i = 0;
+	printf("erm1 %lld %lld\n", (long long)buffer, off+i);
+	while( b1[i] == b2[i] ) {
+		printf("erm2 %lld\n", off+i);
+		if( b1[i] == 0 ) return 0;
+		i++;
+		//if( off+i >= buffersize ) {
+			printf("erm2 %lld\n", off+i);
+			//exit(0);
+		//}
+	}
+	return b1[i] - b2[i];
+}
+
 bool isSorted( char* buffer, long long* ibuffer, long long length ) {
 	bool ret = true;
 	for( int i = 0; i < length; i++ ) {
@@ -76,16 +93,59 @@ bool isSorted( char* buffer, long long* ibuffer, long long length ) {
 	return true;
 }
 
-char* buffer;
 int simcomp( const void* b1, const void* b2 ) {
 	return strcmpsim( &buffer[*(long long*)b1], &buffer[*(long long*)b2] );
 }
 
+int simcompdbg( const void* b1, const void* b2 ) {
+	long long idx1 = *(long long*)b1;
+	long long idx2 = *(long long*)b2;
+
+	//if( idx1 >= buffersize || idx2 >= buffersize ) {
+		printf( "erm %lld %lld %lld\n", idx1, idx2, buffersize );
+	//	exit( 0 );
+	//}
+	return strcmpsimdbg( &buffer[idx1], &buffer[idx2], idx1 > idx2 ? idx1 : idx2 );
+}
+
+void first() {
+	FILE* df = fopen("/vg454flx/silva111.data.txt", "r");
+	fseek( df, 0, SEEK_END );
+	long long size = ftello64( df );
+	fseek( df, 0, SEEK_SET );
+
+	//free( buffer );
+	buffer = new char[size+1];
+	fread( buffer, 1, size, df );
+	fclose( df );
+	buffer[size] = 0;
+
+	FILE* idf = fopen("/vg454flx/silva111.idx", "rb");
+	long long* bb = new long long[20000000];
+	fread( bb, 8, 20000000, idf );
+	fclose( idf );
+	for( long long ll = 19999800; ll < 20000000; ll++ ) {
+		long long val = bb[ll];
+		char c = buffer[val+50];
+		buffer[val+50] = 0;
+		printf( "%s\t%lld\n", &buffer[val], val );
+		buffer[val+50] = c;
+	}
+}
+
 int main(int argc, char **argv) {
+	first();
+	return 0;
+
 	/*FILE* f = fopen("/vg454flx/nr/nr.fasta","r");
 
 	FILE* nf = fopen("/vg454flx/nr/nr.names.txt", "w");
-	FILE* df = fopen("/vg454flx/nr/nr.data.txt", "w");
+	FILE* df = fopen("/vg454flx/nr/nr.data.txt", "w");*/
+
+	FILE* f = fopen("/u0/qiime_software/silva111.fasta","r");
+
+	FILE* nf = fopen("/vg454flx/silva111.names.txt", "w");
+	FILE* df = fopen("/vg454flx/silva111.data.txt", "w");
 
 	std::vector<long long>	nameidx;
 	std::vector<long long>	dataidx;
@@ -94,7 +154,7 @@ int main(int argc, char **argv) {
 	bool inname = false;
 	long long nametotal = 0;
 	long long datatotal = 0;
-	char* buffer = new char[1000000];
+	buffer = new char[1000000];
 	int r = fread( buffer, 1, 1000000, f );
 	while( r > 0 ) {
 		int lastwrite = 0;
@@ -103,7 +163,7 @@ int main(int argc, char **argv) {
 			if( buffer[i] == '>' ) {
 				inname = true;
 				lastwrite = i+1;
-				if( dataidx.size() > 0 ) fputc( 0, df );
+				if( dataidx.size() > 0 ) fputc( '\0', df );
 				dataidx.push_back( datatotal );
 				nameidx.push_back( nametotal );
 			} else if( buffer[i] == '\n' ) {
@@ -135,19 +195,20 @@ int main(int argc, char **argv) {
 	fclose( f );
 	fclose( nf );
 	fclose( df );
+	free( buffer );
 
-	FILE* ni = fopen("/vg454flx/nr/nr.nameidx", "wb");
+	FILE* ni = fopen("/vg454flx/silva111.nameidx", "wb");
 	for( unsigned int i = 0; i < nameidx.size(); i++ ) {
 		fwrite( &nameidx[i], 8, 1, ni );
 	}
 	fclose( ni );
-	FILE* di = fopen("/vg454flx/nr/nr.dataidx", "wb");
+	FILE* di = fopen("/vg454flx/silva111.dataidx", "wb");
 	for( unsigned int i = 0; i < dataidx.size(); i++ ) {
 		fwrite( &dataidx[i], 8, 1, di );
 	}
-	fclose( di );*/
+	fclose( di );
 
-	FILE* df = fopen("/vg454flx/nr/nr.data.txt", "r");
+	df = fopen("/vg454flx/silva111.data.txt", "r");
 	fseek( df, 0, SEEK_END );
 	long long size = ftello64( df );
 	fseek( df, 0, SEEK_SET );
@@ -158,17 +219,30 @@ int main(int argc, char **argv) {
 	fclose( df );
 	buffer[size] = 0;
 
-	/*FILE* idf = fopen("/vg454flx/nr/nr.idx", "w");
-	for( long long ll = 0; ll < size; ll++ ) {
-		fwrite( &ll, 8, 1, idf );
-	}
-	fclose( idf );*/
+	buffersize = size;
 
-	long long bufsiz = 3000000000L;
+	//FILE* idf = fopen("/vg454flx/SSURef_111_tax_silva_trunc.idx", "w");
+	long long* idxbuf = new long long[ size+1 ];
+	for( long long ll = 0; ll < size+1; ll++ ) {
+		//fwrite( &ll, 8, 1, idf );
+		idxbuf[ll] = ll;
+	}
+	//fclose( idf );
+	printf("erme %lld\n", size);
+	qsort( idxbuf, size, sizeof(long long), simcomp );
+	printf("done\n");
+
+	FILE* idf = fopen("/vg454flx/silva111.idx", "wb");
+	//for( long long ll = 0; ll < size+1; ll++ ) {
+	fwrite( idxbuf, 8, size+1, idf );
+	//}
+	fclose( idf );
+	/*long long bufsiz = 3000000000L;
 	long long bufhalf = bufsiz/2;
 
 	printf( "reading idx\n" );
 	long long* idxbuf = new long long[ bufsiz ];
+	//FILE* idf = fopen("/vg454flx/nr/nr.idx", "rw");
 	FILE* idf = fopen("/vg454flx/nr/nr.idx", "rw");
 
 	for( int k = 0; k < 5; k++ ) {
@@ -193,7 +267,7 @@ int main(int argc, char **argv) {
 			}
 		}
 	}
-	fclose( idf );
+	fclose( idf );*/
 
 	/*buff = buffer;
 	size = (10000000 < size ? 10000000 : size);

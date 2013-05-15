@@ -593,9 +593,9 @@ public class Serifier {
 		while( line != null ) {
 			if( line.startsWith(">") ) {
 				String name = line.substring(1).trim();
-				//int i = name.indexOf(' ');
-				//if( i == -1 ) i = name.length();
-				//name = name.substring(0,i);
+				int i = name.indexOf(' ');
+				if( i == -1 ) i = name.length();
+				name = name.substring(0,i);
 				//System.err.println( "muu "+name );
 				if( mapHit.containsKey(name) ) {
 					String maphitstr = mapHit.get(name);
@@ -606,7 +606,7 @@ public class Serifier {
 					if( filter == null || checkFilter( filter, maphitstr ) ) {
 						nseq++;
 						
-						int i = line.lastIndexOf('_');
+						i = line.lastIndexOf('_');
 						if( i != -1 ) i = line.lastIndexOf('_', i-1);
 						if( i == -1 ) i = line.length();
 						String cont = line.substring(1,i);
