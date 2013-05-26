@@ -5,5 +5,4 @@
 	<classpathentry kind="lib" path="/opt/jdk/jre/lib/javaws.jar"/>
 	<classpathentry kind="lib" path="/opt/jdk/jre/lib/deploy.jar"/>
 	<classpathentry kind="lib" path="/opt/jdk/jre/lib/plugin.jar"/>
-	<classpathentry kind="output" path="bin"/>
 </classpath>
