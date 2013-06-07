@@ -1,8 +1,10 @@
 package org.simmi.nutritiondroid;
 
+import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -76,11 +78,18 @@ public class FullscreenActivity extends Activity {
 	public class FoodInfo implements Comparable<FoodInfo> {
 		Object[]	columns;
 		boolean		selected = false;
+		String		id;
 		
-		public FoodInfo( String name, String group ) {
+		public FoodInfo( String id, String name, String group ) {
 			columns = new Object[ lcolumnwidth.size() ];
 			columns[0] = name;
 			columns[1] = group;
+			this.id = id;
+		}
+		
+		@JavascriptInterface
+		public String getId() {
+			return id;
 		}
 		
 		@JavascriptInterface
@@ -101,8 +110,27 @@ public class FullscreenActivity extends Activity {
 		}
 		
 		@JavascriptInterface
+		public String stringValAt( int i ) {
+			if( i < columns.length ) {
+				return (String)columns[i];
+			}
+			return null;
+		}
+		
+		@JavascriptInterface
+		public double doubleValAt( int i ) {
+			if( i < columns.length ) {
+				Object val = columns[i];
+				return val == null ? -1.0 : (Double)columns[i];
+			}
+			return -1.0;
+		}
+		
+		@JavascriptInterface
 		public Object valAt( int i ) {
-			if( i < columns.length ) return columns[i];
+			if( i < columns.length ) {
+				return columns[i];
+			}
 			return null;
 		}
 		
@@ -171,6 +199,7 @@ public class FullscreenActivity extends Activity {
 	Map<String,FoodInfo> foodmap = new HashMap<String,FoodInfo>();
 	List<FoodInfo>	lfoodinfo = new ArrayList<FoodInfo>();
 	List<Column>	lcolumnwidth = new ArrayList<Column>();
+	Map<String,Integer>	nutrindex = new HashMap<String,Integer>();
 	
 	public class NutData {
 		//String[] 	split;
@@ -178,6 +207,8 @@ public class FullscreenActivity extends Activity {
 		public NutData( String text ) {
 			int s = 0;
 			int i = text.indexOf( '\n' );
+			FoodInfo	fi = null;
+			String		currentFood = null;
 			while( i != -1 ) {
 				/*int t1 = text.indexOf('^', s);
 				String foodShort = text.substring(s+1, t1-1);
@@ -190,18 +221,13 @@ public class FullscreenActivity extends Activity {
 				String nutrShort = text.substring(s+5, s+8);
 				double val = Double.parseDouble( text.substring(s+8,i) );
 				
-				if( foodmap.containsKey( foodShort ) ) {
-					FoodInfo fi = foodmap.get( foodShort );
-					
-					int ind = lcolumnwidth.indexOf( nutrmap.get( nutrShort ) );
-					fi.columns[ind] = val;
-				} else {
-					/*for( String key : foodmap.keySet() ) {
-						console.log("uff " + key);
-						break;
-					}*/
-					if( i > 1000 ) break;
+				if( !foodShort.equals(currentFood) ) {
+					currentFood = foodShort;
+					fi = foodmap.get( foodShort );
 				}
+				
+				int ind = nutrindex.get( nutrShort ); //lcolumnwidth.indexOf( nutrmap.get( nutrShort ) );
+				fi.columns[ind] = val;
 				
 				s = i+1;
 				i = text.indexOf( '\n', s );
@@ -233,6 +259,16 @@ public class FullscreenActivity extends Activity {
 			}
 			
 			return null;
+		}
+		
+		@JavascriptInterface
+		public int getFoodInfoCount() {
+			return lfoodinfo.size();
+		}
+		
+		@JavascriptInterface
+		public FoodInfo getFoodInfo( int i ) {
+			return lfoodinfo.get(i);
 		}
 		
 		/*@JavascriptInterface
@@ -324,32 +360,24 @@ public class FullscreenActivity extends Activity {
 		}
 		
 		/*fusiontables = new Fusiontables.Builder( HTTP_TRANSPORT, JSON_FACTORY, credential ).setApplicationName("NutritionDroid").setFusiontablesRequestInitializer(fri).build();
-		//Query query2 = fusiontables.query();
-		String	sql2 = "SELECT FoodId,NutrId FROM 1NXpzVjOWmM9AXPOb173Z7fZmGrpUlISH3P6DBdo";
+		//Query query2 = fusiontables.query();*/
+		String	sql2 = "SELECT Id,GroupId,Name FROM 11kJvZY3UCjtqcA0gN8WRZwtTVGXJ_MxAto7cdUU";
 		SqlGet sqlget2 = query.sqlGet( sql2 );
 		Sqlresponse sqlresp2 = sqlget2.execute();
 		List<List<Object>> rowObjs2 = sqlresp2.getRows();
 		
 		System.err.println( "rows2 " + rowObjs2.size() );
 		if( rowObjs2 != null ) for( List<Object> row : rowObjs2 ) {
-			String foodidstr = (String)row.get(0);
-			String nutridstr = (String)row.get(1);
-			double val = (Double)row.get(2);
+			String idstr = (String)row.get(0);
+			String groupidstr = (String)row.get(1);
+			String namestr = (String)row.get(2);
 			
-			String foodShort = foodidstr.substring(1, foodidstr.length()-1);
-			String nutrShort = nutridstr.substring(1, nutridstr.length()-1);
-			if( foodmap.containsKey( foodShort ) ) {
-				FoodInfo fi = foodmap.get( foodShort );
-				
-				int ind = lcolumnwidth.indexOf( nutrmap.get( nutrShort ) );
-				fi.columns[ind] = val;
-			} else {
-				for( String key : foodmap.keySet() ) {
-					//console.log("uff" + key);
-					break;
-				}
+			if( namestr.length() > 0 && groupidstr.length() > 0 ) {
+				FoodInfo fi = new FoodInfo( idstr, namestr.substring(1, namestr.length()-1), groupIdMap.get( groupidstr.substring(1, groupidstr.length()-1) ) );
+				foodmap.put( idstr.substring(1, idstr.length()-1), fi );
+				lfoodinfo.add( fi );
 			}
-		}*/
+		}
 	}
 	
 	WebView myWebView = null;
@@ -368,17 +396,95 @@ public class FullscreenActivity extends Activity {
 		//webSettings.setSavePassword( false );
 		//webSettings.setSaveFormData( false );
 		
-		new fetchNutrTask().execute();
+		//new fetchNutrTask().execute();
 		
-		while( nutdata == null ) {
-			try {
-				Thread.sleep(200);
-			} catch (InterruptedException e) {
-				e.printStackTrace();
+		try {			
+			InputStream is = (InputStream)FullscreenActivity.this.getResources().openRawResource(R.raw.fd_group);
+			BufferedReader br = new BufferedReader( new InputStreamReader( is ) );
+			String line = br.readLine();
+			while( line != null ) {
+				String[] split = line.split("\\^");
+				
+				if( split.length >= 2 ) {
+					String idstr = split[0];
+					String namestr = split[1];
+	
+					groupIdMap.put( idstr.substring(1, idstr.length()-1), namestr.substring(1, namestr.length()-1 ) );
+				}
+				line = br.readLine();
 			}
+			br.close();
+			
+			lcolumnwidth.add( new Column("Food", null, 300, "0") );
+			lcolumnwidth.add( new Column("Group", null, 180, "0") );
+			
+			int i = 0;
+			nutrindex.put( "Food", i++ );
+			nutrindex.put( "Group", i++ );
+			
+			is = (InputStream)FullscreenActivity.this.getResources().openRawResource(R.raw.nutr_def);
+			br = new BufferedReader( new InputStreamReader( is ) );
+			line = br.readLine();
+			while( line != null ) {
+				String[] split = line.split("\\^");
+				
+				if( split.length >= 4 ) {
+					String idstr = split[0];
+					String unitstr = split[1];
+					String namestr = split[3];
+					
+					String idShort = idstr.substring(1, idstr.length()-1);
+					String unitShort = unitstr.substring(1, unitstr.length()-1);
+					String nameShort = namestr.substring(1, namestr.length()-1);
+					
+					Column col = new Column( nameShort, unitShort, 75, idShort);
+					lcolumnwidth.add( col );
+					nutrmap.put( idShort, col );
+					
+					nutrindex.put( idShort, i++ );
+				}
+				line = br.readLine();
+			}
+			br.close();
+			
+			is = (InputStream)FullscreenActivity.this.getResources().openRawResource(R.raw.food_des);
+			br = new BufferedReader( new InputStreamReader( is ) );
+			line = br.readLine();
+			while( line != null ) {
+				String[] split = line.split("\\^");
+				
+				if( split.length >= 3 ) {
+					String idstr = split[0];
+					String groupidstr = split[1];
+					String namestr = split[2];
+					
+					if( namestr.length() > 0 && groupidstr.length() > 0 ) {
+						FoodInfo fi = new FoodInfo( idstr, namestr.substring(1, namestr.length()-1), groupIdMap.get( groupidstr.substring(1, groupidstr.length()-1) ) );
+						foodmap.put( idstr.substring(1, idstr.length()-1), fi );
+						lfoodinfo.add( fi );
+					}
+				}
+				line = br.readLine();
+			}
+			br.close();
+			
+			is = (InputStream)FullscreenActivity.this.getResources().openRawResource(R.raw.nut_data_trim);
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			byte[] buffer = new byte[16384];
+			int r = is.read(buffer);
+			while( r > 0 ) {
+				baos.write(buffer, 0, r );
+				r = is.read( buffer );
+			}
+			baos.close();
+			
+			nutdata = new NutData( baos.toString() );
+		} catch (IOException e1) {
+			e1.printStackTrace();
 		}
+		
 		myWebView.addJavascriptInterface( nutdata, "nutdata" );
-		myWebView.loadUrl("http://130.208.252.7:8887/");
+		myWebView.loadUrl("http://192.168.1.66:8893/");
 		
 		/*Session.openActiveSession(this, true, new Session.StatusCallback() {
 		    // callback when session changes state
