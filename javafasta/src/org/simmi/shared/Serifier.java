@@ -150,7 +150,7 @@ public class Serifier {
 			Set<String>	teg = new HashSet<String>();
 			for( String e : t ) {
 				int ind = e.indexOf('_');
-				if( e.contains("_JL2_") ) ind = e.indexOf('_', ind+1);
+				//if( e.contains("_JL2_") ) ind = e.indexOf('_', ind+1);
 				
 				if( ind != -1 ) {
 					String str = e.substring( 0, ind );
@@ -161,7 +161,7 @@ public class Serifier {
 					
 					species.add(str);
 				} else {
-					System.err.println("");
+					System.err.println("kk");
 				}
 			}
 			
@@ -178,7 +178,7 @@ public class Serifier {
 			
 			for( String e : t ) {
 				int ind = e.indexOf('_');
-				if( e.contains("_JL2_") ) ind = e.indexOf('_', ind+1);
+				//if( e.contains("_JL2_") ) ind = e.indexOf('_', ind+1);
 				
 				String str = e.substring( 0, ind );
 				/*if( joinmap.containsKey( str ) ) {
@@ -297,32 +297,69 @@ public class Serifier {
 			if( line.startsWith("Sequences prod") ) {
 				line = br.readLine();
 				Set<String>	all = new HashSet<String>();
-				while( line != null && !line.startsWith(">") ) {
+				while( line != null && !line.startsWith("Query=") ) {
 					String trim = line.trim();
-					if( trim.startsWith("o.prof") || trim.startsWith("m.hydro") || trim.startsWith("mt.silv") || trim.startsWith("mt.ruber") || trim.startsWith("t.RLM") || trim.startsWith("t.spCCB") || trim.startsWith("t.arci") || trim.startsWith("t.scoto") || trim.startsWith("t.antr") || trim.startsWith("t.aqua") || trim.startsWith("t.t") || trim.startsWith("t.egg") || trim.startsWith("t.island") || trim.startsWith("t.oshi") || trim.startsWith("t.brock") || trim.startsWith("t.fili") || trim.startsWith("t.igni") || trim.startsWith("t.kawa") ) {
-						int millind = trim.indexOf('#');
-						if( millind == -1 ) millind = trim.indexOf('.', 5);
-						String val = trim.substring( 0, millind-1 );
-						if( val.length() < 2 ) {
-							System.err.println();
+					
+					/*if( trim.contains("1572") ) {
+						System.err.println();
+					}*/
+					if( trim.startsWith(">") ) {
+					//if( trim.startsWith("o.prof") || trim.startsWith("m.hydro") || trim.startsWith("mt.silv") || trim.startsWith("mt.ruber") || trim.startsWith("t.RLM") || trim.startsWith("t.spCCB") || trim.startsWith("t.arci") || trim.startsWith("t.scoto") || trim.startsWith("t.antr") || trim.startsWith("t.aqua") || trim.startsWith("t.t") || trim.startsWith("t.egg") || trim.startsWith("t.island") || trim.startsWith("t.oshi") || trim.startsWith("t.brock") || trim.startsWith("t.fili") || trim.startsWith("t.igni") || trim.startsWith("t.kawa") ) {
+						trim = trim.substring(2);
+						
+						line = br.readLine();
+						while( line != null && !line.startsWith("Length") ) {
+							trim += line.trim();
+							line = br.readLine();
 						}
-						//int v = val.indexOf("contig");
-						all.add( val.replace(".fna", "") );
+						
+						int millind = trim.indexOf('#');
+						//if( millind == -1 ) millind = trim.indexOf("..", 5);
+						String val = trim.substring( 0, millind ).trim();
+						
+						if( line != null ) {
+							int len = Integer.parseInt( line.substring(7) );
+							
+							line = br.readLine().trim();
+							while( !line.startsWith("Identities") ) line = br.readLine().trim();
+							
+							int idx0 = line.indexOf('/');
+							int idx1 = line.indexOf('(');
+							int idx2 = line.indexOf('%');
+							
+							int percid = Integer.parseInt( line.substring(idx1+1, idx2) );
+							int lenid = Integer.parseInt( line.substring(idx0+1, idx1-1) );
+							//int v = val.indexOf("contig");
+							if( percid >= 50 && lenid >= len/2 ) all.add( val.replace(".fna", "") );
+						} else System.err.println( trim );
+						
+						/*if( val.contains("SG0") ) {
+							System.err.println();
+						}*/
+						
+						//all.add( val.replace(".fna", "") );
 					}
+					
+					if( cnt++ % 100000 == 0 ) {
+						System.err.println( cnt );
+					}
+					
 					line = br.readLine();
 				}
 				
 				//if( fw != null ) fw.write( all.toString()+"\n" );
 				
+				//System.err.println( all );
+				//System.err.println();
 				if( union ) joinSets( all, total );
 				//else intersectSets( all, total );
 				
 				if( line == null ) break;
 			}
 			
-			if( cnt++ % 100000 == 0 ) {
+			/*if( cnt++ % 100000 == 0 ) {
 				System.err.println( cnt );
-			}
+			}*/
 			line = br.readLine();
 		}
 		if( fw != null ) {
@@ -1107,6 +1144,38 @@ public class Serifier {
 		if( i >= 0 ) {
 			outf = new File( args[i+1] );
 			//ex
+		}
+		
+		i = arglist.indexOf("-huge");
+		if( i >= 0 ) {
+			String mappingfile = args[i+1];
+			
+			Map<String,String>	mapping = new HashMap<String,String>();
+			FileReader fr = new FileReader( mappingfile );
+			BufferedReader br = new BufferedReader( fr );
+			String line = br.readLine();
+			while( line != null ) {
+				String[] split = line.split("\t");
+				if( split.length > 1 ) mapping.put(split[0], split[1]);
+				line = br.readLine();
+			}
+			br.close();
+			fr.close();
+			
+			FileWriter fw = new FileWriter( outf );
+			fr = new FileReader( inf );
+			br = new BufferedReader( fr );
+			line = br.readLine();
+			while( line != null ) {
+				for( String map : mapping.keySet() ) {
+					line = line.replace( map, mapping.get(map) );
+				}
+				fw.write( line+"\n" );
+				line = br.readLine();
+			}
+			br.close();
+			fr.close();
+			fw.close();
 		}
 		
 		// matrix med location vs species count ur fasta file
@@ -2395,7 +2464,8 @@ public class Serifier {
 							if( ftagmap.containsKey(s.getName()) ) fw.write( ftagmap.get(s.getName())+line+"\n" );
 							else fw.write( "simmi"+line+"\n" );
 						} else if( simple ) {
-							fw.write( line.replace( ">", ">"+s.getName().replace(".fna", "")+"_" )+"\n" );
+							//line = line.replace( ">", ">"+s.getName().replace(".fna", "")+"_" );
+							fw.write( line+"\n" );
 						} else {
 							int pe = line.indexOf('%');
 							String idstr = null;
