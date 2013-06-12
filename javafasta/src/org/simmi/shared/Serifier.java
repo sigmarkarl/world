@@ -65,6 +65,33 @@ public class Serifier {
 		}
 	};
 	
+	public List<Sequence> readSequences( BufferedReader br ) throws IOException {
+		List<Sequence> ret = new ArrayList<Sequence>();
+		
+		Sequence s = null;
+		String line = br.readLine();
+		while( line != null ) {
+			if( line.startsWith(">") ) {
+				s = new Sequence( line.substring(1), null );
+				//serifier.lseq.add( s );
+				ret.add( s );
+			} else if( s != null ) {
+				int start = 0;
+				int i = line.indexOf(' ');
+				while( i != -1 ) {
+					String substr = line.substring(start, i);
+					s.append( substr );
+					start = i+1;
+					i = line.indexOf(' ', start);
+				}
+				s.append( line.substring(start, line.length()) );
+			}
+			line = br.readLine();
+		}
+		
+		return ret;
+	}
+	
 	String addon = "nnnttaattaattaannn";
 	public void genbankFromNR( Sequences s, File blastFile, File genbankOut ) throws IOException {
 		Map<String,List<Anno>>	mapan = new HashMap<String,List<Anno>>();
