@@ -36,6 +36,9 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URLEncoder;
 import java.nio.ByteBuffer;
 import java.nio.file.FileSystems;
 import java.nio.file.FileVisitResult;
@@ -3299,6 +3302,49 @@ public class JavaFasta extends JApplet {
 				} catch (URISyntaxException | MalformedURLException e1) {
 					e1.printStackTrace();
 				}*/
+			}
+		});
+		popup.add( new AbstractAction("Draw ML tree") {
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+				List<Sequence> seqlist = new ArrayList<Sequence>();
+		    	 int[] rr = table.getSelectedRows();
+		    	 for( int r : rr ) {
+		    		 int i = table.convertRowIndexToModel( r );
+		    		 Sequence seq = serifier.lseq.get(i);
+		    		 seqlist.add( seq );
+		    	 }
+		    	 File tmpdir = new File("/tmp");
+		    	 try {
+					FileWriter fw = new FileWriter( new File( tmpdir, "tmp.fasta" ) );
+					serifier.writeFasta( seqlist, fw, null );
+			    	fw.close();
+			    	
+			    	ProcessBuilder pb = new ProcessBuilder("fasttree", "tmp.fasta");
+			    	pb.directory( tmpdir );
+			    	Process p = pb.start();
+			    	InputStream os = p.getInputStream();
+			    	
+			    	ByteArrayOutputStream	baos = new ByteArrayOutputStream();
+			    	byte[] bb = new byte[1024];
+			    	int r = os.read( bb );
+			    	while( r > 0 ) {
+			    		baos.write( bb, 0, r );
+			    		r = os.read( bb );
+			    	}
+			    	baos.close();
+			    	 
+			    	String tree = baos.toString();
+			    	
+			    	if( Desktop.isDesktopSupported() ) {
+			    		String uristr = "http://webconnectron.appspot.com/Treedraw.html?tree="+URLEncoder.encode( tree, "UTF-8" );
+			    		Desktop.getDesktop().browse( new URI(uristr) );
+			    	}
+		    	 } catch (IOException e) {
+					e.printStackTrace();
+				 } catch (URISyntaxException e) {
+					e.printStackTrace();
+				}	
 			}
 		});
 		popup.add( new AbstractAction("Draw tree excluding gaps") {
