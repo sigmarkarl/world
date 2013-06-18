@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jnlp spec="1.0+" codebase="http://webspectroscope.appspot.com/" href="webspectroscope.jnlp">
+<information>
+  <title>WebSpectroscope</title>
+  <vendor>Huldufolk ehf.</vendor>
+  <homepage href="http://webspectroscope.appspot.com" />
+  <description>Spectroscope on the web</description>
+  <shortcut online="true">
+      <desktop />
+  </shortcut>
+</information>
+<offline-allowed/>
+<security>
+  <all-permissions/>
+</security>
+<resources>
+  <j2se version="1.6+" />
+  <jar href="spectroscope.jar"/>
+</resources>
+<applet-desc 
+	name="Webspectroscope"
+	main-class="org.simmi.FftApplet"
+	width="1280"
+	height="800"> 
+<param name="centerimage" value="true"/> 
+<param name="boxborder" value="false"/>
+<param name="draggable" value="true"/>
+</applet-desc>
+</jnlp>
