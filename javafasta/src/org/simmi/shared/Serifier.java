@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.zip.GZIPInputStream;
 
@@ -42,6 +43,468 @@ public class Serifier {
 	List<Sequences>		sequences = new ArrayList<Sequences>();
 	public void setSequencesList( List<Sequences> sequences ) {
 		this.sequences = sequences;
+	}
+	
+	public class Anno {
+		int	start;
+		int stop;
+		boolean comp;
+		String name;
+		
+		public Anno( int start, int stop, boolean comp, String name ) {
+			if( stop > start ) {
+				this.start = start;
+				this.stop = stop;
+				this.comp = comp;
+			} else {
+				this.start = stop;
+				this.stop = start;
+				this.comp = !comp;
+			}
+			this.name = name;
+		}
+	};
+	
+	public List<Sequence> readSequences( BufferedReader br ) throws IOException {
+		List<Sequence> ret = new ArrayList<Sequence>();
+		
+		Sequence s = null;
+		String line = br.readLine();
+		while( line != null ) {
+			if( line.startsWith(">") ) {
+				s = new Sequence( line.substring(1), null );
+				//serifier.lseq.add( s );
+				ret.add( s );
+			} else if( s != null ) {
+				int start = 0;
+				int i = line.indexOf(' ');
+				while( i != -1 ) {
+					String substr = line.substring(start, i);
+					s.append( substr );
+					start = i+1;
+					i = line.indexOf(' ', start);
+				}
+				s.append( line.substring(start, line.length()) );
+			}
+			line = br.readLine();
+		}
+		
+		return ret;
+	}
+	
+	String addon = "nnnttaattaattaannn";
+	public void genbankFromNR( Sequences s, File blastFile, File genbankOut ) throws IOException {
+		Map<String,List<Anno>>	mapan = new HashMap<String,List<Anno>>();
+		
+		URL url = new URL( s.getPath() );
+		InputStream is = url.openStream();
+		InputStreamReader	isr = new InputStreamReader(is);
+		BufferedReader	br = new BufferedReader( isr );
+		Map<String,StringBuilder>	seqmap = new TreeMap<String,StringBuilder>();
+		StringBuilder	sb = null;
+		String			name = null;
+		String line = br.readLine();
+		
+		Set<String>	pool = new HashSet<String>();
+		while( line != null ) {
+			if( line.startsWith(">") ) {
+				if( name != null ) {
+					seqmap.put(name, sb);
+					int l = name.indexOf(' ');
+					if( l == -1 ) l = name.length();
+					pool.add( name.substring(0,l) );
+				}
+				int li = line.indexOf(' ');
+				if( li == -1 ) li = line.length();
+				name = line.substring(1,li).replace(".fna", "");
+				sb = new StringBuilder();
+			} else {
+				sb.append( line.replace(" ", "") );
+			}
+			line = br.readLine();
+		}
+		if( name != null ) {
+			seqmap.put(name, sb);
+		}
+		br.close();
+		
+		int count = 0;
+		for( String key : seqmap.keySet() ) {
+			StringBuilder sbld = seqmap.get(key);
+			count += sbld.length();
+		}
+		count += (seqmap.size()-1)*addon.length();
+		
+		FileReader	fr = new FileReader( blastFile );
+		br = new BufferedReader( fr );
+		line = br.readLine();
+		String evalue = null;
+		Anno ann = null;
+		while( line != null ) {
+			if( line.startsWith("Query=") ) {
+				int li = line.indexOf(' ', 7);
+				if( li == -1 ) li = line.length();
+				int ki = line.lastIndexOf('_', li);
+				//int ki = line.indexOf('_');
+				
+				String cont = line.substring(7,ki).trim();
+				//cont = cont.replace(".fna", "");
+				if( pool.contains( cont ) ) {
+					List<Anno> lann;
+					if( mapan.containsKey(cont) ) {
+						lann = mapan.get( cont );
+					} else {
+						lann = new ArrayList<Anno>();
+						mapan.put(cont, lann);
+					}
+					
+					String[] split = line.split("#");
+					
+					int start = Integer.parseInt( split[1].trim() );
+					int stop = Integer.parseInt( split[2].trim() );
+					int rev = Integer.parseInt( split[3].trim() );
+					ann = new Anno( start-1, stop-1, rev == -1, null );
+					lann.add(ann);
+				} else ann = null;
+				evalue = null;
+				System.err.println( cont );
+			} else if( line.startsWith(">") ) {
+				if( ann != null && ann.name == null ) {
+					String hit = line.substring(1);
+					line = br.readLine();
+					while( !line.startsWith("Length") && !line.startsWith("Query") ) {
+						hit += line.substring(1);
+						line = br.readLine();
+					}
+					ann.name = hit;
+					
+					if( line.startsWith("Query") ) continue;
+				}
+			} else if( line.contains("Not hits") ) {
+				if( ann != null && ann.name == null ) {
+					ann.name = line;
+				}
+			} else if( line.startsWith(" Score =") ) {
+				int u = line.indexOf("Expect =");
+				if( u > 0 ) {
+					u += 9;
+					int k = line.indexOf(',', u);
+					evalue = line.substring(u, k);
+					if( ann != null ) ann.name += "\t" + evalue;
+				}
+			}
+			line = br.readLine();
+		}
+		br.close();
+		
+		FileWriter	fw = new FileWriter( genbankOut );
+		String loc = "LOCUS       "+s.getName()+"                "+count+" bp    dna     linear   UNK";
+		String def = "DEFINITION  [organism=Unknown] [strain=Unknown] [gcode=11] [date=6-26-2012]";
+		String acc = "ACCESSION   "+s.getName()+"_Unknown";
+		String keyw = "KEYWORDS    .";
+		String feat = "FEATURES             Location/Qualifiers";
+		fw.write( loc+"\n" );
+		fw.write( def+"\n" );
+		fw.write( acc+"\n" );
+		fw.write( keyw+"\n" );
+		fw.write( feat+"\n" );
+		count = 1;
+		for( String key : seqmap.keySet() ) {
+			StringBuilder sbld = seqmap.get(key);
+			fw.write( "     fasta_record    "+count+".."+(count+sbld.length())+"\n" );
+			fw.write( "                     /name=\""+key+"\"\n" );
+			
+			if( mapan.containsKey(key) ) {
+				List<Anno> lann = mapan.get(key);
+				int ac = 1;
+				for( Anno annn : lann ) {
+					String locstr = (annn.start+count)+".."+(annn.stop+count);
+					if( annn.comp ) fw.write( "     gene            complement("+locstr+")\n" );
+					else fw.write( "     gene            "+locstr+"\n" );
+					fw.write( "                     /locus_tag=\""+key+"_"+ac+"\"\n" );
+					fw.write( "                     /product=\""+annn.name+"\"\n" );
+					ac++;
+				}
+			}
+			
+			count += sbld.length();
+			count += addon.length();
+		}
+		fw.write( "ORIGIN" );
+		count = 1;
+		int total = 0;
+		//int start = 1;
+		for( String key : seqmap.keySet() ) {
+			StringBuilder sbld = seqmap.get(key);
+			for( int k = 0; k < sbld.length(); k++ ) {
+				if( (count-1)%60 == 0 ) fw.write( String.format( "\n%10s ", Integer.toString(count) ) );
+				else if( (count-1)%10 == 0 ) fw.write( " " );
+				
+				fw.write( sbld.charAt(k) );
+				
+				count++;
+			}
+			
+			if( total < seqmap.size()-1 ) {
+				for( int k = 0; k < addon.length(); k++ ) {
+					if( (count-1)%60 == 0 ) fw.write( String.format( "\n%10s ", Integer.toString(count) ) );
+					else if( (count-1)%10 == 0 ) fw.write( " " );
+					
+					fw.write( addon.charAt(k) );
+					
+					count++;
+				}	
+			}
+			
+			total++;
+		}
+		fw.write("\n//");
+		fw.close();
+	}
+	
+	public void genbankFromBlast( Sequences s, File blastFile, File genbankOut ) throws IOException {
+		URL url = new URL( s.getPath() );
+		InputStream is = url.openStream();
+		InputStreamReader	isr = new InputStreamReader(is);
+		BufferedReader	br = new BufferedReader( isr );
+		Map<String,StringBuilder>	seqmap = new TreeMap<String,StringBuilder>();
+		StringBuilder	sb = null;
+		String			name = null;
+		String line = br.readLine();
+		
+		//Set<String>	pool = new HashSet<String>();
+		while( line != null ) {
+			if( line.startsWith(">") ) {
+				if( name != null ) {
+					seqmap.put(name, sb);
+					int l = name.indexOf(' ');
+					if( l == -1 ) l = name.length();
+					//pool.add( name.substring(0,l) );
+				}
+				int li = line.indexOf(' ');
+				if( li == -1 ) li = line.length();
+				name = line.substring(1,li);
+				sb = new StringBuilder();
+			} else {
+				sb.append( line.replace(" ", "") );
+			}
+			line = br.readLine();
+		}
+		if( name != null ) {
+			seqmap.put(name, sb);
+		}
+		br.close();
+		
+		int count = 0;
+		for( String key : seqmap.keySet() ) {
+			StringBuilder sbld = seqmap.get(key);
+			count += sbld.length();
+		}
+		count += (seqmap.size()-1)*addon.length();
+		
+		Set<String>	pool = new HashSet<String>();
+		Map<String,List<Anno>>	mapan = new HashMap<String,List<Anno>>();							
+		FileReader	fr = new FileReader( blastFile );
+		br = new BufferedReader( fr );
+		line = br.readLine();
+		String evalue = null;
+		String query = null;
+		int conseq_empty = 0;
+		List<Anno> lann = null;
+		
+		int qstart = -1;
+		int qstop = -1;
+		int sstart = -1;
+		int sstop = -1;
+		
+		while( line != null ) {
+			if( line.trim().length() == 0 ) conseq_empty++;
+			else {
+				if( line.startsWith("Query=") ) {
+					int li = line.indexOf(' ', 7);
+					if( li == -1 ) li = line.length();
+					int ki = line.lastIndexOf('_', li);
+					//int ki = line.indexOf('_');
+					
+					query = line.substring(7,ki).trim();
+					pool.add( query );
+					/*if( pool.contains( cont ) ) {
+						List<Anno> lann;
+						if( mapan.containsKey(cont) ) {
+							lann = mapan.get( cont );
+						} else {
+							lann = new ArrayList<Anno>();
+							mapan.put(cont, lann);
+						}
+						
+						String[] split = line.split("#");
+						
+						int start = Integer.parseInt( split[1].trim() );
+						int stop = Integer.parseInt( split[2].trim() );
+						int rev = Integer.parseInt( split[3].trim() );
+						ann = new Anno( start, stop, rev == -1, null );
+						lann.add(ann);
+					} else ann = null;
+					evalue = null;
+					System.err.println( cont );*/
+				} else if( line.startsWith("Query ") ) {
+					String[] split = line.split("[ ]+");
+					if( qstart == -1 ) qstart = Integer.parseInt( split[1] );
+					qstop = Integer.parseInt( split[3] );
+				} else if( line.startsWith("Sbjct") ) {
+					String[] split = line.split("[ ]+");
+					if( sstart == -1 ) sstart = Integer.parseInt( split[1] );
+					sstop = Integer.parseInt( split[3] );
+				} else if( line.startsWith(">") ) {
+					String cont = line.substring(1).trim();
+					cont = cont.replaceAll(".fna", "");
+					
+					int li = cont.indexOf(' ');
+					if( li != -1 ) {
+						cont = cont.substring(0,li);
+					}
+					
+					if( mapan.containsKey(cont) ) {
+						lann = mapan.get( cont );
+					} else {
+						lann = new ArrayList<Anno>();
+						mapan.put(cont, lann);
+					}
+					
+					/*if( ann != null && ann.name == null ) {
+						String hit = line.substring(1);
+						line = br.readLine();
+						while( !line.startsWith("Length") && !line.startsWith("Query") ) {
+							hit += line.substring(1);
+							line = br.readLine();
+						}
+						ann.name = hit;
+						
+						if( line.startsWith("Query") ) continue;
+					}*/
+				} else if( line.contains("Not hits") ) {
+					query = null;
+				} else if( line.startsWith(" Score =") ) {
+					int u = line.indexOf("Expect");
+					if( u > 0 ) {
+						int k = line.lastIndexOf(' ');
+						evalue = line.substring(k);
+					}
+				}
+				if( conseq_empty == 2 && qstart >= 0 ) {
+					Anno ann = new Anno( sstart, sstop, false, query+"_"+qstart+"_"+qstop+"_"+evalue );
+					lann.add( ann );
+					
+					qstart = -1;
+					qstop = -1;
+					sstart = -1;
+					sstop = -1;
+				}
+				conseq_empty = 0;
+			}
+			line = br.readLine();
+		}
+		br.close();
+		
+		//if( pool.size() == 0 ) dir = null;
+		/*if( pool.size() > 0 ) {
+			fc.setFileSelectionMode( JFileChooser.DIRECTORIES_ONLY );
+			if( fc.showOpenDialog( SerifyApplet.this ) == JFileChooser.APPROVE_OPTION ) {
+				dir = fc.getSelectedFile();
+			}
+		}*/
+		
+		for( String phage : pool ) {
+			boolean empty = true;
+			for( String key : mapan.keySet() ) {
+				List<Anno> lannn = mapan.get( key );
+				if( lannn != null ) {
+					for( Anno a : lannn ) {
+						if( a.name.contains( phage ) ) {
+							empty = false;
+							break;
+						}
+					}
+				}
+			}
+			
+			if( !empty ) {
+				File f = genbankOut;
+				/*if( pool.size() > 0 ) {
+					f = new File( dir, s.getName()+"_"+phage+".gb" );
+				} else {
+					f = dir;//fc.getSelectedFile();
+				}*/
+				
+				if( f != null ) {
+					FileWriter	fw = new FileWriter( f );
+					String loc = "LOCUS       "+phage+" on "+s.getName()+"                "+count+" bp    dna     linear   UNK";
+					String def = "DEFINITION  [organism=unknown] [strain=unknown] [gcode=11] [date=3-20-2012]";
+					String acc = "ACCESSION   Unknown";
+					String keyw = "KEYWORDS    .";
+					String feat = "FEATURES             Location/Qualifiers";
+					fw.write( loc+"\n" );
+					fw.write( def+"\n" );
+					fw.write( acc+"\n" );
+					fw.write( keyw+"\n" );
+					fw.write( feat+"\n" );
+					count = 1;
+					for( String key : seqmap.keySet() ) {
+						StringBuilder sbld = seqmap.get(key);
+						fw.write( "     fasta_record    "+count+".."+(count+sbld.length())+"\n" );
+						fw.write( "                     /name=\""+key+"\"\n" );
+						
+						if( mapan.containsKey(key) ) {
+							List<Anno> lannn = mapan.get(key);
+							int ac = 1;
+							for( Anno ann : lannn ) {
+								if( ann.name.contains(phage) ) {
+									String locstr = (ann.start+count)+".."+(ann.stop+count);
+									if( ann.comp ) fw.write( "     gene            complement("+locstr+")\n" );
+									else fw.write( "     gene            "+locstr+"\n" );
+									fw.write( "                     /locus_tag=\""+key+"_"+ac+"\"\n" );
+									fw.write( "                     /product=\""+ann.name+"\"\n" );
+									ac++;
+								}
+							}
+						}
+						
+						count += sbld.length();
+						count += addon.length();
+					}
+					fw.write( "ORIGIN" );
+					count = 1;
+					//int start = 1;
+					int total = 0;
+					for( String key : seqmap.keySet() ) {
+						StringBuilder sbld = seqmap.get(key);
+						for( int k = 0; k < sbld.length(); k++ ) {
+							if( (count-1)%60 == 0 ) fw.write( String.format( "\n%10s ", Integer.toString(count) ) );
+							else if( (count-1)%10 == 0 ) fw.write( " " );
+							
+							fw.write( sbld.charAt(k) );
+							
+							count++;
+						}
+						
+						if( total < seqmap.size()-1 ) {
+							for( int k = 0; k < addon.length(); k++ ) {
+								if( (count-1)%60 == 0 ) fw.write( String.format( "\n%10s ", Integer.toString(count) ) );
+								else if( (count-1)%10 == 0 ) fw.write( " " );
+								
+								fw.write( addon.charAt(k) );
+								
+								count++;
+							}	
+						}
+						
+						total++;
+					}
+					fw.write("\n//");
+					fw.close();
+				}
+			}
+		}
 	}
 	
 	public Map<String,StringBuilder> concat( List<String> urls ) throws IOException {
@@ -150,7 +613,7 @@ public class Serifier {
 			Set<String>	teg = new HashSet<String>();
 			for( String e : t ) {
 				int ind = e.indexOf('_');
-				if( e.contains("_JL2_") ) ind = e.indexOf('_', ind+1);
+				//if( e.contains("_JL2_") ) ind = e.indexOf('_', ind+1);
 				
 				if( ind != -1 ) {
 					String str = e.substring( 0, ind );
@@ -161,7 +624,7 @@ public class Serifier {
 					
 					species.add(str);
 				} else {
-					System.err.println("");
+					System.err.println("kk");
 				}
 			}
 			
@@ -178,7 +641,7 @@ public class Serifier {
 			
 			for( String e : t ) {
 				int ind = e.indexOf('_');
-				if( e.contains("_JL2_") ) ind = e.indexOf('_', ind+1);
+				//if( e.contains("_JL2_") ) ind = e.indexOf('_', ind+1);
 				
 				String str = e.substring( 0, ind );
 				/*if( joinmap.containsKey( str ) ) {
@@ -297,32 +760,69 @@ public class Serifier {
 			if( line.startsWith("Sequences prod") ) {
 				line = br.readLine();
 				Set<String>	all = new HashSet<String>();
-				while( line != null && !line.startsWith(">") ) {
+				while( line != null && !line.startsWith("Query=") ) {
 					String trim = line.trim();
-					if( trim.startsWith("o.prof") || trim.startsWith("m.hydro") || trim.startsWith("mt.silv") || trim.startsWith("mt.ruber") || trim.startsWith("t.RLM") || trim.startsWith("t.spCCB") || trim.startsWith("t.arci") || trim.startsWith("t.scoto") || trim.startsWith("t.antr") || trim.startsWith("t.aqua") || trim.startsWith("t.t") || trim.startsWith("t.egg") || trim.startsWith("t.island") || trim.startsWith("t.oshi") || trim.startsWith("t.brock") || trim.startsWith("t.fili") || trim.startsWith("t.igni") || trim.startsWith("t.kawa") ) {
-						int millind = trim.indexOf('#');
-						if( millind == -1 ) millind = trim.indexOf('.', 5);
-						String val = trim.substring( 0, millind-1 );
-						if( val.length() < 2 ) {
-							System.err.println();
+					
+					/*if( trim.contains("1572") ) {
+						System.err.println();
+					}*/
+					if( trim.startsWith(">") ) {
+					//if( trim.startsWith("o.prof") || trim.startsWith("m.hydro") || trim.startsWith("mt.silv") || trim.startsWith("mt.ruber") || trim.startsWith("t.RLM") || trim.startsWith("t.spCCB") || trim.startsWith("t.arci") || trim.startsWith("t.scoto") || trim.startsWith("t.antr") || trim.startsWith("t.aqua") || trim.startsWith("t.t") || trim.startsWith("t.egg") || trim.startsWith("t.island") || trim.startsWith("t.oshi") || trim.startsWith("t.brock") || trim.startsWith("t.fili") || trim.startsWith("t.igni") || trim.startsWith("t.kawa") ) {
+						trim = trim.substring(2);
+						
+						line = br.readLine();
+						while( line != null && !line.startsWith("Length") ) {
+							trim += line.trim();
+							line = br.readLine();
 						}
-						//int v = val.indexOf("contig");
-						all.add( val.replace(".fna", "") );
+						
+						int millind = trim.indexOf('#');
+						//if( millind == -1 ) millind = trim.indexOf("..", 5);
+						String val = trim.substring( 0, millind ).trim();
+						
+						if( line != null ) {
+							int len = Integer.parseInt( line.substring(7) );
+							
+							line = br.readLine().trim();
+							while( !line.startsWith("Identities") ) line = br.readLine().trim();
+							
+							int idx0 = line.indexOf('/');
+							int idx1 = line.indexOf('(');
+							int idx2 = line.indexOf('%');
+							
+							int percid = Integer.parseInt( line.substring(idx1+1, idx2) );
+							int lenid = Integer.parseInt( line.substring(idx0+1, idx1-1) );
+							//int v = val.indexOf("contig");
+							if( percid >= 50 && lenid >= len/2 ) all.add( val.replace(".fna", "") );
+						} else System.err.println( trim );
+						
+						/*if( val.contains("SG0") ) {
+							System.err.println();
+						}*/
+						
+						//all.add( val.replace(".fna", "") );
 					}
+					
+					if( cnt++ % 100000 == 0 ) {
+						System.err.println( cnt );
+					}
+					
 					line = br.readLine();
 				}
 				
 				//if( fw != null ) fw.write( all.toString()+"\n" );
 				
+				//System.err.println( all );
+				//System.err.println();
 				if( union ) joinSets( all, total );
 				//else intersectSets( all, total );
 				
 				if( line == null ) break;
 			}
 			
-			if( cnt++ % 100000 == 0 ) {
+			/*if( cnt++ % 100000 == 0 ) {
 				System.err.println( cnt );
-			}
+			}*/
 			line = br.readLine();
 		}
 		if( fw != null ) {
@@ -1107,6 +1607,38 @@ public class Serifier {
 		if( i >= 0 ) {
 			outf = new File( args[i+1] );
 			//ex
+		}
+		
+		i = arglist.indexOf("-huge");
+		if( i >= 0 ) {
+			String mappingfile = args[i+1];
+			
+			Map<String,String>	mapping = new HashMap<String,String>();
+			FileReader fr = new FileReader( mappingfile );
+			BufferedReader br = new BufferedReader( fr );
+			String line = br.readLine();
+			while( line != null ) {
+				String[] split = line.split("\t");
+				if( split.length > 1 ) mapping.put(split[0], split[1]);
+				line = br.readLine();
+			}
+			br.close();
+			fr.close();
+			
+			FileWriter fw = new FileWriter( outf );
+			fr = new FileReader( inf );
+			br = new BufferedReader( fr );
+			line = br.readLine();
+			while( line != null ) {
+				for( String map : mapping.keySet() ) {
+					line = line.replace( map, mapping.get(map) );
+				}
+				fw.write( line+"\n" );
+				line = br.readLine();
+			}
+			br.close();
+			fr.close();
+			fw.close();
 		}
 		
 		// matrix med location vs species count ur fasta file
@@ -2395,7 +2927,8 @@ public class Serifier {
 							if( ftagmap.containsKey(s.getName()) ) fw.write( ftagmap.get(s.getName())+line+"\n" );
 							else fw.write( "simmi"+line+"\n" );
 						} else if( simple ) {
-							fw.write( line.replace( ">", ">"+s.getName().replace(".fna", "")+"_" )+"\n" );
+							//line = line.replace( ">", ">"+s.getName().replace(".fna", "")+"_" );
+							fw.write( line+"\n" );
 						} else {
 							int pe = line.indexOf('%');
 							String idstr = null;

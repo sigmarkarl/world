@@ -1310,7 +1310,7 @@ public class Webfasta implements EntryPoint {
 		return jo.charCodeAt(ind);
 	}-*/;
 
-	public native int fastTree(elemental.dom.Element e, String tree) /*-{
+	public native int postMessage(elemental.dom.Element e, String tree) /*-{
 		e.postMessage(tree);
 	}-*/;
 
@@ -1438,10 +1438,7 @@ public class Webfasta implements EntryPoint {
 				MessageEvent me = (MessageEvent) evt;
 				Browser.getWindow().getConsole().log("jelp");
 				treestr = (String) me.getData();
-				myPopup = Browser
-						.getWindow()
-						.open("http://webconnectron.appspot.com/Treedraw.html?callback=webfasta",
-								"TreeDraw");
+				myPopup = Browser.getWindow().open("http://webconnectron.appspot.com/Treedraw.html?callback=webfasta","TreeDraw");
 				/*
 				 * if( myPopup != null && treestr != null ) {
 				 * myPopup.postMessage( treestr, "*" ); treestr = null; }
@@ -1727,6 +1724,22 @@ public class Webfasta implements EntryPoint {
 			}
 		});
 		MenuBar epopup = new MenuBar(true);
+		epopup.addItem("NACLMuscle (C)", new Command() {
+			@Override
+			public void execute() {
+				elemental.dom.Element e = Browser.getDocument().getElementById("muscle");
+				String fasta = exportString();
+				postMessage(e, fasta);
+				// Browser.getWindow().getConsole().log( e );
+				// elemental.html.EmbedElement ee =
+				// (elemental.html.EmbedElement)e;
+
+				// myPopup =
+				// Browser.getWindow().open("http://webconnectron.appspot.com/Treedraw.html?callback=webfasta",
+				// "TreeDraw");
+			}
+		});
+		epopup.addSeparator();
 		epopup.addItem("Delete selection", new Command() {
 			@Override
 			public void execute() {
@@ -2522,10 +2535,9 @@ public class Webfasta implements EntryPoint {
 		tpopup.addItem("NACLTree (C)", new Command() {
 			@Override
 			public void execute() {
-				elemental.dom.Element e = Browser.getDocument().getElementById(
-						"fasttree");
+				elemental.dom.Element e = Browser.getDocument().getElementById("fasttree");
 				String fasta = "f" + exportString();
-				fastTree(e, fasta);
+				postMessage(e, fasta);
 				// Browser.getWindow().getConsole().log( e );
 				// elemental.html.EmbedElement ee =
 				// (elemental.html.EmbedElement)e;
