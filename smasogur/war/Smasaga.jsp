@@ -12,8 +12,11 @@
 		<meta http-equiv="content-type" content="text/html; charset=UTF-8">
 		
 		<%
-		String name = null;
+		String name = "";
+		String oauth = "";
 		String keystr = request.getParameter("smasaga");
+		String oauthpar = request.getParameter("access");
+		if( oauthpar != null ) oauth = oauthpar;
 		String url = request.getServerName();
 		if( keystr != null ) {
 				DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
@@ -23,7 +26,7 @@
 				if( e != null ) {
 					name = (String)e.getProperty("name");
 				}
-		}
+		}		
 
 		if( name != null ) {
 		%>
@@ -33,6 +36,7 @@
 		<meta id="metaurl" property="og:url" content="http://<%=url%>/Smasaga.jsp?smasaga=<%=keystr%>" />
 		<!--meta property="og:image" content="" /-->
 		<meta property="og:site_name" content="Smasogur" />
+		<meta id="oauth" property="oauth" content="<%=oauth%>" />
 
 		<!--                                                               -->
 		<!-- Consider inlining CSS to reduce the number of requested files -->
@@ -49,6 +53,7 @@
 		<!-- If you add any GWT meta tags, they must   -->
 		<!-- be added before this line.                -->
 		<!--                                           -->
+		<script src="https://apis.google.com/js/plusone.js">{parsetags: 'explicit'}</script>
 		<script language="javascript" src="org.simmi.Smasaga/org.simmi.Smasaga.nocache.js"></script>
 	</head>
 	<body>

@@ -16,6 +16,7 @@ import com.google.gwt.event.dom.client.KeyDownEvent;
 import com.google.gwt.event.dom.client.KeyDownHandler;
 import com.google.gwt.event.logical.shared.ResizeEvent;
 import com.google.gwt.event.logical.shared.ResizeHandler;
+import com.google.gwt.http.client.URL;
 import com.google.gwt.user.client.DOM;
 import com.google.gwt.user.client.Element;
 import com.google.gwt.user.client.Window;
@@ -27,12 +28,15 @@ import com.google.gwt.user.client.ui.Grid;
 import com.google.gwt.user.client.ui.HTML;
 import com.google.gwt.user.client.ui.HorizontalPanel;
 import com.google.gwt.user.client.ui.Label;
+import com.google.gwt.user.client.ui.PopupPanel;
 import com.google.gwt.user.client.ui.RadioButton;
 import com.google.gwt.user.client.ui.RootPanel;
 import com.google.gwt.user.client.ui.SimplePanel;
 import com.google.gwt.user.client.ui.TextArea;
 import com.google.gwt.user.client.ui.TextBox;
 import com.google.gwt.user.client.ui.VerticalPanel;
+
+import elemental.client.Browser;
 
 /**
  * Entry point classes define <code>onModuleLoad()</code>.
@@ -55,6 +59,7 @@ public class Smasaga implements EntryPoint {
 						    var accessToken = response.authResponse.accessToken;
 						    
 							ths.@org.simmi.client.Smasaga::setUserId(Ljava/lang/String;)( uid );
+							//ths.@org.simmi.client.Smasaga::setAccessToken(Ljava/lang/String;)( accessToken );
 						} else if (response.status === 'not_authorized') {
 						    $wnd.console.log('not authorized');
 						    ths.@org.simmi.client.Smasaga::setUserId(Ljava/lang/String;)( "" );
@@ -82,6 +87,11 @@ public class Smasaga implements EntryPoint {
 		//	}
 		//});
 	}-*/;
+	
+	String accessToken;
+	public void setAccessToken( String at ) {
+		accessToken = at;
+	}
 	
 	AsyncCallback<Subsaga> asaga;
 	private String uid = null;
@@ -117,6 +127,7 @@ public class Smasaga implements EntryPoint {
 	final CheckBox poem = new CheckBox("Poem");
 	final CheckBox tobecontine = new CheckBox("To be continued");
 	
+	final Button	contact = new Button("Contact author");
 	final TextBox	name = new TextBox();
 	final TextBox	author = new TextBox();
 	final TextBox	lang = new TextBox();
@@ -140,41 +151,48 @@ public class Smasaga implements EntryPoint {
 	final Button	rightButt = new Button(">");
 	
 	public void initStory( String authorName ) {
-		if( uid != null && uid.length() > 0 && authorName.equals(uid) ) {
-			name.setReadOnly( false );
-			author.setReadOnly( false );
-			lang.setReadOnly( false );
-			urdrattur.setReadOnly( false );
+		if( uid != null && uid.length() > 0 ) {
+			if( authorName != null && authorName.length() > 0 ) {
+				Browser.getWindow().getConsole().log("authorname: "+authorName);
+				contact.setEnabled( true );
+			}
 			
-			love.setEnabled( true );
-			comedy.setEnabled( true );
-			tragedy.setEnabled( true );
-			horror.setEnabled( true );
-			erotik.setEnabled( true );
-			science.setEnabled( true );
-			child.setEnabled( true );
-			adolescent.setEnabled( true );
-			criminal.setEnabled( true );
-			historical.setEnabled( true );
-			truestory.setEnabled( true );
-			supernatural.setEnabled( true );
-			adventure.setEnabled( true );
-			poem.setEnabled( true );
-			tobecontine.setEnabled( true );
+			if( authorName.equals(uid) ) {
+				name.setReadOnly( false );
+				author.setReadOnly( false );
+				lang.setReadOnly( false );
+				urdrattur.setReadOnly( false );
+				
+				love.setEnabled( true );
+				comedy.setEnabled( true );
+				tragedy.setEnabled( true );
+				horror.setEnabled( true );
+				erotik.setEnabled( true );
+				science.setEnabled( true );
+				child.setEnabled( true );
+				adolescent.setEnabled( true );
+				criminal.setEnabled( true );
+				historical.setEnabled( true );
+				truestory.setEnabled( true );
+				supernatural.setEnabled( true );
+				adventure.setEnabled( true );
+				poem.setEnabled( true );
+				tobecontine.setEnabled( true );
+				
+				save.setEnabled( true );
+			}
 			
-			save.setEnabled( true );
-		}
-		
-		if( uid != null && uid.length() > 0 && name.isReadOnly() ) {
-			rusl.setEnabled( true );
-			vont.setEnabled( true );
-			slaemt.setEnabled( true );
-			sleppur.setEnabled( true );
-			saemi.setEnabled( true );
-			gott.setEnabled( true );
-			snilld.setEnabled( true );
-			
-			umsogntext.setReadOnly( false );
+			if( name.isReadOnly() ) {
+				rusl.setEnabled( true );
+				vont.setEnabled( true );
+				slaemt.setEnabled( true );
+				sleppur.setEnabled( true );
+				saemi.setEnabled( true );
+				gott.setEnabled( true );
+				snilld.setEnabled( true );
+				
+				umsogntext.setReadOnly( false );
+			}
 		}
 	}
 	
@@ -255,12 +273,35 @@ public class Smasaga implements EntryPoint {
 		return einkunnList;
 	}
 	
+	public native void sendAuthorMessage( final String authorName, final String at, final String message ) /*-{
+		$wnd.FB.api( '/'+authorName+'/notifications', {
+			access_token: at,
+	  		template: message
+		}, function( response ) {
+			 if (!response || response.error) {
+    			alert( 'Error occured' + response.error.message );
+			 }
+		});
+	}-*/;
+	
+	public native void renderSaveToDrive( String id, String objurl, String filename ) /*-{
+		$wnd.gapi.savetodrive.render( id, {
+      		src: objurl,
+      		filename: filename,
+      		sitename: 'Sigmasoft Shortstories'
+    	});
+	}-*/;
+	
+	String oauth = "";
 	int currentGrade = 0;
 	String authorName = "";
 	public void onModuleLoad() {
 		final List<Einkunn>	einkunnList = new ArrayList<Einkunn>();
 		
-		Element e = DOM.getElementById( "metaurl" );
+		Element e = DOM.getElementById( "oauth" );
+		oauth = e.getAttribute("content");
+		
+		e = DOM.getElementById( "metaurl" );
 		String urlstr = e.getAttribute("content");
 		int urlind = urlstr.indexOf('=');
 		keystr = urlstr.substring(urlind+1);
@@ -288,7 +329,7 @@ public class Smasaga implements EntryPoint {
 		grid.setWidth(nw+"px");
 		
 		final VerticalPanel subvp = new VerticalPanel();
-		subvp.setWidth("100%");
+		subvp.setWidth( (w-25)+"px" );
 		subvp.setHorizontalAlignment( VerticalPanel.ALIGN_CENTER );
 		//subvp.setVerticalAlignment( VerticalPanel.ALIGN_MIDDLE );
 		
@@ -305,7 +346,7 @@ public class Smasaga implements EntryPoint {
 				else nw = 758;*/ 
 				
 				grid.setWidth(nw+"px");
-				subvp.setSize("100%", "600px");
+				subvp.setSize((w-25)+"px", "600px");
 				//vp.setSize(event.getWidth()+"px", (event.getHeight())+"px");
 			}
 		});
@@ -384,10 +425,64 @@ public class Smasaga implements EntryPoint {
    	  	adspanel.getElement().appendChild( adselem );
    	  	subvp.add( adspanel );*/
 		
+		final HorizontalPanel	nhp = new HorizontalPanel();
+		nhp.setVerticalAlignment( HorizontalPanel.ALIGN_MIDDLE );
+		nhp.setSpacing( 5 );
+		final HTML		dwnl = new HTML("Download story: ");
 		final Anchor	anchor = new Anchor("Link");
+		final SimplePanel	savetodrive = new SimplePanel();
+		savetodrive.getElement().setId("savetodrive");
+		final HTML		or = new HTML(" or ");
+		
+		contact.setEnabled( false );
+		contact.addClickHandler( new ClickHandler() {
+			@Override
+			public void onClick(ClickEvent event) {
+				final TextArea ta = new TextArea();
+				ta.setSize("400px", "300px");
+				Button	bt = new Button("Send");
+				final PopupPanel pp = new PopupPanel();
+				pp.setAutoHideEnabled( true );
+				
+				VerticalPanel vp = new VerticalPanel();
+				vp.setHorizontalAlignment( VerticalPanel.ALIGN_CENTER );
+				vp.add( ta );
+				vp.add( bt );
+				pp.add( vp );
+				
+				bt.addClickHandler( new ClickHandler() {
+					@Override
+					public void onClick(ClickEvent event) {
+						pp.hide();
+						
+						Browser.getWindow().getConsole().log( "blehbleh " + authorName + "  " + accessToken + "  " + oauth );
+						sendAuthorMessage( authorName, oauth.length() > 0 ? oauth : accessToken, ta.getText() );
+						
+						/*smasagaService.sendAuthorMessage( ta.getText(), new AsyncCallback<String>() {
+							@Override
+							public void onSuccess(String result) {
+								
+							}
+
+							@Override
+							public void onFailure(Throwable caught) {
+								
+							}
+						});*/
+					}
+				});
+				pp.center();
+			}
+		});
+		
+		nhp.add( dwnl );
+		nhp.add( anchor );
+		nhp.add( or );
+		nhp.add( savetodrive );
 		//anchor.setHeight("75px");
 		subvp.setSpacing( 10 );
-		subvp.add( anchor );
+		subvp.add( nhp );
+		subvp.add( contact );
 		subvp.add( hp );
 		//subvp.add( new Label("Veldu Ã¾aÃ° sem viÃ° Ã¡") );
 		subvp.add( new Label("Select what is relevant") );
@@ -418,6 +513,7 @@ public class Smasaga implements EntryPoint {
 		umsogn.add(gott);
 		umsogn.add(snilld);
 		
+		contact.setEnabled( false );
 		name.setReadOnly( true );
 		author.setReadOnly( true );
 		lang.setReadOnly( true );
@@ -548,6 +644,22 @@ public class Smasaga implements EntryPoint {
 				anchor.setText( result.getName() );
 				anchor.setHref( result.getUrl() );
 				anchor.setTarget("_blank");
+				
+				String host = Window.Location.getHost();
+				String saveurl = "//"+host+"/smasogur/FileDownload?smasaga="+URL.encode( result.getUrl() );
+				Browser.getWindow().getConsole().log( "saveurl " + saveurl );
+				renderSaveToDrive( "savetodrive", saveurl, result.getName() );
+				/*savetodrive.getElement().setAttribute("data-src", result.getUrl());
+				savetodrive.getElement().setAttribute("data-filename", result.getName());
+				savetodrive.getElement().setAttribute("data-sitename", "Read Short Stories");*/
+				
+				/*ScriptElement selem = (ScriptElement)Document.get().createElement("script");
+				//selem.setAttribute("async", "true");
+			 	selem.setInnerText( "var po = document.createElement('script'); po.type = 'text/javascript'; po.async = true;" +
+			 			"po.src = 'https://apis.google.com/js/plusone.js';" +
+			 			"var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);"
+		        );
+				nhp.getElement().appendChild( selem );*/
 				
 				name.setText( result.getName() );
 				author.setText( result.getAuthorSynonim() );

@@ -31,6 +31,15 @@
   </servlet-mapping>
   
   <servlet>
+  	<servlet-name>FileDownload</servlet-name>
+  	<servlet-class>org.simmi.server.FileDownloadServiceImpl</servlet-class>
+  </servlet>
+  <servlet-mapping>
+  	<servlet-name>FileDownload</servlet-name>
+  	<url-pattern>/smasogur/FileDownload</url-pattern>
+  </servlet-mapping>
+  
+  <servlet>
   	<servlet-name>SmasagaService</servlet-name>
   	<servlet-class>org.simmi.server.SmasagaServiceImpl</servlet-class>
   </servlet>

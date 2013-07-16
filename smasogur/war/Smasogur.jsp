@@ -1,4 +1,5 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ page import="java.util.Map" %>
 <%@ page import="com.google.gwt.user.server.Base64Utils" %>
 <%@ page import="com.google.appengine.api.users.User" %>
 <%@ page import="com.google.appengine.api.users.UserService" %>
@@ -23,6 +24,7 @@
 	<meta property="og:site_name" content="Shortstories" />
 		
 	<%String str = request.getParameter("signed_request");
+	String val = "erm";
     if( str != null ) {
     	%><meta property="erm" content="<%=str%>" /><%
 		byte[] bb = null;
@@ -37,13 +39,22 @@
     			if( bb[i] == 0 ) break;
     		}
     		if( i == bb.length ) i = 0;
-	    	String val = new String( bb, i+1, bb.length-i-1 );
+	    	val = new String( bb, i+1, bb.length-i-1 );
 	    	i = val.indexOf("user_id");
 	    	if( i != -1 ) {
 	    		int n = i+10;
 	    		int m = val.indexOf("\"", n);
 	    		if( m > n ) {%>
 	    			<meta property="fbuid" content="<%=val.substring(n,m)%>" /><%
+	    		}
+	    	}
+	    	
+	    	i = val.indexOf("oauth_token");
+	    	if( i != -1 ) {
+	    		int n = i+14;
+	    		int m = val.indexOf("\"", n);
+	    		if( m > n ) {%>
+	    			<meta property="oauth" content="<%=val.substring(n,m)%>" /><%
 	    		}
 	    	}
 	    }

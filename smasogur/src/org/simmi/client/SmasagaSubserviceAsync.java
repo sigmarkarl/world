@@ -14,4 +14,5 @@ public interface SmasagaSubserviceAsync {
 			AsyncCallback<String> callback);
 
 	void updateEinkunn(String keystr, String comment, int grade, String user, String story, AsyncCallback<String> callback);
+	void sendAuthorMessage(String text, AsyncCallback<String> callback);
 }

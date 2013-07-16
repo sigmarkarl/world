@@ -86,7 +86,7 @@ public class Smasogur implements EntryPoint {
 	 * Create a remote service proxy to talk to the server-side Greeting service.
 	 */
 	private final GreetingServiceAsync 	greetingService = GWT.create(GreetingService.class);
-	private final SmasagaServiceAsync 		smasagaService = GWT.create(SmasagaService.class);
+	private final SmasagaServiceAsync 	smasagaService = GWT.create(SmasagaService.class);
 
 	/*var s = this;
 	
@@ -303,6 +303,7 @@ public class Smasogur implements EntryPoint {
 		//elem.setAttribute("font", "arial");
 		elem.setAttribute("show-faces", "true");
 		elem.setAttribute("max-rows", "1");
+		elem.setAttribute("scope", "manage_notifications");
 		//elem.setAttribute("href",Window.Location.getHref());
 		elem.setId("fblogin");
 		
@@ -450,7 +451,7 @@ public class Smasogur implements EntryPoint {
 				setStatus( "File saved" );
 				int r = 0;//data.getNumberOfRows();
 				data.insertRows(0, 1);
-				data.setFormattedValue(r, 0, "<a href=\"Smasaga.jsp?smasaga="+smasaga.getKey()+"\" target=\"_blank\">"+smasaga.getName()+"</a>" );
+				data.setFormattedValue(r, 0, "<a href=\"Smasaga.jsp?smasaga="+smasaga.getKey() + (oauth != null && oauth.length() > 0 ? "&access="+oauth : "") + "\" target=\"_blank\">"+smasaga.getName()+"</a>" );
 				data.setValue(r, 1, smasaga.getAuthorSynonim());
 				data.setValue(r, 2, smasaga.getLanguage());
 				if( smasaga.getGradeNum() == 0 ) {
@@ -493,6 +494,7 @@ public class Smasogur implements EntryPoint {
 	Options		options;
 	List<Saga>	sogur;
 	FocusPanel	focuspanel;
+	String		oauth = null;
 	String 		fbuid = null;
 	String 		guid = null;
 	String		login = null;
@@ -520,11 +522,15 @@ public class Smasogur implements EntryPoint {
 			com.google.gwt.dom.client.Element e = nl.getItem(i);
 			String prop = e.getAttribute("property");
 			
-			console.log("mu mu "+prop);
-			if( prop.equals("erm") ) {
+			//console.log("mu mu "+prop);
+			if( prop.equals("fbuid") ) {
 				//setUserId( e.getAttribute("content") );
 				fbuid = e.getAttribute("content");
 				if( fbuid != null ) uid = fbuid;
+				//break;
+			} else if( prop.equals("oauth") ) {
+				oauth = e.getAttribute("content");
+				//if( oauth != null ) uid = fbuid;
 				//break;
 			} else if( prop.equals("guid") ) {
 				console.log("guid");
@@ -726,7 +732,7 @@ public class Smasogur implements EntryPoint {
 					for( Saga smasaga : result ) {
 						int r = data.getNumberOfRows();
 						data.addRow();
-						data.setFormattedValue( r, 0, "<a href=\"Smasaga.jsp?smasaga="+smasaga.getKey()+"\" target=\"_blank\">"+smasaga.getName()+"</a>" );
+						data.setFormattedValue( r, 0, "<a href=\"Smasaga.jsp?smasaga="+smasaga.getKey() + (oauth != null && oauth.length() > 0 ? "&access="+oauth : "") + "\" target=\"_blank\">"+smasaga.getName()+"</a>" );
 						data.setValue( r, 1, smasaga.getAuthorSynonim() );
 						data.setValue(r, 2, smasaga.getLanguage());
 						if( smasaga.getGradeNum() == 0 ) {
@@ -772,13 +778,13 @@ public class Smasogur implements EntryPoint {
 	    	  //vp.setVerticalAlignment( VerticalPanel.ALIGN_MIDDLE );
 	    	  //vp.setHorizontalAlignment( VerticalPanel.ALIGN_CENTER );	    	  
 	    	  
-	    	  final HTML loginrecommend = new HTML("Login through Google or Facebook is highly recommended. You can delete your shortstories, choose an author name and make changes to the story metadata.");
+	    	  final HTML loginrecommend = new HTML("Login through Google or Facebook is highly recommended. You can delete your shortstories, recieve message from readers (anonymously), choose an author name and make changes to the story metadata.");
 	    	  loginrecommend.setWidth("100%");
 	    	  
 	    	  final HTML html = new HTML();
 	    	  //html.setText( "DragÃ°u skrÃ¡na meÃ° smÃ¡sÃ¶gunni Ã¾inni Ã­ tÃ¶fluna. <br>Ef Ã¾Ãº ert logguÃ°/loggaÃ°ur innÃ¡ facebook er rÃ©ttur hÃ¶fundur skrÃ¡Ã°ur. <br>ÃžÃº getur valiÃ° hÃ¶fundarnafn, nafniÃ° Ã¡ raunverulegum hÃ¶fundi Ã¾arf ekki aÃ° vera valiÃ°" );
-	    	  html.setHTML( "Drag-drop the file containing your short story into the table. " +
-	    			"The file can be in a format of your choice. For example pdf for text and mp3 for audiobooks.<br>" +
+	    	  html.setHTML( "Drag-drop the file containing your short story, illustrations or translations into the table. " +
+	    			"The file can be in a format of your choice. <br> For example pdf for text and mp3 for audiobooks." +
 	    	  		"If you are logged in, you are registered as the author. " +
 	    	  		"You can choose you own authorname, it doesn't have to be your real name" );
 	    	  html.setWidth("100%");
@@ -941,11 +947,10 @@ public class Smasogur implements EntryPoint {
 	    };
 	    VisualizationUtils.loadVisualizationApi(onLoadCallback, Table.PACKAGE);
 		
-	    console.log("ok");
 	    com.google.gwt.dom.client.Element elem = loginButton();
   	  	Element fblogin = log.getElement();
   	  	fblogin.appendChild( elem );
-  	  
+  	  	
   	  	checkLoginStatus();
   	  	String id = "facebook-jssdk";
   	  	elem = Document.get().createElement("script");

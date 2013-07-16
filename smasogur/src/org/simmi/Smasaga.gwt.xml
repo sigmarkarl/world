@@ -1,8 +1,12 @@
 <module>
 	<inherits name="com.google.gwt.user.User"/>
+	<inherits name='elemental.Elemental'/>
 	<inherits name="com.google.gwt.user.theme.standard.Standard"/>
 	<entry-point class="org.simmi.client.Smasaga"/>
 	
+	<add-linker name="xsiframe"/>
+  	<set-configuration-property name="devModeRedirectEnabled" value="true"/>
+  
 	<source path='client'/>
 	<source path='shared'/>
 </module>

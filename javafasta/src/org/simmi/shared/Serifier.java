@@ -1614,24 +1614,38 @@ public class Serifier {
 			String mappingfile = args[i+1];
 			
 			Map<String,String>	mapping = new HashMap<String,String>();
-			FileReader fr = new FileReader( mappingfile );
+			
+			if( mappingfile.contains("\\n") || mappingfile.contains("\\t") ) {
+				String first = mappingfile;
+				String next = args[i+2];
+				
+				first = first.replace("\\n", "\n").replace("\\t", "\t");
+				next = next.replace("\\n", "\n").replace("\\t", "\t");
+				mapping.put( first, next );
+			} else {
+				FileReader fr = new FileReader( mappingfile );
+				BufferedReader br = new BufferedReader( fr );
+				String line = br.readLine();
+				while( line != null ) {
+					String[] split = line.split("\t");
+					if( split.length > 1 ) mapping.put(split[0], split[1]);
+					line = br.readLine();
+				}
+				br.close();
+				fr.close();
+			}
+			
+			FileWriter fw = new FileWriter( outf );
+			FileReader fr = new FileReader( inf );
 			BufferedReader br = new BufferedReader( fr );
 			String line = br.readLine();
 			while( line != null ) {
-				String[] split = line.split("\t");
-				if( split.length > 1 ) mapping.put(split[0], split[1]);
-				line = br.readLine();
-			}
-			br.close();
-			fr.close();
-			
-			FileWriter fw = new FileWriter( outf );
-			fr = new FileReader( inf );
-			br = new BufferedReader( fr );
-			line = br.readLine();
-			while( line != null ) {
 				for( String map : mapping.keySet() ) {
-					line = line.replace( map, mapping.get(map) );
+					if( map.equals("\n") ) {
+						String val = mapping.get(map);
+						val = val.substring(0, val.length()-1);
+						line = line + val;
+					} else line = line.replace( map, mapping.get(map) );
 				}
 				fw.write( line+"\n" );
 				line = br.readLine();

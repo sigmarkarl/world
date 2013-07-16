@@ -156,4 +156,10 @@ public class SmasagaSubserviceImpl extends RemoteServiceServlet implements Smasa
 		
 		return null;
 	}
+
+	@Override
+	public String sendAuthorMessage(String text) {
+		
+		return null;
+	}
 }

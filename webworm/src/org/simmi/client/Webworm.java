@@ -2141,7 +2141,8 @@ public class Webworm implements EntryPoint, MouseDownHandler, MouseUpHandler,
 		audio.setSrc("flabb2.webm");
 		audio.setLoop(true);
 		audio.getAudioElement().setAttribute("loop", "true");
-		hpaudio.add( audio );
+		coverpanel.add( audio );
+		//hpaudio.add( audio );
 
 		/*
 		 * setGadsPars(); ScriptElement adscript =

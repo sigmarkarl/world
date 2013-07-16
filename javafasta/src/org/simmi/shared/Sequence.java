@@ -22,6 +22,146 @@ public class Sequence implements Comparable<Sequence> {
 	public static ArrayList<Annotation>	lann = new ArrayList<Annotation>();
 	public static Map<String,Annotation>	mann = new HashMap<String,Annotation>();*/
 	
+	static Map<String,String>	amimap = new HashMap<String,String>();
+	static Map<String,String>	revcom = new HashMap<String,String>();
+	static Map<Character,Character>	rc = new HashMap<Character,Character>();
+	static {
+		amimap.put("TTT","F");
+		amimap.put("TTC","F");
+		amimap.put("TTA","L");
+		amimap.put("TTG","L");
+		amimap.put("TCT","S");
+		amimap.put("TCC","S");
+		amimap.put("TCA","S");
+		amimap.put("TCG","S");
+		amimap.put("TAT","Y");
+		amimap.put("TAC","Y");
+		amimap.put("TAA","1");
+		amimap.put("TAG","0");
+		amimap.put("TGT","C");
+		amimap.put("TGC","C");
+		amimap.put("TGA","0");
+		amimap.put("TGG","W");
+		amimap.put("CTT","L");
+		amimap.put("CTC","L");
+		amimap.put("CTA","L");
+		amimap.put("CTG","L");
+		amimap.put("CCT","P");
+		amimap.put("CCC","P");
+		amimap.put("CCA","P");
+		amimap.put("CCG","P");
+		amimap.put("CAT","H");
+		amimap.put("CAC","H");
+		amimap.put("CAA","Q");
+		amimap.put("CAG","Q");
+		amimap.put("CGT","R");
+		amimap.put("CGC","R");
+		amimap.put("CGA","R");
+		amimap.put("CGG","R");
+		amimap.put("ATT","I");
+		amimap.put("ATC","I");
+		amimap.put("ATA","I");
+		amimap.put("ATG","M");
+		amimap.put("ACT","T");
+		amimap.put("ACC","T");
+		amimap.put("ACA","T");
+		amimap.put("ACG","T");
+		amimap.put("AAT","N");
+		amimap.put("AAC","N");
+		amimap.put("AAA","K");
+		amimap.put("AAG","K");
+		amimap.put("AGT","S");
+		amimap.put("AGC","S");
+		amimap.put("AGA","R");
+		amimap.put("AGG","R");
+		amimap.put("GTT","V");
+		amimap.put("GTC","V");
+		amimap.put("GTA","V");
+		amimap.put("GTG","V");
+		amimap.put("GCT","A");
+		amimap.put("GCC","A");
+		amimap.put("GCA","A");
+		amimap.put("GCG","A");
+		amimap.put("GAT","D");
+		amimap.put("GAC","D");
+		amimap.put("GAA","E");
+		amimap.put("GAG","E");
+		amimap.put("GGT","G");
+		amimap.put("GGC","G");
+		amimap.put("GGA","G");
+		amimap.put("GGG","G");
+		
+		revcom.put("TTT","AAA");
+		revcom.put("TTC","GAA");
+		revcom.put("TTA","TAA");
+		revcom.put("TTG","CAA");
+		revcom.put("TCT","AGA");
+		revcom.put("TCC","GGA");
+		revcom.put("TCA","TGA");
+		revcom.put("TCG","CGA");
+		revcom.put("TAT","ATA");
+		revcom.put("TAC","GTA");
+		revcom.put("TAA","TTA");
+		revcom.put("TAG","CTA");
+		revcom.put("TGT","ACA");
+		revcom.put("TGC","GCA");
+		revcom.put("TGA","TCA");
+		revcom.put("TGG","CCA");
+		revcom.put("CTT","AAG");
+		revcom.put("CTC","GAG");
+		revcom.put("CTA","TAG");
+		revcom.put("CTG","CAG");
+		revcom.put("CCT","AGG");
+		revcom.put("CCC","GGG");
+		revcom.put("CCA","TGG");
+		revcom.put("CCG","CGG");
+		revcom.put("CAT","ATG");
+		revcom.put("CAC","GTG");
+		revcom.put("CAA","TTG");
+		revcom.put("CAG","CTG");
+		revcom.put("CGT","ACG");
+		revcom.put("CGC","GCG");
+		revcom.put("CGA","TCG");
+		revcom.put("CGG","CCG");
+		revcom.put("ATT","AAT");
+		revcom.put("ATC","GAT");
+		revcom.put("ATA","TAT");
+		revcom.put("ATG","CAT");
+		revcom.put("ACT","AGT");
+		revcom.put("ACC","GGT");
+		revcom.put("ACA","TGT");
+		revcom.put("ACG","CGT");
+		revcom.put("AAT","ATT");
+		revcom.put("AAC","GTT");
+		revcom.put("AAA","TTT");
+		revcom.put("AAG","CTT");
+		revcom.put("AGT","ACT");
+		revcom.put("AGC","GCT");
+		revcom.put("AGA","TCT");
+		revcom.put("AGG","CCT");
+		revcom.put("GTT","AAC");
+		revcom.put("GTC","GAC");
+		revcom.put("GTA","TAC");
+		revcom.put("GTG","CAC");
+		revcom.put("GCT","AGC");
+		revcom.put("GCC","GGC");
+		revcom.put("GCA","TGC");
+		revcom.put("GCG","CGC");
+		revcom.put("GAT","ATC");
+		revcom.put("GAC","GTC");
+		revcom.put("GAA","TTC");
+		revcom.put("GAG","CTC");
+		revcom.put("GGT","ACC");
+		revcom.put("GGC","GCC");
+		revcom.put("GGA","TCC");
+		revcom.put("GGG","CCC");
+		
+		rc.put('A', 'T');
+		rc.put('C', 'G');
+		rc.put('G', 'C');
+		rc.put('T', 'A');
+	}
+	
 	public String 				name;
 	public String				id;
 	public StringBuilder	 	sb;
@@ -37,7 +177,7 @@ public class Sequence implements Comparable<Sequence> {
 	public boolean				edited = false;
 	public boolean				selected = false;
 	
-	static Random r = new Random();
+	static final Random r = new Random();
 	
 	public boolean isSelected() {
 		return selected;
@@ -159,7 +299,7 @@ public class Sequence implements Comparable<Sequence> {
 		return ret;
 	}
 	
-	public static void distanceMatrixNumeric( List<Sequence> lseq, double[] dmat, List<Integer> idxs, boolean bootstrap, boolean cantor, double[] ent ) {		
+	public final static void distanceMatrixNumeric( List<Sequence> lseq, double[] dmat, List<Integer> idxs, boolean bootstrap, boolean cantor, double[] ent ) {		
 		int len = lseq.size();
 		for( int x = 0; x < lseq.size(); x++ ) {
 			dmat[x*len+x] = 0.0;
@@ -476,6 +616,10 @@ public class Sequence implements Comparable<Sequence> {
 		this.id = id;
 	}
 	
+	public void setSequenceString( StringBuilder sb ) {
+		this.sb = sb;
+	}
+	
 	public Sequence( String id, String name, Map<String,Sequence> mseq ) {
 		this( name, mseq );
 		this.id = id;
@@ -680,6 +824,43 @@ public class Sequence implements Comparable<Sequence> {
 	@Override
 	public int compareTo(Sequence o) {
 		return start - o.start;
+	}
+	
+	public StringBuilder getProteinSequence( int start, int stop, int ori ) {
+		StringBuilder ret = new StringBuilder();
+		
+		//if( stop > sb.length() ) {
+		//if( stop != end ) {
+		//	System.err.println();
+		//}
+		
+		if( ori == -1 ) {
+			int begin = stop - 1 - 3*((stop-start)/3);
+			
+			//String aaa = sb.substring(start-1, start+2);
+			//String aa = amimap.get( aaa );
+			
+			//String aaa = sb.substring(stop-2, stop+1);
+			//String aa = amimap.get( revcom.get(aaa) );
+			
+			//System.err.println( aa );
+			for( int i = stop-3; i > begin; i-=3 ) {
+				String aaa = sb.substring(i, i+3);
+				String aa = amimap.get( revcom.get(aaa) );
+				if( aa != null ) ret.append( i != stop-3 ? aa : (aa.equals("V") || aa.equals("L") ? "M" : aa) );
+				//else break;
+			}
+		} else {
+			int end = start - 1 + 3*((stop-start)/3);
+			for( int i = start-1; i < end; i+=3 ) {
+				String aaa = sb.substring(i, i+3);
+				String aa = amimap.get( aaa );
+				if( aa != null ) ret.append( i != start-1 ? aa : (aa.equals("V") || aa.equals("L") ? "M" : aa) );
+				//else break;
+			}
+		}
+		
+		return ret;
 	}
 	
 	public String getSubstring( int start, int end ) {
