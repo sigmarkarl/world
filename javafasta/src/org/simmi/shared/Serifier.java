@@ -612,19 +612,31 @@ public class Serifier {
 		for( Set<String>	t : total ) {
 			Set<String>	teg = new HashSet<String>();
 			for( String e : t ) {
-				int ind = e.indexOf('_');
+				int ind = e.indexOf('[');
 				//if( e.contains("_JL2_") ) ind = e.indexOf('_', ind+1);
 				
 				if( ind != -1 ) {
-					String str = e.substring( 0, ind );
+					int ind2 = e.indexOf(']', ind+1);
+					String str = e.substring( ind+1, ind2 );
+					
+					int uid = str.indexOf("uid");
+					int nuid = uid != -1 ? str.indexOf('_', uid) : str.length();
+					if( nuid == -1 ) nuid = str.length();
+					
 					/*if( joinmap.containsKey( str ) ) {
 						str = joinmap.get(str);
 					}*/
-					teg.add( str );
 					
-					species.add(str);
+					String tegstr = str.substring(0, nuid);
+					teg.add( tegstr );
+					
+					species.add( tegstr );
 				} else {
-					System.err.println("kk");
+					ind = e.indexOf("contig");
+					String tegstr = e.substring(0, ind-1);
+					teg.add( tegstr );
+					
+					species.add( tegstr );
 				}
 			}
 			
@@ -640,20 +652,30 @@ public class Serifier {
 			setmap.add( submap );
 			
 			for( String e : t ) {
-				int ind = e.indexOf('_');
+				String tegstr;
+				int ind = e.indexOf('[');
 				//if( e.contains("_JL2_") ) ind = e.indexOf('_', ind+1);
 				
-				String str = e.substring( 0, ind );
-				/*if( joinmap.containsKey( str ) ) {
-					str = joinmap.get(str);
-				}*/
+				if( ind != -1 ) {
+					int ind2 = e.indexOf(']', ind+1);
+					String str = e.substring( ind+1, ind2 );
+					
+					int uid = str.indexOf("uid");
+					int nuid = uid != -1 ? str.indexOf('_', uid) : str.length();
+					if( nuid == -1 ) nuid = str.length();
+					
+					tegstr = str.substring(0, nuid);
+				} else {
+					ind = e.indexOf("contig");
+					tegstr = e.substring(0, ind-1);
+				}
 				
 				Set<String>	set;
-				if( submap.containsKey( str ) ) {
-					set = submap.get(str);
+				if( submap.containsKey( tegstr ) ) {
+					set = submap.get(tegstr);
 				} else {
 					set = new HashSet<String>();
-					submap.put( str, set );
+					submap.put( tegstr, set );
 				}
 				set.add( e );
 			}
@@ -670,25 +692,119 @@ public class Serifier {
 		fos.close();
 	}
 	
-	public List<Set<String>> makeBlastCluster( final InputStream is, final OutputStream os, int clustermap ) {
-		List<Set<String>>	total = new ArrayList<Set<String>>();
-		try {
-			Set<String>	species = new TreeSet<String>();
+	public void writeSequence( Sequence seq, FileWriter fw ) throws IOException {
+		fw.write(">"+seq.name+"\n");
+		for( int k = 0; k < seq.sb.length(); k+=70 ) {
+			int m = Math.min(seq.sb.length(), k+70);
+			String substr = seq.sb.substring(k, m);
+			//(seq.sb.length() == k+70 ? "")
+			fw.write( substr+"\n" );
+		}
+	}
+	
+	public List<Set<String>> makeBlastCluster( final File osf, final String blastfile, int clustermap ) throws IOException {
+		InputStream fis = new FileInputStream( blastfile );
+		InputStream is;		
+		if( blastfile.endsWith(".gz") ) {
+			is = new GZIPInputStream( fis );
+		} else {
+			is = fis;
+		}
+		
+		FileOutputStream fos;
+		if( osf.isDirectory() ) {
+			Sequences seqs = sequences.get(0);
+			appendSequenceInJavaFasta( seqs, null, true );
 			
+			fos = new FileOutputStream( new File( osf, "cluster.txt" ) );
+		} else fos = new FileOutputStream( osf );
+		
+		List<Set<String>> total = makeBlastCluster( is, fos, clustermap);
+		fis.close();
+		
+		System.err.println( total.size() );
+		for( Set<String>	strset : total ) {
+			String name = null;
+			boolean pseudoname = true;
+			for( String str : strset ) {
+				if( name == null ) {
+					int si = str.indexOf(' ');
+					if( si == -1 ) si = str.length();
+					name = str.substring(0, si);
+				}
+				
+				int i = str.indexOf('[');
+				if( i != -1 ) {
+					if( pseudoname || !str.contains("hypot") ) {
+						//int si = str.indexOf(' ');
+						name = str.substring(0, i-1).replace(' ', '_').replace('/', '_');
+						
+						pseudoname = false;
+					}
+				}
+			}
+			
+			File of = new File( osf, name+".fna" );
+			
+			/*if( name.startsWith("YP_007881477.1") ) {
+				System.err.println();
+			}*/
+			
+			FileWriter fw = new FileWriter( of );
+			for( String str : strset ) {
+				/*if( str.startsWith("YP_007881477.1") ) {
+					for( String erm : mseq.keySet() ) {
+						if( erm.startsWith("YP_007881477.1") ) {
+							System.err.println( str );
+							System.err.println( erm );
+							System.err.println();
+						}
+					}
+				}*/
+				
+				Sequence seq = mseq.get( str );
+				if( seq != null ) writeSequence( seq, fw );
+				else {
+					System.err.println();
+				}
+			}
+			fw.close();
+		}
+		
+		return total;
+	}
+	
+	public List<Set<String>> makeBlastCluster( final InputStream is, final OutputStream fos, int clustermap ) {
+		List<Set<String>>	total = new ArrayList<Set<String>>();
+		try {			
 			if( clustermap%2 == 0 ) {
 				joinBlastSets( is, null, true, total, 0.0 );
 			} else {
 				joinBlastSetsThermus( is, null, true, total );
 			}
+			is.close();
 			
-			if( clustermap/2 == 0 ) {
-				Map<Set<String>,Set<Map<String,Set<String>>>>	clusterMap = initCluster( total, species );
-			
-				//if( writeSimplifiedCluster != null ) 
-				writeSimplifiedCluster( os, clusterMap );
-				//writeBlastAnalysis( clusterMap, species );
-			} else if( os != null ) {
-				writeClusters( os, total );
+			if( fos != null ) {				
+				if( clustermap/2 == 0 ) {
+					Set<String>	species = new TreeSet<String>();
+					Map<Set<String>,Set<Map<String,Set<String>>>>	clusterMap = initCluster( total, species );
+				
+					/*Set<String> curset = null;
+					int max = 0;
+					for( Set<String> set : clusterMap.keySet() ) {
+						if( set.size() > max ) {
+							curset = set;
+							max = set.size();
+						}
+					}
+					System.err.println( max );
+					System.err.println( curset );*/
+					//if( writeSimplifiedCluster != null ) 
+					writeSimplifiedCluster( fos, clusterMap );
+					//writeBlastAnalysis( clusterMap, species );
+				} else {
+					writeClusters( fos, total );
+				}
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -750,10 +866,19 @@ public class Serifier {
 		}*/
 	}
 	
-	public void joinBlastSetsThermus( InputStream is, String write, boolean union, List<Set<String>> total ) throws IOException {
-		FileWriter fw = write == null ? null : new FileWriter( write ); //new FileWriter("/home/sigmar/blastcluster.txt");
+	public void joinBlastSetsThermus( InputStream is, String write, boolean union, List<Set<String>> total ) throws IOException {		
+		//File file = null;
+		FileWriter fw = null;
+		if( write != null ) {
+			File file = new File( write );
+			if( file.isDirectory() ) {
+				fw = new FileWriter( new File( file, "clusters.txt" ) );
+			} else {
+				fw = new FileWriter( file ); //new FileWriter("/home/sigmar/blastcluster.txt");
+			}
+		}
 		BufferedReader	br = new BufferedReader( new InputStreamReader( is ) );
-			
+		
 		String line = br.readLine();
 		int cnt = 0;
 		while( line != null ) {
@@ -761,7 +886,7 @@ public class Serifier {
 				line = br.readLine();
 				Set<String>	all = new HashSet<String>();
 				while( line != null && !line.startsWith("Query=") ) {
-					String trim = line.trim();
+					String trim = line;
 					
 					/*if( trim.contains("1572") ) {
 						System.err.println();
@@ -772,19 +897,24 @@ public class Serifier {
 						
 						line = br.readLine();
 						while( line != null && !line.startsWith("Length") ) {
-							trim += line.trim();
+							trim += line;
 							line = br.readLine();
 						}
 						
-						int millind = trim.indexOf('#');
+						//int millind = trim.indexOf('#');
 						//if( millind == -1 ) millind = trim.indexOf("..", 5);
-						String val = trim.substring( 0, millind ).trim();
+						//String val = trim.substring( 0, millind ).trim();
 						
 						if( line != null ) {
 							int len = Integer.parseInt( line.substring(7) );
 							
-							line = br.readLine().trim();
-							while( !line.startsWith("Identities") ) line = br.readLine().trim();
+							line = br.readLine();
+							if( line != null ) line = line.trim();
+							else continue;
+							
+							while( !line.startsWith("Identities") ) {
+								line = br.readLine().trim();
+							}
 							
 							int idx0 = line.indexOf('/');
 							int idx1 = line.indexOf('(');
@@ -793,7 +923,8 @@ public class Serifier {
 							int percid = Integer.parseInt( line.substring(idx1+1, idx2) );
 							int lenid = Integer.parseInt( line.substring(idx0+1, idx1-1) );
 							//int v = val.indexOf("contig");
-							if( percid >= 50 && lenid >= len/2 ) all.add( val.replace(".fna", "") );
+							
+							if( percid >= 50 && lenid >= len/2 ) all.add( trim ); //.replace(".fna", "") );
 						} else System.err.println( trim );
 						
 						/*if( val.contains("SG0") ) {
@@ -1271,7 +1402,12 @@ public class Serifier {
 						if( contset != null ) contset.put(cont, seq);
 					}
 					//System.err.println( seqs.getName() );
-					if( /*rr.length == 1*/ namefix ) cont = line.replace( ">", "" );
+					if( /*rr.length == 1*/ namefix ) {
+						cont = line.replace( ">", "" );
+						//int millind = cont.indexOf('#');
+						//if( millind == -1 ) millind = cont.length();
+						//cont = cont.substring( 0, millind ).trim();
+					}
 					else cont = line.replace( ">", seqs.getName()+"_" );
 					dna = new StringBuilder();
 					//dna.append( line.replace( ">", ">"+seqs.getName()+"_" )+"\n" );
@@ -2242,9 +2378,10 @@ public class Serifier {
 		
 		i = arglist.indexOf("-clust");
 		if( i >= 0 ) {
-			int splnum = Integer.parseInt( args[i+1] );
+			String blastfile = args[i+1];
+			int splnum = Integer.parseInt( args[i+2] );
 			
-			makeBlastCluster( new FileInputStream( inf ), new FileOutputStream( outf ), splnum );
+			makeBlastCluster( /*inf,*/ outf, blastfile, splnum );
 			//for( Sequences seqs : this.sequences ) {
 				//seqs.setNSeq( countSequences( inf ) );
 				//List<Sequences> retlseqs = splitit( splnum, seqs, outf == null ? new File(".") : outf );

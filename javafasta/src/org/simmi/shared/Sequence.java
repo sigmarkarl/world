@@ -640,7 +640,12 @@ public class Sequence implements Comparable<Sequence> {
 		this.name = name;
 		this.sb = sb;
 		this.id = name;
-		if( mseq != null ) mseq.put( name, this );
+		if( mseq != null ) {
+			//int millind = name.indexOf('#');
+			//if( millind == -1 ) millind = name.length();
+			//String val = name.substring( 0, millind ).trim();
+			mseq.put( name, this );
+		}
 	}
 	
 	public List<Annotation> getAnnotations() {
