@@ -865,6 +865,10 @@ public class Sequence implements Comparable<Sequence> {
 			}
 		}
 		
+		/*if( ret.length() == 0 ) {
+			System.err.println(" ");
+		}*/
+		
 		return ret;
 	}
 	
