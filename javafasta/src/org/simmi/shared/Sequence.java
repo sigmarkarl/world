@@ -467,7 +467,11 @@ public class Sequence implements Comparable<Sequence> {
 	public void complement() {
 		for( int i = 0; i < getLength(); i++ ) {
 			char c = sb.charAt(i);
-			sb.setCharAt( i, complimentMap.get(c) );
+			char rc = complimentMap.containsKey( c ) ? complimentMap.get(c) : c;
+			/*if( c == rc ) {
+				System.err.println();
+			}*/
+			sb.setCharAt( i, rc );
 		}
 	}
 	
@@ -872,9 +876,18 @@ public class Sequence implements Comparable<Sequence> {
 		return ret;
 	}
 	
-	public String getSubstring( int start, int end ) {
-		if( start < sb.length() && end <= sb.length() ) return sb.substring(start, end);
-		System.err.println( name + ": " + sb.length() );
+	public String getSubstring( int start, int end, int ori ) {
+		if( start < sb.length() && end <= sb.length() ) {
+			if( ori == -1 ) {
+				StringBuilder subsb = new StringBuilder();
+				for( int i = end-1; i >= start; i-- ) {
+					char c = sb.charAt(i);
+					char rc = complimentMap.containsKey(c) ? complimentMap.get( c ) : c;
+					subsb.append( rc );
+				}
+				return subsb.toString();
+			} else return sb.substring(start, end);
+		}
 		return "";
 	}
 }
