@@ -467,7 +467,11 @@ public class Sequence implements Comparable<Sequence> {
 	public void complement() {
 		for( int i = 0; i < getLength(); i++ ) {
 			char c = sb.charAt(i);
-			sb.setCharAt( i, complimentMap.get(c) );
+			char rc = complimentMap.containsKey( c ) ? complimentMap.get(c) : c;
+			/*if( c == rc ) {
+				System.err.println();
+			}*/
+			sb.setCharAt( i, rc );
 		}
 	}
 	
@@ -850,7 +854,7 @@ public class Sequence implements Comparable<Sequence> {
 			
 			//System.err.println( aa );
 			for( int i = stop-3; i > begin; i-=3 ) {
-				String aaa = sb.substring(i, i+3);
+				String aaa = sb.substring(i, i+3).toUpperCase();
 				String aa = amimap.get( revcom.get(aaa) );
 				if( aa != null ) ret.append( i != stop-3 ? aa : (aa.equals("V") || aa.equals("L") ? "M" : aa) );
 				//else break;
@@ -858,17 +862,32 @@ public class Sequence implements Comparable<Sequence> {
 		} else {
 			int end = start - 1 + 3*((stop-start)/3);
 			for( int i = start-1; i < end; i+=3 ) {
-				String aaa = sb.substring(i, i+3);
+				String aaa = sb.substring(i, i+3).toUpperCase();
 				String aa = amimap.get( aaa );
 				if( aa != null ) ret.append( i != start-1 ? aa : (aa.equals("V") || aa.equals("L") ? "M" : aa) );
 				//else break;
 			}
 		}
 		
+		/*if( ret.length() == 0 ) {
+			System.err.println(" ");
+		}*/
+		
 		return ret;
 	}
 	
-	public String getSubstring( int start, int end ) {
-		return sb.substring(start, end);
+	public String getSubstring( int start, int end, int ori ) {
+		if( start < sb.length() && end <= sb.length() ) {
+			if( ori == -1 ) {
+				StringBuilder subsb = new StringBuilder();
+				for( int i = end-1; i >= start; i-- ) {
+					char c = sb.charAt(i);
+					char rc = complimentMap.containsKey(c) ? complimentMap.get( c ) : c;
+					subsb.append( rc );
+				}
+				return subsb.toString();
+			} else return sb.substring(start, end);
+		}
+		return "";
 	}
 }

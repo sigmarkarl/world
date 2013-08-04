@@ -60,7 +60,7 @@ public class Childsplay implements EntryPoint {
 	public void doRandom( Context2d context, int x, int y ) {
 		int w = context.getCanvas().getWidth();
 		int h = context.getCanvas().getHeight();
-		if( ++counter % 100 == 0 ) context.clearRect( 0, 0, w, h );
+		if( counter++ % 100 == 0 ) context.clearRect( 0, 0, w, h );
 		
 		String color = "#"+Integer.toString( Random.nextInt(256), 16 )+Integer.toString( Random.nextInt(256), 16 )+Integer.toString( Random.nextInt(256), 16 );
 		context.setFillStyle( color );
@@ -154,8 +154,8 @@ public class Childsplay implements EntryPoint {
 		console.log("mmmuuu5");
 	}-*/;
 	
-	AudioContext acontext = null;
-	Oscillator osc = null;
+	AudioContext 	acontext = null;
+	Oscillator 		osc = null;
 	public void audioContinue( MediaElement me ) {
 		MediaElementAudioSourceNode measn = acontext.createMediaElementSource( me );
 		AudioBuffer ab = acontext.createBuffer( null, true );
@@ -251,11 +251,18 @@ public class Childsplay implements EntryPoint {
 			}
 		});
 		
+		String starttext = "Press mouse key or touch to start";
+		final Context2d context = canvas.getContext2d();
+		context.setFillStyle("#000000");
+		context.setFont("30pt Calibri");
+		double strw = context.measureText( starttext ).getWidth();
+		context.fillText(starttext, (w-strw)/2, h/2);
+		
 		canvas.addTouchStartHandler( new TouchStartHandler() {
 			@Override
 			public void onTouchStart(TouchStartEvent event) {
 				Touch touch = event.getTouches().get(0);
-				doRandom( canvas.getContext2d(), touch.getClientX(), touch.getClientY() );
+				doRandom( context, touch.getClientX(), touch.getClientY() );
 			}
 		});
 		
@@ -287,7 +294,7 @@ public class Childsplay implements EntryPoint {
 					osc.getFrequency().setValue( (float)(Random.nextDouble()*500.0+100.0) );
 					osc.noteOn( 0 );
 				}
-				doRandom( canvas.getContext2d(), event.getClientX(), event.getClientY() );
+				doRandom( context, event.getClientX(), event.getClientY() );
 			}
 		});
 		
@@ -305,7 +312,11 @@ public class Childsplay implements EntryPoint {
 				//osc.getFrequency().setValue( fval );
 				//agn.getGain().setValue( (900.0f-fval)/800.0f );
 				//osc.noteOn( 0 );
-				doRandom( canvas.getContext2d(), -1, -1 );
+				if( osc != null ) {
+					osc.getFrequency().setValue( (float)(Random.nextDouble()*500.0+100.0) );
+					osc.noteOn( 0 );
+				}
+				doRandom( context, -1, -1 );
 				prev = next;
 			}
 		});

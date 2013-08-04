@@ -1808,10 +1808,10 @@ public class JavaFasta extends JApplet {
 					int end = Math.min(stop, seq.getLength());
 					if( end > start ) {
 						if( begin < 0 ) {
-							String val = String.format( "%"+c.selectedRect.width+"s", seq.getSubstring( start, end ) );
+							String val = String.format( "%"+c.selectedRect.width+"s", seq.getSubstring( start, end, 1 ) );
 							return val;
 						}
-						return seq.getSubstring( start, end );
+						return seq.getSubstring( start, end, 1 );
 					}
 					
 					return "";
@@ -2503,9 +2503,9 @@ public class JavaFasta extends JApplet {
 			public void actionPerformed(ActionEvent e) {
 				for( Sequence seq : serifier.lseq ) {
 					String name = seq.getName();
-					int i = name.indexOf(' ');
-					name = name.substring(0,i+1) + name.substring(i+1).replace(' ', '_') + ";";
-					seq.setName( name );
+					//int i = name.indexOf(' ');
+					//name = name.substring(0,i+1) + name.substring(i+1).replace(' ', '_') + ";";
+					seq.setName( name.replace(' ', '_') );
 				}
 				updateView();
 			}
@@ -2663,9 +2663,9 @@ public class JavaFasta extends JApplet {
 						int end = Math.min(stop, seq1.getLength());
 						if( end > start ) {
 							if( begin < 0 ) {
-								String val = String.format( "%"+c.selectedRect.width+"s", seq1.getSubstring( start, end ) );
+								String val = String.format( "%"+c.selectedRect.width+"s", seq1.getSubstring( start, end, 1 ) );
 								seq1str = val;
-							} else seq1str = seq1.getSubstring( start, end );
+							} else seq1str = seq1.getSubstring( start, end, 1 );
 						}
 						
 						begin = c.selectedRect.x-seq2.getStart();
@@ -2675,9 +2675,9 @@ public class JavaFasta extends JApplet {
 						end = Math.min(stop, seq2.getLength());
 						if( end > start ) {
 							if( begin < 0 ) {
-								String val = String.format( "%"+c.selectedRect.width+"s", seq2.getSubstring( start, end ) );
+								String val = String.format( "%"+c.selectedRect.width+"s", seq2.getSubstring( start, end, 1 ) );
 								seq2str = val;
-							} else seq2str = seq2.getSubstring( start, end );
+							} else seq2str = seq2.getSubstring( start, end, 1 );
 						}
 						
 						return seq1str.compareTo( seq2str );
