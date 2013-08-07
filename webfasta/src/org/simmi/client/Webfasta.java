@@ -610,11 +610,10 @@ public class Webfasta implements EntryPoint {
 	public void fileLoaded(Int8Array cont) {
 		int start = 0;
 		if (append) {
-			start = content.length();
-			Int8Array i8a = Int8ArrayNative.create(content.length()
-					+ cont.length());
-			i8a.set(content);
-			i8a.set(cont, content.length());
+			start = content != null ? content.length() : 0;
+			Int8Array i8a = Int8ArrayNative.create(start + cont.length());
+			if( content != null ) i8a.set(content);
+			i8a.set(cont, start);
 			this.content = i8a;
 		} else {
 			content = cont;
@@ -2657,6 +2656,7 @@ public class Webfasta implements EntryPoint {
 				DataTransfer dt = event.getDataTransfer();
 				// dt.getData(format)
 				// File f = new File();
+				append = true;
 				if (!transferData(dt)) {
 					String cont = dt.getData("Text");
 					byte[] bb = cont.getBytes();

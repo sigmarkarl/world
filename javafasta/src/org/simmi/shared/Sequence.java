@@ -476,7 +476,9 @@ public class Sequence implements Comparable<Sequence> {
 	}
 	
 	public void upperCase() {
-		
+		for( int i = 0; i < sb.length(); i++ ) {
+			sb.setCharAt( i, Character.toUpperCase(sb.charAt(i)) );
+		}
 	}
 	
 	public void caseSwap() {
@@ -684,6 +686,10 @@ public class Sequence implements Comparable<Sequence> {
 	
 	public String toString() {
 		return name;
+	}
+	
+	public void append( CharSequence cs ) {
+		sb.append( cs );
 	}
 	
 	public void append( String str ) {

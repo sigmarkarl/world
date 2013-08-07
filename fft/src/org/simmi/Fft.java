@@ -6,8 +6,6 @@ import java.awt.Graphics2D;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
-import java.io.IOException;
-import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ShortBuffer;
 import java.util.Random;
@@ -23,8 +21,10 @@ import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.Timer;
 
-import org.apache.commons.math.complex.Complex;
-import org.apache.commons.math.transform.FastFourierTransformer;
+import org.apache.commons.math3.complex.Complex;
+import org.apache.commons.math3.transform.DftNormalization;
+import org.apache.commons.math3.transform.FastFourierTransformer;
+import org.apache.commons.math3.transform.TransformType;
 
 public class Fft extends JComponent {
 
@@ -58,7 +58,7 @@ public class Fft extends JComponent {
 	
 	double[]	dd = null;
 	public void record() {
-		FastFourierTransformer fft = new FastFourierTransformer();
+		FastFourierTransformer fft = new FastFourierTransformer( DftNormalization.STANDARD );
 		
 		final AudioFormat format = getFormat();
 		
@@ -105,7 +105,7 @@ public class Fft extends JComponent {
 			    	dd[b] = rgb;
 			    	//max = Math.max( max, Math.abs(rgb) );
 			    }
-			    Complex[] cc = fft.transform( dd );
+			    Complex[] cc = fft.transform( dd, TransformType.FORWARD );
 			    double max = 0;
 			    for( int b = 0; b < 4096; b++ ) {
 			    	dd[b] = Math.sqrt( cc[b].getReal()*cc[b].getReal() + cc[b].getImaginary()*cc[b].getImaginary() );

@@ -18,7 +18,7 @@
 		<link>
 			<name>math</name>
 			<type>2</type>
-			<location>/home/sigmar/commons-math-2.1-src/src/main/java</location>
+			<location>/home/sigmar/commons-math3-3.2-src/src/main/java</location>
 		</link>
 	</linkedResources>
 </projectDescription>

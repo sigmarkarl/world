@@ -14,6 +14,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintStream;
+import java.io.Reader;
 import java.io.Writer;
 import java.net.MalformedURLException;
 import java.net.URI;
@@ -507,14 +508,14 @@ public class Serifier {
 		}
 	}
 	
-	public Map<String,StringBuilder> concat( List<String> urls ) throws IOException {
+	public Map<String,StringBuilder> concat( List<Reader>  lrd ) throws IOException {
 		final Map<String,StringBuilder>	seqmap = new HashMap<String,StringBuilder>();
 		
-		for( String path : urls ) {
-			URL url = new URL( path );
+		for( Reader rd : lrd ) {
+			//URL url = new URL( path );
 			StringBuilder	sb = null;
-			InputStream is = url.openStream();
-			BufferedReader	br = new BufferedReader( new InputStreamReader(is) );
+			//InputStream is = url.openStream();
+			BufferedReader	br = new BufferedReader( rd );
 			String line = br.readLine();
 			while( line != null ) {
 				if( line.startsWith(">") ) {
@@ -2317,12 +2318,13 @@ public class Serifier {
 			int cnum = Integer.parseInt( args[i+1] );
 			Random r = new Random();
 			for( int l = 0; l < 1000; l++ ) {
-				List<String>	urls = new ArrayList<String>();
+				List<Reader>	lrd = new ArrayList<Reader>();
 				for( int k = 0; k < cnum; k++ ) {
 					Sequences seqs = this.sequences.get( r.nextInt( this.sequences.size() ) );
-					urls.add( seqs.getPath() );
+					URL url = new URL( seqs.getPath() );
+					lrd.add( new InputStreamReader( url.openStream() ) );
 				}
-				Map<String,StringBuilder> smap = concat( urls );
+				Map<String,StringBuilder> smap = concat( lrd );
 				
 				FileWriter fw = new FileWriter( new File( outf, "conc"+cnum+"_"+l+".fasta" ) );
 				for( String key : smap.keySet() ) {
@@ -2338,11 +2340,12 @@ public class Serifier {
 		
 		i = arglist.indexOf("-conc");
 		if( i >= 0 ) {
-			List<String>	urls = new ArrayList<String>();
+			List<Reader>	lrds = new ArrayList<Reader>();
 			for( Sequences seqs : this.sequences ) {
-				urls.add( seqs.getPath() );
+				URL url = new URL( seqs.getPath() );
+				lrds.add( new InputStreamReader( url.openStream() ) );
 			}
-			Map<String,StringBuilder> smap = concat( urls );
+			Map<String,StringBuilder> smap = concat( lrds );
 			
 			FileWriter fw = new FileWriter( outf );
 			for( String key : smap.keySet() ) {

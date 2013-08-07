@@ -212,7 +212,7 @@ public class Guitartuner implements EntryPoint {
 							//rtan.getByteFrequencyData( ua );
 							//rtan.getByteTimeDomainData(ua);
 							//stream.
-							
+							//rtan.getMinDecibels();
 							rtan.getFloatFrequencyData( fael );
 							//int len = fa.length();
 							
@@ -225,7 +225,7 @@ public class Guitartuner implements EntryPoint {
 								
 								String gg = green < 16 ? "0"+Integer.toString( green, 16 ) : Integer.toString( green, 16 );
 								context2d.setFillStyle(gg+"ff"+gg);
-								context2d.fillRect(w-1.0, 100.0*Math.log10(i+100.0)-200.0, 1.0, 1.0);
+								context2d.fillRect(w-1.0, 500.0*Math.log10(i+100.0)-1000.0, 1.0, 1.0);
 							}
 							/*for( int i = 0; i < h; i++ ) {
 								double val = fa.get(i);
