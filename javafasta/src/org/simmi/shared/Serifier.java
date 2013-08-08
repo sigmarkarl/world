@@ -2,6 +2,7 @@ package org.simmi.shared;
 
 import java.awt.Rectangle;
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -39,6 +40,11 @@ import org.simmi.shared.Sequence.Annotation;
 public class Serifier {
 	public Serifier() {
 		super();
+	}
+	
+	public Serifier( List<Sequence> lseq ) {
+		super();
+		this.lseq = lseq;
 	}
 	
 	List<Sequences>		sequences = new ArrayList<Sequences>();
@@ -90,6 +96,38 @@ public class Serifier {
 			line = br.readLine();
 		}
 		
+		return ret;
+	}
+	
+	public String getFastTree() {
+		String 				ret = "";
+		File 				tmpdir = new File("/tmp");
+		try {
+			FileWriter fw = new FileWriter( new File(tmpdir, "tmp.fasta") );
+			writeFasta( lseq, fw, null);
+			fw.close();
+
+			ProcessBuilder pb = new ProcessBuilder("fasttree", "tmp.fasta");
+			pb.directory(tmpdir);
+			Process p = pb.start();
+			InputStream is = p.getInputStream();
+
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			byte[] bb = new byte[1024];
+			int r = is.read(bb);
+			while (r > 0) {
+				baos.write(bb, 0, r);
+				r = is.read(bb);
+			}
+			baos.close();
+
+			ret = baos.toString();
+			/*Node n = treeutil.parseTreeRecursive( tree, false );
+			treeutil.setLoc( 0 );
+			n.nodeCalcMap( nmap );*/
+		} catch (IOException er) {
+			er.printStackTrace();
+		}
 		return ret;
 	}
 	
@@ -565,7 +603,7 @@ public class Serifier {
 		this.max = max;
 	}
 	
-	public ArrayList<Sequence>		lseq = new ArrayList<Sequence>() {
+	public List<Sequence>		lseq = new ArrayList<Sequence>() {
 		private static final long serialVersionUID = 1L;
 
 		public boolean add( Sequence seq ) {

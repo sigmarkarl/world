@@ -23,8 +23,10 @@ import elemental.html.AudioBufferSourceNode;
 import elemental.html.AudioContext;
 import elemental.html.AudioDestinationNode;
 import elemental.html.AudioElement;
+import elemental.html.AudioParam;
 import elemental.html.AudioProcessingEvent;
 import elemental.html.AudioSourceNode;
+import elemental.html.BiquadFilterNode;
 import elemental.html.Float32Array;
 import elemental.html.JavaScriptAudioNode;
 import elemental.html.Navigator;
@@ -133,14 +135,21 @@ public class Guitartuner implements EntryPoint {
 				final AudioSourceNode 			microphone = createMediaStreamSource(acontext, stream);
 				final AudioDestinationNode		output = acontext.getDestination();
 				
-				final Float32ArrayNative		fa = Float32ArrayNative.create(2048);
+				final Float32ArrayNative		fa = Float32ArrayNative.create(1024);
 				final Float32Array				fael = ok( fa );
 				
 				final RealtimeAnalyserNode 		rtan = acontext.createAnalyser();
 				final JavaScriptAudioNode 		jsan = acontext.createJavaScriptNode(2048, 1);
 				rtan.setFftSize( 2048 );
 				
-				microphone.connect( rtan, 0, 0 );
+				final BiquadFilterNode			filter = acontext.createBiquadFilter();
+				filter.setType( BiquadFilterNode.BANDPASS );
+				filter.getQ().setValue( 400.0f );
+				AudioParam freq = filter.getFrequency();
+				freq.setValue( 440.0f );
+				
+				microphone.connect( filter, 0, 0 );
+				filter.connect( rtan, 0, 0 );
 				rtan.connect( output, 0, 0 );
 				//jsan.connect( output, 0, 0 );
 				
@@ -208,33 +217,30 @@ public class Guitartuner implements EntryPoint {
 							double w = canvas.getCoordinateSpaceWidth();
 							double h = canvas.getCoordinateSpaceHeight();
 							
+							context2d.clearRect(0.0, 0.0, w, h);
 							//rtan.getf
 							//rtan.getByteFrequencyData( ua );
 							//rtan.getByteTimeDomainData(ua);
 							//stream.
 							//rtan.getMinDecibels();
 							rtan.getFloatFrequencyData( fael );
-							//int len = fa.length();
 							
-							context2d.drawImage( canvas.getCanvasElement(), 1.0, 0.0, w-1.0, h, 0.0, 0.0, w-1.0, h );
-							//ImageData imd = context2d.getImageData(w-1, 0, 1, h);
+							int		maxi = 0;
+							float 	max = fa.get(maxi);
+							for( int i = 0; i < fa.length()/2-1; i++ ) {
+								float fval = fa.get(i);
+								if( fval > max ) {
+									max = fval;
+									maxi = i;
+								}
+							}
 							
-							for( int i = 0; i < h; i++ ) {
-								double val = fa.get(i);
-								int green = Math.min( 255, Math.max(0, -(int)(10*val+500)));
-								
-								String gg = green < 16 ? "0"+Integer.toString( green, 16 ) : Integer.toString( green, 16 );
-								context2d.setFillStyle(gg+"ff"+gg);
-								context2d.fillRect(w-1.0, 500.0*Math.log10(i+100.0)-1000.0, 1.0, 1.0);
-							}
-							/*for( int i = 0; i < h; i++ ) {
-								double val = fa.get(i);
-								int green = Math.min( 255, Math.max(0, (int)val) );
-								
-								imd.setGreenAt( green, 0, i);
-							}
-							context2d.putImageData(imd, w-1, 0);
-							/*context2d.setStrokeStyle("#00aa00");
+							context2d.setFillStyle("#000000");
+							context2d.fillText( Integer.toString(maxi), w/2.0, h/2.0 );
+							context2d.fillText( Float.toString( acontext.getSampleRate() ), w/2.0, h/3.0 );
+							
+							int len = fa.length();
+							context2d.setStrokeStyle("#00aa00");
 							context2d.beginPath();
 							context2d.moveTo(0, 240);
 							for( int i = 0; i < len; i++ ) {
@@ -242,9 +248,8 @@ public class Guitartuner implements EntryPoint {
 								context2d.lineTo( i*w/len, 240+val );
 							}
 							//context2d.closePath();
-							context2d.stroke();*/
+							context2d.stroke();
 							
-							//wnd.getConsole().log(" m "+fa.get(1023) );
 							wnd.webkitRequestAnimationFrame( ra );
 							return true;
 						}
