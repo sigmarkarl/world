@@ -240,15 +240,38 @@ public class Guitartuner implements EntryPoint {
 				context2d.setFillStyle("#00ff00");
 				context2d.fillRect(10.0, 10.0, 100.0, 100.0 );
 		       ra = new RequestAnimationFrameCallback() {
+		    	   double prevbil = 0.0;
 		    	   int t = 0;
 					@Override
 					public boolean onRequestAnimationFrameCallback(double time) {
 						if( ra != null ) {
-							if( t++ % 10 == 0 ) {
+							if( t++ % 1 == 0 ) {
 								double w = canvas.getCoordinateSpaceWidth();
 								double h = canvas.getCoordinateSpaceHeight();
 								
 								context2d.clearRect(0.0, 0.0, w, h);
+								
+								double w52 = w/52.0;
+								context2d.setStrokeStyle("#000000");
+								for( double d = 0.0; d < w; d += w52 ) {
+									context2d.beginPath();
+									context2d.moveTo( d, 100.0 );
+									context2d.lineTo( d+w52, 100.0 );
+									context2d.lineTo( d+w52, 0.0 );
+									context2d.stroke();
+								}
+								
+								context2d.setFillStyle("#000000");
+								for( double d = 0.0; d < w; d += 7.0*w52 ) {
+									context2d.fillRect(d+w52-w52/8.0, 0.0, w52/2.0, 60.0);
+									if( d < w-3.0*w52 ) {
+										context2d.fillRect(d+3.0*w52-3.0*w52/8.0, 0.0, w52/2.0, 60.0);
+										context2d.fillRect(d+4.0*w52-w52/8.0, 0.0, w52/2.0, 60.0);
+										context2d.fillRect(d+6.0*w52-3.0*w52/8.0, 0.0, w52/2.0, 60.0);
+										context2d.fillRect(d+7.0*w52-w52/4.0, 0.0, w52/2.0, 60.0);
+									}
+								}
+								
 								//rtan.getf
 								//rtan.getByteFrequencyData( ua );
 								//rtan.getByteTimeDomainData(ua);
@@ -268,7 +291,7 @@ public class Guitartuner implements EntryPoint {
 								}*/
 								
 								int max = 0;
-								int total = ua.get(0);
+								int avg = ua.get(0);
 								List<Integer> li = new ArrayList<Integer>();
 								for( int i = 1; i < ua.length()-1; i++ ) {
 									short valm1 = ua.get(i-1);
@@ -280,14 +303,14 @@ public class Guitartuner implements EntryPoint {
 										
 										if( val > max ) max = val;
 										
-										total += valp1;
+										avg += valp1;
 									}
-									total += val;
+									avg += val;
 								}
-								total += ua.get(ua.length()-1);
-								total /= ua.length();
+								avg += ua.get(ua.length()-1);
+								avg /= ua.length();
 								
-								max -= total;
+								//max -= total;
 								
 								double mbil = medalBil( li, ua );
 								if( li.size() > 1 ) {
@@ -295,7 +318,8 @@ public class Guitartuner implements EntryPoint {
 									
 									boolean changed = true;
 									int u = 0;
-									while( changed && u < 32 ) {
+									int size = 0;
+									while( changed && li.size() > 0 && u < 32 ) {
 										changed = false;
 										
 										int k = 0;
@@ -306,7 +330,10 @@ public class Guitartuner implements EntryPoint {
 											
 											short val = ua.get(fi);
 											short nval = ua.get(ne);
-											if( ne-fi <= 2*mbil/3 || val < 8*nval/10 || nval < 8*val/10 || val - total < 0 ) {
+											
+											int mval = val - avg;
+											int mnval = nval - avg;
+											if( ne-fi <= 7*mbil/8 /*|| mval < 8*mnval/10 || mnval < 8*mval/10 || mval < 0*/ ) {
 												changed = true;
 												//short val = ua.get(fi);
 												
@@ -321,6 +348,7 @@ public class Guitartuner implements EntryPoint {
 											}
 										}
 										li = nli;
+										size = li.size();
 										mbil = medalBil( li, ua );
 										
 										context2d.fillText( Double.toString( Math.round(mbil*10.0)/10.0 ), w/2.0+u*30.0, h/2.0 );
@@ -328,11 +356,49 @@ public class Guitartuner implements EntryPoint {
 										u++;
 									}
 									
+									float samplerate = acontext.getSampleRate();
+									double hz = 0.0;
+									//prevbil = mbil;
+									if( mbil > 1.0 && size > 3 ) {
+										prevbil = mbil;
+									}
+									if( prevbil > 1.0 ) hz = Math.round((samplerate/prevbil)*10.0)/10.0;
+									
+									double twq = Math.pow( 2.0, 1.0/12.0 );
+									double kc = Math.round( Math.log( hz/440.0 ) / Math.log( twq ) );
+									
+									double attund = Math.floor( kc/12.0 );
+									double start = 28.0*w52+7.0*w52*attund;
+									
+									double kval = kc - attund*12.0;
+									context2d.setFillStyle("#aa0000");
+									if( kval == 0 ) context2d.fillRect(start, 60.0, w52, 40.0);
+									else if( kval == 2 ) context2d.fillRect(start+w52, 60.0, w52, 40.0);
+									else if( kval == 3 ) context2d.fillRect(start+2.0*w52, 60.0, w52, 40.0);
+									else if( kval == 5 ) context2d.fillRect(start+3.0*w52, 60.0, w52, 40.0);
+									else if( kval == 7 ) context2d.fillRect(start+4.0*w52, 60.0, w52, 40.0);
+									else if( kval == 8 ) context2d.fillRect(start+5.0*w52, 60.0, w52, 40.0);
+									else if( kval == 10 ) context2d.fillRect(start+6.0*w52, 60.0, w52, 40.0);
+									else if( kval == 1 ) context2d.fillRect(start+w52-w52/8.0, 0.0, w52/2.0, 60.0);
+									else if( kval == 4 ) context2d.fillRect(start+3.0*w52-3.0*w52/8.0, 0.0, w52/2.0, 60.0);
+									else if( kval == 6 ) context2d.fillRect(start+4.0*w52-w52/8.0, 0.0, w52/2.0, 60.0);
+									else if( kval == 9 ) context2d.fillRect(start+6.0*w52-3.0*w52/8.0, 0.0, w52/2.0, 60.0);
+									else if( kval == 11 ) context2d.fillRect(start+7.0*w52-w52/4.0, 0.0, w52/2.0, 60.0);
 									//mbil = medalBil( li, ua );
 									
 									int val = 0;
-									context2d.fillText( Double.toString( Math.round(mbil*10.0)/10.0 ), w/2.0, h/2.0+30.0 );
-									context2d.fillText( u + "  " + li.size(), w/2.0, h/2.0-100 );
+									if( prevbil > 1.0 ) {
+										if( hz > 1.0 ) {
+											String font = context2d.getFont();
+											context2d.setFont( "italic 40pt Calibri" );
+											String hzstr = Double.toString( hz )+"hz";
+											double strw = context2d.measureText(hzstr).getWidth();
+											context2d.fillText( hzstr, (w-strw)/2.0, h/2.0+30.0 );
+											context2d.setFont( font );
+										}
+									}
+									context2d.fillText( Double.toString( Math.round(prevbil*10.0)/10.0 ), w/2.0, h/2.0+30.0 );
+									//context2d.fillText( u + "  " + li.size(), w/2.0, h/2.0-100 );
 									//context2d.fillText( Float.toString( acontext.getSampleRate() ), w/2.0, h/3.0 );
 									
 									int len = ua.length();
@@ -340,7 +406,7 @@ public class Guitartuner implements EntryPoint {
 									context2d.beginPath();
 									context2d.moveTo(0, 240);
 									for( int i = 0; i < len; i++ ) {
-										val = ua.get(i)-total;
+										val = ua.get(i)-avg;
 										context2d.lineTo( i*w/len, 240+val );
 									}
 									//context2d.closePath();
@@ -351,7 +417,7 @@ public class Guitartuner implements EntryPoint {
 									context2d.moveTo(0, 240);
 									for( int k = 0; k < li.size(); k++ ) {
 										int i = li.get(k);
-										val = ua.get( i )-total;
+										val = ua.get( i )-avg;
 										context2d.lineTo( i*w/len, 140 );
 										context2d.lineTo( i*w/len, 140+val );
 										context2d.lineTo( i*w/len, 140 );
