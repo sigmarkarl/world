@@ -80,12 +80,16 @@ public class Guitartuner implements EntryPoint {
 		
 		if( li.size() > 1 ) {
 			int fi = li.get(0);
-			for( int i = 1; i < li.size(); i++ ) {
+			int ed = li.get( li.size()-1 );
+			
+			/*for( int i = 1; i < li.size(); i++ ) {
 				int ne = li.get(i);
 				val += ne-fi;
 				fi = ne;
 			}
-			val /= li.size()-1;
+			val /= li.size()-1;*/
+			
+			val = (ed - fi)/(li.size()-1);
 		}
 		
 		return val;
@@ -291,8 +295,14 @@ public class Guitartuner implements EntryPoint {
 								}*/
 								
 								int max = 0;
-								int avg = ua.get(0);
-								List<Integer> li = new ArrayList<Integer>();
+								double avg = 0;
+								for( int i = 0; i < ua.length(); i++ ) {
+									avg += ua.get(i);
+								}
+								avg /= ua.length();
+								
+								//int avg = ua.get(0);
+								List<Integer> li;/* = new ArrayList<Integer>();
 								for( int i = 1; i < ua.length()-1; i++ ) {
 									short valm1 = ua.get(i-1);
 									short val = ua.get(i);
@@ -302,23 +312,92 @@ public class Guitartuner implements EntryPoint {
 										i++;
 										
 										if( val > max ) max = val;
-										
-										avg += valp1;
 									}
-									avg += val;
-								}
-								avg += ua.get(ua.length()-1);
-								avg /= ua.length();
+								}*/
 								
 								//max -= total;
 								
-								double mbil = medalBil( li, ua );
+								double mbil = 0.0;
+								int size = 0;
+								
+								List<Integer>	upperlongindexes = new ArrayList<Integer>();
+								List<Integer>	lowerlongindexes = new ArrayList<Integer>();
+								
+								int maxlocount = 0;
+								int maxhicount = 0;
+								int locount = 0;
+								int hicount = 0;
+								for( int i = 0; i < ua.length(); i++ ) {
+									if( ua.get(i) - avg < 0 ) {
+										locount++;
+										if( hicount > 0 ) {
+											if( hicount > 6*maxhicount/5 ) {
+												upperlongindexes.clear();
+												maxhicount = hicount;
+											}
+											
+											if( hicount > 3*maxhicount/5 ) {
+												upperlongindexes.add( i );
+											}
+										}
+										hicount = 0;
+									} else {
+										hicount++;
+										if( locount > 0 ) {
+											if( locount > 6*maxlocount/5 ) {
+												lowerlongindexes.clear();
+												maxlocount = locount;
+											}
+											
+											if( locount > 3*maxlocount/5 ) {
+												lowerlongindexes.add( i );
+											}
+										}
+										locount = 0;
+									}
+								}
+								
+								double sumu = 0;
+								for( int i = 0; i < upperlongindexes.size()-1; i++ ) {
+									sumu += upperlongindexes.get(i+1) - upperlongindexes.get(i);
+								}
+								sumu /= upperlongindexes.size()-1;
+								
+								double sumuv = 0;
+								for( int i = 0; i < upperlongindexes.size()-1; i++ ) {
+									double val = (upperlongindexes.get(i+1) - upperlongindexes.get(i) - sumu);
+									sumuv += val*val;
+								}
+								
+								double uvar = Math.sqrt(sumuv)/sumu;
+								
+								double suml = 0;
+								for( int i = 0; i < lowerlongindexes.size()-1; i++ ) {
+									suml += lowerlongindexes.get(i+1) - lowerlongindexes.get(i);
+								}
+								suml /= lowerlongindexes.size()-1;
+								
+								double sumlv = 0;
+								for( int i = 0; i < lowerlongindexes.size()-1; i++ ) {
+									double val = (lowerlongindexes.get(i+1) - lowerlongindexes.get(i) - suml);
+									sumlv += val*val;
+								}
+								
+								double lvar = Math.sqrt(sumlv)/suml;
+								
+								if( uvar > lvar ) li = upperlongindexes;
+								else li = lowerlongindexes;
+								
+								li = upperlongindexes;
+								size = li.size();
+								if( size > 1 ) mbil = (li.get(li.size()-1) - li.get(0)) / (li.size() - 1); 
+								
+								/*mbil = medalBil( li, ua );
 								if( li.size() > 1 ) {
 									context2d.setFillStyle("#000000");
 									
 									boolean changed = true;
 									int u = 0;
-									int size = 0;
 									while( changed && li.size() > 0 && u < 32 ) {
 										changed = false;
 										
@@ -331,9 +410,9 @@ public class Guitartuner implements EntryPoint {
 											short val = ua.get(fi);
 											short nval = ua.get(ne);
 											
-											int mval = val - avg;
-											int mnval = nval - avg;
-											if( ne-fi <= 7*mbil/8 /*|| mval < 8*mnval/10 || mnval < 8*mval/10 || mval < 0*/ ) {
+											int mval = (int)(val - avg);
+											int mnval = (int)(nval - avg);
+											if( ne-fi <= 7*mbil/8 /*|| mval < 8*mnval/10 || mnval < 8*mval/10 || mval < 0* ) {
 												changed = true;
 												//short val = ua.get(fi);
 												
@@ -355,7 +434,10 @@ public class Guitartuner implements EntryPoint {
 										
 										u++;
 									}
+								}*/
 									
+								boolean something = true;
+								if( something ) {
 									float samplerate = acontext.getSampleRate();
 									double hz = 0.0;
 									//prevbil = mbil;
@@ -406,20 +488,24 @@ public class Guitartuner implements EntryPoint {
 									context2d.beginPath();
 									context2d.moveTo(0, 240);
 									for( int i = 0; i < len; i++ ) {
-										val = ua.get(i)-avg;
+										val = (int)(ua.get(i)-avg);
 										context2d.lineTo( i*w/len, 240+val );
 									}
 									//context2d.closePath();
 									context2d.stroke();
 									
+									context2d.moveTo(0, 240);
+									context2d.lineTo( w, 240 );
+									context2d.stroke();
+									
 									context2d.setStrokeStyle("#aa0000");
 									context2d.beginPath();
-									context2d.moveTo(0, 240);
+									context2d.moveTo(0, 140);
 									for( int k = 0; k < li.size(); k++ ) {
 										int i = li.get(k);
-										val = ua.get( i )-avg;
+										//val = (int)(ua.get( i )-avg);
 										context2d.lineTo( i*w/len, 140 );
-										context2d.lineTo( i*w/len, 140+val );
+										context2d.lineTo( i*w/len, 240/*+val*/ );
 										context2d.lineTo( i*w/len, 140 );
 									}
 									//context2d.closePath();

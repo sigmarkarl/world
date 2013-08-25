@@ -6,9 +6,6 @@
 
   <!-- Configure serving/caching of GWT files -->
   <static-files>
-    <include path="/treedraw.webapp" >
-    <http-header name="Content-Type" value="application/x-web-app-manifest+json" />
-    </include>
     <include path="**" />
 
     <!-- The following line requires App Engine 1.3.2 SDK -->

@@ -904,10 +904,12 @@ public class Smasogur implements EntryPoint {
 	    	  a.setHref("mailto:huldaeggers@gmail.com");
 	    	  Anchor	fast = new Anchor( "http://webwormgame.appspot.com" );
 	    	  fast.setHref("http://webwormgame.appspot.com");
+	    	  fast.setTarget("_blank");
 	    	  //Anchor	conn = new Anchor( "http://webconnectron.appspot.com/Treedraw.html" );
 	    	  //conn.setHref("http://webconnectron.appspot.com/Treedrdasdddfasdfaw.html");
 	    	  Anchor	fblink = new Anchor( "https://apps.facebook.com/theshortstories" );
 	    	  fblink.setHref("https://apps.facebook.com/theshortstories");
+	    	  fblink.setTarget("_blank");
 	    	  //HTML		kjall = new HTML("Kjallarinn klukkan fimm ehf.");
 	    	  
 	    	  //log.setSize("100px", "100px");

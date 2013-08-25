@@ -3326,6 +3326,10 @@ public class Serifier {
 	}
 	
 	public int trimFasta( BufferedReader br, Writer bw, Object filterset, boolean inverted, boolean endswith ) throws IOException {
+		return trimFasta(br, bw, filterset, inverted, endswith, false);
+	}
+	
+	public int trimFasta( BufferedReader br, Writer bw, Object filterset, boolean inverted, boolean endswith, boolean rename ) throws IOException {
 		int nseq = 0;
 		
 		Set<String> keyset;
@@ -3377,9 +3381,10 @@ public class Serifier {
 							break;
 						}
 					}
+					if( rename && seqname == null ) bw.write( line+"\n" );
 					//if( seqname == null ) System.err.println( "not found " + line + endswith );
 				}
-			} else if( seqname != null ) {
+			} else if( rename || seqname != null ) {
 				bw.write( line+"\n" );
 			}
 			
@@ -3394,10 +3399,139 @@ public class Serifier {
 	
 	public static void main(String[] args) {
 		Serifier s = new Serifier();
+		
 		try {
+			Map<String,String>	map = new HashMap<String,String>();
+			FileReader 		fr = new FileReader("/home/sigmar/MAT/MAT4555_GenBank.gb.aa");
+			BufferedReader	br = new BufferedReader( fr );
+			String line = br.readLine();
+			while( line != null ) {
+				if( line.startsWith(">") ) {
+					String trim = line.trim();
+					int i = trim.indexOf('[');
+					map.put(trim.substring(i), trim.substring(1));
+				}
+				line = br.readLine();
+			}
+			br.close();
+			
+			fr = new FileReader("/home/sigmar/MAT/MAT4553_GenBank.gb.aa");
+			br = new BufferedReader( fr );
+			line = br.readLine();
+			while( line != null ) {
+				if( line.startsWith(">") ) {
+					String trim = line.trim();
+					int i = trim.indexOf('[');
+					map.put(trim.substring(i), trim.substring(1));
+				}
+				line = br.readLine();
+			}
+			br.close();
+			
+			fr = new FileReader("/home/sigmar/MAT/MAT4685_GenBank.gb.aa");
+			br = new BufferedReader( fr );
+			line = br.readLine();
+			while( line != null ) {
+				if( line.startsWith(">") ) {
+					String trim = line.trim();
+					int i = trim.indexOf('[');
+					map.put(trim.substring(i), trim.substring(1));
+				}
+				line = br.readLine();
+			}
+			br.close();
+			
+			fr = new FileReader("/home/sigmar/MAT/MAT4696_GenBank.gb.aa");
+			br = new BufferedReader( fr );
+			line = br.readLine();
+			while( line != null ) {
+				if( line.startsWith(">") ) {
+					String trim = line.trim();
+					int i = trim.indexOf('[');
+					map.put(trim.substring(i), trim.substring(1));
+				}
+				line = br.readLine();
+			}
+			br.close();
+			
+			fr = new FileReader("/home/sigmar/MAT/MAT4705_GenBank.gb.aa");
+			br = new BufferedReader( fr );
+			line = br.readLine();
+			while( line != null ) {
+				if( line.startsWith(">") ) {
+					String trim = line.trim();
+					int i = trim.indexOf('[');
+					map.put(trim.substring(i), trim.substring(1));
+				}
+				line = br.readLine();
+			}
+			br.close();
+			
+			fr = new FileReader("/home/sigmar/MAT/MAT4717_GenBank.gb.aa");
+			br = new BufferedReader( fr );
+			line = br.readLine();
+			while( line != null ) {
+				if( line.startsWith(">") ) {
+					String trim = line.trim();
+					int i = trim.indexOf('[');
+					map.put(trim.substring(i), trim.substring(1));
+				}
+				line = br.readLine();
+			}
+			br.close();
+			
+			fr = new FileReader("/home/sigmar/MAT/MAT4784_GenBank.gb.aa");
+			br = new BufferedReader( fr );
+			line = br.readLine();
+			while( line != null ) {
+				if( line.startsWith(">") ) {
+					String trim = line.trim();
+					int i = trim.indexOf('[');
+					map.put(trim.substring(i), trim.substring(1));
+				}
+				line = br.readLine();
+			}
+			br.close();
+			
+			fr = new FileReader("/home/sigmar/MAT/MAT493_GenBank.gbk.aa");
+			br = new BufferedReader( fr );
+			line = br.readLine();
+			while( line != null ) {
+				if( line.startsWith(">") ) {
+					String trim = line.trim();
+					int i = trim.indexOf('[');
+					map.put(trim.substring(i), trim.substring(1));
+				}
+				line = br.readLine();
+			}
+			br.close();
+			
+			fr = new FileReader("/home/sigmar/MAT/MAT4716_GenBank_2.gbk.aa");
+			br = new BufferedReader( fr );
+			line = br.readLine();
+			while( line != null ) {
+				if( line.startsWith(">") ) {
+					String trim = line.trim();
+					int i = trim.indexOf('[');
+					map.put(trim.substring(i), trim.substring(1));
+				}
+				line = br.readLine();
+			}
+			br.close();
+			
+			fr = new FileReader("/home/sigmar/MAT/allthermus_aligned.fsa");
+			br = new BufferedReader( fr );
+			FileWriter fw = new FileWriter("/home/sigmar/MAT/allthermus_new_aligned.fsa");
+			s.trimFasta( br, fw, map, false, false, true );
+			fw.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
+		/*try {
 			s.parse( args );
 		} catch (IOException | URISyntaxException e) {
 			e.printStackTrace();
-		}
+		}*/
 	}
 }

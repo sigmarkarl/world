@@ -818,6 +818,19 @@ public class Sequence implements Comparable<Sequence> {
 		return revcomp;
 	}
 	
+	public int getGCCount() {
+		int ret = 0;
+		if( sb.length() > 0 ) {
+			for( int i = 0; i < sb.length(); i++ ) {
+				char c = sb.charAt(i);
+				if( c == 'G' || c == 'g' || c == 'C' || c == 'c' ) {
+					ret++;
+				}
+			}
+		}
+		return ret;
+	}
+	
 	public int getGCP() {
 		if( gcp == -1 && sb.length() > 0 ) {
 			gcp = 0;

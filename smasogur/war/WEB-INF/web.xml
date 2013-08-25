@@ -4,7 +4,10 @@
     "http://java.sun.com/dtd/web-app_2_3.dtd">
 
 <web-app>
-  
+   <mime-mapping>
+        <extension>webapp</extension>
+        <mime-type>application/x-web-app-manifest+json</mime-type>
+  </mime-mapping>
   <!-- Servlets -->
   <servlet>
     <servlet-name>greetServlet</servlet-name>
