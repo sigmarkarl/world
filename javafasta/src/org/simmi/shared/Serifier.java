@@ -1641,7 +1641,20 @@ public class Serifier {
 			FileReader fr = new FileReader( f );
 			BufferedReader br = new BufferedReader( fr );
 			String line = br.readLine();
-			if( !trim.contains("454ReadStatus") ) {
+			if( trim.contains("blastout") ) {
+				while( line != null ) {
+					if( line.startsWith(">") ) {
+						String name = line.substring(2);
+						line = br.readLine();
+						while( !line.contains("Length") ) {
+							name += line;
+							line = br.readLine();
+						}
+						fset.put( name, null );
+					}					
+					line = br.readLine();
+				}
+			} else if( !trim.contains("454ReadStatus") ) {
 				while( line != null ) {
 					/*if( line.contains("ingletons") ) {
 						fset.add( line.split("[\t ]+")[0] );
@@ -2286,6 +2299,42 @@ public class Serifier {
 			appendSequenceInJavaFasta(ret, null, true);
 			FileWriter fw = new FileWriter( outf );
 			writeFasta( lseq, fw, null);
+			fw.close();
+		}
+		
+		i = arglist.indexOf("-keepblasthits");
+		if( i >= 0 ) {
+			FileWriter fw = new FileWriter(outf);
+			FileReader fr = new FileReader( inf );
+			Map<String,String> map = makeFset(args[i+1]);
+			trimFasta( new BufferedReader(fr), fw, map, false, false );
+			fr.close();
+			fw.close();
+		}
+		
+		i = arglist.indexOf("-fixwith");
+		if( i >= 0 ) {
+			FileWriter fw = new FileWriter(outf);
+			FileReader fr = new FileReader( inf );
+			
+			Map<String,String> map = new HashMap<String,String>(); 
+			FileReader fr2 = new FileReader( args[i+1] );
+			BufferedReader br = new BufferedReader( fr2 );
+			String line = br.readLine();
+			while( line != null ) {
+				if( line.startsWith(">") ) {
+					int k = line.lastIndexOf('[');
+					if( k != -1 ) {
+						map.put( line.substring(k).trim(), line.substring(1).trim() );
+					}
+				}
+				line = br.readLine();
+			}
+			br.close();
+			fr2.close();
+			
+			trimFasta( new BufferedReader(fr), fw, map, false, false );
+			fr.close();
 			fw.close();
 		}
 		
@@ -3371,7 +3420,15 @@ public class Serifier {
 							System.err.println( "muu " + f );
 							System.err.println( line.contains(f) );
 						}*/
-						if( (endswith && line.endsWith(f)) || (!endswith && line.contains(f)) ) {
+						
+						int k = line.indexOf('[');
+						int c = line.indexOf(']');
+						int u = line.indexOf("contig", k+1);
+						int m = line.indexOf('_', u+1);
+						if( m == -1 || m > c ) m = c; 
+						String bull = line.substring(k, m)+line.substring(c,line.length());
+						
+						if( (endswith && line.endsWith(f)) || (!endswith && /*line*/ bull.contains(f)) ) {
 							Object swap = (filterset instanceof Map) ? ((Map)filterset).get(f) : null;
 							
 							nseq++;
@@ -3382,7 +3439,7 @@ public class Serifier {
 						}
 					}
 					if( rename && seqname == null ) bw.write( line+"\n" );
-					//if( seqname == null ) System.err.println( "not found " + line + endswith );
+					if( seqname == null ) System.err.println( "not found " + line );
 				}
 			} else if( rename || seqname != null ) {
 				bw.write( line+"\n" );
@@ -3400,7 +3457,7 @@ public class Serifier {
 	public static void main(String[] args) {
 		Serifier s = new Serifier();
 		
-		try {
+		/*try {
 			Map<String,String>	map = new HashMap<String,String>();
 			FileReader 		fr = new FileReader("/home/sigmar/MAT/MAT4555_GenBank.gb.aa");
 			BufferedReader	br = new BufferedReader( fr );
@@ -3526,12 +3583,12 @@ public class Serifier {
 			fw.close();
 		} catch (IOException e) {
 			e.printStackTrace();
-		}
+		}*/
 		
-		/*try {
+		try {
 			s.parse( args );
 		} catch (IOException | URISyntaxException e) {
 			e.printStackTrace();
-		}*/
+		}
 	}
 }
