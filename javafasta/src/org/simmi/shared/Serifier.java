@@ -107,7 +107,7 @@ public class Serifier {
 			writeFasta( lseq, fw, null);
 			fw.close();
 
-			ProcessBuilder pb = new ProcessBuilder("fasttree", "tmp.fasta");
+			ProcessBuilder pb = new ProcessBuilder("FastTree", "tmp.fasta");
 			pb.directory(tmpdir);
 			Process p = pb.start();
 			InputStream is = p.getInputStream();

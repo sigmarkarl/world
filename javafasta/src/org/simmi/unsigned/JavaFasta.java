@@ -3341,6 +3341,8 @@ public class JavaFasta extends JApplet {
 		    	 serifier.lseq = seqlist;
 		    	 String tree = serifier.getFastTree();
 		    	 serifier.lseq = oldseq;
+		    	 
+		    	 System.err.println( tree );
 			     /*pb = new ProcessBuilder("google-chrome", "http://127.0.0.1:8888/Treedraw.html"); //"http://webconnectron.appspot.com/Treedraw.html");
 		    	p = pb.start();
 		    	OutputStream os = p.getOutputStream();
