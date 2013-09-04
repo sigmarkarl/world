@@ -428,10 +428,9 @@ public class JavaFasta extends JApplet {
 			bg.fillRect(0, 0, bi.getWidth(), bi.getHeight());
 			bg.setColor( Color.green );
 			for( int r = 0; r < table.getRowCount(); r++ ) {
-				int i = table.convertRowIndexToModel(r);
-				Sequence s = serifier.lseq.get(i);
-				
-				if( serifier.getMax() != serifier.getMin() ) {
+				int i = table.convertRowIndexToModel(r);				
+				if( serifier.getMax() != serifier.getMin() && i < serifier.lseq.size() ) {
+					Sequence s = serifier.lseq.get(i);
 					int x = ((s.getRealStart()-serifier.getMin())*bi.getWidth())/serifier.getDiff();
 					int y = (r*bi.getHeight())/serifier.lseq.size();
 					bg.fillRect( x, y, Math.max(1, (int)( ((long)s.getRealLength()*(long)bi.getWidth())/(long)serifier.getDiff() )), Math.max(1, (bi.getHeight())/serifier.lseq.size()) );
@@ -582,12 +581,9 @@ public class JavaFasta extends JApplet {
 		 * 
 		 */
 		private static final long serialVersionUID = 1L;
-
+		
 		@Override
-		public void keyTyped(KeyEvent e) {
-			// TODO Auto-generated method stub
-			
-		}
+		public void keyTyped(KeyEvent e) {}
 
 		@Override
 		public void keyPressed(KeyEvent e) {
@@ -3359,6 +3355,7 @@ public class JavaFasta extends JApplet {
 						e.printStackTrace();
 					}
 		    	}
+		    	System.err.println( tree );
 			}
 		});
 		popup.add( new AbstractAction("Draw tree excluding gaps") {
