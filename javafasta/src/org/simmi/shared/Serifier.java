@@ -770,9 +770,11 @@ public class Serifier {
 					int si = str.indexOf(' ');
 					if( si == -1 ) si = str.length();
 					name = str.substring(0, si);
+					
+					break;
 				}
 				
-				int i = str.indexOf('[');
+				/*int i = str.indexOf('[');
 				if( i != -1 ) {
 					if( pseudoname || !str.contains("hypot") ) {
 						//int si = str.indexOf(' ');
@@ -780,7 +782,7 @@ public class Serifier {
 						
 						pseudoname = false;
 					}
-				}
+				}*/
 			}
 			
 			File of = new File( osf, name+".fna" );
@@ -3421,14 +3423,14 @@ public class Serifier {
 							System.err.println( line.contains(f) );
 						}*/
 						
-						int k = line.indexOf('[');
+						/*int k = line.indexOf('[');
 						int c = line.indexOf(']');
 						int u = line.indexOf("contig", k+1);
 						int m = line.indexOf('_', u+1);
 						if( m == -1 || m > c ) m = c; 
-						String bull = line.substring(k, m)+line.substring(c,line.length());
+						String bull = line.substring(k, m)+line.substring(c,line.length());*/
 						
-						if( (endswith && line.endsWith(f)) || (!endswith && /*line*/ bull.contains(f)) ) {
+						if( (endswith && line.endsWith(f)) || (!endswith && line.contains(f)) ) {
 							Object swap = (filterset instanceof Map) ? ((Map)filterset).get(f) : null;
 							
 							nseq++;
