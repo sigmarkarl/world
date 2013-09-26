@@ -369,7 +369,7 @@ public class Guitartuner implements EntryPoint {
 									sumuv += val*val;
 								}
 								
-								double uvar = Math.sqrt(sumuv)/sumu;
+								double uvar = Math.sqrt(sumuv)/(upperlongindexes.size()-1);
 								
 								double suml = 0;
 								for( int i = 0; i < lowerlongindexes.size()-1; i++ ) {
@@ -383,10 +383,12 @@ public class Guitartuner implements EntryPoint {
 									sumlv += val*val;
 								}
 								
-								double lvar = Math.sqrt(sumlv)/suml;
+								double lvar = Math.sqrt(sumlv)/(lowerlongindexes.size()-1);
 								
-								if( uvar > lvar ) li = upperlongindexes;
-								else li = lowerlongindexes;
+								if( uvar > lvar ) li = lowerlongindexes;
+								else li = upperlongindexes;
+								
+								double var = Math.min( uvar, lvar );
 								
 								li = upperlongindexes;
 								size = li.size();
@@ -441,7 +443,7 @@ public class Guitartuner implements EntryPoint {
 									float samplerate = acontext.getSampleRate();
 									double hz = 0.0;
 									//prevbil = mbil;
-									if( mbil > 1.0 && size > 3 ) {
+									if( mbil > 1.0 && size > 3 && var < 1.0 && var != Double.NaN && var > 0.0 ) {
 										prevbil = mbil;
 									}
 									if( prevbil > 1.0 ) hz = Math.round((samplerate/prevbil)*10.0)/10.0;
@@ -473,7 +475,7 @@ public class Guitartuner implements EntryPoint {
 										if( hz > 1.0 ) {
 											String font = context2d.getFont();
 											context2d.setFont( "italic 40pt Calibri" );
-											String hzstr = Double.toString( hz )+"hz";
+											String hzstr = Double.toString( hz )+"hz " + var;
 											double strw = context2d.measureText(hzstr).getWidth();
 											context2d.fillText( hzstr, (w-strw)/2.0, h/2.0+30.0 );
 											context2d.setFont( font );

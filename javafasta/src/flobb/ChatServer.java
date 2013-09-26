@@ -9,6 +9,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.UnknownHostException;
 import java.util.Collection;
+import java.util.Iterator;
 
 import org.java_websocket.WebSocket;
 import org.java_websocket.WebSocketImpl;
@@ -31,7 +32,14 @@ public class ChatServer extends WebSocketServer {
 
 	@Override
 	public void onOpen( WebSocket conn, ClientHandshake handshake ) {
-		//this.sendToAll( "new connection: " + handshake.getResourceDescriptor() );
+		this.sendToAll( "new connection: " + handshake.getResourceDescriptor() );
+		
+		System.err.println( "bleh " + handshake.getResourceDescriptor() + "  " + handshake.toString() );
+		Iterator<String> it = handshake.iterateHttpFields();
+		while( it.hasNext() ) {
+			String s = it.next();
+			System.err.println( "ok " + s + " " + handshake.getFieldValue( s ) );
+		}
 		//System.out.println( conn.getRemoteSocketAddress().getAddress().getHostAddress() + " entered the room!" );
 	}
 
