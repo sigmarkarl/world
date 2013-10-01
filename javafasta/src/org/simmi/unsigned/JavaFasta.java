@@ -36,10 +36,9 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
-import java.io.UnsupportedEncodingException;
+import java.io.StringWriter;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URLEncoder;
 import java.nio.ByteBuffer;
 import java.nio.file.FileSystems;
 import java.nio.file.FileVisitResult;
@@ -846,9 +845,26 @@ public class JavaFasta extends JApplet {
         	 osw.close();
         	 baos.close();
         	 
-        	 String str = baos.toString();
-        	 netscape.javascript.JSObject obj = netscape.javascript.JSObject.getWindow( parentApplet );
-        	 obj.call("blobstuff", new Object[] {str, "text/plain"});
+        	String str = baos.toString();
+        	 //netscape.javascript.JSObject obj = netscape.javascript.JSObject.getWindow( parentApplet );
+        	 //obj.call("blobstuff", new Object[] {str, "text/plain"});
+        	 
+			JSObject window = null;
+			try {
+				window = JSObject.getWindow( parentApplet );
+			} catch( Exception exc ) {
+				exc.printStackTrace();
+			}
+			
+			if( window != null ) {
+				try {
+					window.setMember("str", str);
+					window.eval("var b = new Blob( [str], { \"type\" : \"text\\/plain\" } );");
+					window.eval("open( URL.createObjectURL(b), '_blank' )");
+				} catch( Exception exc ) {
+					exc.printStackTrace();
+				}
+			}
         	 
         	 /*
         	 ByteArrayInputStream bais = new ByteArrayInputStream( baos.toByteArray() );        	 
@@ -3333,31 +3349,51 @@ public class JavaFasta extends JApplet {
 		    		 seqlist.add( seq );
 		    	 }
 		    	 
-		    	 List<Sequence> oldseq = serifier.lseq;
+		    	 /*List<Sequence> oldseq = serifier.lseq;
 		    	 serifier.lseq = seqlist;
 		    	 String tree = serifier.getFastTree();
-		    	 serifier.lseq = oldseq;
+		    	 serifier.lseq = oldseq;*/
 		    	 
-		    	 System.err.println( tree );
+		    	 //System.err.println( tree );
 			     /*pb = new ProcessBuilder("google-chrome", "http://127.0.0.1:8888/Treedraw.html"); //"http://webconnectron.appspot.com/Treedraw.html");
 		    	p = pb.start();
 		    	OutputStream os = p.getOutputStream();
 		    	os.write( tree.getBytes() );
 		    	os.close();*/
-		    				    	
-		    	if( cs.connections().size() > 0 ) {
-		    		cs.sendToAll( tree );
-		    	} else if( Desktop.isDesktopSupported() ) {
-		    		cs.message = tree;
-		    		//String uristr = "http://webconnectron.appspot.com/Treedraw.html?tree="+URLEncoder.encode( tree, "UTF-8" );
-		    		String uristr = "http://webconnectron.appspot.com/Treedraw.html?ws=127.0.0.1:8887";
-		    		try {
-						Desktop.getDesktop().browse( new URI(uristr) );
-					} catch (IOException | URISyntaxException e) {
-						e.printStackTrace();
-					}
-		    	}
-		    	System.err.println( tree );
+		    	 
+		    	boolean succ = true;
+				try {
+					JSObject win = JSObject.getWindow( parentApplet );
+					StringWriter sw = new StringWriter();
+					serifier.writeFasta(serifier.lseq, sw, null);
+					sw.close();
+					
+					String tree = sw.toString();
+					System.err.println("about to " + tree );
+					
+					win.call("fastTree", new Object[] { sw.toString() });
+				} catch( Exception e1 ) {
+					e1.printStackTrace();
+					succ = false;
+				}
+				
+				System.err.println("fuck");
+				
+				if( !succ ) {
+					String 				tree = serifier.getFastTree();
+					if( cs.connections().size() > 0 ) {
+			    		cs.sendToAll( tree );
+			    	} else if( Desktop.isDesktopSupported() ) {
+			    		cs.message = tree;
+			    		//String uristr = "http://webconnectron.appspot.com/Treedraw.html?tree="+URLEncoder.encode( tree, "UTF-8" );
+			    		String uristr = "http://webconnectron.appspot.com/Treedraw.html?ws=127.0.0.1:8887";
+						try {
+							Desktop.getDesktop().browse( new URI(uristr) );
+						} catch (IOException | URISyntaxException e1) {
+							e1.printStackTrace();
+						}
+			    	}
+				}
 			}
 		});
 		popup.add( new AbstractAction("Draw tree excluding gaps") {
