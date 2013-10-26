@@ -1,6 +1,5 @@
 package org.simmi.shared;
 
-
 public class Sequences implements Comparable<Sequences> {
 	public Sequences( String user, String name, String type, String path, int nseq ) {
 		this.user = user;
