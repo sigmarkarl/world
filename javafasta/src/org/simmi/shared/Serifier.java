@@ -662,11 +662,13 @@ public class Serifier {
 					int nuid = uid != -1 ? str.indexOf('_', uid) : str.length();
 					if( nuid == -1 ) nuid = str.length();
 					
+					int c = str.indexOf("contig");
+					if( c == -1 ) c = str.length()+1;
 					/*if( joinmap.containsKey( str ) ) {
 						str = joinmap.get(str);
 					}*/
 					
-					String tegstr = str.substring(0, nuid);
+					String tegstr = str.substring( 0, Math.min( c-1, nuid ) );
 					teg.add( tegstr );
 					
 					species.add( tegstr );
@@ -703,7 +705,10 @@ public class Serifier {
 					int nuid = uid != -1 ? str.indexOf('_', uid) : str.length();
 					if( nuid == -1 ) nuid = str.length();
 					
-					tegstr = str.substring(0, nuid);
+					int c = str.indexOf("contig");
+					if( c == -1 ) c = str.length()+1;
+					
+					tegstr = str.substring( 0, Math.min( c-1, nuid) );
 				} else {
 					ind = e.indexOf("contig");
 					tegstr = e.substring(0, ind-1);
@@ -743,7 +748,7 @@ public class Serifier {
 	
 	public List<Set<String>> makeBlastCluster( final File osf, final String blastfile, int clustermap ) throws IOException {
 		InputStream fis = new FileInputStream( blastfile );
-		InputStream is;		
+		InputStream is;
 		if( blastfile.endsWith(".gz") ) {
 			is = new GZIPInputStream( fis );
 		} else {
@@ -825,7 +830,7 @@ public class Serifier {
 			}
 			is.close();
 			
-			if( fos != null ) {				
+			if( fos != null ) {
 				if( clustermap/2 == 0 ) {
 					Set<String>	species = new TreeSet<String>();
 					Map<Set<String>,Set<Map<String,Set<String>>>>	clusterMap = initCluster( total, species );
@@ -1184,21 +1189,36 @@ public class Serifier {
 							if( Integer.parseInt( idstr ) >= idfilt ) {
 								int i = name.indexOf(' ');
 								if( i == -1 ) i = name.length();
-								name = name.substring(0,i);
+								String nm = name.substring(0,i);
 								
-								i = newcurrent.lastIndexOf(';');
+								//int k = newcurrent.lastIndexOf(';');
 								//if( i == -1 ) i = newcurrent.length()-1;
-								newcurrent = newcurrent.substring(i+1);
+								//newcurrent = newcurrent.substring(k+1);
 								
-								System.out.println(newcurrent);
+								/*System.out.println(newcurrent);
 								if( newcurrent.indexOf("Thermus") != -1 ) {
 									System.out.println(newcurrent);
 									newcurrent = newcurrent.substring( newcurrent.indexOf("Thermus"), newcurrent.indexOf("strain")-1 ).replace(' ', '_');
-								}
+								}*/
 								
-								String mapstr = includePerc ? newcurrent+"_"+idstr+"%" : newcurrent;
-								mapstr = includeLen ? mapstr+"_"+len : mapstr;
-								mapHit.put( name, mapstr );
+								/*String mapstr = includePerc ? newcurrent+"_"+idstr+"%" : newcurrent;
+								mapstr = includeLen ? mapstr+"_"+len : mapstr;*/
+								int bil = newcurrent.indexOf('|');
+								int bil2 = newcurrent.indexOf('|', bil+1);
+								
+								/*if( newcurrent.contains("putative signal p") ) {
+									System.err.println();
+								}*/
+								
+								String mapstr = newcurrent.substring(bil+1, bil2);
+								int bilt = newcurrent.indexOf(' ', bil2+1);
+								
+								int spc = newcurrent.indexOf("[", bilt+1);
+								if( spc == -1 ) spc = newcurrent.length();
+								mapstr += " " + newcurrent.substring(bilt+1,spc);
+								mapstr += "["+nm.substring(0, nm.lastIndexOf('_'))+"]";
+								mapstr += name.substring(i);
+								mapHit.put( nm, mapstr );
 							}
 						}
 						
@@ -1267,13 +1287,14 @@ public class Serifier {
 				String name = line.substring(1).trim();
 				int i = name.indexOf(' ');
 				if( i == -1 ) i = name.length();
-				name = name.substring(0,i);
+				String nm = name.substring(0,i);
 				//System.err.println( "muu "+name );
-				if( mapHit.containsKey(name) ) {
-					String maphitstr = mapHit.get(name);
+				if( mapHit.containsKey(nm) ) {
+					String maphitstr = mapHit.get(nm);
 					//System.err.println( maphitstr );
-					int li = maphitstr.lastIndexOf(';');
-					if( li != -1 ) maphitstr = maphitstr.substring(li+1);
+					
+					//int li = maphitstr.lastIndexOf(';');
+					//if( li != -1 ) maphitstr = maphitstr.substring(li+1);
 					
 					if( filter == null || checkFilter( filter, maphitstr ) ) {
 						nseq++;
@@ -1281,14 +1302,18 @@ public class Serifier {
 						i = line.lastIndexOf('_');
 						if( i != -1 ) i = line.lastIndexOf('_', i-1);
 						if( i == -1 ) i = line.length();
-						String cont = line.substring(1,i);
+						//String cont = line.substring(1,i);
 						
 						//String newline = colorAdd( maphitstr, maps, phmaps, colormaps, cont, cont, null, false );
 						//pr.println( ">" + newline + sep + name );
-						pr.println( ">" + maphitstr + sep + name ); //+ sep + mapHit.get(name) );
+						if( sep != null ) pr.println( ">" + maphitstr + sep + nm ); //+ sep + mapHit.get(name) );
+						else pr.println( ">" + maphitstr );
 						include = true;
 					} else include = false;
-				} else include = false;
+				} else {
+					pr.println( ">" + name );
+					//include = false;
+				}
 			} else if( include ) {
 				pr.println( line );
 			}
