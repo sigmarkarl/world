@@ -101,7 +101,7 @@ public class Serifier {
 	
 	public String getFastTree() {
 		String 				ret = "";
-		File 				tmpdir = new File("/tmp");
+		File 				tmpdir = new File("c:/Users/sigmar.MATIS/");
 		try {
 			FileWriter fw = new FileWriter( new File(tmpdir, "tmp.fasta") );
 			writeFasta( lseq, fw, null);
