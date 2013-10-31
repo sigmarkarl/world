@@ -2,6 +2,7 @@ package org.simmi.unsigned;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Container;
 import java.awt.Desktop;
 import java.awt.Dimension;
@@ -13,6 +14,7 @@ import java.awt.Rectangle;
 import java.awt.RenderingHints;
 import java.awt.Window;
 import java.awt.datatransfer.DataFlavor;
+import java.awt.datatransfer.StringSelection;
 import java.awt.datatransfer.Transferable;
 import java.awt.datatransfer.UnsupportedFlavorException;
 import java.awt.event.ActionEvent;
@@ -60,12 +62,15 @@ import java.util.Set;
 import java.util.TreeSet;
 
 import javax.imageio.ImageIO;
+import javax.jnlp.ClipboardService;
 import javax.jnlp.FileContents;
 import javax.jnlp.FileOpenService;
 import javax.jnlp.FileSaveService;
 import javax.jnlp.ServiceManager;
 import javax.jnlp.UnavailableServiceException;
 import javax.swing.AbstractAction;
+import javax.swing.Action;
+import javax.swing.ImageIcon;
 import javax.swing.JApplet;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
@@ -118,6 +123,48 @@ public class JavaFasta extends JApplet {
 	private static final long serialVersionUID = 1L;
 	JApplet	parentApplet = JavaFasta.this;
 	Serifier	serifier = null;
+	
+	ClipboardService clipboardService;
+	boolean grabFocus;
+
+	public void copyData(Component source) throws IOException {
+		//JTextArea textarea = (JTextArea) source;
+		//String s = textarea.getText();
+		ByteArrayOutputStream	baos = new ByteArrayOutputStream();
+		OutputStreamWriter osw = new OutputStreamWriter( baos );
+		serifier.writeFasta(serifier.lseq, osw, null);
+		osw.close();
+		baos.close();
+
+		String s = baos.toString();
+		if (s == null || s.trim().length() == 0) {
+			JOptionPane.showMessageDialog(source, "There is no data selected!");
+		} else {
+			StringSelection selection = new StringSelection(s);
+			clipboardService.setContents(selection);
+		}
+
+		if (grabFocus) {
+			source.requestFocus();
+		}
+	}
+
+	class CopyAction extends AbstractAction {
+		public CopyAction(String text, ImageIcon icon, String desc, Integer mnemonic) {
+			super(text, icon);
+			putValue(SHORT_DESCRIPTION, desc);
+			putValue(MNEMONIC_KEY, mnemonic);
+		}
+
+		public void actionPerformed(ActionEvent e) {
+			try {
+				copyData((Component) e.getSource());
+			} catch (IOException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+		}
+	}
 	
 	public void setParentApplet( JApplet applet ) {
 		parentApplet = applet;
@@ -831,43 +878,42 @@ public class JavaFasta extends JApplet {
     	 //serifier.writeFasta( seqlist, osw, getSelectedRect() );
     	 //osw.close();
     	 //baos.close();
-
-    	 try {
-    		 fss = (FileSaveService)ServiceManager.lookup("javax.jnlp.FileSaveService");
-    	 } catch( UnavailableServiceException e ) {
-    		 fss = null;
-    	 }
     	 
-         if (fss != null) {
-        	 ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        	 OutputStreamWriter	osw = new OutputStreamWriter( baos );
-        	 serifier.writeFasta( seqlist, osw, getSelectedRect() );
-        	 osw.close();
-        	 baos.close();
-        	 
-        	String str = baos.toString();
-        	 //netscape.javascript.JSObject obj = netscape.javascript.JSObject.getWindow( parentApplet );
-        	 //obj.call("blobstuff", new Object[] {str, "text/plain"});
-        	 
-			JSObject window = null;
+    	 ByteArrayOutputStream baos = new ByteArrayOutputStream();
+    	 OutputStreamWriter	osw = new OutputStreamWriter( baos );
+    	 serifier.writeFasta( seqlist, osw, getSelectedRect() );
+    	 osw.close();
+    	 baos.close();
+    	 
+    	 String str = baos.toString();
+    	 //netscape.javascript.JSObject obj = netscape.javascript.JSObject.getWindow( parentApplet );
+    	 //obj.call("blobstuff", new Object[] {str, "text/plain"});
+    	 
+    	 JSObject window = null;
+    	 try {
+    		 window = JSObject.getWindow( parentApplet );
+    	 } catch( Exception exc ) {
+    		 exc.printStackTrace();
+    	 }
+		
+		 if( window != null ) {
 			try {
-				window = JSObject.getWindow( parentApplet );
+				window.setMember("str", str);
+				window.eval("var b = new Blob( [str], { \"type\" : \"text\\/plain\" } );");
+				window.eval("open( URL.createObjectURL(b), '_blank' )");
 			} catch( Exception exc ) {
 				exc.printStackTrace();
 			}
-			
-			if( window != null ) {
-				try {
-					window.setMember("str", str);
-					window.eval("var b = new Blob( [str], { \"type\" : \"text\\/plain\" } );");
-					window.eval("open( URL.createObjectURL(b), '_blank' )");
-				} catch( Exception exc ) {
-					exc.printStackTrace();
-				}
-			}
-        	 
-        	 /*
-        	 ByteArrayInputStream bais = new ByteArrayInputStream( baos.toByteArray() );        	 
+		 } else {
+	    	 try {
+	    		 fss = (FileSaveService)ServiceManager.lookup("javax.jnlp.FileSaveService");
+	    	 } catch( UnavailableServiceException e ) {
+	    		 fss = null;
+	    	 }
+		 }
+    	 
+         if (fss != null) {
+        	 ByteArrayInputStream bais = new ByteArrayInputStream( baos.toByteArray() );      	 
              fileContents = fss.saveFileDialog(null, null, bais, "export.fasta");
              bais.close();
              
@@ -876,7 +922,7 @@ public class JavaFasta extends JApplet {
              serifier.writeFasta(seqlist, osw, getSelectedRect() );
              osw.close();
              //os.write( baos.toByteArray() );
-             os.close();*/
+             os.close();
          } else {
         	 JFileChooser jfc = new JFileChooser();
         	 if( jfc.showSaveDialog( parentApplet ) == JFileChooser.APPROVE_OPTION ) {
@@ -1700,6 +1746,17 @@ public class JavaFasta extends JApplet {
 		table = new JTable();
 		table.setAutoCreateRowSorter( true );
 		table.setDragEnabled( true );
+		
+		try {
+			if (clipboardService == null)
+				clipboardService = (ClipboardService) ServiceManager.lookup("javax.jnlp.ClipboardService");
+			Action action = new CopyAction("Copy", null, "Copy data", new Integer(KeyEvent.VK_CONTROL + KeyEvent.VK_C));
+			table.getActionMap().put("copy", action);
+			grabFocus = true;
+		} catch (Exception ee) {
+			ee.printStackTrace();
+			System.err.println("Copy services not available.  Copy using 'Ctrl-c'.");
+		}
 		
 		final Ruler ruler = new Ruler( 10.0 );
 		c = new FastaView( table.getRowHeight(), ruler, table );
