@@ -663,6 +663,7 @@ public class Serifier {
 					if( nuid == -1 ) nuid = str.length();
 					
 					int c = str.indexOf("contig");
+					if( c == -1 ) c = str.indexOf("scaffold");
 					if( c == -1 ) c = str.length()+1;
 					/*if( joinmap.containsKey( str ) ) {
 						str = joinmap.get(str);
@@ -674,6 +675,7 @@ public class Serifier {
 					species.add( tegstr );
 				} else {
 					ind = e.indexOf("contig");
+					if( ind == -1 ) ind = e.indexOf("scaffold");
 					String tegstr = e.substring(0, ind-1);
 					teg.add( tegstr );
 					
@@ -706,11 +708,13 @@ public class Serifier {
 					if( nuid == -1 ) nuid = str.length();
 					
 					int c = str.indexOf("contig");
+					if( c == -1 ) c = str.indexOf("scaffold");
 					if( c == -1 ) c = str.length()+1;
 					
 					tegstr = str.substring( 0, Math.min( c-1, nuid) );
 				} else {
 					ind = e.indexOf("contig");
+					if( ind == -1 ) ind = e.indexOf("scaffold");
 					tegstr = e.substring(0, ind-1);
 				}
 				
