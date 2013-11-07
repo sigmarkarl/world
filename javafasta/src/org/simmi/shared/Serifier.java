@@ -2283,6 +2283,48 @@ public class Serifier {
 			fw.close();
 		}
 		
+		i = arglist.indexOf("-appendfilename");
+		if( i >= 0 ) {
+			for( Sequences seqs : this.sequences ) {
+				URI uri = new URI(seqs.path);
+				
+				File f = new File( uri );
+				FileReader fr = new FileReader( f );
+				String fname = f.getName();
+				
+				File of = new File( outf, fname );
+				int k = fname.lastIndexOf('.');
+				if( k == -1 ) k = fname.length();
+				fname = fname.substring(0, k);
+				
+				FileWriter fw = new FileWriter( of );
+				
+				BufferedReader br = new BufferedReader( fr );
+				String line = br.readLine();
+				while( line != null ) {
+					if( line.startsWith(">") ) {
+						fw.write( ">"+fname+"_"+line.substring(1, line.length())+"\n" );
+					} else fw.write( line+"\n" );
+					
+					line = br.readLine();
+				}
+				br.close();
+				fr.close();
+				fw.close();
+			}
+			
+			/*Sequences ret = blastRename( this.sequences.get(0), args[i+1], outf, false );
+			
+			appendSequenceInJavaFasta(ret, null, true);
+			writeFasta( lseq, new FileWriter( outf ), null);
+			
+			FileWriter fw = new FileWriter( outf );
+			FileReader fr = new FileReader( inf );
+			trimFasta( new BufferedReader(fr), fw, makeFset(args[i+1]), false, false );
+			fr.close();
+			fw.close();*/
+		}
+		
 		i = arglist.indexOf("-rename");
 		if( i >= 0 ) {
 			/*Sequences ret = blastRename( this.sequences.get(0), args[i+1], outf, false );
