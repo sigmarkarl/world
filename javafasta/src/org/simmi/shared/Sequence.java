@@ -160,6 +160,10 @@ public class Sequence implements Comparable<Sequence> {
 		rc.put('C', 'G');
 		rc.put('G', 'C');
 		rc.put('T', 'A');
+		rc.put('a', 't');
+		rc.put('c', 'g');
+		rc.put('g', 'c');
+		rc.put('t', 'a');
 	}
 	
 	public String 				name;
@@ -732,6 +736,20 @@ public class Sequence implements Comparable<Sequence> {
 		int ind = i-start;
 		if( ind >= 0 && ind < getLength() ) {
 			return sb.charAt( ind );
+		}
+		
+		return ' ';
+	}
+	
+	public char revCompCharAt( int i ) {
+		int ind = i-start;
+		if( ind >= 0 && ind < getLength() ) {
+			char c = sb.charAt( getLength()-ind-1 );
+			if( rc.containsKey(c) ) {
+				return rc.get( c );
+			} else {
+				System.err.println("");
+			}
 		}
 		
 		return ' ';

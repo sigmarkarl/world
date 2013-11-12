@@ -101,7 +101,7 @@ public class Serifier {
 	
 	public String getFastTree() {
 		String 				ret = "";
-		File 				tmpdir = new File("/tmp");
+		File 				tmpdir = new File("c:/Users/sigmar.MATIS/");
 		try {
 			FileWriter fw = new FileWriter( new File(tmpdir, "tmp.fasta") );
 			writeFasta( lseq, fw, null);
@@ -663,6 +663,7 @@ public class Serifier {
 					if( nuid == -1 ) nuid = str.length();
 					
 					int c = str.indexOf("contig");
+					if( c == -1 ) c = str.indexOf("scaffold");
 					if( c == -1 ) c = str.length()+1;
 					/*if( joinmap.containsKey( str ) ) {
 						str = joinmap.get(str);
@@ -674,6 +675,7 @@ public class Serifier {
 					species.add( tegstr );
 				} else {
 					ind = e.indexOf("contig");
+					if( ind == -1 ) ind = e.indexOf("scaffold");
 					String tegstr = e.substring(0, ind-1);
 					teg.add( tegstr );
 					
@@ -706,11 +708,13 @@ public class Serifier {
 					if( nuid == -1 ) nuid = str.length();
 					
 					int c = str.indexOf("contig");
+					if( c == -1 ) c = str.indexOf("scaffold");
 					if( c == -1 ) c = str.length()+1;
 					
 					tegstr = str.substring( 0, Math.min( c-1, nuid) );
 				} else {
 					ind = e.indexOf("contig");
+					if( ind == -1 ) ind = e.indexOf("scaffold");
 					tegstr = e.substring(0, ind-1);
 				}
 				
@@ -2281,6 +2285,48 @@ public class Serifier {
 			trimFasta( new BufferedReader(fr), fw, makeFset(args[i+1]), true, true );
 			fr.close();
 			fw.close();
+		}
+		
+		i = arglist.indexOf("-appendfilename");
+		if( i >= 0 ) {
+			for( Sequences seqs : this.sequences ) {
+				URI uri = new URI(seqs.path);
+				
+				File f = new File( uri );
+				FileReader fr = new FileReader( f );
+				String fname = f.getName();
+				
+				File of = new File( outf, fname );
+				int k = fname.lastIndexOf('.');
+				if( k == -1 ) k = fname.length();
+				fname = fname.substring(0, k);
+				
+				FileWriter fw = new FileWriter( of );
+				
+				BufferedReader br = new BufferedReader( fr );
+				String line = br.readLine();
+				while( line != null ) {
+					if( line.startsWith(">") ) {
+						fw.write( ">"+fname+"_"+line.substring(1, line.length())+"\n" );
+					} else fw.write( line+"\n" );
+					
+					line = br.readLine();
+				}
+				br.close();
+				fr.close();
+				fw.close();
+			}
+			
+			/*Sequences ret = blastRename( this.sequences.get(0), args[i+1], outf, false );
+			
+			appendSequenceInJavaFasta(ret, null, true);
+			writeFasta( lseq, new FileWriter( outf ), null);
+			
+			FileWriter fw = new FileWriter( outf );
+			FileReader fr = new FileReader( inf );
+			trimFasta( new BufferedReader(fr), fw, makeFset(args[i+1]), false, false );
+			fr.close();
+			fw.close();*/
 		}
 		
 		i = arglist.indexOf("-rename");
