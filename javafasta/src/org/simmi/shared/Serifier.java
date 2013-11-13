@@ -1582,7 +1582,7 @@ public class Serifier {
 	
 	public void addSequence( Sequence seq ) {
 		lseq.add( seq );
-		if( seq.getLength() > getMax() ) setMax( seq.getLength() );
+		if( seq.getEnd() > getMax() ) setMax( seq.getEnd() );
 	}
 	
 	public void clearAll() {

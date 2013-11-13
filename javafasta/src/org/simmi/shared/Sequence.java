@@ -23,9 +23,9 @@ public class Sequence implements Comparable<Sequence> {
 	public static ArrayList<Annotation>	lann = new ArrayList<Annotation>();
 	public static Map<String,Annotation>	mann = new HashMap<String,Annotation>();*/
 	
-	static Map<String,String>		amimap = new HashMap<String,String>();
-	static Map<String,String>		revcom = new HashMap<String,String>();
-	static Map<Character,Character>	rc = new HashMap<Character,Character>();
+	static Map<String,String>				amimap = new HashMap<String,String>();
+	static Map<String,String>				revcom = new HashMap<String,String>();
+	public static Map<Character,Character>	rc = new HashMap<Character,Character>();
 	static {
 		amimap.put("TTT","F");
 		amimap.put("TTC","F");
@@ -643,6 +643,10 @@ public class Sequence implements Comparable<Sequence> {
 	
 	public void setSequenceString( StringBuilder sb ) {
 		this.sb = sb;
+	}
+	
+	public Sequence() {
+		
 	}
 	
 	public Sequence( String id, String name, Map<String,Sequence> mseq ) {

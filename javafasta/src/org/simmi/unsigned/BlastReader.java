@@ -4,8 +4,14 @@ import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.swing.JFrame;
 
@@ -13,28 +19,18 @@ import org.simmi.shared.Sequence;
 import org.simmi.shared.Serifier;
 
 public class BlastReader {
-	public static void main(String[] args) {
-		Map<Character,Character>	rc = new HashMap<Character,Character>();
-		rc.put('A', 'T');
-		rc.put('C', 'G');
-		rc.put('G', 'C');
-		rc.put('T', 'A');
-		rc.put('N', 'N');
-		rc.put('a', 't');
-		rc.put('c', 'g');
-		rc.put('g', 'c');
-		rc.put('t', 'a');
-		rc.put('n', 'n');
-		rc.put('-', '-');
-		
+	public static void main(String[] args) {		
 		try {
 			FileReader	fr = new FileReader( args[0] );
 			BufferedReader br = new BufferedReader( fr );
 			String line = br.readLine();
 			
-			Map<String,Sequence>	sequences = new HashMap<String,Sequence>();
-			Sequence				qsequence;
-			Sequence				ssequence = null;
+			Map<String,Sequence>		sequences = new HashMap<String,Sequence>();
+			Map<String,Sequence>		qsequences = new HashMap<String,Sequence>();
+			List<Sequence>				lqsequence = new ArrayList<Sequence>();
+			//List<Sequence>			lqsequence = new ArrayList<Sequence>();
+			SequenceNode				qsequence;
+			SequenceNode				ssequence = null;
 			String	qspec = null;
 			String	sspec = null;
 			while( line != null ) {
@@ -43,13 +39,13 @@ public class BlastReader {
 				} else if( line.startsWith(">") ) {
 					sspec = line.substring(1).trim();
 					if( sequences.containsKey( sspec ) ) {
-						ssequence = sequences.get( sspec );
+						ssequence = (SequenceNode)sequences.get( sspec );
 					} else {
-						ssequence = new Sequence( sspec, sequences );
+						ssequence = new SequenceNode( sspec, sequences, -1, -1 );
 						sequences.put( sspec, ssequence );
 					}
-				} else if( line.startsWith(" Strand") ) {
-					qsequence = new Sequence( qspec, null );
+				} else if( line.startsWith(" Strand") && sspec.equals("Thermus_scotoductus_SA_01_uid62273_NC_014974") ) {
+					qsequence = new SequenceNode( qspec, null, -1, -1 );
 					
 					String 	qstart = null;
 					String	qstop = null;
@@ -76,7 +72,7 @@ public class BlastReader {
 								if( start > stop ) {
 									for( int i = ssequence.getLength(); i < start; i++ ) ssequence.append("-"); 
 									for( int i = stop; i < start; i++ ) {
-										ssequence.setCharAt( i, rc.get( seq.charAt(i-stop) ) );
+										ssequence.setCharAt( i, Sequence.rc.get( seq.charAt(i-stop) ) );
 									}
 								} else {
 									for( int i = ssequence.getLength(); i < stop; i++ ) ssequence.append("-");
@@ -91,20 +87,95 @@ public class BlastReader {
 					int isstart = Integer.parseInt( sstart );
 					int isstop = Integer.parseInt( sstop );
 					
+					qsequence.refstart = Math.min(isstart, isstop);
+					qsequence.refstop = Math.max(isstart, isstop);
+					
 					qsequence.start = Math.min(isstart, isstop);
-					qsequence.name = qspec+"_"+qstart+"_"+qstop;
-					sequences.put(qsequence.name, qsequence);
+					qsequence.name = qspec+"_"+sstart+"_"+sstop;
+					//lqsequence.add( qsequence );
+					if( qsequences.containsKey( qsequence.name ) ) {
+						System.err.println( qsequence.name );
+						System.err.println();
+					}
+					qsequences.put(qsequence.name, qsequence);
+					lqsequence.add( qsequence );
 					continue;
 				}
 				line = br.readLine();
 			}
 			fr.close();
 			
+			System.err.println( qsequences.size() + "  " + lqsequence.size() );
 			Serifier serifier = new Serifier();
-			for( String key : sequences.keySet() ) {
-				Sequence seq = sequences.get( key );
+			for( String key : qsequences.keySet() ) {
+				Sequence seq = qsequences.get( key );
 				serifier.addSequence( seq );
 			}
+			
+			Set<Sequence> remset = new HashSet<Sequence>();
+			for( Sequence seq : serifier.lseq ) {
+				if( seq.getLength() < 100 ) remset.add( seq );
+			}
+			serifier.lseq.removeAll( remset );
+			
+			Collections.sort( serifier.lseq );
+			System.err.println( serifier.lseq.size() );
+			serifier.lseq = serifier.lseq.subList(0, 150);
+			SequenceNode lastseq = (SequenceNode)serifier.lseq.get( serifier.lseq.size()-1 );
+			System.err.println( lastseq.refstart + "  " + lastseq.refstop );
+			
+			SequenceNode startNode = new SequenceNode( null, null, -100, -100 );
+			serifier.lseq.add(0, startNode);
+			for( int i = 0; i < serifier.lseq.size(); i++ ) {
+				SequenceNode	seqn = (SequenceNode)serifier.lseq.get(i);
+				int k = i+1;
+				while( k < serifier.lseq.size() ) {
+					SequenceNode	nseqn = (SequenceNode)serifier.lseq.get(k);
+					if( nseqn.refstart > seqn.refstop-10 ) break;
+					k++;
+				}
+				if( k < serifier.lseq.size() ) {
+					SequenceNode	nseqn = (SequenceNode)serifier.lseq.get(k);
+					
+					/*if( !touched.add( nseqn ) ) {
+						System.err.println( serifier.lseq.indexOf( nseqn ) );
+						System.err.println();
+					}*/
+					seqn.connections.add( nseqn );
+					
+					int u = k+1;
+					while( u < serifier.lseq.size() ) {
+						SequenceNode	nnseqn = (SequenceNode)serifier.lseq.get(u);
+						if( nnseqn.refstart > nseqn.refstop-10 ) break;
+						
+						/*if( !touched.add( nnseqn ) ) {
+							System.err.println();
+						}*/
+						seqn.connections.add( nnseqn );
+						
+						u++;
+					}
+				}
+			}
+			
+			numPaths( startNode, "", 0 );
+			
+			//int m = 0;
+			System.err.println( bestpath );
+			
+			String[] 		split = bestpath.split("\\+");
+			Set<String> 	bestset = new HashSet<String>( Arrays.asList(split) );
+			Set<Sequence> 	seq = new HashSet<Sequence>();
+			for( Sequence s : serifier.lseq ) {
+				if( bestset.contains(s.getName()) ) {
+					seq.add( s );
+				}
+			}
+			serifier.lseq.retainAll( seq );
+			
+			/*for( String path : pathstrset ) {
+				System.err.println( path );
+			}*/
 			
 			JFrame frame = new JFrame();
 			frame.setSize(800, 600);
@@ -119,6 +190,38 @@ public class BlastReader {
 			e.printStackTrace();
 		} catch (IOException e) {
 			e.printStackTrace();
+		}
+	}
+	
+	public static Set<SequenceNode>	touched = new HashSet<SequenceNode>();
+	public static int paths = 0;
+	public static int maxcov = 0;
+	public static String bestpath;
+	public static Set<String>	pathstrset = new HashSet<String>();
+	public static void numPaths( SequenceNode seqn, String rest, int coverage ) {
+		if( seqn.connections.isEmpty() ) {
+			if( !pathstrset.add( rest ) ) {
+				//System.err.println( rest );
+				//System.err.println();
+			}// else System.err.println( pathstrset.size() );
+			//System.err.println( seqn.getName() + "  " + paths );
+			if( coverage > maxcov ) {
+				maxcov = coverage;
+				bestpath = rest;
+			}
+			paths++;
+		}
+		
+		/*if( seqn.connections.contains(seqn) ) {
+			System.err.println();
+		}
+		
+		if( !touched.add( seqn ) ) {
+			System.err.println();
+		}*/
+		
+		for( SequenceNode sn : seqn.connections ) {
+			numPaths( sn, rest+"+"+sn, coverage+(sn.refstop-sn.refstart) );
 		}
 	}
 }
