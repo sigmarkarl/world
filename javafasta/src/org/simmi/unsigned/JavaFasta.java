@@ -2008,7 +2008,7 @@ public class JavaFasta extends JApplet {
 					try {
 						System.err.println( table.getSelectedRows().length );
 						
-						 if( support.isDataFlavorSupported( ndf ) ) {						
+						if( support.isDataFlavorSupported( ndf ) ) {						
 							Object obj = support.getTransferable().getTransferData( ndf );
 							ArrayList<Sequence>	seqs = (ArrayList<Sequence>)obj;
 							
@@ -2035,7 +2035,7 @@ public class JavaFasta extends JApplet {
 							c.repaint();
 							
 							return true;
-						} else if( support.isDataFlavorSupported( DataFlavor.javaFileListFlavor ) ) {
+					} else if( support.isDataFlavorSupported( DataFlavor.javaFileListFlavor ) ) {
 							Object obj = support.getTransferable().getTransferData( DataFlavor.javaFileListFlavor );
 							//InputStream is = (InputStream)obj;
 							List<File>	lfile = (List<File>)obj;
@@ -2400,7 +2400,7 @@ public class JavaFasta extends JApplet {
 				for( int i = start; i < end; i++ ) {
 					for( Sequence s : remseq ) {
 						char c = s.charAt(i);
-						if( c != '-' ) charset.add( Character.toUpperCase(c) );
+						if( c != '-' && c != ' ' ) charset.add( Character.toUpperCase(c) );
 					}
 					
 					if( charset.size() == 0 ) newseq.sb.append('-');
@@ -2413,7 +2413,6 @@ public class JavaFasta extends JApplet {
 					} else if( charset.size() == 3 ) {
 						newseq.sb.append( charset.iterator().next() );
 					} else newseq.sb.append( 'N' );
-					
 					
 					charset.clear();
 				}
