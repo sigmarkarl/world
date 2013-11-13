@@ -1,5 +1,6 @@
 package org.simmi.shared;
 
+import java.nio.IntBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -22,8 +23,8 @@ public class Sequence implements Comparable<Sequence> {
 	public static ArrayList<Annotation>	lann = new ArrayList<Annotation>();
 	public static Map<String,Annotation>	mann = new HashMap<String,Annotation>();*/
 	
-	static Map<String,String>	amimap = new HashMap<String,String>();
-	static Map<String,String>	revcom = new HashMap<String,String>();
+	static Map<String,String>		amimap = new HashMap<String,String>();
+	static Map<String,String>		revcom = new HashMap<String,String>();
 	static Map<Character,Character>	rc = new HashMap<Character,Character>();
 	static {
 		amimap.put("TTT","F");
@@ -160,15 +161,41 @@ public class Sequence implements Comparable<Sequence> {
 		rc.put('C', 'G');
 		rc.put('G', 'C');
 		rc.put('T', 'A');
+		rc.put('N', 'N');
 		rc.put('a', 't');
 		rc.put('c', 'g');
 		rc.put('g', 'c');
 		rc.put('t', 'a');
+		rc.put('n', 'n');
+		rc.put('-', '-');
+	}
+	
+	public void initIndexBuffers() {
+		ib = IntBuffer.allocate( sb.length() );
+		int count = 0;
+		for( int i = 0; i < sb.length(); i++ ) {
+			ib.put( i, count );
+			char c = sb.charAt(i);
+			if( c != '.' && c != '-' && c != ' ' ) {
+				count++;
+			}
+		}
+		rib = IntBuffer.allocate( count );
+		count = 0;
+		for( int i = 0; i < sb.length(); i++ ) {
+			char c = sb.charAt(i);
+			if( c != '.' && c != '-' && c != ' ' ) {
+				rib.put( count, i );
+				count++;
+			}
+		}
 	}
 	
 	public String 				name;
 	public String				id;
 	public StringBuilder	 	sb;
+	public IntBuffer			ib = null;
+	public IntBuffer			rib = null;
 	public int					start = 0;
 	public int					revcomp = 0;
 	int							gcp = -1;
@@ -455,27 +482,15 @@ public class Sequence implements Comparable<Sequence> {
 			sb.setCharAt( getLength()-1-i, c );
 		}
 	}
-	
-	public final static Map<Character,Character>	complimentMap = new HashMap<Character,Character>();
-	static {
-		complimentMap.put( 'A', 'T' );
-		complimentMap.put( 'T', 'A' );
-		complimentMap.put( 'G', 'C' );
-		complimentMap.put( 'C', 'G' );
-		complimentMap.put( 'a', 't' );
-		complimentMap.put( 't', 'a' );
-		complimentMap.put( 'g', 'c' );
-		complimentMap.put( 'c', 'g' );
-	};
-	
+		
 	public void complement() {
 		for( int i = 0; i < getLength(); i++ ) {
 			char c = sb.charAt(i);
-			char rc = complimentMap.containsKey( c ) ? complimentMap.get(c) : c;
+			char cc = rc.containsKey( c ) ? rc.get(c) : c;
 			/*if( c == rc ) {
 				System.err.println();
 			}*/
-			sb.setCharAt( i, rc );
+			sb.setCharAt( i, cc );
 		}
 	}
 	
@@ -748,7 +763,7 @@ public class Sequence implements Comparable<Sequence> {
 			if( rc.containsKey(c) ) {
 				return rc.get( c );
 			} else {
-				System.err.println("");
+				System.err.println( c );
 			}
 		}
 		
@@ -919,8 +934,8 @@ public class Sequence implements Comparable<Sequence> {
 				StringBuilder subsb = new StringBuilder();
 				for( int i = end-1; i >= start; i-- ) {
 					char c = sb.charAt(i);
-					char rc = complimentMap.containsKey(c) ? complimentMap.get( c ) : c;
-					subsb.append( rc );
+					char cc = rc.containsKey(c) ? rc.get( c ) : c;
+					subsb.append( cc );
 				}
 				return subsb.toString();
 			} else return sb.substring(start, end);
