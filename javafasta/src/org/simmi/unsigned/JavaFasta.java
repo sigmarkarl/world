@@ -12,7 +12,10 @@ import java.awt.GridLayout;
 import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.RenderingHints;
+import java.awt.Toolkit;
 import java.awt.Window;
+import java.awt.datatransfer.Clipboard;
+import java.awt.datatransfer.ClipboardOwner;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.StringSelection;
 import java.awt.datatransfer.Transferable;
@@ -141,7 +144,8 @@ public class JavaFasta extends JApplet {
 			JOptionPane.showMessageDialog(source, "There is no data selected!");
 		} else {
 			StringSelection selection = new StringSelection(s);
-			clipboardService.setContents(selection);
+			if( clipboardService != null ) clipboardService.setContents(selection);
+			else Toolkit.getDefaultToolkit().getSystemClipboard().setContents( selection, null );
 		}
 
 		if (grabFocus) {
@@ -1747,11 +1751,12 @@ public class JavaFasta extends JApplet {
 		table.setAutoCreateRowSorter( true );
 		table.setDragEnabled( true );
 		
+		Action action = new CopyAction("Copy", null, "Copy data", new Integer(KeyEvent.VK_CONTROL + KeyEvent.VK_C));
+		table.getActionMap().put("copy", action);
+		
 		try {
 			if (clipboardService == null)
 				clipboardService = (ClipboardService) ServiceManager.lookup("javax.jnlp.ClipboardService");
-			Action action = new CopyAction("Copy", null, "Copy data", new Integer(KeyEvent.VK_CONTROL + KeyEvent.VK_C));
-			table.getActionMap().put("copy", action);
 			grabFocus = true;
 		} catch (Exception ee) {
 			ee.printStackTrace();
