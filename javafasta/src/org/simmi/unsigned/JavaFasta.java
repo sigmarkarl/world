@@ -135,7 +135,14 @@ public class JavaFasta extends JApplet {
 		//String s = textarea.getText();
 		ByteArrayOutputStream	baos = new ByteArrayOutputStream();
 		OutputStreamWriter osw = new OutputStreamWriter( baos );
-		serifier.writeFasta(serifier.lseq, osw, null);
+		
+		List<Sequence> selseqs = new ArrayList<Sequence>();
+		int[] rr = table.getSelectedRows();
+		for( int r : rr ) {
+			int i = table.convertRowIndexToModel(r);
+			selseqs.add( serifier.lseq.get(i) );
+		}
+		serifier.writeFasta(selseqs, osw, null);
 		osw.close();
 		baos.close();
 
