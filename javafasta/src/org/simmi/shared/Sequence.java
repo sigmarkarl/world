@@ -646,7 +646,8 @@ public class Sequence implements Comparable<Sequence> {
 	}
 	
 	public Sequence() {
-		
+		super();
+		sb = new StringBuilder();
 	}
 	
 	public Sequence( String id, String name, Map<String,Sequence> mseq ) {
@@ -655,8 +656,8 @@ public class Sequence implements Comparable<Sequence> {
 	}
 	
 	public Sequence( String name, Map<String,Sequence> mseq ) {
+		this();
 		this.name = name;
-		sb = new StringBuilder();
 		if( mseq != null ) mseq.put( name, this );
 	}
 	
