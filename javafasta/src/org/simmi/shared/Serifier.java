@@ -3432,7 +3432,7 @@ public class Serifier {
 	public void writeFasta( List<Sequence> seqlist, Writer osw, Rectangle selectedRect ) throws IOException {
 		for( Sequence seq : seqlist ) {
 			int val = 0;
-	   		int end = seq.getLength();
+	   		int end = seq.length();
 	   		 
 	   		if( selectedRect != null && selectedRect.width > 0 ) {
 	   			 val = Math.max( val, selectedRect.x-seq.getStart() );

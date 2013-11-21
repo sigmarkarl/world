@@ -91,6 +91,7 @@ import javax.swing.JSplitPane;
 import javax.swing.JTable;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
+import javax.swing.JTextPane;
 import javax.swing.RowSorter;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingUtilities;
@@ -358,7 +359,7 @@ public class JavaFasta extends JApplet {
 						int stop = begin+c.selectedRect.width;
 						
 						int start = Math.max(begin, 0);
-						int end = Math.min(stop, s.getLength());
+						int end = Math.min(stop, s.length());
 						if( end > start ) {
 							s.getStringBuilder().delete( start, end );
 						}
@@ -745,7 +746,7 @@ public class JavaFasta extends JApplet {
 				if( s.getEnd() > serifier.getMax() ) serifier.setMax( s.getEnd() );
 			}
 			/*if( s != null ) {
-				if( s.getLength() > serifier.getMax() ) serifier.setMax( s.getLength() );
+				if( s.length() > serifier.getMax() ) serifier.setMax( s.length() );
 			}*/
 		}
 	}
@@ -962,8 +963,8 @@ public class JavaFasta extends JApplet {
             		 Sequence seq = serifier.lseq.get(i);
             		 osw.write( ">" + seq.name + "\n" );
             		 int val = 0;
-            		 while( val < seq.getLength() ) {
-            			 osw.write( seq.sb.substring(val, Math.min( seq.getLength(), val+70 )) + "\n" );
+            		 while( val < seq.length() ) {
+            			 osw.write( seq.sb.substring(val, Math.min( seq.length(), val+70 )) + "\n" );
             			 val += 70;
             		 }
             	 }
@@ -988,7 +989,7 @@ public class JavaFasta extends JApplet {
 	   		 int i = table.convertRowIndexToModel( r );
 	   		 Sequence seq = lseq.get(i);
 	   		 int val = 0;
-	   		 int end = seq.getLength();
+	   		 int end = seq.length();
 	   		 
 	   		 if( c.selectedRect.width > 0 ) {
 	   			 val = Math.max( val, c.selectedRect.x-seq.getStart() );
@@ -1029,8 +1030,8 @@ public class JavaFasta extends JApplet {
            		 Sequence seq = serifier.lseq.get(i);
            		 osw.write( ">" + seq.name + "\n" );
            		 int val = 0;
-           		 while( val < seq.getLength() ) {
-           			 osw.write( seq.sb.substring(val, Math.min( seq.getLength(), val+70 )) + "\n" );
+           		 while( val < seq.length() ) {
+           			 osw.write( seq.sb.substring(val, Math.min( seq.length(), val+70 )) + "\n" );
            			 val += 70;
            		 }
            	 }
@@ -1096,8 +1097,8 @@ public class JavaFasta extends JApplet {
            		 Sequence seq = serifier.lseq.get(i);
            		 osw.write( ">" + seq.name + "\n" );
            		 int val = 0;
-           		 while( val < seq.getLength() ) {
-           			 osw.write( seq.sb.substring(val, Math.min( seq.getLength(), val+70 )) + "\n" );
+           		 while( val < seq.length() ) {
+           			 osw.write( seq.sb.substring(val, Math.min( seq.length(), val+70 )) + "\n" );
            			 val += 70;
            		 }
            	 }
@@ -1143,7 +1144,7 @@ public class JavaFasta extends JApplet {
 		s.append( abi.getSequence() );
 		serifier.lseq.add( s );
 		
-		if( s.getLength() > serifier.getMax() ) serifier.setMax( s.getLength() );
+		if( s.length() > serifier.getMax() ) serifier.setMax( s.length() );
 	}
 	
 	public void addAbiSequence( String name, byte[] bts, int len ) {
@@ -1156,7 +1157,7 @@ public class JavaFasta extends JApplet {
 			s.append( abi.getSequence() );
 			serifier.lseq.add( s );
 			
-			if( s.getLength() > serifier.getMax() ) serifier.setMax( s.getLength() );
+			if( s.length() > serifier.getMax() ) serifier.setMax( s.length() );
 		} catch( Exception e ) {
 			console( e.getMessage() );
 		}
@@ -1197,7 +1198,7 @@ public class JavaFasta extends JApplet {
 		if( x < s.getStart() ) s.setStart( s.getStart()-1 );
 		else {
 			int val = x-s.getStart();
-			if( val < s.getLength() ) {
+			if( val < s.length() ) {
 				s.sb.setCharAt( val, '-' );
 			}
 		}
@@ -1213,7 +1214,7 @@ public class JavaFasta extends JApplet {
 		if( x < s.getStart() ) s.setStart( s.getStart()-1 );
 		else {
 			int val = x-s.getStart();
-			if( val < s.getLength() ) {
+			if( val < s.length() ) {
 				s.sb.deleteCharAt( val );
 			}
 		}
@@ -1229,7 +1230,7 @@ public class JavaFasta extends JApplet {
 		char c = ' ';
 		if( x >= s.getStart() && x < s.getEnd() ) {
 			int val = x-s.getStart();
-			if( val < s.getLength() ) c = s.sb.charAt( val );
+			if( val < s.length() ) c = s.sb.charAt( val );
 			else {
 				System.err.println();
 			}
@@ -1647,7 +1648,7 @@ public class JavaFasta extends JApplet {
 		
    	 	for( Sequence seq : lseq ) {
    		 int val = 0;
-   		 int end = seq.getLength();
+   		 int end = seq.length();
    		 
    		 if( c.selectedRect.width > 0 ) {
    			 val = Math.max( val, c.selectedRect.x-seq.getStart() );
@@ -1732,7 +1733,7 @@ public class JavaFasta extends JApplet {
 	
 	int[]	currentRowSelection;
 	Point	p;
-	public void initGui( Container cnt ) {
+	public void initGui( final Container cnt ) {
 		final String lof = "com.sun.java.swing.plaf.nimbus.NimbusLookAndFeel";
 		try {
 			UIManager.setLookAndFeel(lof);
@@ -1895,7 +1896,7 @@ public class JavaFasta extends JApplet {
 					int stop = begin+c.selectedRect.width;
 					
 					int start = Math.max(begin, 0);
-					int end = Math.min(stop, seq.getLength());
+					int end = Math.min(stop, seq.length());
 					if( end > start ) {
 						if( begin < 0 ) {
 							String val = String.format( "%"+c.selectedRect.width+"s", seq.getSubstring( start, end, 1 ) );
@@ -2064,7 +2065,7 @@ public class JavaFasta extends JApplet {
 									s.append( abi.getSequence() );
 									serifier.lseq.add( s );
 									
-									if( s.getLength() > serifier.getMax() ) serifier.setMax( s.getLength() );
+									if( s.length() > serifier.getMax() ) serifier.setMax( s.length() );
 									
 									bb.clear();
 								} else if( fname.endsWith(".blastout") ) {
@@ -2174,7 +2175,7 @@ public class JavaFasta extends JApplet {
 												if( ind >= k ) {
 													if( sstart > sstop ) {
 														seq.revcomp = 2;
-														int sval = qstart-(seq.getLength()-sstart+1);
+														int sval = qstart-(seq.length()-sstart+1);
 														seq.setStart( sval );
 													} else {
 														seq.setStart( qstart-sstart );
@@ -2183,7 +2184,7 @@ public class JavaFasta extends JApplet {
 												} else if( tseq != null ) {
 													if( sstart > sstop ) {
 														if( seq.revcomp == 2 ) {
-															int sval = (seq.getLength()-sstart+1)-qstart  +  seq.getStart();
+															int sval = (seq.length()-sstart+1)-qstart  +  seq.getStart();
 															tseq.setStart( sval );
 														} else {
 															tseq.revcomp = 2;
@@ -2237,7 +2238,7 @@ public class JavaFasta extends JApplet {
 									br.close();
 									
 									if( s != null ) {
-										if( s.getLength() > max ) max = s.getLength();
+										if( s.length() > max ) max = s.length();
 									}*/
 								}
 							}
@@ -2280,6 +2281,21 @@ public class JavaFasta extends JApplet {
 		splitpane.setRightComponent( fastascroll );
 		
 		JPopupMenu	popup = new JPopupMenu();
+		popup.add( new AbstractAction("Goto") {
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+				JTextField tf = new JTextField();
+				JOptionPane.showMessageDialog(cnt, tf);
+				int r = table.getSelectedRow();
+				int i = table.convertRowIndexToModel( r );
+				Sequence s = serifier.lseq.get( i );
+				int k = s.sb.indexOf( tf.getText() );
+				
+				Rectangle rect = c.getVisibleRect();
+				rect.x = k*10;
+				c.scrollRectToVisible( rect );
+			}
+		});
 		popup.add( new AbstractAction("Find duplicates") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -2749,7 +2765,7 @@ public class JavaFasta extends JApplet {
 						int stop = begin+c.selectedRect.width;
 						
 						int start = Math.max(begin, 0);
-						int end = Math.min(stop, seq1.getLength());
+						int end = Math.min(stop, seq1.length());
 						if( end > start ) {
 							if( begin < 0 ) {
 								String val = String.format( "%"+c.selectedRect.width+"s", seq1.getSubstring( start, end, 1 ) );
@@ -2761,7 +2777,7 @@ public class JavaFasta extends JApplet {
 						stop = begin+c.selectedRect.width;
 						
 						start = Math.max(begin, 0);
-						end = Math.min(stop, seq2.getLength());
+						end = Math.min(stop, seq2.length());
 						if( end > start ) {
 							if( begin < 0 ) {
 								String val = String.format( "%"+c.selectedRect.width+"s", seq2.getSubstring( start, end, 1 ) );
@@ -2861,10 +2877,10 @@ public class JavaFasta extends JApplet {
 					int k = table.convertRowIndexToModel( r );
 					Sequence seq = serifier.lseq.get( k );
 					/*StringBuilder	sb = seq.sb;
-					for( int i = 0; i < seq.getLength()/2; i++ ) {
+					for( int i = 0; i < seq.length()/2; i++ ) {
 						char c = sb.charAt(i);
-						sb.setCharAt( i, sb.charAt(seq.getLength()-1-i) );
-						sb.setCharAt( seq.getLength()-1-i, c );
+						sb.setCharAt( i, sb.charAt(seq.length()-1-i) );
+						sb.setCharAt( seq.length()-1-i, c );
 					}*/
 					seq.reverse();
 					if( seq.revcomp == 1 ) {
@@ -2894,7 +2910,7 @@ public class JavaFasta extends JApplet {
 					int k = table.convertRowIndexToModel( r );
 					Sequence seq = serifier.lseq.get( k );
 					/*StringBuilder	sb = seq.sb;
-					for( int i = 0; i < seq.getLength(); i++ ) {
+					for( int i = 0; i < seq.length(); i++ ) {
 						char c = sb.charAt(i);
 						sb.setCharAt( i, complimentMap.get(c) );
 					}*/
@@ -3661,8 +3677,8 @@ public class JavaFasta extends JApplet {
 					}
 					if( seqs[1] == null ) seqs[1] = seqs[0];
 					
-					final int x = seqs[0].getLength();
-					final int y = seqs[1].getLength();
+					final int x = seqs[0].length();
+					final int y = seqs[1].length();
 					final JDialog	dialog = new JDialog();
 					dialog.setSize(300, 200);
 					dialog.setDefaultCloseOperation( dialog.DISPOSE_ON_CLOSE );
@@ -4153,7 +4169,7 @@ public class JavaFasta extends JApplet {
 									s.append( abi.getSequence() );
 									serifier.lseq.add( s );
 									
-									if( s.getLength() > serifier.getMax() ) serifier.setMax( s.getLength() );
+									if( s.length() > serifier.getMax() ) serifier.setMax( s.length() );
 									
 									bb.clear();
 								} else if( fname.endsWith(".blastout") ) {

@@ -70,12 +70,12 @@ public class BlastReader {
 								int start = Integer.parseInt( split[1] );
 								int stop = Integer.parseInt( sstop );
 								if( start > stop ) {
-									for( int i = ssequence.getLength(); i < start; i++ ) ssequence.append("-"); 
+									for( int i = ssequence.length(); i < start; i++ ) ssequence.append("-"); 
 									for( int i = stop; i < start; i++ ) {
 										ssequence.setCharAt( i, Sequence.rc.get( seq.charAt(i-stop) ) );
 									}
 								} else {
-									for( int i = ssequence.getLength(); i < stop; i++ ) ssequence.append("-");
+									for( int i = ssequence.length(); i < stop; i++ ) ssequence.append("-");
 									for( int i = start; i < stop; i++ ) {
 										ssequence.setCharAt( i,  seq.charAt(i-start) );
 									}
@@ -90,7 +90,7 @@ public class BlastReader {
 					qsequence.refstart = Math.min(isstart, isstop);
 					qsequence.refstop = Math.max(isstart, isstop);
 					
-					qsequence.start = Math.min(isstart, isstop);
+					qsequence.offset = Math.min(isstart, isstop);
 					qsequence.name = qspec+"_"+sstart+"_"+sstop;
 					//lqsequence.add( qsequence );
 					if( qsequences.containsKey( qsequence.name ) ) {
@@ -114,7 +114,7 @@ public class BlastReader {
 			
 			Set<Sequence> remset = new HashSet<Sequence>();
 			for( Sequence seq : serifier.lseq ) {
-				if( seq.getLength() < 100 ) remset.add( seq );
+				if( seq.length() < 100 ) remset.add( seq );
 			}
 			serifier.lseq.removeAll( remset );
 			
