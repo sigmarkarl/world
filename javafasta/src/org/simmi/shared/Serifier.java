@@ -650,7 +650,8 @@ public class Serifier {
 		
 		for( Set<String>	t : total ) {
 			Set<String>	teg = new HashSet<String>();
-			for( String e : t ) {
+			for( String et : t ) {
+				String e = mseq.get( et ).name;
 				int ind = e.indexOf('[');
 				//if( e.contains("_JL2_") ) ind = e.indexOf('_', ind+1);
 				
@@ -694,7 +695,8 @@ public class Serifier {
 			Map<String,Set<String>>	submap = new HashMap<String,Set<String>>();
 			setmap.add( submap );
 			
-			for( String e : t ) {
+			for( String et : t ) {
+				String e = mseq.get( et ).name;
 				String tegstr;
 				int ind = e.indexOf('[');
 				//if( e.contains("_JL2_") ) ind = e.indexOf('_', ind+1);
@@ -764,24 +766,36 @@ public class Serifier {
 			Sequences seqs = sequences.get(0);
 			appendSequenceInJavaFasta( seqs, null, true );
 			
+			System.err.println(mseq.size());
+			
 			fos = new FileOutputStream( new File( osf, "cluster.txt" ) );
 		} else fos = new FileOutputStream( osf );
 		
+		/*for( String str : mseq.keySet() ) {
+			if( str.contains("scotoductus1572_scaffold00003_4 ") ) {
+				System.err.println();
+			}
+		}*/
+		
 		List<Set<String>> total = makeBlastCluster( is, fos, clustermap);
 		fis.close();
+		
+		//scotoductus1572_scaffold00003_4 # 2808 # 3941 # -1 # ID=3_4;partial=00;start_type=GTG;rbs_motif=None;rbs_spacer=None;gc_cont=0.959
+		//scotoductus1572_scaffold00003_4 # 2808 # 3941 # -1 #ID=3_4;partial=00;start_type=GTG;rbs_motif=None;rbs_spacer=None;gc_cont=0.959
 		
 		System.err.println( total.size() );
 		for( Set<String>	strset : total ) {
 			String name = null;
 			boolean pseudoname = true;
 			for( String str : strset ) {
-				if( name == null ) {
+				/*if( name == null ) {
 					int si = str.indexOf(' ');
 					if( si == -1 ) si = str.length();
 					name = str.substring(0, si);
 					
 					break;
-				}
+				}*/
+				name = str;
 				
 				/*int i = str.indexOf('[');
 				if( i != -1 ) {
@@ -812,9 +826,17 @@ public class Serifier {
 					}
 				}*/
 				
+				if( str.contains("arciformis4241_scaffold00003_301") ) {
+					System.err.println();
+				}
+				
+				//int millind = str.indexOf('#');
+				//if( millind == -1 ) millind = str.length();
+				//String shortname = str.substring( 0, millind ).trim();
 				Sequence seq = mseq.get( str );
-				if( seq != null ) writeSequence( seq, fw );
-				else {
+				if( seq != null ) {
+					writeSequence( seq, fw );
+				} else {
 					System.err.println();
 				}
 			}
@@ -826,11 +848,11 @@ public class Serifier {
 	
 	public List<Set<String>> makeBlastCluster( final InputStream is, final OutputStream fos, int clustermap ) {
 		List<Set<String>>	total = new ArrayList<Set<String>>();
-		try {			
+		try {		
 			if( clustermap%2 == 0 ) {
 				joinBlastSets( is, null, true, total, 0.0 );
 			} else {
-				joinBlastSetsThermus( is, null, true, total );
+				joinBlastSetsThermus( is, "/home/sigmar/check.txt", true, total );
 			}
 			is.close();
 			
@@ -866,6 +888,7 @@ public class Serifier {
 	private void joinSets( Set<String> all, List<Set<String>> total ) {		
 		Set<String> cont = null;
 		Set<Set<String>>	rem = new HashSet<Set<String>>();
+		
 		for( Set<String>	check : total ) {			
 			for( String aval : all ) {
 				if( check.contains(aval) ) {
@@ -929,12 +952,34 @@ public class Serifier {
 		}
 		BufferedReader	br = new BufferedReader( new InputStreamReader( is ) );
 		
+		Set<String>	all = null;
 		String line = br.readLine();
 		int cnt = 0;
 		while( line != null ) {
-			if( line.startsWith("Sequences prod") ) {
+			if( line.startsWith("Query=") ) {
+				String trim = line.substring(7);
 				line = br.readLine();
-				Set<String>	all = new HashSet<String>();
+				while( line != null && !line.startsWith("Length") ) {
+					trim += " "+line;
+					line = br.readLine();
+				}
+				
+				/*if( trim.contains("arciformis4241_scaffold00003_301") ) {
+					System.err.println();
+				}
+				/*if( trim.contains("scotoductus1572_scaffold00003_4") ) {
+					System.err.println();
+				}*/
+				
+				if( all != null && all.size() > 0 && union ) joinSets( all, total );
+				all = new HashSet<String>();
+				
+				int i = trim.indexOf(' ');
+				if( i == -1 ) i = trim.length();
+				String astr = trim.substring(0, i);
+				all.add( astr );
+			} else if( line.startsWith("Sequences prod") ) {
+				line = br.readLine();
 				while( line != null && !line.startsWith("Query=") ) {
 					String trim = line;
 					
@@ -974,7 +1019,12 @@ public class Serifier {
 							int lenid = Integer.parseInt( line.substring(idx0+1, idx1-1) );
 							//int v = val.indexOf("contig");
 							
-							if( percid >= 50 && lenid >= len/2 ) all.add( trim ); //.replace(".fna", "") );
+							if( percid >= 50 && lenid >= len/2 ) {
+								int i = trim.indexOf(' ');
+								if( i == -1 ) i = trim.length();
+								String astr = trim.substring(0, i);
+								all.add( astr ); //.replace(".fna", "") );
+							}
 						} else System.err.println( trim );
 						
 						/*if( val.contains("SG0") ) {
@@ -995,10 +1045,15 @@ public class Serifier {
 				
 				//System.err.println( all );
 				//System.err.println();
-				if( union ) joinSets( all, total );
+				//if( union ) joinSets( all, total );
 				//else intersectSets( all, total );
 				
+				/*for( Set<String> set : total ) {
+					
+				}*/
+				
 				if( line == null ) break;
+				else continue;
 			}
 			
 			/*if( cnt++ % 100000 == 0 ) {
@@ -1007,11 +1062,19 @@ public class Serifier {
 			line = br.readLine();
 		}
 		if( fw != null ) {
-			for( Set<String> all : total ) {
-				fw.write( all.toString()+"\n" );
+			for( Set<String> allt : total ) {
+				String allstr = allt.toString();
+				fw.write( allstr+"\n" );
 			}
 			fw.close();
 		}
+		
+		/*for( Set<String> all : total ) {
+			String allstr = all.toString();
+			if( allstr.contains("346pe_scaffold00001_513") ) {
+				System.err.println();
+			}
+		}*/
 	}
 	
 	public void joinBlastSets( InputStream is, String write, boolean union, List<Set<String>> total, double evalue ) throws IOException {
@@ -1457,6 +1520,7 @@ public class Serifier {
 	
 	public void appendSequenceInJavaFasta( Sequences seqs, Map<String,Sequence> contset, boolean namefix ) {
 		StringBuilder	dna = new StringBuilder();
+		//Map<String,String>	idmap = new HashMap<String,String>();
 		try {
 			File inf = new File( new URI(seqs.getPath()) );
 			BufferedReader br = new BufferedReader( new FileReader(inf) );
@@ -1464,8 +1528,17 @@ public class Serifier {
 			String line = br.readLine();
 			while( line != null ) {
 				if( line.startsWith(">") ) {
+					/*if( line.contains("scotoductus1572_scaffold00003_4") ) {
+						System.err.println();
+					}*/
+					
 					if( cont != null ) {
-						Sequence seq = new Sequence(cont, dna, mseq);
+						Sequence seq = new Sequence(cont, dna, null);
+						int millind = cont.indexOf(' ');
+						if( millind == -1 ) millind = cont.length();
+						String id = cont.substring(0, millind);
+						mseq.put( id, seq );
+						
 						addSequence(seq);
 						if (seq.getAnnotations() != null)
 							Collections.sort(seq.getAnnotations());
@@ -1474,11 +1547,10 @@ public class Serifier {
 					//System.err.println( seqs.getName() );
 					if( /*rr.length == 1*/ namefix ) {
 						cont = line.replace( ">", "" );
-						//int millind = cont.indexOf('#');
+						//int millind = cont.indexOf(' ');
 						//if( millind == -1 ) millind = cont.length();
 						//cont = cont.substring( 0, millind ).trim();
-					}
-					else cont = line.replace( ">", seqs.getName()+"_" );
+					} else cont = line.replace( ">", seqs.getName()+"_" );
 					dna = new StringBuilder();
 					//dna.append( line.replace( ">", ">"+seqs.getName()+"_" )+"\n" );
 					//nseq++;
@@ -1486,7 +1558,10 @@ public class Serifier {
 				line = br.readLine();
 			}
 			if( cont != null ) {
-				Sequence seq = new Sequence(cont, dna, mseq);
+				Sequence seq = new Sequence(cont, dna, null);
+				int millind = cont.indexOf(' ');
+				if( millind == -1 ) millind = cont.length();
+				mseq.put( cont.substring(0, millind), seq );
 				addSequence(seq);
 				if (seq.getAnnotations() != null)
 					Collections.sort(seq.getAnnotations());
@@ -1498,6 +1573,7 @@ public class Serifier {
 		} catch (IOException e1) {
 			e1.printStackTrace();
 		}
+		//return idmap;
 	}
 	
 	public void nameReplace( String one, String two ) {
