@@ -196,7 +196,7 @@ public class Sequence implements Comparable<Sequence> {
 	public StringBuilder	 	sb;
 	public IntBuffer			ib = null;
 	public IntBuffer			rib = null;
-	public int					start = 0;
+	public int					offset = 0;
 	public int					revcomp = 0;
 	int							gcp = -1;
 	int							alignedlength = -1;
@@ -235,7 +235,7 @@ public class Sequence implements Comparable<Sequence> {
 			seqlen += " ";
 		}
 		seqlen += erm;
-		int alen = lseq.get(0).getLength();
+		int alen = lseq.get(0).length();
 		seqlen += "   "+alen;
 		
 		out.append( seqlen+"\n" );
@@ -302,7 +302,7 @@ public class Sequence implements Comparable<Sequence> {
 	}
 	
 	public static double[] entropy( List<Sequence> lseq ) {
-		int total = lseq.get(0).getLength();
+		int total = lseq.get(0).length();
 		double[] ret = new double[total];
 		Map<Character,Integer>	shanmap = new HashMap<Character,Integer>();
 		for( int x = 0; x < total; x++ ) {
@@ -476,15 +476,15 @@ public class Sequence implements Comparable<Sequence> {
 	}
 	
 	public void reverse() {
-		for( int i = 0; i < getLength()/2; i++ ) {
+		for( int i = 0; i < length()/2; i++ ) {
 			char c = sb.charAt(i);
-			sb.setCharAt( i, sb.charAt(getLength()-1-i) );
-			sb.setCharAt( getLength()-1-i, c );
+			sb.setCharAt( i, sb.charAt(length()-1-i) );
+			sb.setCharAt( length()-1-i, c );
 		}
 	}
 		
 	public void complement() {
-		for( int i = 0; i < getLength(); i++ ) {
+		for( int i = 0; i < length(); i++ ) {
 			char c = sb.charAt(i);
 			char cc = rc.containsKey( c ) ? rc.get(c) : c;
 			/*if( c == rc ) {
@@ -721,7 +721,7 @@ public class Sequence implements Comparable<Sequence> {
 	}
 	
 	public void deleteCharAt( int i ) {
-		int ind = i-start;
+		int ind = i-offset;
 		if( ind >= 0 && ind < sb.length() ) {
 			sb.deleteCharAt(ind);
 			edited = true;
@@ -729,8 +729,8 @@ public class Sequence implements Comparable<Sequence> {
 	}
 	
 	public void delete( int dstart, int dstop ) {
-		int ind = dstart-start;
-		int end = dstop-start;
+		int ind = dstart-offset;
+		int end = dstop-offset;
 		if( ind >= 0 && end <= sb.length() ) {
 			sb.delete( ind, end );
 			edited = true;
@@ -738,7 +738,7 @@ public class Sequence implements Comparable<Sequence> {
 	}
 	
 	public void clearCharAt( int i ) {
-		int ind = i-start;
+		int ind = i-offset;
 		if( ind >= 0 && ind < sb.length() ) {
 			sb.setCharAt(ind, '-');
 			edited = true;
@@ -746,15 +746,15 @@ public class Sequence implements Comparable<Sequence> {
 	}
 	
 	public void setCharAt( int i, char c ) {
-		int ind = i-start;
+		int ind = i-offset;
 		if( ind >= 0 && ind < sb.length() ) {
 			sb.setCharAt( ind, c );
 		}
 	}
 	
 	public char charAt( int i ) {
-		int ind = i-start;
-		if( ind >= 0 && ind < getLength() ) {
+		int ind = i-offset;
+		if( ind >= 0 && ind < length() ) {
 			return sb.charAt( ind );
 		}
 		
@@ -762,9 +762,9 @@ public class Sequence implements Comparable<Sequence> {
 	}
 	
 	public char revCompCharAt( int i ) {
-		int ind = i-start;
-		if( ind >= 0 && ind < getLength() ) {
-			char c = sb.charAt( getLength()-ind-1 );
+		int ind = i-offset;
+		if( ind >= 0 && ind < length() ) {
+			char c = sb.charAt( length()-ind-1 );
 			if( rc.containsKey(c) ) {
 				return rc.get( c );
 			} else {
@@ -791,7 +791,7 @@ public class Sequence implements Comparable<Sequence> {
 		unalignedlength = substop-substart;
 	}
 	
-	public int getLength() {
+	public int length() {
 		return sb.length();
 	}
 	
@@ -832,24 +832,24 @@ public class Sequence implements Comparable<Sequence> {
 	
 	public static RunInt runbl = null;
 	public void setStart( int start ) {
-		this.start = start;
+		this.offset = start;
 		
 		if( runbl != null ) runbl.run( this ); //boundsCheck();
 	}
 	
 	public void setEnd( int end ) {
-		this.start = end-sb.length();
+		this.offset = end-sb.length();
 		
 		if( runbl != null ) runbl.run( this );
 		//boundsCheck();
 	}
 	
 	public int getStart() {
-		return start;
+		return offset;
 	}
 	
 	public int getEnd() {
-		return start+sb.length();
+		return offset+sb.length();
 	}
 	
 	public int getRevComp() {
@@ -889,7 +889,7 @@ public class Sequence implements Comparable<Sequence> {
 
 	@Override
 	public int compareTo(Sequence o) {
-		return start - o.start;
+		return offset - o.offset;
 	}
 	
 	public StringBuilder getProteinSequence( int start, int stop, int ori ) {
