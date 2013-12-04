@@ -912,17 +912,25 @@ public class Sequence implements Comparable<Sequence> {
 			//System.err.println( aa );
 			for( int i = stop-3; i > begin; i-=3 ) {
 				String aaa = sb.substring(i, i+3).toUpperCase();
-				String aa = amimap.get( revcom.get(aaa) );
-				if( aa != null ) ret.append( i != stop-3 ? aa : (aa.equals("V") || aa.equals("L") ? "M" : aa) );
-				//else break;
+				if( aaa.contains("N") || aaa.contains("n") ) {
+					ret.append( "X" );
+				} else {
+					String aa = amimap.get( revcom.get(aaa) );
+					if( aa != null ) ret.append( i != stop-3 ? aa : (aa.equals("V") || aa.equals("L") ? "M" : aa) );
+					//else break;
+				}
 			}
 		} else {
 			int end = start - 1 + 3*((stop-start)/3);
 			for( int i = start-1; i < end; i+=3 ) {
 				String aaa = sb.substring(i, i+3).toUpperCase();
-				String aa = amimap.get( aaa );
-				if( aa != null ) ret.append( i != start-1 ? aa : (aa.equals("V") || aa.equals("L") ? "M" : aa) );
-				//else break;
+				if( aaa.contains("N") || aaa.contains("n") ) {
+					ret.append( "X" );
+				} else {
+					String aa = amimap.get( aaa );
+					if( aa != null ) ret.append( i != start-1 ? aa : (aa.equals("V") || aa.equals("L") ? "M" : aa) );
+					//else break;
+				}
 			}
 		}
 		
