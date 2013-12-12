@@ -901,7 +901,7 @@ public class JavaFasta extends JApplet {
     	 JSObject window = null;
     	 try {
     		 window = JSObject.getWindow( parentApplet );
-    	 } catch( Exception exc ) {
+    	 } catch( NoSuchMethodError | Exception exc ) {
     		 exc.printStackTrace();
     	 }
 		
