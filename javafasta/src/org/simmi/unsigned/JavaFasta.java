@@ -3449,16 +3449,12 @@ public class JavaFasta extends JApplet {
 					serifier.writeFasta(serifier.lseq, sw, null);
 					sw.close();
 					
-					String tree = sw.toString();
-					System.err.println("about to " + tree );
-					
-					win.call("fastTree", new Object[] { sw.toString() });
-				} catch( Exception e1 ) {
+					String tree = sw.toString();					
+					win.call("fastTree", new Object[] { tree });
+				} catch( NoSuchMethodError | Exception e1 ) {
 					e1.printStackTrace();
 					succ = false;
 				}
-				
-				System.err.println("fuck");
 				
 				if( !succ ) {
 					String 				tree = serifier.getFastTree();
