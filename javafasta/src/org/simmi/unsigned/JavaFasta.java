@@ -1832,9 +1832,7 @@ public class JavaFasta extends JApplet {
 			}
 
 			@Override
-			public void mouseMoved(MouseEvent e) {
-				
-			}
+			public void mouseMoved(MouseEvent e) {}
 		});
 		
 		//final DataFlavor df = DataFlavor.getTextPlainUnicodeFlavor();
@@ -2798,13 +2796,13 @@ public class JavaFasta extends JApplet {
 		    		 Sequence seq = serifier.lseq.get(i);
 		    		 seqlist.add( seq );
 		    	 }
-		    	 File tmpdir = new File("/tmp");
+		    	 File tmpdir = new File("c:/");
 		    	 try {
 					FileWriter fw = new FileWriter( new File( tmpdir, "tmp.fasta" ) );
 					serifier.writeFasta( seqlist, fw, null );
 			    	fw.close();
 			    	
-			    	ProcessBuilder pb = new ProcessBuilder("muscle", "-in", "tmp.fasta", "-out", "tmpout.fasta");
+			    	ProcessBuilder pb = new ProcessBuilder("muscle.exe", "-in", "tmp.fasta", "-out", "tmpout.fasta");
 			    	pb.directory( tmpdir );
 			    	Process p = pb.start();
 			    	InputStream os = p.getInputStream();
@@ -3297,9 +3295,7 @@ public class JavaFasta extends JApplet {
 			public void actionPerformed(ActionEvent e) {
 				try {
 					exportManyFasta( table, serifier.lseq );
-				} catch (IOException e1) {
-					e1.printStackTrace();
-				} catch (UnavailableServiceException e1) {
+				} catch (IOException | UnavailableServiceException e1) {
 					e1.printStackTrace();
 				}
 			}
