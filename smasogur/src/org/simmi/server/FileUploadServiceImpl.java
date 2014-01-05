@@ -7,6 +7,7 @@ import java.io.InputStream;
 import java.net.URLDecoder;
 import java.security.GeneralSecurityException;
 import java.security.PrivateKey;
+import java.util.Arrays;
 import java.util.Map.Entry;
 
 import javax.servlet.http.HttpServlet;
@@ -98,7 +99,7 @@ public class FileUploadServiceImpl extends HttpServlet {
 		  .setTransport(httpTransport)
 		  .setJsonFactory(jsonFactory)
 		  .setServiceAccountId(SERVICE_ACCOUNT_EMAIL)
-		  .setServiceAccountScopes(DriveScopes.DRIVE)
+		  .setServiceAccountScopes( Arrays.asList( new String[] {DriveScopes.DRIVE} ) )
 		  .setServiceAccountPrivateKeyFromP12File( file )
 		  //.setServiceAccountPrivateKey( pk )
 		  .build();

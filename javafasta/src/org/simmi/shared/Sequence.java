@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
-public class Sequence implements Comparable<Sequence> {
+public class Sequence implements Comparable<Object> {
 	/*public static int						max = 0;
 	public static int						min = 0;
 	
@@ -888,8 +888,8 @@ public class Sequence implements Comparable<Sequence> {
 	}
 
 	@Override
-	public int compareTo(Sequence o) {
-		return offset - o.offset;
+	public int compareTo(Object o) {
+		return offset - ((Sequence)o).offset;
 	}
 	
 	public StringBuilder getProteinSequence( int start, int stop, int ori ) {
