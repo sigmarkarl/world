@@ -1723,6 +1723,10 @@ public class Serifier {
 	}
 	
 	public Map<String,String> makeFset( String trim ) throws URISyntaxException, IOException {
+		return makeFset( trim, "" );
+	}
+	
+	public Map<String,String> makeFset( String trim, String add ) throws URISyntaxException, IOException {
 		boolean nofile = false;
 		
 		File f = new File( trim );
@@ -1740,7 +1744,7 @@ public class Serifier {
 		if( nofile ) {
 			String[] farray = { trim };
 			for( String str : farray ) {
-				fset.put(str, null);
+				fset.put(str+add, null);
 			}
 			//fset.addAll( Arrays.asList( farray ) );
 		} else {
@@ -1768,7 +1772,7 @@ public class Serifier {
 					}*/							
 					String[] split = line.split("\t");
 					if( split.length > 1 ) fset.put( split[0], split[1] );
-					else fset.put( line, null );
+					else fset.put( line+add, null );
 					
 					line = br.readLine();
 				}
@@ -2337,18 +2341,26 @@ public class Serifier {
 		
 		i = arglist.indexOf("-trim");
 		if( i >= 0 ) {
+			String add = "";
+			if( i+2 < args.length && !args[i+2].startsWith("-") ) {
+				add = " "; //args[i+1];
+			}
 			FileWriter fw = new FileWriter(outf);
 			FileReader fr = new FileReader( inf );
-			trimFasta( new BufferedReader(fr), fw, makeFset(args[i+1]), false, false );
+			trimFasta( new BufferedReader(fr), fw, makeFset(args[i+1], add), false, false );
 			fr.close();
 			fw.close();
 		}
 		
 		i = arglist.indexOf("-ntrim");
 		if( i >= 0 ) {
+			String add = "";
+			if( i+2 < args.length && !args[i+2].startsWith("-") ) {
+				add = " "; //args[i+1];
+			}
 			FileWriter fw = new FileWriter(outf);
 			FileReader fr = new FileReader( inf );
-			trimFasta( new BufferedReader(fr), fw, makeFset(args[i+1]), true, false );
+			trimFasta( new BufferedReader(fr), fw, makeFset(args[i+1], add), true, false );
 			fr.close();
 			fw.close();
 		}
@@ -3317,7 +3329,7 @@ public class Serifier {
 							if( ftagmap.containsKey(s.getName()) ) fw.write( ftagmap.get(s.getName())+line+"\n" );
 							else fw.write( "simmi"+line+"\n" );
 						} else if( simple ) {
-							//line = line.replace( ">", ">"+s.getName().replace(".fna", "")+"_" );
+							line = line.replace( ">", ">"+s.getName().replace(".fna", "")+"_" );
 							fw.write( line+"\n" );
 						} else {
 							int pe = line.indexOf('%');
