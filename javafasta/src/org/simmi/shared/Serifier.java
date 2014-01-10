@@ -132,7 +132,7 @@ public class Serifier {
 	}
 	
 	String addon = "nnnttaattaattaannn";
-	public void genbankFromNR( Sequences s, File blastFile, File genbankOut ) throws IOException {
+	public void genbankFromNR( Sequences s, File blastFile, File genbankOut, boolean gbk ) throws IOException {
 		Map<String,List<Anno>>	mapan = new HashMap<String,List<Anno>>();
 		
 		URL url = new URL( s.getPath() );
@@ -236,69 +236,122 @@ public class Serifier {
 		}
 		br.close();
 		
-		FileWriter	fw = new FileWriter( genbankOut );
-		String loc = "LOCUS       "+s.getName()+"                "+count+" bp    dna     linear   UNK";
-		String def = "DEFINITION  [organism=Unknown] [strain=Unknown] [gcode=11] [date=6-26-2012]";
-		String acc = "ACCESSION   "+s.getName()+"_Unknown";
-		String keyw = "KEYWORDS    .";
-		String feat = "FEATURES             Location/Qualifiers";
-		fw.write( loc+"\n" );
-		fw.write( def+"\n" );
-		fw.write( acc+"\n" );
-		fw.write( keyw+"\n" );
-		fw.write( feat+"\n" );
-		count = 1;
-		for( String key : seqmap.keySet() ) {
-			StringBuilder sbld = seqmap.get(key);
-			fw.write( "     fasta_record    "+count+".."+(count+sbld.length())+"\n" );
-			fw.write( "                     /name=\""+key+"\"\n" );
-			
-			if( mapan.containsKey(key) ) {
-				List<Anno> lann = mapan.get(key);
-				int ac = 1;
-				for( Anno annn : lann ) {
-					String locstr = (annn.start+count)+".."+(annn.stop+count);
-					if( annn.comp ) fw.write( "     gene            complement("+locstr+")\n" );
-					else fw.write( "     gene            "+locstr+"\n" );
-					fw.write( "                     /locus_tag=\""+key+"_"+ac+"\"\n" );
-					fw.write( "                     /product=\""+annn.name+"\"\n" );
-					ac++;
+		if( gbk ) {
+			FileWriter	fw = new FileWriter( genbankOut );
+			for( String key : seqmap.keySet() ) {
+				int ival = s.getName().indexOf('.');
+				String loc = "LOCUS       "+s.getName().substring(0, ival == -1 ? s.getName().length() : ival )+"_"+key+"                "+count+" bp    dna     linear   UNK";
+				String def = "DEFINITION  [organism=Unknown] [strain=Unknown] [gcode=11] [date=6-26-2012]";
+				String acc = "ACCESSION   "+s.getName()+"_Unknown";
+				String keyw = "KEYWORDS    .";
+				String feat = "FEATURES             Location/Qualifiers";
+				fw.write( loc+"\n" );
+				fw.write( def+"\n" );
+				fw.write( acc+"\n" );
+				fw.write( keyw+"\n" );
+				fw.write( feat+"\n" );
+				
+				count = 1;
+				StringBuilder sbld = seqmap.get(key);
+				fw.write( "     fasta_record    "+count+".."+(count+sbld.length())+"\n" );
+				fw.write( "                     /name=\""+key+"\"\n" );
+				
+				if( mapan.containsKey(key) ) {
+					List<Anno> lann = mapan.get(key);
+					int ac = 1;
+					for( Anno annn : lann ) {
+						String locstr = (annn.start+count)+".."+(annn.stop+count);
+						if( annn.comp ) fw.write( "     gene            complement("+locstr+")\n" );
+						else fw.write( "     gene            "+locstr+"\n" );
+						fw.write( "                     /locus_tag=\""+key+"_"+ac+"\"\n" );
+						fw.write( "                     /product=\""+annn.name+"\"\n" );
+						ac++;
+					}
 				}
-			}
-			
-			count += sbld.length();
-			count += addon.length();
-		}
-		fw.write( "ORIGIN" );
-		count = 1;
-		int total = 0;
-		//int start = 1;
-		for( String key : seqmap.keySet() ) {
-			StringBuilder sbld = seqmap.get(key);
-			for( int k = 0; k < sbld.length(); k++ ) {
-				if( (count-1)%60 == 0 ) fw.write( String.format( "\n%10s ", Integer.toString(count) ) );
-				else if( (count-1)%10 == 0 ) fw.write( " " );
 				
-				fw.write( sbld.charAt(k) );
-				
-				count++;
-			}
-			
-			if( total < seqmap.size()-1 ) {
-				for( int k = 0; k < addon.length(); k++ ) {
+				count += sbld.length();
+				count += addon.length();
+
+				fw.write( "ORIGIN" );
+				count = 1;
+				//int start = 1;
+				for( int k = 0; k < sbld.length(); k++ ) {
 					if( (count-1)%60 == 0 ) fw.write( String.format( "\n%10s ", Integer.toString(count) ) );
 					else if( (count-1)%10 == 0 ) fw.write( " " );
 					
-					fw.write( addon.charAt(k) );
+					fw.write( sbld.charAt(k) );
 					
 					count++;
-				}	
+				}
+				
+				fw.write("\n//\n");
 			}
-			
-			total++;
+			fw.close();
+		} else {
+			FileWriter	fw = new FileWriter( genbankOut );
+			String loc = "LOCUS       "+s.getName()+"                "+count+" bp    dna     linear   UNK";
+			String def = "DEFINITION  [organism=Unknown] [strain=Unknown] [gcode=11] [date=6-26-2012]";
+			String acc = "ACCESSION   "+s.getName()+"_Unknown";
+			String keyw = "KEYWORDS    .";
+			String feat = "FEATURES             Location/Qualifiers";
+			fw.write( loc+"\n" );
+			fw.write( def+"\n" );
+			fw.write( acc+"\n" );
+			fw.write( keyw+"\n" );
+			fw.write( feat+"\n" );
+			count = 1;
+			for( String key : seqmap.keySet() ) {
+				StringBuilder sbld = seqmap.get(key);
+				fw.write( "     fasta_record    "+count+".."+(count+sbld.length())+"\n" );
+				fw.write( "                     /name=\""+key+"\"\n" );
+				
+				if( mapan.containsKey(key) ) {
+					List<Anno> lann = mapan.get(key);
+					int ac = 1;
+					for( Anno annn : lann ) {
+						String locstr = (annn.start+count)+".."+(annn.stop+count);
+						if( annn.comp ) fw.write( "     gene            complement("+locstr+")\n" );
+						else fw.write( "     gene            "+locstr+"\n" );
+						fw.write( "                     /locus_tag=\""+key+"_"+ac+"\"\n" );
+						fw.write( "                     /product=\""+annn.name+"\"\n" );
+						ac++;
+					}
+				}
+				
+				count += sbld.length();
+				count += addon.length();
+			}
+			fw.write( "ORIGIN" );
+			count = 1;
+			int total = 0;
+			//int start = 1;
+			for( String key : seqmap.keySet() ) {
+				StringBuilder sbld = seqmap.get(key);
+				for( int k = 0; k < sbld.length(); k++ ) {
+					if( (count-1)%60 == 0 ) fw.write( String.format( "\n%10s ", Integer.toString(count) ) );
+					else if( (count-1)%10 == 0 ) fw.write( " " );
+					
+					fw.write( sbld.charAt(k) );
+					
+					count++;
+				}
+				
+				if( total < seqmap.size()-1 ) {
+					for( int k = 0; k < addon.length(); k++ ) {
+						if( (count-1)%60 == 0 ) fw.write( String.format( "\n%10s ", Integer.toString(count) ) );
+						else if( (count-1)%10 == 0 ) fw.write( " " );
+						
+						fw.write( addon.charAt(k) );
+						
+						count++;
+					}	
+				}
+				
+				total++;
+			}
+			fw.write("\n//");
+			fw.close();
 		}
-		fw.write("\n//");
-		fw.close();
 	}
 	
 	public void genbankFromBlast( Sequences s, File blastFile, File genbankOut ) throws IOException {
@@ -1921,6 +1974,8 @@ public class Serifier {
 				first = first.replace("\\n", "\n").replace("\\t", "\t");
 				next = next.replace("\\n", "\n").replace("\\t", "\t");
 				mapping.put( first, next );
+			} else if( args.length > i+2 && !args[i+2].startsWith("-") ) {
+				mapping.put( mappingfile, args[i+2] );
 			} else {
 				FileReader fr = new FileReader( mappingfile );
 				BufferedReader br = new BufferedReader( fr );
@@ -2461,6 +2516,22 @@ public class Serifier {
 			FileWriter fw = new FileWriter( outf );
 			writeFasta( lseq, fw, null);
 			fw.close();
+		}
+		
+		i = arglist.indexOf("-gbk");
+		if( i >= 0 ) {
+			genbankFromNR(this.sequences.get(0), new File( args[i+1] ), outf, true);
+		} else {
+			i = arglist.indexOf("-gb");
+			if( i >= 0 ) {
+				genbankFromNR(this.sequences.get(0), new File( args[i+1] ), outf, false);
+				//Sequences ret = blastRename( this.sequences.get(0), args[i+1], outf, false );
+				
+				/*appendSequenceInJavaFasta(ret, null, true);
+				FileWriter fw = new FileWriter( outf );
+				writeFasta( lseq, fw, null);
+				fw.close();*/
+			}
 		}
 		
 		i = arglist.indexOf("-keepblasthits");
