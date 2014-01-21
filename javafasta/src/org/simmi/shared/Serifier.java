@@ -1716,6 +1716,8 @@ public class Serifier {
 	
 	public void clearAll() {
 		lseq.clear();
+		lann.clear();
+		if( mseq != null ) mseq.clear();
 		setMax( 0 );
 	}
 	

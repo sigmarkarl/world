@@ -194,6 +194,13 @@ public class JavaFasta extends JApplet {
 		return es;
 	}
 	
+	public boolean isEdited() {
+		for( Sequence s : serifier.lseq ) {
+			if( s.isEdited() ) return true;
+		}
+		return false;
+	}
+	
 	public Serifier getSerifier() {
 		return serifier;
 	}
@@ -2789,14 +2796,14 @@ public class JavaFasta extends JApplet {
 		popup.add( new AbstractAction("Align") {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
-				List<Sequence> seqlist = new ArrayList<Sequence>();
+				 final List<Sequence> seqlist = new ArrayList<Sequence>();
 		    	 int[] rr = table.getSelectedRows();
 		    	 for( int r : rr ) {
 		    		 int i = table.convertRowIndexToModel( r );
 		    		 Sequence seq = serifier.lseq.get(i);
 		    		 seqlist.add( seq );
 		    	 }
-		    	 File tmpdir = new File("c:/");
+		    	 final File tmpdir = new File("c:/");
 		    	 try {
 					FileWriter fw = new FileWriter( new File( tmpdir, "tmp.fasta" ) );
 					serifier.writeFasta( seqlist, fw, null );
@@ -2804,19 +2811,30 @@ public class JavaFasta extends JApplet {
 			    	
 			    	ProcessBuilder pb = new ProcessBuilder("muscle.exe", "-in", "tmp.fasta", "-out", "tmpout.fasta");
 			    	pb.directory( tmpdir );
-			    	Process p = pb.start();
-			    	InputStream os = p.getInputStream();
-			    	while( os.read() != -1 ) ;
+			    	final Process p = pb.start();
 			    	
-			    	 serifier.lseq.removeAll( seqlist );
-			    	 
-			    	 FileReader fr = new FileReader( new File( tmpdir, "tmpout.fasta" ) );
-			    	 BufferedReader	br = new BufferedReader( fr );
-			    	 importReader( br );
-			    	 br.close();
-			    	 fr.close();
-			    	 
-			    	 table.tableChanged( new TableModelEvent( table.getModel() ) );
+			    	Thread t = new Thread() {
+			    		public void run() {
+			    			try {
+				    			InputStream os = p.getInputStream();
+						    	while( os.read() != -1 ) ;
+						    	os.close();
+						    	
+						    	serifier.lseq.removeAll( seqlist );
+						    	 
+						    	FileReader fr = new FileReader( new File( tmpdir, "tmpout.fasta" ) );
+						    	BufferedReader	br = new BufferedReader( fr );
+						    	importReader( br );
+						    	br.close();
+						    	fr.close();
+						    	 
+						    	table.tableChanged( new TableModelEvent( table.getModel() ) );
+				    		} catch (IOException e) {
+								e.printStackTrace();
+							}
+			    		}
+			    	};
+			    	t.start();
 		    	 } catch (IOException e) {
 					e.printStackTrace();
 				 }
