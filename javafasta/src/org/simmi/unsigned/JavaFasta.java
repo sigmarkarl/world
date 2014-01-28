@@ -39,6 +39,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
+import java.io.StringReader;
 import java.io.StringWriter;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -69,6 +70,7 @@ import javax.jnlp.FileOpenService;
 import javax.jnlp.FileSaveService;
 import javax.jnlp.ServiceManager;
 import javax.jnlp.UnavailableServiceException;
+import javax.naming.StringRefAddr;
 import javax.swing.AbstractAction;
 import javax.swing.Action;
 import javax.swing.ImageIcon;
@@ -127,6 +129,10 @@ public class JavaFasta extends JApplet {
 	
 	ClipboardService clipboardService;
 	boolean grabFocus;
+	
+	JSplitPane	mainsplit;
+	JSplitPane	splitpane;
+	JSplitPane	overviewsplit;
 
 	public void copyData(Component source) throws IOException {
 		//JTextArea textarea = (JTextArea) source;
@@ -1169,6 +1175,15 @@ public class JavaFasta extends JApplet {
 	
 	public void updateView() {
 		if( table != null ) {
+			SwingUtilities.invokeLater( new Runnable() {
+				@Override
+				public void run() {
+					splitpane.setDividerLocation(0.7);
+					overviewsplit.setDividerLocation(0.7);
+					mainsplit.setDividerLocation(0.7);
+				}
+			});
+			
 			table.tableChanged( new TableModelEvent( table.getModel() ) );
 			atable.tableChanged( new TableModelEvent( atable.getModel() ) );
 			c.updateCoords();
@@ -1931,8 +1946,8 @@ public class JavaFasta extends JApplet {
 			}
 		});
 		
-		JSplitPane	splitpane = new JSplitPane();
-		splitpane.setDividerLocation(0.3);
+		splitpane = new JSplitPane();
+		splitpane.setDividerLocation(0.7);
 		splitpane.setBackground( Color.white );
 		
 		JScrollPane	fastascroll = new JScrollPane( c );
@@ -2023,7 +2038,8 @@ public class JavaFasta extends JApplet {
 					try {
 						System.err.println( table.getSelectedRows().length );
 						
-						if( support.isDataFlavorSupported( ndf ) ) {						
+						DataFlavor[] dfs = support.getDataFlavors();
+						if( support.isDataFlavorSupported( ndf ) ) {					
 							Object obj = support.getTransferable().getTransferData( ndf );
 							ArrayList<Sequence>	seqs = (ArrayList<Sequence>)obj;
 							
@@ -2254,6 +2270,14 @@ public class JavaFasta extends JApplet {
 							
 							System.err.println( charset );
 							importReader( new BufferedReader(new InputStreamReader(is, charset)) );
+							
+							updateView();
+							
+							return true;
+						}  else if( support.isDataFlavorSupported( DataFlavor.stringFlavor ) ) {							
+							Object obj = support.getTransferable().getTransferData( DataFlavor.stringFlavor );
+							String str = (String)obj;
+							importReader( new BufferedReader( new StringReader(str) ) );
 							
 							updateView();
 							
@@ -3880,8 +3904,8 @@ public class JavaFasta extends JApplet {
 		});
 		
 		overview = new Overview();
-		JSplitPane	overviewsplit = new JSplitPane( JSplitPane.VERTICAL_SPLIT );
-		overviewsplit.setDividerLocation(0.3);
+		overviewsplit = new JSplitPane( JSplitPane.VERTICAL_SPLIT );
+		overviewsplit.setDividerLocation(0.7);
 		overviewsplit.setTopComponent( splitpane );
 		overviewsplit.setBottomComponent( overview );
 		
@@ -3911,8 +3935,8 @@ public class JavaFasta extends JApplet {
 		acomp.setLayout( new BorderLayout() );
 		acomp.add( ascroll );
 		acomp.add( asearch, BorderLayout.SOUTH );
-		JSplitPane mainsplit = new JSplitPane( JSplitPane.HORIZONTAL_SPLIT );
-		mainsplit.setDividerLocation(0.3);
+		mainsplit = new JSplitPane( JSplitPane.HORIZONTAL_SPLIT );
+		mainsplit.setDividerLocation(0.7);
 		mainsplit.setLeftComponent( overviewsplit );
 		mainsplit.setRightComponent( acomp );
 		

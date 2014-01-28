@@ -2603,6 +2603,22 @@ public class Serifier {
 			fw.close();
 		}
 		
+		i = arglist.indexOf("-append");
+		if( i >= 0 ) {
+			boolean val = true;
+			String mappingfile = null;
+			if( i+1 < args.length && !args[i+1].startsWith("-") ) {
+				//val = false;
+				mappingfile = args[i+1];
+			}
+			List<Sequences> retlseqs = join( outf, this.sequences, val, mappingfile, false );
+			/*for( Sequences seqs : retlseqs ) {
+				System.err.println( seqs.getName() );
+				appendSequenceInJavaFasta( seqs, null, val);
+			}
+			writeFasta( lseq, new FileWriter( outf ), null);*/
+		}
+		
 		i = arglist.indexOf("-join");
 		if( i >= 0 ) {
 			boolean val = true;
@@ -2611,7 +2627,7 @@ public class Serifier {
 				//val = false;
 				mappingfile = args[i+1];
 			}
-			List<Sequences> retlseqs = join( outf, this.sequences, val, mappingfile );
+			List<Sequences> retlseqs = join( outf, this.sequences, val, mappingfile, true );
 			/*for( Sequences seqs : retlseqs ) {
 				System.err.println( seqs.getName() );
 				appendSequenceInJavaFasta( seqs, null, val);
@@ -3355,7 +3371,7 @@ public class Serifier {
 		}
 	}
 	
-	public List<Sequences> join( File f, List<Sequences> lseqs, boolean simple, String mappingfile ) {
+	public List<Sequences> join( File f, List<Sequences> lseqs, boolean simple, String mappingfile, boolean includeFileName ) {
 		List<Sequences>	retlseq = new ArrayList<Sequences>();
 		
 		initMaps();
@@ -3391,7 +3407,7 @@ public class Serifier {
 				//if( joinname == null ) joinname = s.getName();
 				//else joinname += "_"+s.getName();
 				
-				File inf = new File( new URI(s.getPath()) );
+				File inf = new File( new URI( s.getPath()) );
 				BufferedReader br = new BufferedReader( new FileReader(inf) );
 				String line = br.readLine();
 				while( line != null ) {
@@ -3402,7 +3418,7 @@ public class Serifier {
 							if( ftagmap.containsKey(s.getName()) ) fw.write( ftagmap.get(s.getName())+line+"\n" );
 							else fw.write( "simmi"+line+"\n" );
 						} else if( simple ) {
-							line = line.replace( ">", ">"+s.getName().replace(".fna", "")+"_" );
+							if( includeFileName ) line = line.replace( ">", ">"+s.getName().replace(".fna", "")+"_" );
 							fw.write( line+"\n" );
 						} else {
 							int pe = line.indexOf('%');
@@ -3442,6 +3458,8 @@ public class Serifier {
 				br.close();
 			}
 			fw.close();
+			
+			System.err.println( nseq );
 			
 			Sequences seqs = new Sequences( "", joinname, seqtype, f.toURI().toString(), nseq );
 			retlseq.add( seqs );
