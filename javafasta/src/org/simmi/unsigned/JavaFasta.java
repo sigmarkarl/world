@@ -2835,13 +2835,20 @@ public class JavaFasta extends JApplet {
 			    	
 			    	ProcessBuilder pb = new ProcessBuilder("muscle.exe", "-in", "tmp.fasta", "-out", "tmpout.fasta");
 			    	pb.directory( tmpdir );
+			    	pb.redirectErrorStream(true);
 			    	final Process p = pb.start();
 			    	
 			    	Thread t = new Thread() {
 			    		public void run() {
 			    			try {
 				    			InputStream os = p.getInputStream();
-						    	while( os.read() != -1 ) ;
+				    			ByteArrayOutputStream	baos = new ByteArrayOutputStream();
+				    			int r = os.read();
+						    	while( r != -1 ) {
+						    		baos.write( r );
+						    		r = os.read();
+						    	}
+						    	System.out.println( baos.toString() );
 						    	os.close();
 						    	
 						    	serifier.lseq.removeAll( seqlist );
