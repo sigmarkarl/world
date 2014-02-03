@@ -1,7 +1,9 @@
 package org.simmi.shared;
 
+import java.nio.file.Path;
+
 public class Sequences implements Comparable<Sequences> {
-	public Sequences( String user, String name, String type, String path, int nseq ) {
+	public Sequences( String user, String name, String type, Path path, int nseq ) {
 		this.user = user;
 		this.name = name;
 		this.type = type;
@@ -21,7 +23,7 @@ public class Sequences implements Comparable<Sequences> {
 		return user;
 	}
 	
-	public String getPath() {
+	public Path getPath() {
 		return path;
 	}
 	
@@ -44,7 +46,7 @@ public class Sequences implements Comparable<Sequences> {
 	public String user;
 	public String name;
 	public String type;
-	public String path;
+	public Path 	path;
 	public Integer nseq;
 	public String _key;
 	

@@ -21,6 +21,10 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -135,10 +139,7 @@ public class Serifier {
 	public void genbankFromNR( Sequences s, File blastFile, File genbankOut, boolean gbk ) throws IOException {
 		Map<String,List<Anno>>	mapan = new HashMap<String,List<Anno>>();
 		
-		URL url = new URL( s.getPath() );
-		InputStream is = url.openStream();
-		InputStreamReader	isr = new InputStreamReader(is);
-		BufferedReader	br = new BufferedReader( isr );
+		BufferedReader	br = Files.newBufferedReader( s.getPath(), Charset.defaultCharset() );
 		Map<String,StringBuilder>	seqmap = new TreeMap<String,StringBuilder>();
 		StringBuilder	sb = null;
 		String			name = null;
@@ -355,10 +356,7 @@ public class Serifier {
 	}
 	
 	public void genbankFromBlast( Sequences s, File blastFile, File genbankOut ) throws IOException {
-		URL url = new URL( s.getPath() );
-		InputStream is = url.openStream();
-		InputStreamReader	isr = new InputStreamReader(is);
-		BufferedReader	br = new BufferedReader( isr );
+		BufferedReader	br = Files.newBufferedReader(s.getPath(), Charset.defaultCharset());
 		Map<String,StringBuilder>	seqmap = new TreeMap<String,StringBuilder>();
 		StringBuilder	sb = null;
 		String			name = null;
@@ -599,14 +597,13 @@ public class Serifier {
 		}
 	}
 	
-	public Map<String,StringBuilder> concat( List<Reader>  lrd ) throws IOException {
+	public Map<String,StringBuilder> concat( List<BufferedReader>  lrd ) throws IOException {
 		final Map<String,StringBuilder>	seqmap = new HashMap<String,StringBuilder>();
 		
-		for( Reader rd : lrd ) {
+		for( BufferedReader br : lrd ) {
 			//URL url = new URL( path );
 			StringBuilder	sb = null;
 			//InputStream is = url.openStream();
-			BufferedReader	br = new BufferedReader( rd );
 			String line = br.readLine();
 			while( line != null ) {
 				if( line.startsWith(">") ) {
@@ -1183,8 +1180,8 @@ public class Serifier {
 		List<Sequences>	retlseq = new ArrayList<Sequences>();
 		
 		try {
-			File inf = new File( new URI(seqs.getPath() ) );
-			String name = inf.getName();
+			//File inf = new File( new URI(seqs.getPath() ) );
+			String name = seqs.getPath().getFileName().toString();
 			int ind = name.lastIndexOf('.');
 			
 			String sff = name;
@@ -1199,8 +1196,7 @@ public class Serifier {
 			int i = 0;
 			FileWriter 		fw = null;
 			File			of = null;
-			FileReader 		fr = new FileReader( inf );
-			BufferedReader 	br = new BufferedReader( fr );
+			BufferedReader	br = Files.newBufferedReader(seqs.getPath(), Charset.defaultCharset());
 			String line = br.readLine();
 			while( line != null ) {
 				if( line.startsWith(">") ) {
@@ -1213,7 +1209,7 @@ public class Serifier {
 								ind = name.lastIndexOf('.');
 								name = name.substring(0,ind);
 								//addSequences(name, seqs.getType(), of.toURI().toString(), spin);
-								Sequences nseqs = new Sequences( "", name, seqs.getType(), of.toURI().toString(), spin );
+								Sequences nseqs = new Sequences( "", name, seqs.getType(), of.toPath(), spin );
 								nseqs.setKey( "" );
 								retlseq.add( nseqs );
 							//}
@@ -1235,13 +1231,11 @@ public class Serifier {
 					ind = name.lastIndexOf('.');
 					name = name.substring(0,ind);
 					//addSequences(name, seqs.getType(), of.toURI().toString(), i%spin);
-					Sequences nseqs = new Sequences( "", name, seqs.getType(), of.toURI().toString(), spin );
+					Sequences nseqs = new Sequences( "", name, seqs.getType(), of.toPath(), spin );
 					nseqs.setKey( "" );
 					retlseq.add( nseqs );
 				//}
 			}
-		} catch (URISyntaxException e1) {
-			e1.printStackTrace();
 		} catch (FileNotFoundException e1) {
 			e1.printStackTrace();
 		} catch (IOException e1) {
@@ -1448,8 +1442,8 @@ public class Serifier {
 	public Sequences blastRename( Sequences seqs, String s, File f, boolean includeLen ) {
 		Sequences ret = null;
 		try {
-			URI uri = new URI( seqs.getPath() );
-			InputStream is = uri.toURL().openStream();
+			//URI uri = new URI( seqs.getPath() );
+			InputStream is = Files.newInputStream( seqs.getPath(), StandardOpenOption.READ);
 			
 			if( seqs.getPath().endsWith(".gz") ) {
 				is = new GZIPInputStream( is );
@@ -1465,11 +1459,9 @@ public class Serifier {
 			//String[] filter = { "Thermus", "Meiothermus" };
 			int nseq = doMapHitStuff( nameHitMap, is, new FileOutputStream(f), ";", null ); //Arrays.asList(filter) );
 			
-			ret = new Sequences( "", f.getName(), seqs.getType(), f.toURI().toString(), nseq );
+			ret = new Sequences( "", f.getName(), seqs.getType(), f.toPath(), nseq );
 			//if( sapplet != null ) sapplet.addSequences( f.getName(), seqs.getType(), f.toURI().toString(), nseq );
 			//else addSequences( f.getName(), seqs.getType(), f.toURI().toString(), nseq );
-		} catch (URISyntaxException e1) {
-			e1.printStackTrace();
 		} catch (IOException e1) {
 			e1.printStackTrace();
 		}
@@ -1480,8 +1472,7 @@ public class Serifier {
 	public Sequences filtit( int nspin, Sequences seqs, File dir ) {
 		Sequences ret = null;
 		try {
-			File inf = new File( new URI(seqs.getPath() ) );
-			String name = inf.getName();
+			String name = seqs.getPath().getFileName().toString();
 			int ind = name.lastIndexOf('.');
 			
 			String sff = name;
@@ -1499,9 +1490,8 @@ public class Serifier {
 			
 			File			of = dir.isDirectory() ? new File( dir, sff + "_lenfilt." + sf2 ) : dir;
 			FileWriter 		fw = new FileWriter( of );
-			
-			FileReader 		fr = new FileReader( inf );
-			BufferedReader 	br = new BufferedReader( fr );
+					
+			BufferedReader 	br = Files.newBufferedReader( seqs.getPath(), Charset.defaultCharset());
 			String line = br.readLine();
 			while( line != null ) {
 				if( line.startsWith(">") ) {
@@ -1525,7 +1515,7 @@ public class Serifier {
 				name = of.getName();
 				ind = name.lastIndexOf('.');
 				name = name.substring(0,ind);
-				Sequences nseqs = new Sequences( "", name, seqs.getType(), of.toURI().toString(), i );
+				Sequences nseqs = new Sequences( "", name, seqs.getType(), of.toPath(), i );
 				ret = nseqs;
 				/*if( applet != null ) {
 					name = of.getName();
@@ -1534,8 +1524,6 @@ public class Serifier {
 					applet.addSequences(name, seqs.getType(), of.toURI().toString(), i);
 				}*/
 			}									
-		} catch (URISyntaxException e1) {
-			e1.printStackTrace();
 		} catch (FileNotFoundException e1) {
 			e1.printStackTrace();
 		} catch (IOException e1) {
@@ -1549,7 +1537,7 @@ public class Serifier {
 		sequences.add( seqs );
 	}
 	
-	public void addSequences( String name, String type, String path, int nseq ) {
+	public void addSequences( String name, String type, Path path, int nseq ) {
 		Sequences seqs = new Sequences( "", name, type, path, nseq );
 		seqs.setKey( "" );
 		addSequences( seqs );
@@ -1575,8 +1563,8 @@ public class Serifier {
 		StringBuilder	dna = new StringBuilder();
 		//Map<String,String>	idmap = new HashMap<String,String>();
 		try {
-			File inf = new File( new URI(seqs.getPath()) );
-			BufferedReader br = new BufferedReader( new FileReader(inf) );
+			//File inf = new File( new URI(seqs.getPath()) );
+			BufferedReader br = Files.newBufferedReader( seqs.getPath(), Charset.defaultCharset() );
 			String cont = null;
 			String line = br.readLine();
 			while( line != null ) {
@@ -1621,8 +1609,6 @@ public class Serifier {
 				if( contset != null ) contset.put(cont, seq);
 			}
 			br.close();
-		} catch (URISyntaxException e1) {
-			e1.printStackTrace();
 		} catch (IOException e1) {
 			e1.printStackTrace();
 		}
@@ -1744,27 +1730,23 @@ public class Serifier {
 			nameReplace(" ", "_");
 			removeGaps( lseq );
 			
-			String path = seqs.getPath();
-			int i = path.lastIndexOf('.');
-			if( i == -1 ) path += "_fixed";
-			else path = path.substring(0,i)+".fixed"+path.substring(i);
+			Path path = seqs.getPath();
+			String pathstr = path.toString();
+			int i = pathstr.lastIndexOf('.');
+			if( i == -1 ) pathstr += "_fixed";
+			else pathstr = pathstr.substring(0,i)+".fixed"+pathstr.substring(i);
 			
-			i = path.lastIndexOf('/');
-			String fname = path.substring(i+1);
+			i = pathstr.lastIndexOf('/');
+			String fname = pathstr.substring(i+1);
 			
 			try {
-				URI uri = new URI( path );
-				//URL url = uri.toURL();
-				File f = new File( uri );
-				FileWriter osw = new FileWriter( f );
+				Writer osw = Files.newBufferedWriter(path, Charset.defaultCharset(), StandardOpenOption.WRITE);
 				//OutputStreamWriter osw = new OutputStreamWriter( url.openConnection().getOutputStream() );
 				writeFasta( lseq, osw, null );
 				osw.close();
 				
 				retlseq.add( new Sequences("", fname, "", path, 0) );
 				//sapplet.addSequences( fname, path );
-			} catch(URISyntaxException e1) {
-				e1.printStackTrace();
 			} catch(MalformedURLException e1) {
 				e1.printStackTrace();
 			} catch(IOException e1) {
@@ -1950,7 +1932,7 @@ public class Serifier {
 				String next = args[i];
 				if( !next.startsWith("-") ) {
 					inf = new File( next );
-					Sequences seqs = new Sequences( "", inf.getName(), "nucl", inf.toURI().toString(), 0 );
+					Sequences seqs = new Sequences( "", inf.getName(), "nucl", inf.toPath(), 0 );
 					addSequences( seqs );
 				} else break;
 			}
@@ -2258,10 +2240,7 @@ public class Serifier {
 			Map<String,Map<String,Integer>>	mset = new HashMap<String,Map<String,Integer>>();
 			Set<String>				allset = new HashSet<String>();
 			for( Sequences seqs : this.sequences ) {
-				URI uri = new URI(seqs.path);
-				File f = new File( uri );
-				FileReader fr = new FileReader( f );
-				BufferedReader br = new BufferedReader( fr );
+				BufferedReader br = Files.newBufferedReader(seqs.getPath(), Charset.defaultCharset());
 				String line = br.readLine();
 				while( line != null ) {
 					if( line.startsWith(">") ) {
@@ -2299,7 +2278,6 @@ public class Serifier {
 					line = br.readLine();
 				}
 				br.close();
-				fr.close();
 				
 				sec <<= 1;
 			}
@@ -2435,11 +2413,7 @@ public class Serifier {
 		i = arglist.indexOf("-appendfilename");
 		if( i >= 0 ) {
 			for( Sequences seqs : this.sequences ) {
-				URI uri = new URI(seqs.path);
-				
-				File f = new File( uri );
-				FileReader fr = new FileReader( f );
-				String fname = f.getName();
+				String fname = seqs.getPath().getFileName().toString();
 				
 				File of = new File( outf, fname );
 				int k = fname.lastIndexOf('.');
@@ -2448,7 +2422,7 @@ public class Serifier {
 				
 				FileWriter fw = new FileWriter( of );
 				
-				BufferedReader br = new BufferedReader( fr );
+				BufferedReader br = Files.newBufferedReader( seqs.getPath(), Charset.defaultCharset() );
 				String line = br.readLine();
 				while( line != null ) {
 					if( line.startsWith(">") ) {
@@ -2458,7 +2432,6 @@ public class Serifier {
 					line = br.readLine();
 				}
 				br.close();
-				fr.close();
 				fw.close();
 			}
 			
@@ -2655,11 +2628,10 @@ public class Serifier {
 			int cnum = Integer.parseInt( args[i+1] );
 			Random r = new Random();
 			for( int l = 0; l < 1000; l++ ) {
-				List<Reader>	lrd = new ArrayList<Reader>();
+				List<BufferedReader>	lrd = new ArrayList<BufferedReader>();
 				for( int k = 0; k < cnum; k++ ) {
 					Sequences seqs = this.sequences.get( r.nextInt( this.sequences.size() ) );
-					URL url = new URL( seqs.getPath() );
-					lrd.add( new InputStreamReader( url.openStream() ) );
+					lrd.add( Files.newBufferedReader(seqs.getPath(), Charset.defaultCharset()) );
 				}
 				Map<String,StringBuilder> smap = concat( lrd );
 				
@@ -2677,10 +2649,9 @@ public class Serifier {
 		
 		i = arglist.indexOf("-conc");
 		if( i >= 0 ) {
-			List<Reader>	lrds = new ArrayList<Reader>();
+			List<BufferedReader>	lrds = new ArrayList<BufferedReader>();
 			for( Sequences seqs : this.sequences ) {
-				URL url = new URL( seqs.getPath() );
-				lrds.add( new InputStreamReader( url.openStream() ) );
+				lrds.add( Files.newBufferedReader( seqs.getPath(), Charset.defaultCharset()) );
 			}
 			Map<String,StringBuilder> smap = concat( lrds );
 			
@@ -3407,8 +3378,7 @@ public class Serifier {
 				//if( joinname == null ) joinname = s.getName();
 				//else joinname += "_"+s.getName();
 				
-				File inf = new File( new URI( s.getPath()) );
-				BufferedReader br = new BufferedReader( new FileReader(inf) );
+				BufferedReader br = Files.newBufferedReader(s.getPath(), Charset.defaultCharset());
 				String line = br.readLine();
 				while( line != null ) {
 					if( line.startsWith(">") ) {
@@ -3461,12 +3431,10 @@ public class Serifier {
 			
 			System.err.println( nseq );
 			
-			Sequences seqs = new Sequences( "", joinname, seqtype, f.toURI().toString(), nseq );
+			Sequences seqs = new Sequences( "", joinname, seqtype, f.toPath(), nseq );
 			retlseq.add( seqs );
 			//SerifyApplet.this.addSequences( joinname, seqtype, f.toURI().toString(), nseq );
 		} catch (IOException e1) {
-			e1.printStackTrace();
-		} catch (URISyntaxException e1) {
 			e1.printStackTrace();
 		}
 		

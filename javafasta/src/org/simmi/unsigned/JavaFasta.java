@@ -1896,7 +1896,7 @@ public class JavaFasta extends JApplet {
 
 			@Override
 			public boolean isCellEditable(int rowIndex, int columnIndex) {
-				return false;
+				return columnIndex == 0;
 			}
 
 			@Override
@@ -1928,7 +1928,10 @@ public class JavaFasta extends JApplet {
 			}
 
 			@Override
-			public void setValueAt(Object aValue, int rowIndex, int columnIndex) {}
+			public void setValueAt(Object aValue, int rowIndex, int columnIndex) {
+				Sequence seq = serifier.lseq.get( rowIndex );
+				seq.setName( aValue.toString() );
+			}
 
 			@Override
 			public void addTableModelListener(TableModelListener l) {}
