@@ -1993,6 +1993,34 @@ public class Serifier {
 			fw.close();
 		}
 		
+		i = arglist.indexOf("-replace");
+		if( i >= 0 ) {
+			String mappingfile = args[i+1];
+			
+			Map<String,String>	mapping = new HashMap<String,String>();
+			if( args.length > i+2 ) mapping.put( mappingfile, args[i+2] );
+			else mapping.put( mappingfile, "" );
+			
+			FileWriter fw = new FileWriter( outf );
+			FileReader fr = new FileReader( inf );
+			BufferedReader br = new BufferedReader( fr );
+			String line = br.readLine();
+			while( line != null ) {
+				for( String map : mapping.keySet() ) {
+					if( map.equals("\n") ) {
+						String val = mapping.get(map);
+						val = val.substring(0, val.length()-1);
+						line = line + val;
+					} else line = line.replace( map, mapping.get(map) );
+				}
+				fw.write( line+"\n" );
+				line = br.readLine();
+			}
+			br.close();
+			fr.close();
+			fw.close();
+		}
+		
 		// matrix med location vs species count ur fasta file
 		i = arglist.indexOf("-ermat");
 		if( i >= 0 ) {
