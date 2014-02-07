@@ -1654,7 +1654,7 @@ public class Serifier {
 				len++;
 				for( Sequence seq : seqlist ) {
 					char c2 = seq.charAt(i+len); //getCharAt(i, r);
-					if( c2 != '.' && c2 != '-' && c2 != ' ' ) {
+					if( c2 != '.' && c2 != '-' && c2 != ' ' && c2 != 'X' && c2 != 'x' ) {
 						rem = false;
 						break;
 					}

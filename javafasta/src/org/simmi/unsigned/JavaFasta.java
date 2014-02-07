@@ -1175,14 +1175,14 @@ public class JavaFasta extends JApplet {
 	
 	public void updateView() {
 		if( table != null ) {
-			SwingUtilities.invokeLater( new Runnable() {
+			/*SwingUtilities.invokeLater( new Runnable() {
 				@Override
 				public void run() {
 					splitpane.setDividerLocation(0.7);
 					overviewsplit.setDividerLocation(0.7);
 					mainsplit.setDividerLocation(0.7);
 				}
-			});
+			});*/
 			
 			table.tableChanged( new TableModelEvent( table.getModel() ) );
 			atable.tableChanged( new TableModelEvent( atable.getModel() ) );
