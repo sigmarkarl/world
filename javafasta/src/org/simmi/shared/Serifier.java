@@ -2612,7 +2612,7 @@ public class Serifier {
 				//val = false;
 				mappingfile = args[i+1];
 			}
-			List<Sequences> retlseqs = join( outf, this.sequences, val, mappingfile, false );
+			List<Sequences> retlseqs = join( outf.toPath(), this.sequences, val, mappingfile, false );
 			/*for( Sequences seqs : retlseqs ) {
 				System.err.println( seqs.getName() );
 				appendSequenceInJavaFasta( seqs, null, val);
@@ -2628,7 +2628,7 @@ public class Serifier {
 				//val = false;
 				mappingfile = args[i+1];
 			}
-			List<Sequences> retlseqs = join( outf, this.sequences, val, mappingfile, true );
+			List<Sequences> retlseqs = join( outf.toPath(), this.sequences, val, mappingfile, true );
 			/*for( Sequences seqs : retlseqs ) {
 				System.err.println( seqs.getName() );
 				appendSequenceInJavaFasta( seqs, null, val);
@@ -3370,7 +3370,7 @@ public class Serifier {
 		}
 	}
 	
-	public List<Sequences> join( File f, List<Sequences> lseqs, boolean simple, String mappingfile, boolean includeFileName ) {
+	public List<Sequences> join( Path dest, List<Sequences> lseqs, boolean simple, String mappingfile, boolean includeFileName ) {
 		List<Sequences>	retlseq = new ArrayList<Sequences>();
 		
 		initMaps();
@@ -3397,9 +3397,10 @@ public class Serifier {
 				fr.close();
 			}
 			
-			FileWriter fw = new FileWriter( f );
+			//FileWriter fw = new FileWriter( f );
+			Writer fw = Files.newBufferedWriter(dest);
 			String seqtype = "nucl";
-			String joinname = f.getName();
+			String joinname = dest.getFileName().toString();
 			int nseq = 0;
 			for( Sequences s : lseqs ) {					
 				seqtype = s.getType();
@@ -3459,7 +3460,7 @@ public class Serifier {
 			
 			System.err.println( nseq );
 			
-			Sequences seqs = new Sequences( "", joinname, seqtype, f.toPath(), nseq );
+			Sequences seqs = new Sequences( "", joinname, seqtype, dest, nseq );
 			retlseq.add( seqs );
 			//SerifyApplet.this.addSequences( joinname, seqtype, f.toURI().toString(), nseq );
 		} catch (IOException e1) {
