@@ -137,6 +137,8 @@ public class JavaFasta extends JApplet {
 	public void copyData(Component source) throws IOException {
 		//JTextArea textarea = (JTextArea) source;
 		//String s = textarea.getText();
+		boolean fasta = false;
+		
 		ByteArrayOutputStream	baos = new ByteArrayOutputStream();
 		OutputStreamWriter osw = new OutputStreamWriter( baos );
 		
@@ -146,7 +148,19 @@ public class JavaFasta extends JApplet {
 			int i = table.convertRowIndexToModel(r);
 			selseqs.add( serifier.lseq.get(i) );
 		}
-		serifier.writeFasta(selseqs, osw, null);
+		if( fasta ) serifier.writeFasta(selseqs, osw, null);
+		else {
+			for( Sequence seq : selseqs ) {
+				int val = 0;
+		   		int end = seq.length();
+		   		 
+		   		if( val <= end ) osw.write( seq.name + "\t" + seq.sb + "\n" );
+		   		/*while( val < end ) {
+		   			 osw.write( seq.sb.substring(val, Math.min( end, val+70 )) + "\n" );
+		   			 val += 70;
+		   		}*/
+			}
+		}
 		osw.close();
 		baos.close();
 

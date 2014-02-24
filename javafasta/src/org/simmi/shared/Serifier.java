@@ -2,6 +2,7 @@ package org.simmi.shared;
 
 import java.awt.Rectangle;
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -13,17 +14,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.io.OutputStreamWriter;
 import java.io.PrintStream;
-import java.io.Reader;
 import java.io.Writer;
 import java.net.MalformedURLException;
-import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -676,8 +674,8 @@ public class Serifier {
 		this.consensus = seq;
 	}
 	
-	private void writeSimplifiedCluster( OutputStream os, Map<Set<String>,Set<Map<String,Set<String>>>>	clusterMap ) throws IOException {
-		OutputStreamWriter	fos = new OutputStreamWriter( os );
+	private void writeSimplifiedCluster( BufferedWriter fos, Map<Set<String>,Set<Map<String,Set<String>>>>	clusterMap ) throws IOException {
+		//OutputStreamWriter	fos = new OutputStreamWriter( os );
 		for( Set<String> set : clusterMap.keySet() ) {
 			Set<Map<String,Set<String>>>	mapset = clusterMap.get( set );
 			fos.write( set.toString()+"\n" );
@@ -701,36 +699,41 @@ public class Serifier {
 		for( Set<String>	t : total ) {
 			Set<String>	teg = new HashSet<String>();
 			for( String et : t ) {
-				String e = mseq.get( et ).name;
-				int ind = e.indexOf('[');
-				//if( e.contains("_JL2_") ) ind = e.indexOf('_', ind+1);
-				
-				if( ind != -1 ) {
-					int ind2 = e.indexOf(']', ind+1);
-					String str = e.substring( ind+1, ind2 );
-					
-					int uid = str.indexOf("uid");
-					int nuid = uid != -1 ? str.indexOf('_', uid) : str.length();
-					if( nuid == -1 ) nuid = str.length();
-					
-					int c = str.indexOf("contig");
-					if( c == -1 ) c = str.indexOf("scaffold");
-					if( c == -1 ) c = str.length()+1;
-					/*if( joinmap.containsKey( str ) ) {
-						str = joinmap.get(str);
-					}*/
-					
-					String tegstr = str.substring( 0, Math.min( c-1, nuid ) );
-					teg.add( tegstr );
-					
-					species.add( tegstr );
+				Sequence seq = mseq.get( et );
+				if( seq == null ) {
+					System.err.println(et);
 				} else {
-					ind = e.indexOf("contig");
-					if( ind == -1 ) ind = e.indexOf("scaffold");
-					String tegstr = e.substring(0, ind-1);
-					teg.add( tegstr );
+					String e = seq.name;
+					int ind = e.indexOf('[');
+					//if( e.contains("_JL2_") ) ind = e.indexOf('_', ind+1);
 					
-					species.add( tegstr );
+					if( ind != -1 ) {
+						int ind2 = e.indexOf(']', ind+1);
+						String str = e.substring( ind+1, ind2 );
+						
+						int uid = str.indexOf("uid");
+						int nuid = uid != -1 ? str.indexOf('_', uid) : str.length();
+						if( nuid == -1 ) nuid = str.length();
+						
+						int c = str.indexOf("contig");
+						if( c == -1 ) c = str.indexOf("scaffold");
+						if( c == -1 ) c = str.length()+1;
+						/*if( joinmap.containsKey( str ) ) {
+							str = joinmap.get(str);
+						}*/
+						
+						String tegstr = str.substring( 0, Math.min( c-1, nuid ) );
+						teg.add( tegstr );
+						
+						species.add( tegstr );
+					} else {
+						ind = e.indexOf("contig");
+						if( ind == -1 ) ind = e.indexOf("scaffold");
+						String tegstr = e.substring(0, ind-1);
+						teg.add( tegstr );
+						
+						species.add( tegstr );
+					}
 				}
 			}
 			
@@ -746,53 +749,56 @@ public class Serifier {
 			setmap.add( submap );
 			
 			for( String et : t ) {
-				String e = mseq.get( et ).name;
-				String tegstr;
-				int ind = e.indexOf('[');
-				//if( e.contains("_JL2_") ) ind = e.indexOf('_', ind+1);
-				
-				if( ind != -1 ) {
-					int ind2 = e.indexOf(']', ind+1);
-					String str = e.substring( ind+1, ind2 );
+				Sequence seq = mseq.get( et );
+				if( seq != null ) {
+					String e = seq.name;
+					String tegstr;
+					int ind = e.indexOf('[');
+					//if( e.contains("_JL2_") ) ind = e.indexOf('_', ind+1);
 					
-					int uid = str.indexOf("uid");
-					int nuid = uid != -1 ? str.indexOf('_', uid) : str.length();
-					if( nuid == -1 ) nuid = str.length();
+					if( ind != -1 ) {
+						int ind2 = e.indexOf(']', ind+1);
+						String str = e.substring( ind+1, ind2 );
+						
+						int uid = str.indexOf("uid");
+						int nuid = uid != -1 ? str.indexOf('_', uid) : str.length();
+						if( nuid == -1 ) nuid = str.length();
+						
+						int c = str.indexOf("contig");
+						if( c == -1 ) c = str.indexOf("scaffold");
+						if( c == -1 ) c = str.length()+1;
+						
+						tegstr = str.substring( 0, Math.min( c-1, nuid) );
+					} else {
+						ind = e.indexOf("contig");
+						if( ind == -1 ) ind = e.indexOf("scaffold");
+						tegstr = e.substring(0, ind-1);
+					}
 					
-					int c = str.indexOf("contig");
-					if( c == -1 ) c = str.indexOf("scaffold");
-					if( c == -1 ) c = str.length()+1;
-					
-					tegstr = str.substring( 0, Math.min( c-1, nuid) );
-				} else {
-					ind = e.indexOf("contig");
-					if( ind == -1 ) ind = e.indexOf("scaffold");
-					tegstr = e.substring(0, ind-1);
+					Set<String>	set;
+					if( submap.containsKey( tegstr ) ) {
+						set = submap.get(tegstr);
+					} else {
+						set = new HashSet<String>();
+						submap.put( tegstr, set );
+					}
+					set.add( e );
 				}
-				
-				Set<String>	set;
-				if( submap.containsKey( tegstr ) ) {
-					set = submap.get(tegstr);
-				} else {
-					set = new HashSet<String>();
-					submap.put( tegstr, set );
-				}
-				set.add( e );
 			}
 		}
 		
 		return clusterMap;
 	}
 	
-	private void writeClusters( OutputStream os, List<Set<String>> cluster ) throws IOException {
-		OutputStreamWriter	fos = new OutputStreamWriter( os );
+	private void writeClusters( BufferedWriter fos, List<Set<String>> cluster ) throws IOException {
+		//OutputStreamWriter	fos = new OutputStreamWriter( os );
 		for( Set<String> set : cluster ) {
 			fos.write( set.toString()+"\n" );
 		}
 		fos.close();
 	}
 	
-	public void writeSequence( Sequence seq, FileWriter fw ) throws IOException {
+	public void writeSequence( Sequence seq, BufferedWriter fw ) throws IOException {
 		fw.write(">"+seq.name+"\n");
 		for( int k = 0; k < seq.sb.length(); k+=70 ) {
 			int m = Math.min(seq.sb.length(), k+70);
@@ -802,24 +808,26 @@ public class Serifier {
 		}
 	}
 	
-	public List<Set<String>> makeBlastCluster( final File osf, final String blastfile, int clustermap ) throws IOException {
-		InputStream fis = new FileInputStream( blastfile );
-		InputStream is;
-		if( blastfile.endsWith(".gz") ) {
-			is = new GZIPInputStream( fis );
+	public List<Set<String>> makeBlastCluster( final Path osf, final Path blastfile, int clustermap ) throws IOException {
+		//InputStream fis = new FileInputStream( blastfile );
+		BufferedReader is;
+		if( blastfile.getFileName().toString().endsWith(".gz") ) {
+			is = new BufferedReader( new InputStreamReader( new GZIPInputStream( Files.newInputStream(blastfile) ) ) );
 		} else {
-			is = fis;
+			is = Files.newBufferedReader(blastfile);
 		}
 		
-		FileOutputStream fos;
-		if( osf.isDirectory() ) {
-			Sequences seqs = sequences.get(0);
-			appendSequenceInJavaFasta( seqs, null, true );
+		BufferedWriter fos;
+		if( Files.isDirectory(osf) ) {
+			if( sequences.size() > 0 ) {
+				Sequences seqs = sequences.get(0);
+				appendSequenceInJavaFasta( seqs, null, true );
+				
+				System.err.println(mseq.size());
+			}
 			
-			System.err.println(mseq.size());
-			
-			fos = new FileOutputStream( new File( osf, "cluster.txt" ) );
-		} else fos = new FileOutputStream( osf );
+			fos = Files.newBufferedWriter( osf.resolve( "clusters.txt" ) );
+		} else fos = Files.newBufferedWriter( osf );
 		
 		/*for( String str : mseq.keySet() ) {
 			if( str.contains("scotoductus1572_scaffold00003_4 ") ) {
@@ -827,8 +835,8 @@ public class Serifier {
 			}
 		}*/
 		
-		List<Set<String>> total = makeBlastCluster( is, fos, clustermap);
-		fis.close();
+		List<Set<String>> total = makeBlastCluster( is, fos, clustermap );
+		is.close();
 		
 		//scotoductus1572_scaffold00003_4 # 2808 # 3941 # -1 # ID=3_4;partial=00;start_type=GTG;rbs_motif=None;rbs_spacer=None;gc_cont=0.959
 		//scotoductus1572_scaffold00003_4 # 2808 # 3941 # -1 #ID=3_4;partial=00;start_type=GTG;rbs_motif=None;rbs_spacer=None;gc_cont=0.959
@@ -858,13 +866,13 @@ public class Serifier {
 				}*/
 			}
 			
-			File of = new File( osf, name+".fna" );
+			Path of = osf.resolve(name+".aa"); //new File( osf, name+".fna" );
 			
 			/*if( name.startsWith("YP_007881477.1") ) {
 				System.err.println();
 			}*/
 			
-			FileWriter fw = new FileWriter( of );
+			BufferedWriter fw = Files.newBufferedWriter(of); //new FileWriter( of );
 			for( String str : strset ) {
 				/*if( str.startsWith("YP_007881477.1") ) {
 					for( String erm : mseq.keySet() ) {
@@ -896,13 +904,13 @@ public class Serifier {
 		return total;
 	}
 	
-	public List<Set<String>> makeBlastCluster( final InputStream is, final OutputStream fos, int clustermap ) {
+	public List<Set<String>> makeBlastCluster( final BufferedReader is, final BufferedWriter fos, int clustermap ) {
 		List<Set<String>>	total = new ArrayList<Set<String>>();
 		try {		
 			if( clustermap%2 == 0 ) {
 				joinBlastSets( is, null, true, total, 0.0 );
 			} else {
-				joinBlastSetsThermus( is, "/home/sigmar/check.txt", true, total );
+				joinBlastSetsThermus( is, Paths.get("/Users/sigmar/check.txt"), true, total );
 			}
 			is.close();
 			
@@ -989,18 +997,18 @@ public class Serifier {
 		}*/
 	}
 	
-	public void joinBlastSetsThermus( InputStream is, String write, boolean union, List<Set<String>> total ) throws IOException {		
+	public void joinBlastSetsThermus( BufferedReader br, Path write, boolean union, List<Set<String>> total ) throws IOException {		
 		//File file = null;
-		FileWriter fw = null;
+		BufferedWriter fw = null;
 		if( write != null ) {
-			File file = new File( write );
-			if( file.isDirectory() ) {
-				fw = new FileWriter( new File( file, "clusters.txt" ) );
+			//File file = new File( write );
+			if( Files.isDirectory(write) ) {
+				fw = Files.newBufferedWriter( write.resolve("clusters.txt" ) );
 			} else {
-				fw = new FileWriter( file ); //new FileWriter("/home/sigmar/blastcluster.txt");
+				fw = Files.newBufferedWriter(write); //new FileWriter("/home/sigmar/blastcluster.txt");
 			}
 		}
-		BufferedReader	br = new BufferedReader( new InputStreamReader( is ) );
+		//BufferedReader	br = new BufferedReader( new InputStreamReader( is ) );
 		
 		Set<String>	all = null;
 		String line = br.readLine();
@@ -1027,6 +1035,13 @@ public class Serifier {
 				int i = trim.indexOf(' ');
 				if( i == -1 ) i = trim.length();
 				String astr = trim.substring(0, i);
+				
+				if( astr.contains("..") ) {
+					int k = trim.indexOf('[');
+					int u = trim.indexOf(']', k+1);
+					astr = trim.substring(k+1,u)+"_"+astr;
+				}
+				
 				all.add( astr );
 			} else if( line.startsWith("Sequences prod") ) {
 				line = br.readLine();
@@ -1127,9 +1142,9 @@ public class Serifier {
 		}*/
 	}
 	
-	public void joinBlastSets( InputStream is, String write, boolean union, List<Set<String>> total, double evalue ) throws IOException {
+	public void joinBlastSets( BufferedReader br, String write, boolean union, List<Set<String>> total, double evalue ) throws IOException {
 		FileWriter fw = write == null ? null : new FileWriter( write ); //new FileWriter("/home/sigmar/blastcluster.txt");
-		BufferedReader	br = new BufferedReader( new InputStreamReader( is ) );
+		//BufferedReader	br = new BufferedReader( new InputStreamReader( is ) );
 		
 		String line = br.readLine();
 		int cnt = 0;
@@ -2720,7 +2735,7 @@ public class Serifier {
 			String blastfile = args[i+1];
 			int splnum = Integer.parseInt( args[i+2] );
 			
-			makeBlastCluster( /*inf,*/ outf, blastfile, splnum );
+			makeBlastCluster( /*inf,*/ outf.toPath(), Paths.get(blastfile), splnum );
 			//for( Sequences seqs : this.sequences ) {
 				//seqs.setNSeq( countSequences( inf ) );
 				//List<Sequences> retlseqs = splitit( splnum, seqs, outf == null ? new File(".") : outf );
