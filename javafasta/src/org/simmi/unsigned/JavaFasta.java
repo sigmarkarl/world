@@ -70,7 +70,6 @@ import javax.jnlp.FileOpenService;
 import javax.jnlp.FileSaveService;
 import javax.jnlp.ServiceManager;
 import javax.jnlp.UnavailableServiceException;
-import javax.naming.StringRefAddr;
 import javax.swing.AbstractAction;
 import javax.swing.Action;
 import javax.swing.ImageIcon;
@@ -112,8 +111,8 @@ import javax.swing.table.TableRowSorter;
 
 import netscape.javascript.JSObject;
 
+import org.simmi.shared.Annotation;
 import org.simmi.shared.Sequence;
-import org.simmi.shared.Sequence.Annotation;
 import org.simmi.shared.Serifier;
 
 import flobb.ChatServer;
@@ -137,7 +136,7 @@ public class JavaFasta extends JApplet {
 	public void copyData(Component source) throws IOException {
 		//JTextArea textarea = (JTextArea) source;
 		//String s = textarea.getText();
-		boolean fasta = false;
+		boolean fasta = true;
 		
 		ByteArrayOutputStream	baos = new ByteArrayOutputStream();
 		OutputStreamWriter osw = new OutputStreamWriter( baos );
@@ -189,7 +188,6 @@ public class JavaFasta extends JApplet {
 			try {
 				copyData((Component) e.getSource());
 			} catch (IOException e1) {
-				// TODO Auto-generated catch block
 				e1.printStackTrace();
 			}
 		}
@@ -565,7 +563,7 @@ public class JavaFasta extends JApplet {
 			ccol.put('c', Color.yellow);
 		}
 		
-		Annotation searchann = serifier.getConsensus().new Annotation( null, "search", null, serifier.mann );
+		Annotation searchann = new Annotation( null, "search", null, serifier.mann );
 		public String getToolTipText( MouseEvent e ) {
 			Point p = e.getPoint();
 			
@@ -4249,7 +4247,7 @@ public class JavaFasta extends JApplet {
 												}
 												
 												if( seq != null ) {
-													Annotation a = seq.new Annotation( seq, name, Color.red, serifier.mann );
+													Annotation a = new Annotation( seq, name, Color.red, serifier.mann );
 													a.desc = a.desc == null ? new StringBuilder( query ) : a.desc.append( query );
 													String[]	mylla = query.split("#");
 													if( mylla[3].trim().equals("-1") ) a.color = Color.green;
@@ -4299,7 +4297,7 @@ public class JavaFasta extends JApplet {
 											}
 											
 											if(  theseq != null ) {
-												a = theseq.new Annotation( theseq, name, Color.red, serifier.mann );
+												a = new Annotation( theseq, name, Color.red, serifier.mann );
 												String[]	mylla = name.split("#");
 												if( mylla[3].trim().equals("-1") ) a.color = Color.green;
 												int start = Integer.parseInt( mylla[1].trim() );
