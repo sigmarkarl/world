@@ -270,7 +270,13 @@ public class Serifier {
 							if( !annn.isReverse() ) fw.write( "     gene            complement("+locstr+")\n" );
 							else fw.write( "     gene            "+locstr+"\n" );
 							fw.write( "                     /locus_tag=\""+key+"_"+ac+"\"\n" );
-							fw.write( "                     /product=\""+annn.name+"\"\n" );
+							
+							String addon = "";
+							if( annn.dbref != null ) for( String val : annn.dbref ) {
+								addon += "("+val+")";
+							}
+							fw.write( "                     /product=\""+annn.name+addon+"\"\n" );
+							
 							if( annn.dbref != null ) for( String val : annn.dbref ) {
 								fw.write( "                     /db_xref=\""+val+"\"\n" );
 							}
@@ -282,7 +288,13 @@ public class Serifier {
 							if( annn.isReverse() ) fw.write( "     gene            complement("+locstr+")\n" );
 							else fw.write( "     gene            "+locstr+"\n" );
 							fw.write( "                     /locus_tag=\""+key+"_"+ac+"\"\n" );
-							fw.write( "                     /product=\""+annn.name+"\"\n" );
+							
+							String addon = "";
+							if( annn.dbref != null ) for( String val : annn.dbref ) {
+								addon += "("+val+")";
+							}
+							fw.write( "                     /product=\""+annn.name+addon+"\"\n" );
+							
 							if( annn.dbref != null ) for( String val : annn.dbref ) {
 								fw.write( "                     /db_xref=\""+val+"\"\n" );
 							}
@@ -297,7 +309,7 @@ public class Serifier {
 				fw.write( "ORIGIN" );
 				count = 1;
 				//int start = 1;
-				for( int k = sbld.length(); k < sbld.length(); k++ ) {
+				for( int k = 0; k < sbld.length(); k++ ) {
 					if( (count-1)%60 == 0 ) fw.write( String.format( "\n%10s ", Integer.toString(count) ) );
 					else if( (count-1)%10 == 0 ) fw.write( " " );
 					
@@ -351,7 +363,7 @@ public class Serifier {
 							
 							String addon = "";
 							if( annn.dbref != null ) for( String val : annn.dbref ) {
-								addon += "(CAZY:" + val+")";
+								addon += "("+val+")";
 							}
 							
 							fw.write( "                     /product=\""+annn.name+addon+"\"\n" );
@@ -370,7 +382,7 @@ public class Serifier {
 							
 							String addon = "";
 							if( annn.dbref != null ) for( String val : annn.dbref ) {
-								addon += "(CAZY:" + val+")";
+								addon += "("+val+")";
 							}
 							
 							fw.write( "                     /product=\""+annn.name+addon+"\"\n" );
@@ -2837,6 +2849,36 @@ public class Serifier {
 			FileWriter fw = new FileWriter( outf );
 			this.writeFasta(this.lseq, fw, null);
 			fw.close();
+		}
+		
+		i = arglist.indexOf("-tail");
+		if( i >= 0 ) {
+			int count = Integer.parseInt( args[i+1] );
+			//int count = Integer.parseInt( args[i+2] );
+			
+			//makeBlastCluster( /*inf,*/ outf.toPath(), Paths.get(blastfile), splnum );
+			for( Sequences seqs : this.sequences ) {
+				appendSequenceInJavaFasta(seqs, null, false);
+				
+				int c = count;
+				while( c > 0 ) {
+					this.lseq.remove(0);
+					c--;
+				}
+				
+				FileWriter fw = new FileWriter( new File( outf, seqs.getName() ) );
+				this.writeFasta(this.lseq, fw, null);
+				fw.close();
+				//seqs.setNSeq( countSequences( inf ) );
+				//List<Sequences> retlseqs = splitit( splnum, seqs, outf == null ? new File(".") : outf );
+				/*for( Sequences nseqs : retlseqs ) {
+					appendSequenceInJavaFasta( nseqs, null, true);
+					File noutf = new File( nseqs.getPath() );
+					writeFasta( lseq, new FileWriter( noutf ), null );
+				}*/
+				
+				clearAll();
+			}
 		}
 	}
 	
