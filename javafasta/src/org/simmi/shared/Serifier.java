@@ -132,10 +132,10 @@ public class Serifier {
 	}
 	
 	String addon = "nnnttaattaattaannn";
-	public void genbankFromNR( Sequences s, File blastFile, File genbankOut, boolean gbk ) throws IOException {
+	public void genbankFromNR( Sequences s, Path blastFile, File genbankOut, boolean gbk ) throws IOException {
 		Map<String,List<Annotation>>	mapan = new HashMap<String,List<Annotation>>();
 		
-		BufferedReader			br = Files.newBufferedReader( s.getPath(), Charset.defaultCharset() );
+		BufferedReader			br = Files.newBufferedReader( s.getPath() );
 		Map<String,Sequence>	seqmap = new TreeMap<String,Sequence>();
 		Sequence		sb = null;
 		String			name = null;
@@ -148,12 +148,18 @@ public class Serifier {
 					seqmap.put(name, sb);
 					int l = name.indexOf(' ');
 					if( l == -1 ) l = name.length();
-					pool.add( name.substring(0,l) );
+					//int k = name.lastIndexOf('_', l);
+					//if( k == -1 ) k = name.length();
+					String pl = name.substring(0,l);
+					pool.add( pl );
 				}
 				int li = line.indexOf(' ');
 				if( li == -1 ) li = line.length();
+				//int ki = line.lastIndexOf('_', li);
+				//if( ki == -1 ) ki = line.length();
 				name = line.substring(1,li).replace(".fna", "");
-				sb = new Sequence();
+				sb = new Sequence( name, null );
+				lseq.add( sb );
 			} else {
 				sb.append( line.replace(" ", "") );
 			}
@@ -164,19 +170,29 @@ public class Serifier {
 		}
 		br.close();
 		
-		FileReader	fr = new FileReader( blastFile );
-		br = new BufferedReader( fr );
+		//FileReader	fr = new FileReader( blastFile );
+		//br = new BufferedReader( fr );
+		if( blastFile.getFileName().toString().endsWith(".gz") ) {
+			InputStream gz = Files.newInputStream( blastFile );
+			GZIPInputStream gis = new GZIPInputStream( gz );
+			br = new BufferedReader( new InputStreamReader( gis ) );
+		} else br = Files.newBufferedReader( blastFile );
+		
 		line = br.readLine();
 		String evalue = null;
 		Annotation ann = null;
 		while( line != null ) {
-			if( line.startsWith("Query=") ) {
-				int li = line.indexOf(' ', 7);
-				if( li == -1 ) li = line.length();
-				int ki = line.lastIndexOf('_', li);
+			boolean qtv = line.startsWith("Query:");
+			boolean qjf = line.startsWith("Query=");
+			if( qjf || qtv ) {
+				String qname = line.substring(6).trim();
+				int li = qname.indexOf(' ');
+				if( li == -1 ) li = qname.length();
+				int ki = qname.lastIndexOf('_', li);
 				//int ki = line.indexOf('_');
 				
-				String cont = line.substring(7,ki).trim();
+				String cont = qname.substring(0,ki).trim();
+				sb = seqmap.get( cont );
 				//cont = cont.replace(".fna", "");
 				if( pool.contains( cont ) ) {
 					List<Annotation> lann;
@@ -187,6 +203,7 @@ public class Serifier {
 						mapan.put(cont, lann);
 					}
 					
+					if( qtv ) line = br.readLine();
 					String[] split = line.split("#");
 					
 					int start = Integer.parseInt( split[1].trim() );
@@ -200,20 +217,24 @@ public class Serifier {
 			} else if( line.startsWith(">") ) {
 				if( ann != null && ann.name == null ) {
 					String hit = line.substring(1);
-					line = br.readLine();
-					while( !line.startsWith("Length") && !line.startsWith("Query") ) {
-						hit += line.substring(1);
+					if( hit.startsWith(">") ) {
+						hit = hit.substring(1).trim();
+					} else {
 						line = br.readLine();
+						while( !line.startsWith("Length") && !line.startsWith("Query") ) {
+							hit += line.substring(1);
+							line = br.readLine();
+						}
 					}
 					ann.name = hit;
 					
 					if( line.startsWith("Query") ) continue;
 				}
-			} else if( line.contains("Not hits") ) {
+			} else if( line.contains("No hits") ) {
 				if( ann != null && ann.name == null ) {
 					ann.name = line;
 				}
-			} else if( line.startsWith(" Score =") ) {
+			} /*else if( line.startsWith(" Score =") ) {
 				int u = line.indexOf("Expect =");
 				if( u > 0 ) {
 					u += 9;
@@ -221,7 +242,7 @@ public class Serifier {
 					evalue = line.substring(u, k);
 					if( ann != null ) ann.name += "\t" + evalue;
 				}
-			}
+			}*/
 			line = br.readLine();
 		}
 		br.close();
@@ -266,37 +287,42 @@ public class Serifier {
 					if( sbld.revcomp == -1 ) {
 						for( int i = lann.size()-1; i >= 0; i-- ) {
 							Annotation annn = lann.get(i);
-							String locstr = ((sbld.length()-annn.stop)+count)+".."+((sbld.length()-annn.start)+count);
-							if( !annn.isReverse() ) fw.write( "     gene            complement("+locstr+")\n" );
-							else fw.write( "     gene            "+locstr+"\n" );
-							fw.write( "                     /locus_tag=\""+key+"_"+ac+"\"\n" );
 							
-							String addon = "";
-							if( annn.dbref != null ) for( String val : annn.dbref ) {
-								addon += "("+val+")";
-							}
-							fw.write( "                     /product=\""+annn.name+addon+"\"\n" );
-							
-							if( annn.dbref != null ) for( String val : annn.dbref ) {
-								fw.write( "                     /db_xref=\""+val+"\"\n" );
+							if( annn.name != null && !annn.name.contains("No hits") ) {
+								String locstr = ((sbld.length()-annn.stop)+count)+".."+((sbld.length()-annn.start)+count);
+								if( !annn.isReverse() ) fw.write( "     gene            complement("+locstr+")\n" );
+								else fw.write( "     gene            "+locstr+"\n" );
+								fw.write( "                     /locus_tag=\""+key+"_"+ac+"\"\n" );
+								
+								String addon = "";
+								/*if( annn.dbref != null ) for( String val : annn.dbref ) {
+									addon += "("+val+")";
+								}*/
+								fw.write( "                     /product=\""+annn.name+addon+"\"\n" );
+								
+								if( annn.dbref != null ) for( String val : annn.dbref ) {
+									fw.write( "                     /db_xref=\""+val+"\"\n" );
+								}
 							}
 							ac++;
 						}
 					} else {
 						for( Annotation annn : lann ) {
-							String locstr = (annn.start+count)+".."+(annn.stop+count);
-							if( annn.isReverse() ) fw.write( "     gene            complement("+locstr+")\n" );
-							else fw.write( "     gene            "+locstr+"\n" );
-							fw.write( "                     /locus_tag=\""+key+"_"+ac+"\"\n" );
-							
-							String addon = "";
-							if( annn.dbref != null ) for( String val : annn.dbref ) {
-								addon += "("+val+")";
-							}
-							fw.write( "                     /product=\""+annn.name+addon+"\"\n" );
-							
-							if( annn.dbref != null ) for( String val : annn.dbref ) {
-								fw.write( "                     /db_xref=\""+val+"\"\n" );
+							if( annn.name != null && !annn.name.contains("No hits") ) {
+								String locstr = (annn.start+count)+".."+(annn.stop+count);
+								if( annn.isReverse() ) fw.write( "     gene            complement("+locstr+")\n" );
+								else fw.write( "     gene            "+locstr+"\n" );
+								fw.write( "                     /locus_tag=\""+key+"_"+ac+"\"\n" );
+								
+								String addon = "";
+								/*if( annn.dbref != null ) for( String val : annn.dbref ) {
+									addon += "("+val+")";
+								}*/
+								fw.write( "                     /product=\""+annn.name+addon+"\"\n" );
+								
+								if( annn.dbref != null ) for( String val : annn.dbref ) {
+									fw.write( "                     /db_xref=\""+val+"\"\n" );
+								}
 							}
 							ac++;
 						}
@@ -362,9 +388,9 @@ public class Serifier {
 							fw.write( "                     /locus_tag=\""+key+"_"+ac+"\"\n" );
 							
 							String addon = "";
-							if( annn.dbref != null ) for( String val : annn.dbref ) {
+							/*if( annn.dbref != null ) for( String val : annn.dbref ) {
 								addon += "("+val+")";
-							}
+							}*/
 							
 							fw.write( "                     /product=\""+annn.name+addon+"\"\n" );
 							if( annn.dbref != null ) for( String val : annn.dbref ) {
@@ -381,9 +407,9 @@ public class Serifier {
 							fw.write( "                     /locus_tag=\""+key+"_"+ac+"\"\n" );
 							
 							String addon = "";
-							if( annn.dbref != null ) for( String val : annn.dbref ) {
+							/*if( annn.dbref != null ) for( String val : annn.dbref ) {
 								addon += "("+val+")";
-							}
+							}*/
 							
 							fw.write( "                     /product=\""+annn.name+addon+"\"\n" );
 							if( annn.dbref != null ) for( String val : annn.dbref ) {
@@ -2621,11 +2647,11 @@ public class Serifier {
 		
 		i = arglist.indexOf("-gbk");
 		if( i >= 0 ) {
-			genbankFromNR(this.sequences.get(0), new File( args[i+1] ), outf, true);
+			genbankFromNR(this.sequences.get(0), new File( args[i+1] ).toPath(), outf, true);
 		} else {
 			i = arglist.indexOf("-gb");
 			if( i >= 0 ) {
-				genbankFromNR(this.sequences.get(0), new File( args[i+1] ), outf, false);
+				genbankFromNR(this.sequences.get(0), new File( args[i+1] ).toPath(), outf, false);
 				//Sequences ret = blastRename( this.sequences.get(0), args[i+1], outf, false );
 				
 				/*appendSequenceInJavaFasta(ret, null, true);
