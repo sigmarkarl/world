@@ -4308,7 +4308,7 @@ public class JavaFasta extends JApplet {
 												serifier.mann.put( name, a );
 											}
 										} else if( a != null ) {
-											a.append( line );
+											a.appendDesc( line );
 										}
 										line = br.readLine();
 									}

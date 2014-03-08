@@ -209,7 +209,7 @@ public class Serifier {
 					int start = Integer.parseInt( split[1].trim() );
 					int stop = Integer.parseInt( split[2].trim() );
 					int rev = Integer.parseInt( split[3].trim() );
-					ann = new Annotation( sb, start-1, stop-1, rev == -1, null );
+					ann = new Annotation( sb, start-1, stop-1, rev, null );
 					lann.add(ann);
 				} else ann = null;
 				evalue = null;
@@ -248,10 +248,10 @@ public class Serifier {
 		br.close();
 		
 		mseq = seqmap;
-		writeGenebank( genbankOut, gbk, s, mapan );
+		writeGenebank( genbankOut, gbk, false, s, mapan );
 	}
 	
-	public void writeGenebank( File genbankOut, boolean gbk, Sequences s, Map<String,List<Annotation>> mapan ) throws IOException {
+	public void writeGenebank( File genbankOut, boolean gbk, boolean translations, Sequences s, Map<String,List<Annotation>> mapan ) throws IOException {
 		int count = 0;
 		for( Sequence sbld : lseq ) {
 			//Sequence sbld = lseq.get(key);
@@ -291,14 +291,24 @@ public class Serifier {
 							if( annn.name != null && !annn.name.contains("No hits") ) {
 								String locstr = ((sbld.length()-annn.stop)+count)+".."+((sbld.length()-annn.start)+count);
 								if( !annn.isReverse() ) fw.write( "     gene            complement("+locstr+")\n" );
-								else fw.write( "     gene            "+locstr+"\n" );
+								else fw.write( "     "+annn.type+"            "+locstr+"\n" );
 								fw.write( "                     /locus_tag=\""+key+"_"+ac+"\"\n" );
 								
 								String addon = "";
-								/*if( annn.dbref != null ) for( String val : annn.dbref ) {
+								if( annn.dbref != null ) for( String val : annn.dbref ) {
 									addon += "("+val+")";
-								}*/
+								}
 								fw.write( "                     /product=\""+annn.name+addon+"\"\n" );
+								if( translations ) {
+									fw.write( "                     /translation=\"" );
+									StringBuilder aa = annn.getProteinSequence();
+									fw.write(aa.substring(0, Math.min(46, aa.length())) );
+									for (int k = 46; k < aa.length(); k += 60) {
+										fw.write("\n");
+										fw.write( "                     "+aa.substring(k, Math.min(k + 60, aa.length())) );
+									}
+									fw.write( "\"\n" );
+								}
 								
 								if( annn.dbref != null ) for( String val : annn.dbref ) {
 									fw.write( "                     /db_xref=\""+val+"\"\n" );
@@ -311,14 +321,24 @@ public class Serifier {
 							if( annn.name != null && !annn.name.contains("No hits") ) {
 								String locstr = (annn.start+count)+".."+(annn.stop+count);
 								if( annn.isReverse() ) fw.write( "     gene            complement("+locstr+")\n" );
-								else fw.write( "     gene            "+locstr+"\n" );
+								else fw.write( "     "+annn.type+"            "+locstr+"\n" );
 								fw.write( "                     /locus_tag=\""+key+"_"+ac+"\"\n" );
 								
 								String addon = "";
-								/*if( annn.dbref != null ) for( String val : annn.dbref ) {
+								if( annn.dbref != null ) for( String val : annn.dbref ) {
 									addon += "("+val+")";
-								}*/
+								}
 								fw.write( "                     /product=\""+annn.name+addon+"\"\n" );
+								if( translations ) {
+									fw.write( "                     /translation=\"" );
+									StringBuilder aa = annn.getProteinSequence();
+									fw.write(aa.substring(0, Math.min(46, aa.length())) );
+									for (int k = 46; k < aa.length(); k += 60) {
+										fw.write("\n");
+										fw.write( "                     "+aa.substring(k, Math.min(k + 60, aa.length())) );
+									}
+									fw.write( "\"\n" );
+								}
 								
 								if( annn.dbref != null ) for( String val : annn.dbref ) {
 									fw.write( "                     /db_xref=\""+val+"\"\n" );
@@ -384,17 +404,27 @@ public class Serifier {
 							String locstr = ((sbld.length()-annn.stop)+count)+".."+((sbld.length()-annn.start)+count);
 							
 							if( !annn.isReverse() ) fw.write( "     gene            complement("+locstr+")\n" );
-							else fw.write( "     gene            "+locstr+"\n" );
+							else fw.write( "     "+annn.type+"            "+locstr+"\n" );
 							fw.write( "                     /locus_tag=\""+key+"_"+ac+"\"\n" );
 							
 							String addon = "";
-							/*if( annn.dbref != null ) for( String val : annn.dbref ) {
+							if( annn.dbref != null ) for( String val : annn.dbref ) {
 								addon += "("+val+")";
-							}*/
+							}
 							
 							fw.write( "                     /product=\""+annn.name+addon+"\"\n" );
 							if( annn.dbref != null ) for( String val : annn.dbref ) {
 								fw.write( "                     /db_xref=\""+val+"\"\n" );
+							}
+							if( translations ) {
+								fw.write( "                     /translation=\"" );
+								StringBuilder aa = annn.getProteinSequence();
+								fw.write(aa.substring(0, Math.min(46, aa.length())) );
+								for (int k = 46; k < aa.length(); k += 60) {
+									fw.write("\n");
+									fw.write( "                     "+aa.substring(k, Math.min(k + 60, aa.length())) );
+								}
+								fw.write( "\"\n" );
 							}
 							ac++;
 						}
@@ -403,17 +433,27 @@ public class Serifier {
 							String locstr = (annn.start+count)+".."+(annn.stop+count);
 							
 							if( annn.isReverse() ) fw.write( "     gene            complement("+locstr+")\n" );
-							else fw.write( "     gene            "+locstr+"\n" );
+							else fw.write( "     "+annn.type+"            "+locstr+"\n" );
 							fw.write( "                     /locus_tag=\""+key+"_"+ac+"\"\n" );
 							
 							String addon = "";
-							/*if( annn.dbref != null ) for( String val : annn.dbref ) {
+							if( annn.dbref != null ) for( String val : annn.dbref ) {
 								addon += "("+val+")";
-							}*/
+							}
 							
 							fw.write( "                     /product=\""+annn.name+addon+"\"\n" );
 							if( annn.dbref != null ) for( String val : annn.dbref ) {
 								fw.write( "                     /db_xref=\""+val+"\"\n" );
+							}
+							if( translations ) {
+								fw.write( "                     /translation=\"" );
+								StringBuilder aa = annn.getProteinSequence();
+								fw.write(aa.substring(0, Math.min(46, aa.length())) );
+								for (int k = 46; k < aa.length(); k += 60) {
+									fw.write("\n");
+									fw.write( "                     "+aa.substring(k, Math.min(k + 60, aa.length())) );
+								}
+								fw.write( "\"\n" );
 							}
 							ac++;
 						}
@@ -446,7 +486,7 @@ public class Serifier {
 						fw.write( addon.charAt(k) );
 						
 						count++;
-					}	
+					}
 				}
 				
 				total++;
@@ -583,7 +623,7 @@ public class Serifier {
 					}
 				}
 				if( conseq_empty == 2 && qstart >= 0 ) {
-					Annotation ann = new Annotation( sb, sstart, sstop, false, query+"_"+qstart+"_"+qstop+"_"+evalue );
+					Annotation ann = new Annotation( sb, sstart, sstop, 1, query+"_"+qstart+"_"+qstop+"_"+evalue );
 					lann.add( ann );
 					
 					qstart = -1;
