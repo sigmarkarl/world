@@ -1493,9 +1493,11 @@ public class Serifier {
 								
 								int spc = newcurrent.indexOf("[", bilt+1);
 								if( spc == -1 ) spc = newcurrent.length();
-								mapstr += " " + newcurrent.substring(bilt+1,spc);
-								mapstr += "["+nm.substring(0, nm.lastIndexOf('_'))+"]";
-								mapstr += name.substring(i);
+								//mapstr += " " + newcurrent.substring(bilt+1,spc);
+								//mapstr += "["+nm.substring(0, nm.lastIndexOf('_'))+"]";
+								//mapstr += name.substring(i);
+								
+								mapstr = newcurrent.substring(bilt+1,spc);
 								mapHit.put( nm, mapstr );
 							}
 						}
@@ -1538,8 +1540,8 @@ public class Serifier {
 		return mapHit;
 	}
 	
-	public int doMapHitStuff( Map<String,String> mapHit, InputStream is, OutputStream os, Set<String> filter ) throws IOException {
-		return doMapHitStuff(mapHit, is, os, "_", filter);
+	public int doMapHitStuff( Map<String,String> mapHit, InputStream is, OutputStream os, Set<String> filter, boolean skipmissing ) throws IOException {
+		return doMapHitStuff(mapHit, is, os, "_", filter, skipmissing);
 	}
 	
 	public boolean checkFilter( Collection<String> filter, String maphitstr ) {
@@ -1549,7 +1551,7 @@ public class Serifier {
 		return false;
 	}
 	
-	public int doMapHitStuff( Map<String,String> mapHit, InputStream is, OutputStream os, String sep, Collection<String> filter ) throws IOException {
+	public int doMapHitStuff( Map<String,String> mapHit, InputStream is, OutputStream os, String sep, Collection<String> filter, boolean skipmissing ) throws IOException {
 		initMaps();
 		Map[] maps = {snaedis1heatmap,snaedis2heatmap,snaedis3heatmap,snaedis4heatmap,snaedis5heatmap,snaedis6heatmap,snaedis7heatmap,snaedis8heatmap};
 		Map[] phmaps = {snaedis1phmap,snaedis2phmap,snaedis3phmap,snaedis4phmap,snaedis5phmap,snaedis6phmap,snaedis7phmap,snaedis8phmap};
@@ -1589,8 +1591,8 @@ public class Serifier {
 						include = true;
 					} else include = false;
 				} else {
-					pr.println( ">" + name );
-					//include = false;
+					if( skipmissing ) include = false;
+					else pr.println( ">" + name );
 				}
 			} else if( include ) {
 				pr.println( line );
@@ -1607,7 +1609,7 @@ public class Serifier {
 		Sequences ret = null;
 		try {
 			//URI uri = new URI( seqs.getPath() );
-			InputStream is = Files.newInputStream( seqs.getPath(), StandardOpenOption.READ);
+			InputStream is = Files.newInputStream( seqs.getPath(), StandardOpenOption.READ );
 			
 			if( seqs.getPath().endsWith(".gz") ) {
 				is = new GZIPInputStream( is );
@@ -1621,7 +1623,7 @@ public class Serifier {
 			}*/
 			
 			//String[] filter = { "Thermus", "Meiothermus" };
-			int nseq = doMapHitStuff( nameHitMap, is, new FileOutputStream(f), ";", null ); //Arrays.asList(filter) );
+			int nseq = doMapHitStuff( nameHitMap, is, new FileOutputStream(f), null /*";"*/, null, true ); //Arrays.asList(filter) );
 			
 			ret = new Sequences( "", f.getName(), seqs.getType(), f.toPath(), nseq );
 			//if( sapplet != null ) sapplet.addSequences( f.getName(), seqs.getType(), f.toURI().toString(), nseq );
@@ -2682,6 +2684,29 @@ public class Serifier {
 			appendSequenceInJavaFasta(ret, null, true);
 			FileWriter fw = new FileWriter( outf );
 			writeFasta( lseq, fw, null);
+			fw.close();
+		}
+		
+		i = arglist.indexOf("-group");
+		if( i >= 0 ) {
+			//Sequences ret = blastRename( this.sequences.get(0), args[i+1], outf, false );
+			
+			appendSequenceInJavaFasta(this.sequences.get(0), null, true);
+			Map<String,Integer>	countMap = new HashMap<String,Integer>();
+			for( Sequence seq : this.lseq ) {
+				int count = 0;
+				String seqname = seq.getName();
+				if( countMap.containsKey( seqname ) ) {
+					count = countMap.get( seqname );
+				}
+				countMap.put( seqname, count+1 );
+			}
+			//writeFasta( lseq, fw, null);
+			
+			FileWriter fw = new FileWriter( outf );
+			for( String spec : countMap.keySet() ) {
+				fw.write( spec + ": " + countMap.get(spec) + "\n" );
+			}
 			fw.close();
 		}
 		
