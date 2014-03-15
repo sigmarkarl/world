@@ -82,6 +82,8 @@ import javax.swing.JDialog;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JMenu;
+import javax.swing.JMenuBar;
 import javax.swing.JOptionPane;
 import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
@@ -1778,10 +1780,16 @@ public class JavaFasta extends JApplet {
 			e.printStackTrace();
 		}
 		
+		JMenu file = new JMenu("File");
+		
 		Window window = SwingUtilities.windowForComponent(this);
 		if (window instanceof JFrame) {
 			JFrame frame = (JFrame) window;
 			frame.setResizable(true);
+			
+			JMenuBar mb = new JMenuBar();
+			mb.add( file );
+			frame.setJMenuBar( mb );
 		}
 
 		initDataStructures();
@@ -3301,7 +3309,7 @@ public class JavaFasta extends JApplet {
 			}
 		});
 		popup.addSeparator();
-		popup.add( new AbstractAction("Open") {
+		file.add( new AbstractAction("Open") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				try {
@@ -3311,7 +3319,7 @@ public class JavaFasta extends JApplet {
 				}
 			}
 		});
-		popup.add( new AbstractAction("Open directory") {
+		file.add( new AbstractAction("Open directory") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				JFileChooser	jfc = new JFileChooser();
@@ -3332,7 +3340,7 @@ public class JavaFasta extends JApplet {
 		    	}
 			}
 		});
-		popup.add( new AbstractAction("Export") {
+		file.add( new AbstractAction("Export") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				try {
@@ -3344,7 +3352,7 @@ public class JavaFasta extends JApplet {
 				}
 			}
 		});
-		popup.add( new AbstractAction("Export phylip") {
+		file.add( new AbstractAction("Export phylip") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				try {
@@ -3354,7 +3362,7 @@ public class JavaFasta extends JApplet {
 				}
 			}
 		});
-		popup.add( new AbstractAction("Export many") {
+		file.add( new AbstractAction("Export many") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				try {
@@ -3364,12 +3372,13 @@ public class JavaFasta extends JApplet {
 				}
 			}
 		});
-		popup.add( new AbstractAction("Delete") {
+		file.add( new AbstractAction("Delete") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				delete();
 			}
 		});
+		popup.add( file );
 		popup.addSeparator();
 		final JCheckBoxMenuItem		cbmi = new JCheckBoxMenuItem();
 		cbmi.setAction( new AbstractAction("Base colors") {

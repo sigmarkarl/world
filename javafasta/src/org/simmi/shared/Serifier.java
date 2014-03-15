@@ -101,13 +101,13 @@ public class Serifier {
 	
 	public String getFastTree() {
 		String 				ret = "";
-		File 				tmpdir = new File("c:/Users/sigmar.MATIS/");
+		File 				tmpdir = new File("/Users/sigmar/");
 		try {
 			FileWriter fw = new FileWriter( new File(tmpdir, "tmp.fasta") );
 			writeFasta( lseq, fw, null);
 			fw.close();
 
-			ProcessBuilder pb = new ProcessBuilder("FastTree.exe", "tmp.fasta");
+			ProcessBuilder pb = new ProcessBuilder("/Users/sigmar/FastTree", "tmp.fasta");
 			pb.directory(tmpdir);
 			Process p = pb.start();
 			InputStream is = p.getInputStream();
