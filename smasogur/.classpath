@@ -2,16 +2,16 @@
 <classpath>
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="src" output="test-classes" path="test"/>
-	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="lib" path="war/WEB-INF/lib/gwt-visualization.jar"/>
 	<classpathentry kind="con" path="com.google.gwt.eclipse.core.GWT_CONTAINER"/>
 	<classpathentry kind="lib" path="war/WEB-INF/lib/commons-codec-1.6.jar"/>
 	<classpathentry kind="lib" path="war/WEB-INF/lib/commons-fileupload-1.2.2.jar"/>
 	<classpathentry kind="lib" path="war/WEB-INF/lib/dropbox-java-sdk.jar"/>
 	<classpathentry kind="lib" path="/jdk/gwt-elemental.jar"/>
-	<classpathentry kind="con" path="com.google.gdt.eclipse.managedapis.MANAGED_API_CONTAINER/drive-v2r110lv1.16.0-rc"/>
 	<classpathentry kind="lib" path="war/WEB-INF/lib/gcm-server.jar"/>
 	<classpathentry kind="lib" path="war/WEB-INF/lib/json_simple-1.1.jar"/>
 	<classpathentry kind="con" path="com.google.appengine.eclipse.core.GAE_CONTAINER"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/jdk1.7.0_51"/>
+	<classpathentry kind="con" path="com.google.gdt.eclipse.managedapis.MANAGED_API_CONTAINER/drive-v2r116lv1.16.0-rc"/>
 	<classpathentry kind="output" path="war/WEB-INF/classes"/>
 </classpath>

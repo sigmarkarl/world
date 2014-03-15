@@ -1,9 +1,11 @@
 package org.simmi.server;
 
+import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.URLDecoder;
 import java.security.GeneralSecurityException;
 import java.security.PrivateKey;
@@ -18,7 +20,9 @@ import org.apache.commons.fileupload.FileItemIterator;
 import org.apache.commons.fileupload.FileItemStream;
 import org.apache.commons.fileupload.servlet.ServletFileUpload;
 
+import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeFlow;
 import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
+import com.google.api.client.googleapis.auth.oauth2.GoogleTokenResponse;
 import com.google.api.client.http.ByteArrayContent;
 import com.google.api.client.http.HttpTransport;
 import com.google.api.client.http.javanet.NetHttpTransport;
@@ -38,6 +42,8 @@ public class FileUploadServiceImpl extends HttpServlet {
 	 */
 	private static final long serialVersionUID = 1L;
 	
+	private static String REDIRECT_URI = "urn:ietf:wg:oauth:2.0:oob";
+	 
 	private static String CLIENT_ID = "739519778026.apps.googleusercontent.com";
 	private static String CLIENT_SECRET = "9Ulqyj2bdtUonZgMF5TVpazP";
 	
@@ -95,17 +101,33 @@ public class FileUploadServiceImpl extends HttpServlet {
 			}
 	    };
 	    
-		 GoogleCredential credential = new GoogleCredential.Builder()
+		 /*GoogleCredential credential = new GoogleCredential.Builder()
 		  .setTransport(httpTransport)
 		  .setJsonFactory(jsonFactory)
-		  .setServiceAccountId(SERVICE_ACCOUNT_EMAIL)
 		  .setServiceAccountScopes( Arrays.asList( new String[] {DriveScopes.DRIVE} ) )
+		  .setServiceAccountId(SERVICE_ACCOUNT_EMAIL)
 		  .setServiceAccountPrivateKeyFromP12File( file )
 		  //.setServiceAccountPrivateKey( pk )
-		  .build();
+		  .build();*/
+	    
+	    GoogleAuthorizationCodeFlow flow = new GoogleAuthorizationCodeFlow.Builder(
+	            httpTransport, jsonFactory, CLIENT_ID, CLIENT_SECRET, Arrays.asList(DriveScopes.DRIVE))
+	            .setAccessType("online")
+	            .setApprovalPrompt("auto").build();
 		
-		//Create a new authorized API client
+	    String url = flow.newAuthorizationUrl().setRedirectUri(REDIRECT_URI).build();
+	    System.out.println("Please open the following URL in your browser then type the authorization code:");
+	    System.out.println("  " + url);
+	    BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+	    String code = br.readLine();
+	    
+	    GoogleTokenResponse response = flow.newTokenRequest(code).setRedirectUri(REDIRECT_URI).execute();
+	    GoogleCredential credential = new GoogleCredential().setFromTokenResponse(response);
+	    
 	    Drive service = new Drive.Builder(httpTransport, jsonFactory, credential).build();
+	    
+		//Create a new authorized API client
+	    //Drive service = new Drive.Builder(httpTransport, jsonFactory, credential).build();
 	    //.setHttpRequestInitializer(credential).build();
 
 	    //Insert a file
