@@ -13,7 +13,6 @@ import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.RenderingHints;
 import java.awt.Toolkit;
-import java.awt.Window;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.StringSelection;
 import java.awt.datatransfer.Transferable;
@@ -27,6 +26,7 @@ import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -94,7 +94,6 @@ import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.RowSorter;
 import javax.swing.SpinnerNumberModel;
-import javax.swing.SwingUtilities;
 import javax.swing.TransferHandler;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
@@ -1781,17 +1780,10 @@ public class JavaFasta extends JApplet {
 		}
 		
 		JMenu file = new JMenu("File");
+		JMenu edit = new JMenu("Edit");
+		JMenu phylogeny = new JMenu("Phylogeny");
 		
-		Window window = SwingUtilities.windowForComponent(this);
-		if (window instanceof JFrame) {
-			JFrame frame = (JFrame) window;
-			frame.setResizable(true);
-			
-			JMenuBar mb = new JMenuBar();
-			mb.add( file );
-			frame.setJMenuBar( mb );
-		}
-
+		//Window window = SwingUtilities.windowForComponent(cnt);
 		initDataStructures();
 		
 		table = new JTable();
@@ -1921,28 +1913,30 @@ public class JavaFasta extends JApplet {
 
 			@Override
 			public Object getValueAt(int rowIndex, int columnIndex) {
-				Sequence seq = serifier.lseq.get( rowIndex );
-				if( columnIndex == 0 ) return seq.getName();
-				else if( columnIndex == 1 ) return seq.getAlignedLength();
-				else if( columnIndex == 2 ) return seq.getUnalignedLength();
-				else if( columnIndex == 3 ) return seq.getRealStart();
-				else if( columnIndex == 4 ) return seq.getRevComp();
-				else if( columnIndex == 5 ) return seq.getGCP();
-				else if( columnIndex == 6 ) {
-					int begin = c.selectedRect.x-seq.getStart();
-					int stop = begin+c.selectedRect.width;
-					
-					int start = Math.max(begin, 0);
-					int end = Math.min(stop, seq.length());
-					if( end > start ) {
-						if( begin < 0 ) {
-							String val = String.format( "%"+c.selectedRect.width+"s", seq.getSubstring( start, end, 1 ) );
-							return val;
+				if( rowIndex < serifier.lseq.size() ) {
+					Sequence seq = serifier.lseq.get( rowIndex );
+					if( columnIndex == 0 ) return seq.getName();
+					else if( columnIndex == 1 ) return seq.getAlignedLength();
+					else if( columnIndex == 2 ) return seq.getUnalignedLength();
+					else if( columnIndex == 3 ) return seq.getRealStart();
+					else if( columnIndex == 4 ) return seq.getRevComp();
+					else if( columnIndex == 5 ) return seq.getGCP();
+					else if( columnIndex == 6 ) {
+						int begin = c.selectedRect.x-seq.getStart();
+						int stop = begin+c.selectedRect.width;
+						
+						int start = Math.max(begin, 0);
+						int end = Math.min(stop, seq.length());
+						if( end > start ) {
+							if( begin < 0 ) {
+								String val = String.format( "%"+c.selectedRect.width+"s", seq.getSubstring( start, end, 1 ) );
+								return val;
+							}
+							return seq.getSubstring( start, end, 1 );
 						}
-						return seq.getSubstring( start, end, 1 );
+						
+						return "";
 					}
-					
-					return "";
 				}
 				return null;
 			}
@@ -2439,6 +2433,7 @@ public class JavaFasta extends JApplet {
 				serifier.lseq.removeAll( removee );
 				updateIndexes();
 				table.tableChanged( new TableModelEvent( table.getModel() ) );
+				c.updateCoords();
 			}
 		});
 		popup.add( new AbstractAction("Join") {
@@ -2850,14 +2845,14 @@ public class JavaFasta extends JApplet {
 		    		 Sequence seq = serifier.lseq.get(i);
 		    		 seqlist.add( seq );
 		    	 }
-		    	 final File tmpdir = new File("c:/");
+		    	 final Path tmpdir = Paths.get( System.getProperty("user.home") );
 		    	 try {
-					FileWriter fw = new FileWriter( new File( tmpdir, "tmp.fasta" ) );
+					BufferedWriter fw = Files.newBufferedWriter( tmpdir.resolve( "tmp.fasta" ) ); //new FileWriter( new File( tmpdir, "tmp.fasta" ) );
 					serifier.writeFasta( seqlist, fw, null );
 			    	fw.close();
 			    	
-			    	ProcessBuilder pb = new ProcessBuilder("muscle.exe", "-in", "tmp.fasta", "-out", "tmpout.fasta");
-			    	pb.directory( tmpdir );
+			    	ProcessBuilder pb = new ProcessBuilder("muscle", "-in", "tmp.fasta", "-out", "tmpout.fasta");
+			    	pb.directory( tmpdir.toFile() );
 			    	pb.redirectErrorStream(true);
 			    	final Process p = pb.start();
 			    	
@@ -2876,11 +2871,11 @@ public class JavaFasta extends JApplet {
 						    	
 						    	serifier.lseq.removeAll( seqlist );
 						    	 
-						    	FileReader fr = new FileReader( new File( tmpdir, "tmpout.fasta" ) );
-						    	BufferedReader	br = new BufferedReader( fr );
+						    	BufferedReader br = Files.newBufferedReader( tmpdir.resolve("tmpout.fasta") ); //new FileReader( new File( tmpdir, "tmpout.fasta" ) );
+						    	//BufferedReader	br = new BufferedReader( fr );
 						    	importReader( br );
 						    	br.close();
-						    	fr.close();
+						    	//fr.close();
 						    	 
 						    	table.tableChanged( new TableModelEvent( table.getModel() ) );
 				    		} catch (IOException e) {
@@ -2935,8 +2930,8 @@ public class JavaFasta extends JApplet {
 				 }
 			}
 		});
-		popup.addSeparator();
-		popup.add( new AbstractAction("Reverse") {
+		//popup.addSeparator();
+		edit.add( new AbstractAction("Reverse") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				int[] rr = table.getSelectedRows();
@@ -2969,7 +2964,7 @@ public class JavaFasta extends JApplet {
 			}
 		});
 		
-		popup.add( new AbstractAction("Compliment") {
+		edit.add( new AbstractAction("Compliment") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				int[] rr = table.getSelectedRows();
@@ -3000,7 +2995,7 @@ public class JavaFasta extends JApplet {
 				table.tableChanged( new TableModelEvent( table.getModel() ) );
 			}
 		});
-		popup.add( new AbstractAction("Uppercase") {
+		edit.add( new AbstractAction("Uppercase") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				int[] rr = table.getSelectedRows();
@@ -3013,7 +3008,7 @@ public class JavaFasta extends JApplet {
 			}
 		});
 
-		popup.add( new AbstractAction("UT Replacement") {
+		edit.add( new AbstractAction("UT Replacement") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				int[] rr = table.getSelectedRows();
@@ -3067,7 +3062,7 @@ public class JavaFasta extends JApplet {
 				c.repaint();
 			}
 		});
-		popup.add( new AbstractAction(".* - Replacement") {
+		edit.add( new AbstractAction(".* - Replacement") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				int[] rr = table.getSelectedRows();
@@ -3122,7 +3117,7 @@ public class JavaFasta extends JApplet {
 				c.repaint();
 			}
 		});
-		popup.add( new AbstractAction("Remove gaps") {
+		edit.add( new AbstractAction("Remove gaps") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				List<Sequence>	seqlist = new ArrayList<Sequence>();
@@ -3138,7 +3133,7 @@ public class JavaFasta extends JApplet {
 				c.repaint();
 			}
 		});
-		popup.add( new AbstractAction("Remove all gaps") {
+		edit.add( new AbstractAction("Remove all gaps") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				List<Sequence>	seqlist = new ArrayList<Sequence>();
@@ -3154,7 +3149,7 @@ public class JavaFasta extends JApplet {
 				c.repaint();
 			}
 		});
-		popup.add( new AbstractAction("Discard high evo-rate sites") {
+		edit.add( new AbstractAction("Discard high evo-rate sites") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				List<Sequence>	seqlist = new ArrayList<Sequence>();
@@ -3201,7 +3196,7 @@ public class JavaFasta extends JApplet {
 				c.repaint();
 			}
 		});
-		popup.add( new AbstractAction("Clear sites with gaps") {
+		edit.add( new AbstractAction("Clear sites with gaps") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				Set<Sequence> seqset = new HashSet<Sequence>();
@@ -3215,7 +3210,7 @@ public class JavaFasta extends JApplet {
 				
 			}
 		});
-		popup.add( new AbstractAction("Clear gaps from selected") {
+		edit.add( new AbstractAction("Clear gaps from selected") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				Set<Sequence> seqset = new HashSet<Sequence>();
@@ -3231,7 +3226,7 @@ public class JavaFasta extends JApplet {
 				
 			}
 		});
-		popup.add( new AbstractAction("Clear conserved sites") {
+		edit.add( new AbstractAction("Clear conserved sites") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				Set<Sequence> seqset = new HashSet<Sequence>();
@@ -3244,7 +3239,7 @@ public class JavaFasta extends JApplet {
 				clearSites( seqset, false );
 			}
 		});
-		popup.add( new AbstractAction("Clear variant sites") {
+		edit.add( new AbstractAction("Clear variant sites") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				Set<Sequence> seqset = new HashSet<Sequence>();
@@ -3257,7 +3252,7 @@ public class JavaFasta extends JApplet {
 				clearSites( seqset, true );
 			}
 		});
-		popup.add( new AbstractAction("Retain variant sites") {
+		edit.add( new AbstractAction("Retain variant sites") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				int min = Integer.MAX_VALUE;
@@ -3308,7 +3303,7 @@ public class JavaFasta extends JApplet {
 				c.repaint();
 			}
 		});
-		popup.addSeparator();
+		//popup.addSeparator();
 		file.add( new AbstractAction("Open") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -3378,8 +3373,11 @@ public class JavaFasta extends JApplet {
 				delete();
 			}
 		});
-		popup.add( file );
-		popup.addSeparator();
+		if( !(cnt instanceof JFrame ) ){
+			popup.add( file );
+			popup.add( edit );
+			popup.addSeparator();
+		}
 		final JCheckBoxMenuItem		cbmi = new JCheckBoxMenuItem();
 		cbmi.setAction( new AbstractAction("Base colors") {
 			@Override
@@ -3389,7 +3387,7 @@ public class JavaFasta extends JApplet {
 			}
 		});
 		popup.add( cbmi );
-		popup.add( new AbstractAction("Dis-mat exclude gaps") {
+		phylogeny.add( new AbstractAction("Dis-mat exclude gaps") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				StringBuilder sb = distanceMatrix( true );
@@ -3422,7 +3420,7 @@ public class JavaFasta extends JApplet {
 				}
 			}
 		});
-		popup.add( new AbstractAction("Distance matrix") {
+		phylogeny.add( new AbstractAction("Distance matrix") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				StringBuilder sb = distanceMatrix( false );
@@ -3455,7 +3453,7 @@ public class JavaFasta extends JApplet {
 				}
 			}
 		});
-		popup.add( new AbstractAction("Draw tree") {
+		phylogeny.add( new AbstractAction("Draw tree") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				StringBuilder	sb = distanceMatrix( false );
@@ -3488,7 +3486,7 @@ public class JavaFasta extends JApplet {
 				}*/
 			}
 		});
-		popup.add( new AbstractAction("Draw ML tree") {
+		phylogeny.add( new AbstractAction("Draw ML tree") {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
 				 List<Sequence> seqlist = new ArrayList<Sequence>();
@@ -3542,7 +3540,7 @@ public class JavaFasta extends JApplet {
 				}
 			}
 		});
-		popup.add( new AbstractAction("Draw tree excluding gaps") {
+		phylogeny.add( new AbstractAction("Draw tree excluding gaps") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				StringBuilder	sb = distanceMatrix( true );
@@ -3550,7 +3548,7 @@ public class JavaFasta extends JApplet {
 				jso.call("showTree", new Object[] {sb.toString()} );
 			}
 		});
-		popup.add( new AbstractAction("Draw distance matrix") {
+		phylogeny.add( new AbstractAction("Draw distance matrix") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				StringBuilder	sb = distanceMatrix( true );
@@ -3559,6 +3557,7 @@ public class JavaFasta extends JApplet {
 				jso.call("showMatr", new Object[] {dist} );
 			}
 		});
+		
 		popup.add( new AbstractAction("Shannon blocks filering") {
 			public void actionPerformed( ActionEvent e ) {
 				final JCheckBox cb = new JCheckBox("Only use selected for evaluation");
@@ -4147,6 +4146,17 @@ public class JavaFasta extends JApplet {
 				}
 			}
 		});
+		
+		if (cnt instanceof JFrame) {
+			JFrame frame = (JFrame)cnt;
+			frame.setResizable(true);
+			
+			JMenuBar mb = new JMenuBar();
+			mb.add( file );
+			mb.add( edit );
+			mb.add( phylogeny );
+			frame.setJMenuBar( mb );
+		}
 		
 		mainsplit.setBackground( Color.white );
 		ascroll.getViewport().setBackground( Color.white );

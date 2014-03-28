@@ -61,6 +61,8 @@ public class SmasagaServiceImpl extends RemoteServiceServlet implements SmasagaS
 
 	@Override
 	public Saga[] getAllShortstories() {
+		//this.log("all");
+		
 		UserService userService = UserServiceFactory.getUserService();
     	User user = userService.getCurrentUser();
     	//user.

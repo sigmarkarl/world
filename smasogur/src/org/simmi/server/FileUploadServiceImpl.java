@@ -101,16 +101,16 @@ public class FileUploadServiceImpl extends HttpServlet {
 			}
 	    };
 	    
-		 /*GoogleCredential credential = new GoogleCredential.Builder()
+		 GoogleCredential credential = new GoogleCredential.Builder()
 		  .setTransport(httpTransport)
 		  .setJsonFactory(jsonFactory)
 		  .setServiceAccountScopes( Arrays.asList( new String[] {DriveScopes.DRIVE} ) )
 		  .setServiceAccountId(SERVICE_ACCOUNT_EMAIL)
 		  .setServiceAccountPrivateKeyFromP12File( file )
 		  //.setServiceAccountPrivateKey( pk )
-		  .build();*/
+		  .build();
 	    
-	    GoogleAuthorizationCodeFlow flow = new GoogleAuthorizationCodeFlow.Builder(
+	    /*GoogleAuthorizationCodeFlow flow = new GoogleAuthorizationCodeFlow.Builder(
 	            httpTransport, jsonFactory, CLIENT_ID, CLIENT_SECRET, Arrays.asList(DriveScopes.DRIVE))
 	            .setAccessType("online")
 	            .setApprovalPrompt("auto").build();
@@ -125,9 +125,9 @@ public class FileUploadServiceImpl extends HttpServlet {
 	    GoogleCredential credential = new GoogleCredential().setFromTokenResponse(response);
 	    
 	    Drive service = new Drive.Builder(httpTransport, jsonFactory, credential).build();
-	    
+	    */
 		//Create a new authorized API client
-	    //Drive service = new Drive.Builder(httpTransport, jsonFactory, credential).build();
+	    Drive service = new Drive.Builder(httpTransport, jsonFactory, credential).build();
 	    //.setHttpRequestInitializer(credential).build();
 
 	    //Insert a file
