@@ -37,11 +37,11 @@ public class Sequence implements Comparable<Sequence> {
 		amimap.put("TCG","S");
 		amimap.put("TAT","Y");
 		amimap.put("TAC","Y");
-		amimap.put("TAA","1");
-		amimap.put("TAG","0");
+		amimap.put("TAA","X");
+		amimap.put("TAG","X");
 		amimap.put("TGT","C");
 		amimap.put("TGC","C");
-		amimap.put("TGA","0");
+		amimap.put("TGA","X");
 		amimap.put("TGG","W");
 		amimap.put("CTT","L");
 		amimap.put("CTC","L");
@@ -162,11 +162,13 @@ public class Sequence implements Comparable<Sequence> {
 		rc.put('G', 'C');
 		rc.put('T', 'A');
 		rc.put('N', 'N');
+		rc.put('X', 'X');
 		rc.put('a', 't');
 		rc.put('c', 'g');
 		rc.put('g', 'c');
 		rc.put('t', 'a');
 		rc.put('n', 'n');
+		rc.put('x', 'x');
 		rc.put('-', '-');
 	}
 	
@@ -829,7 +831,7 @@ public class Sequence implements Comparable<Sequence> {
 			//System.err.println( aa );
 			for( int i = stop-3; i > begin; i-=3 ) {
 				String aaa = sb.substring(i, i+3).toUpperCase();
-				if( aaa.contains("N") || aaa.contains("n") ) {
+				if( aaa.contains("N") || aaa.contains("n") || aaa.contains("X") || aaa.contains("x") ) {
 					ret.append( "X" );
 				} else {
 					String aa = amimap.get( revcom.get(aaa) );
@@ -841,7 +843,7 @@ public class Sequence implements Comparable<Sequence> {
 			int end = start - 1 + 3*((stop-start)/3);
 			for( int i = start-1; i < end; i+=3 ) {
 				String aaa = sb.substring(i, i+3).toUpperCase();
-				if( aaa.contains("N") || aaa.contains("n") ) {
+				if( aaa.contains("N") || aaa.contains("n") || aaa.contains("X") || aaa.contains("x") ) {
 					ret.append( "X" );
 				} else {
 					String aa = amimap.get( aaa );
