@@ -1,0 +1,14 @@
+{
+  "name": "ShortStories",
+  "description": "Read, share and review short stories",
+  "launch_path": "/Smasogur.jsp",
+  "icons": {
+  	"60": "/icon-60.png",
+    "128": "/icon-128.png"
+  },
+  "developer": {
+    "name": "Sigmar Stefansson",
+    "url": "https://www.facebook.com/pages/Sigmasoft/204187916321356"
+  },
+  "default_locale": "en"
+}
