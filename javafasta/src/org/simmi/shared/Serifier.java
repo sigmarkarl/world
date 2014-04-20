@@ -1057,7 +1057,7 @@ public class Serifier {
 			if( clustermap%2 == 0 ) {
 				joinBlastSets( is, null, true, total, 0.0 );
 			} else {
-				joinBlastSetsThermus( is, Paths.get("/Users/sigmar/check.txt"), true, total );
+				joinBlastSetsThermus( is, Paths.get("/home/sigmar/check.txt"), true, total );
 			}
 			is.close();
 			
