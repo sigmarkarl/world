@@ -101,13 +101,13 @@ public class Serifier {
 	
 	public String getFastTree() {
 		String 				ret = "";
-		File 				tmpdir = new File("c:/Users/sigmar.MATIS/");
+		File 				tmpdir = new File("/Users/sigmar/");
 		try {
 			FileWriter fw = new FileWriter( new File(tmpdir, "tmp.fasta") );
 			writeFasta( lseq, fw, null);
 			fw.close();
 
-			ProcessBuilder pb = new ProcessBuilder("FastTree.exe", "tmp.fasta");
+			ProcessBuilder pb = new ProcessBuilder("/Users/sigmar/FastTree", "tmp.fasta");
 			pb.directory(tmpdir);
 			Process p = pb.start();
 			InputStream is = p.getInputStream();
@@ -847,35 +847,38 @@ public class Serifier {
 					System.err.println(et);
 				} else {
 					String e = seq.name;
-					int ind = e.indexOf('[');
-					//if( e.contains("_JL2_") ) ind = e.indexOf('_', ind+1);
-					
-					if( ind != -1 ) {
-						int ind2 = e.indexOf(']', ind+1);
-						String str = e.substring( ind+1, ind2 );
+					//System.err.println( "e " + e );
+					if( e != null ) {
+						int ind = e.indexOf('[');
+						//if( e.contains("_JL2_") ) ind = e.indexOf('_', ind+1);
 						
-						int uid = str.indexOf("uid");
-						int nuid = uid != -1 ? str.indexOf('_', uid) : str.length();
-						if( nuid == -1 ) nuid = str.length();
-						
-						int c = str.indexOf("contig");
-						if( c == -1 ) c = str.indexOf("scaffold");
-						if( c == -1 ) c = str.length()+1;
-						/*if( joinmap.containsKey( str ) ) {
-							str = joinmap.get(str);
-						}*/
-						
-						String tegstr = str.substring( 0, Math.min( c-1, nuid ) );
-						teg.add( tegstr );
-						
-						species.add( tegstr );
-					} else {
-						ind = e.indexOf("contig");
-						if( ind == -1 ) ind = e.indexOf("scaffold");
-						String tegstr = e.substring(0, ind-1);
-						teg.add( tegstr );
-						
-						species.add( tegstr );
+						if( ind != -1 ) {
+							int ind2 = e.indexOf(']', ind+1);
+							String str = e.substring( ind+1, ind2 );
+							
+							int uid = str.indexOf("uid");
+							int nuid = uid != -1 ? str.indexOf('_', uid) : str.length();
+							if( nuid == -1 ) nuid = str.length();
+							
+							int c = str.indexOf("contig");
+							if( c == -1 ) c = str.indexOf("scaffold");
+							if( c == -1 ) c = str.length()+1;
+							/*if( joinmap.containsKey( str ) ) {
+								str = joinmap.get(str);
+							}*/
+							
+							String tegstr = str.substring( 0, Math.min( c-1, nuid ) );
+							teg.add( tegstr );
+							
+							species.add( tegstr );
+						} else {
+							ind = e.indexOf("contig");
+							if( ind == -1 ) ind = e.indexOf("scaffold");
+							String tegstr = e.substring(0, ind-1);
+							teg.add( tegstr );
+							
+							species.add( tegstr );
+						}
 					}
 				}
 			}
@@ -895,37 +898,39 @@ public class Serifier {
 				Sequence seq = mseq.get( et );
 				if( seq != null ) {
 					String e = seq.name;
-					String tegstr;
-					int ind = e.indexOf('[');
-					//if( e.contains("_JL2_") ) ind = e.indexOf('_', ind+1);
-					
-					if( ind != -1 ) {
-						int ind2 = e.indexOf(']', ind+1);
-						String str = e.substring( ind+1, ind2 );
+					if( e != null ) {
+						String tegstr;
+						int ind = e.indexOf('[');
+						//if( e.contains("_JL2_") ) ind = e.indexOf('_', ind+1);
 						
-						int uid = str.indexOf("uid");
-						int nuid = uid != -1 ? str.indexOf('_', uid) : str.length();
-						if( nuid == -1 ) nuid = str.length();
+						if( ind != -1 ) {
+							int ind2 = e.indexOf(']', ind+1);
+							String str = e.substring( ind+1, ind2 );
+							
+							int uid = str.indexOf("uid");
+							int nuid = uid != -1 ? str.indexOf('_', uid) : str.length();
+							if( nuid == -1 ) nuid = str.length();
+							
+							int c = str.indexOf("contig");
+							if( c == -1 ) c = str.indexOf("scaffold");
+							if( c == -1 ) c = str.length()+1;
+							
+							tegstr = str.substring( 0, Math.min( c-1, nuid) );
+						} else {
+							ind = e.indexOf("contig");
+							if( ind == -1 ) ind = e.indexOf("scaffold");
+							tegstr = e.substring(0, ind-1);
+						}
 						
-						int c = str.indexOf("contig");
-						if( c == -1 ) c = str.indexOf("scaffold");
-						if( c == -1 ) c = str.length()+1;
-						
-						tegstr = str.substring( 0, Math.min( c-1, nuid) );
-					} else {
-						ind = e.indexOf("contig");
-						if( ind == -1 ) ind = e.indexOf("scaffold");
-						tegstr = e.substring(0, ind-1);
+						Set<String>	set;
+						if( submap.containsKey( tegstr ) ) {
+							set = submap.get(tegstr);
+						} else {
+							set = new HashSet<String>();
+							submap.put( tegstr, set );
+						}
+						set.add( e );
 					}
-					
-					Set<String>	set;
-					if( submap.containsKey( tegstr ) ) {
-						set = submap.get(tegstr);
-					} else {
-						set = new HashSet<String>();
-						submap.put( tegstr, set );
-					}
-					set.add( e );
 				}
 			}
 		}
@@ -969,7 +974,7 @@ public class Serifier {
 				System.err.println(mseq.size());
 			}
 			
-			fos = Files.newBufferedWriter( osf.resolve( "clusters.txt" ) );
+			fos = Files.newBufferedWriter( osf.resolve( "clusters.txt" ), StandardOpenOption.CREATE );
 		} else fos = Files.newBufferedWriter( osf );
 		
 		/*for( String str : mseq.keySet() ) {
@@ -984,76 +989,75 @@ public class Serifier {
 		//scotoductus1572_scaffold00003_4 # 2808 # 3941 # -1 # ID=3_4;partial=00;start_type=GTG;rbs_motif=None;rbs_spacer=None;gc_cont=0.959
 		//scotoductus1572_scaffold00003_4 # 2808 # 3941 # -1 #ID=3_4;partial=00;start_type=GTG;rbs_motif=None;rbs_spacer=None;gc_cont=0.959
 		
-		System.err.println( total.size() );
-		for( Set<String>	strset : total ) {
-			String name = null;
-			boolean pseudoname = true;
-			for( String str : strset ) {
-				/*if( name == null ) {
-					int si = str.indexOf(' ');
-					if( si == -1 ) si = str.length();
-					name = str.substring(0, si);
-					
-					break;
-				}*/
-				name = str;
-				
-				/*int i = str.indexOf('[');
-				if( i != -1 ) {
-					if( pseudoname || !str.contains("hypot") ) {
-						//int si = str.indexOf(' ');
-						name = str.substring(0, i-1).replace(' ', '_').replace('/', '_');
+		boolean writeFiles = false;
+		if( writeFiles ) {
+			System.err.println( total.size() );
+			for( Set<String>	strset : total ) {
+				String name = null;
+				boolean pseudoname = true;
+				for( String str : strset ) {
+					/*if( name == null ) {
+						int si = str.indexOf(' ');
+						if( si == -1 ) si = str.length();
+						name = str.substring(0, si);
 						
-						pseudoname = false;
-					}
-				}*/
-			}
-			
-			Path of = osf.resolve(name+".aa"); //new File( osf, name+".fna" );
-			
-			/*if( name.startsWith("YP_007881477.1") ) {
-				System.err.println();
-			}*/
-			
-			BufferedWriter fw = Files.newBufferedWriter(of); //new FileWriter( of );
-			for( String str : strset ) {
-				/*if( str.startsWith("YP_007881477.1") ) {
-					for( String erm : mseq.keySet() ) {
-						if( erm.startsWith("YP_007881477.1") ) {
-							System.err.println( str );
-							System.err.println( erm );
-							System.err.println();
+						break;
+					}*/
+					name = str;
+					
+					/*int i = str.indexOf('[');
+					if( i != -1 ) {
+						if( pseudoname || !str.contains("hypot") ) {
+							//int si = str.indexOf(' ');
+							name = str.substring(0, i-1).replace(' ', '_').replace('/', '_');
+							
+							pseudoname = false;
 						}
-					}
+					}*/
+				}
+				
+				Path of = osf.resolve(name+".aa"); //new File( osf, name+".fna" );
+				
+				/*if( name.startsWith("YP_007881477.1") ) {
+					System.err.println();
 				}*/
 				
-				if( str.contains("arciformis4241_scaffold00003_301") ) {
-					System.err.println();
+				BufferedWriter fw = Files.newBufferedWriter(of); //new FileWriter( of );
+				for( String str : strset ) {
+					/*if( str.startsWith("YP_007881477.1") ) {
+						for( String erm : mseq.keySet() ) {
+							if( erm.startsWith("YP_007881477.1") ) {
+								System.err.println( str );
+								System.err.println( erm );
+								System.err.println();
+							}
+						}
+					}*/
+					
+					//int millind = str.indexOf('#');
+					//if( millind == -1 ) millind = str.length();
+					//String shortname = str.substring( 0, millind ).trim();
+					Sequence seq = mseq.get( str );
+					if( seq != null ) {
+						writeSequence( seq, fw );
+					} else {
+						System.err.println();
+					}
 				}
-				
-				//int millind = str.indexOf('#');
-				//if( millind == -1 ) millind = str.length();
-				//String shortname = str.substring( 0, millind ).trim();
-				Sequence seq = mseq.get( str );
-				if( seq != null ) {
-					writeSequence( seq, fw );
-				} else {
-					System.err.println();
-				}
+				fw.close();
 			}
-			fw.close();
 		}
 		
 		return total;
 	}
 	
-	public List<Set<String>> makeBlastCluster( final BufferedReader is, final BufferedWriter fos, int clustermap ) {
+	public List<Set<String>> makeBlastCluster( final BufferedReader is, final BufferedWriter fos, int clustermap ) throws IOException {
 		List<Set<String>>	total = new ArrayList<Set<String>>();
-		try {		
+				
 			if( clustermap%2 == 0 ) {
 				joinBlastSets( is, null, true, total, 0.0 );
 			} else {
-				joinBlastSetsThermus( is, Paths.get("/Users/sigmar/check.txt"), true, total );
+				joinBlastSetsThermus( is, Paths.get("/home/sigmar/check.txt"), true, total );
 			}
 			is.close();
 			
@@ -1079,9 +1083,6 @@ public class Serifier {
 					writeClusters( fos, total );
 				}
 			}
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
 		
 		return total;
 	}
@@ -1777,6 +1778,11 @@ public class Serifier {
 			br.close();
 		} catch (IOException e1) {
 			e1.printStackTrace();
+		}
+		
+		for( String m : mseq.keySet() ) {
+			Sequence s = mseq.get( m );
+			System.err.println( m + "    " + s.name );
 		}
 		//return idmap;
 	}

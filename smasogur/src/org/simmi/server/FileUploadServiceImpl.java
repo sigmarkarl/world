@@ -125,7 +125,6 @@ public class FileUploadServiceImpl extends HttpServlet {
 	    GoogleCredential credential = new GoogleCredential().setFromTokenResponse(response);
 	    
 	    Drive service = new Drive.Builder(httpTransport, jsonFactory, credential).build();*/
-	    
 		//Create a new authorized API client
 	    Drive service = new Drive.Builder(httpTransport, jsonFactory, credential).build();
 	    //.setHttpRequestInitializer(credential).build();
