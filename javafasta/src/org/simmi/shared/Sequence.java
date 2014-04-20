@@ -332,9 +332,10 @@ public class Sequence implements Comparable<Sequence> {
 		return ret;
 	}
 	
-	public final static void distanceMatrixNumeric( List<Sequence> lseq, double[] dmat, List<Integer> idxs, boolean bootstrap, boolean cantor, double[] ent ) {		
+	public final static void distanceMatrixNumeric( List<Sequence> lseq, double[] dmat, List<Integer> idxs, boolean bootstrap, boolean cantor, double[] ent, Map<String,Integer> blosum ) {		
 		int len = lseq.size();
-		for( int x = 0; x < lseq.size(); x++ ) {
+		//double[] dmat = new double[ len*len ];
+		for( int x = 0; x < len; x++ ) {
 			dmat[x*len+x] = 0.0;
 		}
 		if( idxs != null && idxs.size() > 0 ) {
@@ -426,18 +427,36 @@ public class Sequence implements Comparable<Sequence> {
 								}
 							}
 						} else {
-							for( int k = start; k < end; k++ ) {
-								char c1 = seq1.charAt( k-seq1.getStart() );
-								char c2 = seq2.charAt( k-seq2.getStart() );
-								
-								if( c1 != '.' && c1 != '-' && c1 != ' ' && c1 != '\n' &&  c2 != '.' && c2 != '-' && c2 != ' ' && c2 != '\n') {
-									if( c1 != c2 ) {
-										mism += 1.0/ent[k];
-										/*if( ent[k] == 0.0 ) {
-											System.err.println("ok");
-										}*/
+							if( blosum != null ) {
+								/////-----
+								for( int k = start; k < end; k++ ) {
+									char c1 = seq1.charAt( k-seq1.getStart() );
+									char c2 = seq2.charAt( k-seq2.getStart() );
+									
+									if( c1 != '.' && c1 != '-' && c1 != ' ' && c1 != '\n' &&  c2 != '.' && c2 != '-' && c2 != ' ' && c2 != '\n') {
+										if( c1 != c2 ) {
+											mism += 1.0/ent[k];
+											/*if( ent[k] == 0.0 ) {
+												System.err.println("ok");
+											}*/
+										}
+										count++;
 									}
-									count++;
+								}
+							} else {
+								for( int k = start; k < end; k++ ) {
+									char c1 = seq1.charAt( k-seq1.getStart() );
+									char c2 = seq2.charAt( k-seq2.getStart() );
+									
+									if( c1 != '.' && c1 != '-' && c1 != ' ' && c1 != '\n' &&  c2 != '.' && c2 != '-' && c2 != ' ' && c2 != '\n') {
+										if( c1 != c2 ) {
+											mism += 1.0/ent[k];
+											/*if( ent[k] == 0.0 ) {
+												System.err.println("ok");
+											}*/
+										}
+										count++;
+									}
 								}
 							}
 						}

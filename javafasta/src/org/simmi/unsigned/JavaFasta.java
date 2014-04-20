@@ -115,6 +115,7 @@ import netscape.javascript.JSObject;
 import org.simmi.shared.Annotation;
 import org.simmi.shared.Sequence;
 import org.simmi.shared.Serifier;
+import org.simmi.shared.TreeUtil;
 
 import flobb.ChatServer;
 
@@ -133,6 +134,36 @@ public class JavaFasta extends JApplet {
 	JSplitPane	mainsplit;
 	JSplitPane	splitpane;
 	JSplitPane	overviewsplit;
+	
+	public static Map<String,Integer> getBlosumMap() throws IOException {
+		Map<String,Integer> blosumap = new HashMap<String,Integer>();
+		InputStream is = JavaFasta.class.getResourceAsStream("BLOSUM62");
+		InputStreamReader 	ir = new InputStreamReader( is );
+		BufferedReader		br = new BufferedReader( ir );
+		String[] abet = null;
+		//int i = 0;
+		String line = br.readLine();
+		while( line != null ) {
+			if( line.charAt(0) != '#' ) {
+				String[] split = line.trim().split("[ ]+");
+				char chr = line.charAt(0);
+				if( chr == ' ' ) {
+					abet = split;
+					abet[abet.length-1] = "-";
+				} else {
+					if( chr == '*' ) chr = '-';
+					int k = 0;
+					for( String a : abet ) {
+						blosumap.put( chr+a, Integer.parseInt(split[++k]) );
+					}
+				}
+			}
+			line = br.readLine();
+		}
+		br.close();
+		
+		return blosumap;
+	}
 
 	public void copyData(Component source) throws IOException {
 		//JTextArea textarea = (JTextArea) source;
@@ -1665,6 +1696,131 @@ public class JavaFasta extends JApplet {
 		return text;
 	}
 	
+	public StringBuilder blosumDistanceMatrix( boolean excludeGaps, Map<String,Integer> blosumap ) {
+		//JCheckBox	jukes = new JCheckBox("Jukes-cantor correction");
+		JCheckBox	boots = new JCheckBox("Bootstrap");
+		JOptionPane.showMessageDialog( parentApplet, new Object[] {boots} );
+		//boolean cantor = jukes.isSelected();
+		boolean bootstrap = boots.isSelected();
+		
+		int[] rr = table.getSelectedRows();
+		StringBuilder	text = new StringBuilder();
+		text.append("\t"+rr.length+"\n");
+		
+		if( rr.length > 0 ) {
+			if( excludeGaps ) {
+				int start = Integer.MIN_VALUE;
+				int end = Integer.MAX_VALUE;
+				
+				for( int i = 0; i < rr.length; i++ ) {
+					int r = rr[i];
+					Sequence seq = serifier.lseq.get( table.convertRowIndexToModel(r) );
+					if( seq.getRealStart() > start ) start = seq.getRealStart();
+					if( seq.getRealStop() < end ) end = seq.getRealStop();
+				}
+				
+				List<Integer>	idxs = new ArrayList<Integer>();
+				for( int x = start; x < end; x++ ) {
+					int i;
+					for( i = 0; i < rr.length; i++ ) {
+						int r = rr[i];
+						Sequence seq = serifier.lseq.get( table.convertRowIndexToModel(r) );
+						char c = seq.charAt( x );
+						if( c != '-' && c != '.' && c == ' ' ) break;
+					}
+					
+					if( i == rr.length ) {
+						idxs.add( x );
+					}
+				}
+				
+				for( int i = 0; i < rr.length; i++ ) {
+					int r = rr[i];
+					text.append( ((String)table.getValueAt(r, 0)).replace(' ','_') );
+					for( int y = 0; y < rr.length; y++ ) {
+						if( i == y ) text.append("\t0.0");
+						else {
+							Sequence seq1 = serifier.lseq.get( table.convertRowIndexToModel(rr[i]) );
+							Sequence seq2 = serifier.lseq.get( table.convertRowIndexToModel(rr[y]) );
+							int count = 0;
+							int mism = 0;
+							
+							for( int k : idxs ) {
+								char c1 = seq1.charAt( k-seq1.getStart() );
+								char c2 = seq2.charAt( k-seq2.getStart() );
+								
+								if( c1 != c2 ) mism++;
+								count++;
+							}
+							double d = count == 0 ? 0.0 : ((double)mism/(double)count);
+							//if( cantor ) d = -3.0*Math.log( 1.0 - 4.0*d/3.0 )/4.0;
+							text.append("\t"+d);
+						}
+					}
+					text.append("\n");
+				}
+			} else {
+				for( int i = 0; i < rr.length; i++ ) {
+					int r = rr[i];
+					text.append( ((String)table.getValueAt(r, 0)).replace(' ','_') );
+					for( int y = 0; y < rr.length; y++ ) {
+						if( i == y ) text.append("\t0.0");
+						else {
+							Sequence seq1 = serifier.lseq.get( table.convertRowIndexToModel(rr[i]) );
+							Sequence seq2 = serifier.lseq.get( table.convertRowIndexToModel(rr[y]) );
+							//int count = 0;
+							//int mism = 0;
+							
+							int start = Math.max( seq1.getStart(), seq2.getStart() );
+							int stop = Math.min( seq1.getEnd(), seq2.getEnd() );
+							
+							int mest = 0;
+							int tmest = 0;
+							for( int k = start; k < stop; k++ ) {
+					        	char lc = seq1.charAt(k);
+					        	char c = Character.toUpperCase( lc );
+					        	//if( )
+					        	String comb = c+""+c;
+					        	if( blosumap.containsKey(comb) ) tmest += blosumap.get(comb);
+					        }
+					        
+					        for( int k = start; k < stop; k++ ) {
+					        	char lc = seq1.charAt( k );
+					        	char c = Character.toUpperCase( lc );
+					        	char lc2 = seq2.charAt( k );
+					        	char c2 = Character.toUpperCase( lc2 );
+					        	
+					        	String comb = c+""+c2;
+					        	if( blosumap.containsKey(comb) ) mest += blosumap.get(comb);
+					        }
+					        
+					        double tani = (double)(tmest-mest)/(double)tmest;
+					        /*if( tani > (double)score/(double)tscore ) {
+					        	score = mest;
+					        	tscore = tmest;
+					        }*/
+					        
+							/*for( int k = start; k < end; k++ ) {
+								char c1 = seq1.charAt( k-seq1.getStart() );
+								char c2 = seq2.charAt( k-seq2.getStart() );
+								
+								if( c1 != '.' && c1 != '-' && c1 != ' ' &&  c2 != '.' && c2 != '-' && c2 != ' ' ) {
+									if( c1 != c2 ) mism++;
+									count++;
+								}
+							}*/
+							//if( cantor ) d = -3.0*Math.log( 1.0 - 4.0*d/3.0 )/4.0;
+							text.append("\t"+tani);
+						}
+					}
+					text.append("\n");
+				}
+			}
+		}
+		
+		return text;
+	}
+	
 	public List<String> getNames() {
 		List<String>	ret = new ArrayList<String>();
 		
@@ -1705,10 +1861,12 @@ public class JavaFasta extends JApplet {
 		return Sequence.getPhylip( this.getSequences(), numeric );
 	}
 	
-	public double[] distanceMatrixNumeric( boolean excludeGaps, double[] ent ) {
+	public double[] distanceMatrixNumeric( boolean excludeGaps, double[] ent, Map<String,Integer> blosum ) {
 		JCheckBox	jukes = new JCheckBox("Jukes-cantor correction");
-		//JCheckBox	boots = new JCheckBox("Bootstrap");
-		JOptionPane.showMessageDialog( parentApplet, jukes );
+		JCheckBox	boots = new JCheckBox("Bootstrap");
+		
+		Object[] val = blosum != null ? new Object[] { boots } : new Object[] { jukes, boots };
+		JOptionPane.showMessageDialog( parentApplet, val );
 		boolean cantor = jukes.isSelected();
 		//boolean bootstrap = boots.isSelected();
 		
@@ -1741,7 +1899,7 @@ public class JavaFasta extends JApplet {
 		}
 		
 		double[] dd = new double[ serifier.lseq.size()*serifier.lseq.size() ];
-		Sequence.distanceMatrixNumeric( serifier.lseq, dd, idxs, false, cantor, ent );
+		Sequence.distanceMatrixNumeric( serifier.lseq, dd, idxs, boots.isSelected(), cantor, ent, blosum );
 		return dd;
 	}
 	
@@ -2520,31 +2678,53 @@ public class JavaFasta extends JApplet {
 					serifier.writeFasta( seqlist, fw, null );
 			    	fw.close();
 			    	
-			    	ProcessBuilder pb = new ProcessBuilder("muscle", "-in", "tmp.fasta", "-out", "tmpout.fasta");
+			    	ProcessBuilder pb = new ProcessBuilder("muscle"); //, "-in", "tmp.fasta", "-out", "tmpout.fasta");
 			    	pb.directory( tmpdir.toFile() );
-			    	pb.redirectErrorStream(true);
+			    	//pb.redirectErrorStream(true);
 			    	final Process p = pb.start();
 			    	
 			    	Thread t = new Thread() {
 			    		public void run() {
+			    			InputStream is = p.getErrorStream();
 			    			try {
-				    			InputStream os = p.getInputStream();
-				    			ByteArrayOutputStream	baos = new ByteArrayOutputStream();
-				    			int r = os.read();
+								while( is.read() != -1 ) ;
+								is.close();
+							} catch (IOException e) {
+								e.printStackTrace();
+							}
+			    		}
+			    	};
+			    	t.start();
+			    	
+			    	t = new Thread() {
+			    		public void run() {
+			    			try {
+			    				OutputStream os = p.getOutputStream();
+			    				serifier.writeFasta( seqlist, new OutputStreamWriter( os ), null );
+				    			os.close();
+				    			
+				    			serifier.lseq.removeAll( seqlist );
+				    			
+			    				InputStream is = p.getInputStream();
+			    				importReader( new BufferedReader( new InputStreamReader(is) ) );
+			    				is.close();
+				    			
+			    				/*ByteArrayOutputStream	baos = new ByteArrayOutputStream();
+				    			int r = is.read();
 						    	while( r != -1 ) {
 						    		baos.write( r );
-						    		r = os.read();
+						    		r = is.read();
 						    	}
-						    	System.out.println( baos.toString() );
-						    	os.close();
+						    	//System.out.println( baos.toString() );*/
 						    	
-						    	serifier.lseq.removeAll( seqlist );
+						    	
 						    	 
-						    	BufferedReader br = Files.newBufferedReader( tmpdir.resolve("tmpout.fasta") ); //new FileReader( new File( tmpdir, "tmpout.fasta" ) );
+						    	
+						    	/*BufferedReader br = Files.newBufferedReader( tmpdir.resolve("tmpout.fasta") ); //new FileReader( new File( tmpdir, "tmpout.fasta" ) );
 						    	//BufferedReader	br = new BufferedReader( fr );
 						    	importReader( br );
 						    	br.close();
-						    	//fr.close();
+						    	//fr.close();*/
 						    	 
 						    	table.tableChanged( new TableModelEvent( table.getModel() ) );
 				    		} catch (IOException e) {
@@ -3125,17 +3305,46 @@ public class JavaFasta extends JApplet {
 		phylogeny.add( new AbstractAction("Draw tree") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				StringBuilder	sb = distanceMatrix( false );
+				Map<String, Integer> blosumap = null;
+				try {
+					blosumap = getBlosumMap();
+				} catch (IOException e2) {
+					e2.printStackTrace();
+				}
+				double[] dd = distanceMatrixNumeric( false, null, blosumap );
 				System.err.println("about to call showTree");
+				List<String> corrInd = new ArrayList<String>();
+				for( Sequence seq : serifier.lseq ) {
+					corrInd.add( seq.getName() );
+				}
 				
-				boolean failed = false;
+				TreeUtil tu = new TreeUtil();
+				TreeUtil.Node n = tu.neighborJoin(dd, corrInd, null, false, false);
+				String tree = n.toString();
+				
+				/*boolean failed = false;
 				try {
 					JSObject jso = JSObject.getWindow( parentApplet );
 					jso.call("showTree", new Object[] {sb.toString()} );
-				} catch( Exception e1 ) {
+				} catch( NoSuchMethodError | Exception e1 ) {
 					failed = true;
-				}
+				}*/
 				
+				//if( failed ) {
+				//String 				tree = serifier.getFastTree();
+				if( cs.connections().size() > 0 ) {
+		    		cs.sendToAll( tree );
+		    	} else if( Desktop.isDesktopSupported() ) {
+		    		cs.message = tree;
+		    		//String uristr = "http://webconnectron.appspot.com/Treedraw.html?tree="+URLEncoder.encode( tree, "UTF-8" );
+		    		String uristr = "http://webconnectron.appspot.com/Treedraw.html?ws=127.0.0.1:8887";
+					try {
+						Desktop.getDesktop().browse( new URI(uristr) );
+					} catch (IOException | URISyntaxException e1) {
+						e1.printStackTrace();
+					}
+		    	}
+				//}
 				
 				/*String urlstr = Base64.encodeBase64URLSafeString( sb.toString().getBytes() );
 				try {
