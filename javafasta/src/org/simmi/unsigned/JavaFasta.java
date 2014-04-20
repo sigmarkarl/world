@@ -72,6 +72,7 @@ import javax.jnlp.ServiceManager;
 import javax.jnlp.UnavailableServiceException;
 import javax.swing.AbstractAction;
 import javax.swing.Action;
+import javax.swing.DefaultRowSorter;
 import javax.swing.ImageIcon;
 import javax.swing.JApplet;
 import javax.swing.JButton;
@@ -92,11 +93,13 @@ import javax.swing.JSplitPane;
 import javax.swing.JTable;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
+import javax.swing.RowFilter;
 import javax.swing.RowSorter;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.TransferHandler;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
+import javax.swing.RowFilter.Entry;
 import javax.swing.border.Border;
 import javax.swing.border.EmptyBorder;
 import javax.swing.event.ChangeEvent;
@@ -115,6 +118,8 @@ import netscape.javascript.JSObject;
 import org.simmi.shared.Annotation;
 import org.simmi.shared.Sequence;
 import org.simmi.shared.Serifier;
+
+import com.sun.openpisces.TransformingPathConsumer2D.FilterSet;
 
 import flobb.ChatServer;
 
@@ -532,6 +537,14 @@ public class JavaFasta extends JApplet {
 		}
 	};
 	
+	Set<Integer> filterset = new HashSet<Integer>();
+	final RowFilter rowfilter = new RowFilter() {
+		@Override
+		public boolean include(Entry entry) {
+			return filterset.isEmpty() || filterset.contains(entry.getIdentifier());
+		}
+	};
+	
 	public class FastaView extends JComponent implements KeyListener {
 		Ruler			ruler;
 		JTable			table;
@@ -592,6 +605,7 @@ public class JavaFasta extends JApplet {
 			return null;
 		}
 		
+		int prevx = -1;
 		public void paintComponent( Graphics g ) {
 			super.paintComponent( g );
 			
@@ -599,13 +613,28 @@ public class JavaFasta extends JApplet {
 			g2.setRenderingHint( RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON );
 			
 			if( serifier != null ) {
-			
 				Rectangle r = g2.getClipBounds();
+				
+				int i = 0;
+				Rectangle vr = this.getVisibleRect();
+				if( prevx != vr.x ) {
+					filterset.clear();
+					for( Sequence s : serifier.lseq ) {
+						if( (s.getStart()-serifier.getMin())*cw < vr.x+vr.width && (s.getEnd()-serifier.getMin())*cw > vr.x ) {
+							filterset.add( i );
+						}
+						i++;
+					}
+					DefaultRowSorter<TableModel, Integer> rs = (DefaultRowSorter<TableModel,Integer>)table.getRowSorter();
+					rs.setRowFilter( rowfilter );
+					
+					prevx = vr.x;
+				}
 				
 				int xmin = (int)(r.x/cw);
 				int xmax = Math.min( (int)((r.x+r.width)/cw)+1, serifier.getDiff() );
-				for( int y = r.y/rh; y < Math.min( (r.y+r.height)/rh+1, serifier.lseq.size() ); y++ ) {
-					int i = table.convertRowIndexToModel( y );
+				for( int y = r.y/rh; y < Math.min( (r.y+r.height)/rh+1, filterset.size() ); y++ ) {
+					i = table.convertRowIndexToModel( y );
 					Sequence seq = serifier.lseq.get( i );
 					
 					if( seq.annset != null ) {
@@ -763,6 +792,44 @@ public class JavaFasta extends JApplet {
 		public void keyReleased(KeyEvent e) {}
 	};
 	
+	public void importAceReader( BufferedReader br ) throws IOException {
+		String line = br.readLine();
+		String consensus = null;
+		Sequence cseq = null;
+		Sequence s = null;
+		
+		while( line != null ) {
+			if( line.startsWith("CO")) {
+				if( consensus != null ) break;
+				consensus = line.split("[ ]+")[1];
+				cseq = new Sequence( consensus, null );
+				serifier.lseq.add( cseq );
+				serifier.mseq.put( cseq.name, cseq );
+			} else if( line.startsWith("BQ") ) {
+				cseq = null;
+			} else if( line.startsWith("AF") ) {
+				String[] split = line.split("[ ]+");
+				Sequence seq = new Sequence( split[1], null );
+				seq.setStart( Integer.parseInt( split[3] ) );
+				serifier.lseq.add( seq );
+				serifier.mseq.put(seq.name, seq);
+			} else if( line.startsWith("RD") ) {
+				String[] split = line.split("[ ]+");
+				String name = split[1];
+				s = serifier.mseq.get( name );
+			}  else if( line.startsWith("QA") ) {
+				s = null;
+			} else if( s != null ) {
+				s.append( line );
+			} else if( cseq != null ) {
+				cseq.append( line );
+			}
+			
+			line = br.readLine();
+		}
+		br.close();
+	}
+	
 	public void importReader( BufferedReader br ) throws IOException {
 		List<Sequence> seqlist = serifier.readSequences( br );
 		br.close();
@@ -780,10 +847,17 @@ public class JavaFasta extends JApplet {
 	
 	public void importFile( String name, InputStream is ) throws IOException {
 		if( name.endsWith(".ab1") || name.endsWith(".abi") ) addAbiSequence( name, is );
-    	else {
-			BufferedReader	br = new BufferedReader( new InputStreamReader( is ) );
+		else if( name.endsWith(".ace") ) {
+			BufferedReader	br = new BufferedReader( new InputStreamReader(is) );
+			importAceReader( br );
+		} else {
+			BufferedReader	br = new BufferedReader( new InputStreamReader(is) );
 			importReader( br );
     	}
+	}
+	
+	public void importFile( String name, Path path ) throws IOException {
+		importFile( name, Files.newInputStream(path) );
 	}
 	
 	public Map<String,String> openRenameFile() throws IOException {
@@ -832,7 +906,7 @@ public class JavaFasta extends JApplet {
 	    	JFileChooser	jfc = new JFileChooser();
 	    	if( jfc.showOpenDialog( parentApplet ) == JFileChooser.APPROVE_OPTION ) {
 	    		File f = jfc.getSelectedFile();
-	    		importFile( f.getName(), new FileInputStream(f) );
+	    		importFile( f.getName(), f.toPath() );
 	    	}
 	    }
 	    
@@ -1172,6 +1246,10 @@ public class JavaFasta extends JApplet {
 		serifier.lseq.add( s );
 		
 		if( s.length() > serifier.getMax() ) serifier.setMax( s.length() );
+	}
+	
+	public void addAbiSequence( String name, Path path ) throws IOException {
+		addAbiSequence( name, Files.newInputStream(path) );
 	}
 	
 	public void addAbiSequence( String name, byte[] bts, int len ) {
@@ -4434,7 +4512,7 @@ public class JavaFasta extends JApplet {
 	        Path name = file.getFileName();
 	        if (name != null && matcher.matches(name)) {
 	        	try {
-					JavaFasta.this.addAbiSequence( name.toString(), Files.newInputStream(file) );
+					JavaFasta.this.addAbiSequence( name.toString(), file );
 				} catch (IOException e) {
 					e.printStackTrace();
 				}
