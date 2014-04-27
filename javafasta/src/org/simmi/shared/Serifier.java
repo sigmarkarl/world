@@ -802,9 +802,11 @@ public class Serifier {
 			return super.add( seq );
 		}
 	};
-	public Map<String,Sequence>		mseq = new HashMap<String,Sequence>();
-	public ArrayList<Annotation>	lann = new ArrayList<Annotation>();
-	public Map<String,Annotation>	mann = new HashMap<String,Annotation>();
+	public Map<String,Sequence>			mseq = new HashMap<String,Sequence>();
+	public Map<String,List<Sequence>> 	gseq = new HashMap<String,List<Sequence>>();
+	public List<Sequence>				lgseq = new ArrayList<Sequence>();
+	public ArrayList<Annotation>		lann = new ArrayList<Annotation>();
+	public Map<String,Annotation>		mann = new HashMap<String,Annotation>();
 	//int min = Sequence.min;
 	//int max = Sequence.max;
 	
@@ -2976,6 +2978,27 @@ public class Serifier {
 				
 				clearAll();
 			}
+		}
+		
+		i = arglist.indexOf("-utreplace");
+		if( i >= 0 ) {
+			for( Sequences seqs : this.sequences ) {
+				appendSequenceInJavaFasta(seqs, null, true);
+				
+				//seqs.setNSeq( countSequences( inf ) );
+				//List<Sequences> retlseqs = splitit( splnum, seqs, outf == null ? new File(".") : outf );
+				/*for( Sequences nseqs : retlseqs ) {
+					appendSequenceInJavaFasta( nseqs, null, true);
+					File noutf = new File( nseqs.getPath() );
+					writeFasta( lseq, new FileWriter( noutf ), null );
+				}*/
+			}
+			for( Sequence seq : this.lseq ) {
+				seq.utReplace();
+			}
+			FileWriter fw = new FileWriter( outf );
+			this.writeFasta(this.lseq, fw, null);
+			fw.close();
 		}
 	}
 	

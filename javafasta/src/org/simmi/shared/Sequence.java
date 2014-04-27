@@ -194,6 +194,7 @@ public class Sequence implements Comparable<Sequence> {
 	}
 	
 	public String 				name;
+	//public String				group;
 	public String				id;
 	public StringBuilder	 	sb;
 	public IntBuffer			ib = null;
@@ -569,6 +570,10 @@ public class Sequence implements Comparable<Sequence> {
 	
 	public boolean isEdited() {
 		return edited;
+	}
+	
+	public String getGroup() {
+		return id;
 	}
 	
 	public String getId() {

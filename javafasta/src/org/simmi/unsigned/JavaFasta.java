@@ -827,23 +827,44 @@ public class JavaFasta extends JApplet {
 		String line = br.readLine();
 		String consensus = null;
 		Sequence cseq = null;
+		int lastStart = -1;
+		int lastEnd = 0;
 		Sequence s = null;
 		
+		//int k = 0;
 		while( line != null ) {
 			if( line.startsWith("CO")) {
-				if( consensus != null ) break;
+				//if( k > 1 ) break;
 				consensus = line.split("[ ]+")[1];
+				
+				lastStart = lastEnd;
 				cseq = new Sequence( consensus, null );
+				cseq.setId( consensus );
+				cseq.setStart( lastStart );
+				
 				serifier.lseq.add( cseq );
 				serifier.mseq.put( cseq.name, cseq );
+				serifier.lgseq.add( cseq );
+				
+				//k++;
 			} else if( line.startsWith("BQ") ) {
+				lastEnd = cseq.getEnd();
 				cseq = null;
 			} else if( line.startsWith("AF") ) {
 				String[] split = line.split("[ ]+");
 				Sequence seq = new Sequence( split[1], null );
-				seq.setStart( Integer.parseInt( split[3] ) );
+				seq.setId( consensus );
+				seq.setStart( Integer.parseInt( split[3] )-1+lastStart );
 				serifier.lseq.add( seq );
 				serifier.mseq.put(seq.name, seq);
+				List<Sequence> lseq;
+				if( serifier.gseq.containsKey( consensus ) ) {
+					lseq = serifier.gseq.get( consensus );
+				} else {
+					lseq = new ArrayList<Sequence>();
+					serifier.gseq.put( consensus, lseq );
+				}
+				lseq.add( seq );
 			} else if( line.startsWith("RD") ) {
 				String[] split = line.split("[ ]+");
 				String name = split[1];
@@ -2003,6 +2024,342 @@ public class JavaFasta extends JApplet {
 		};
 	}
 	
+	public TransferHandler dragRows( final JTable table ) {
+		TransferHandler th = null;
+		try {
+			final DataFlavor ndf = new DataFlavor( DataFlavor.javaJVMLocalObjectMimeType );
+			final DataFlavor df = DataFlavor.getTextPlainUnicodeFlavor();
+			final String charset = df.getParameter("charset");
+			final Transferable transferable = new Transferable() {
+				@Override
+				public Object getTransferData(DataFlavor arg0) throws UnsupportedFlavorException, IOException {					
+					if( arg0.equals( ndf ) ) {
+						int[] rr = currentRowSelection; //table.getSelectedRows();
+						List<Sequence>	selseq = new ArrayList<Sequence>( rr.length );
+						for( int r : rr ) {
+							int i = table.convertRowIndexToModel(r);
+							selseq.add( serifier.lgseq.get(i) );
+						}
+						return selseq;
+					} else {
+						String ret = "";//makeCopyString();
+						for( int r = 0; r < table.getRowCount(); r++ ) {
+							Object o = table.getValueAt(r, 0);
+							if( o != null ) {
+								ret += o.toString();
+							} else {
+								ret += "";
+							}
+							for( int c = 1; c < table.getColumnCount(); c++ ) {
+								o = table.getValueAt(r, c);
+								if( o != null ) {
+									ret += "\t"+o.toString();
+								} else {
+									ret += "\t";
+								}
+							}
+							ret += "\n";
+						}
+						//return arg0.getReaderForText( this );
+						return new ByteArrayInputStream( ret.getBytes( charset ) );
+					}
+					//return ret;
+				}
+
+				@Override
+				public DataFlavor[] getTransferDataFlavors() {
+					return new DataFlavor[] { df, ndf };
+				}
+
+				@Override
+				public boolean isDataFlavorSupported(DataFlavor arg0) {
+					if( arg0.equals(df) || arg0.equals(ndf) ) {
+						return true;
+					}
+					return false;
+				}
+			};
+			
+			th = new TransferHandler() {
+				private static final long serialVersionUID = 1L;
+				
+				public int getSourceActions(JComponent c) {
+					return TransferHandler.COPY_OR_MOVE;
+				}
+
+				public boolean canImport(TransferHandler.TransferSupport support) {					
+					return true;
+				}
+
+				protected Transferable createTransferable(JComponent c) {
+					currentRowSelection = table.getSelectedRows();
+					
+					return transferable;
+				}
+
+				public boolean importData(TransferHandler.TransferSupport support) {
+					try {
+						System.err.println( table.getSelectedRows().length );
+						
+						DataFlavor[] dfs = support.getDataFlavors();
+						if( support.isDataFlavorSupported( ndf ) ) {					
+							Object obj = support.getTransferable().getTransferData( ndf );
+							ArrayList<Sequence>	seqs = (ArrayList<Sequence>)obj;
+							
+							ArrayList<Sequence> newlist = new ArrayList<Sequence>( serifier.lgseq.size() );
+							for( int r = 0; r < table.getRowCount(); r++ ) {
+								int i = table.convertRowIndexToModel(r);
+								newlist.add( serifier.lgseq.get(i) );
+							}
+							serifier.lgseq.clear();
+							serifier.lgseq = newlist;
+							
+							Point p = support.getDropLocation().getDropPoint();
+							int k = table.rowAtPoint( p );
+							
+							serifier.lgseq.removeAll( seqs );
+							for( Sequence s : seqs ) {
+								serifier.lgseq.add(k++, s);
+							}
+							
+							TableRowSorter<TableModel>	trs = (TableRowSorter<TableModel>)table.getRowSorter();
+							trs.setSortKeys( null );
+							
+							table.tableChanged( new TableModelEvent(table.getModel()) );
+							c.repaint();
+							
+							return true;
+					} else if( support.isDataFlavorSupported( DataFlavor.javaFileListFlavor ) ) {
+							Object obj = support.getTransferable().getTransferData( DataFlavor.javaFileListFlavor );
+							//InputStream is = (InputStream)obj;
+							List<File>	lfile = (List<File>)obj;
+							
+							for( File f : lfile ) {
+								String fname = f.getName();
+								if( fname.endsWith(".ab1") ) {
+									int flen = (int)f.length();
+									ByteBuffer bb = ByteBuffer.allocate( flen );
+									FileInputStream fis = new FileInputStream( f );
+									fis.read( bb.array() );
+									Ab1Reader abi = new Ab1Reader( bb );
+									Sequence s = new Sequence( f.getName(), serifier.mseq );
+									s.append( abi.getSequence() );
+									serifier.lgseq.add( s );
+									
+									if( s.length() > serifier.getMax() ) serifier.setMax( s.length() );
+									
+									bb.clear();
+								} else if( fname.endsWith(".blastout") ) {
+									FileReader fr = new FileReader( f );
+									BufferedReader br = new BufferedReader( fr );
+									String line = br.readLine();
+									
+									Map<String,Integer>	hitmap = new HashMap<String,Integer>();
+									while( line != null ) {
+										if( line.startsWith(">") ) {
+											System.err.println( line );
+											String val = line.substring(2);
+											
+											System.err.println( line );
+											
+											line = br.readLine();
+											//boolean erm = true;
+											//while( erm && !line.startsWith(">") && !line.startsWith("Query=") ) {
+											while( line != null && !line.startsWith(">") && !line.startsWith("Query=") ) {
+												String trim = line.trim();
+												if( trim.startsWith("Score") ) {
+													String end = trim.substring(trim.length()-3);
+													if( end.equals("0.0") ) {
+														if( hitmap.containsKey( val ) ) {
+															hitmap.put( val, hitmap.get(val)+1 );
+														} else {
+															hitmap.put( val, 1 );
+														}
+													}
+												}
+												
+												line = br.readLine();
+											}
+										} else {
+											line = br.readLine();
+										}
+									}
+									br.close();
+									fr = new FileReader( f );
+									br = new BufferedReader( fr );
+									
+									line = br.readLine();
+									String query;
+									Sequence tseq = null;
+									int k = 0;
+									while( line != null ) {
+										if( line.startsWith( "Query=" ) ) {
+											query = line.substring(7);
+											if( serifier.mseq.containsKey( query ) ) {
+												Sequence seq = serifier.mseq.get( query );
+												int ind = serifier.lgseq.indexOf( seq );
+												if( ind >= k ) {
+													tseq = seq;
+													serifier.lgseq.remove( seq );
+													serifier.lgseq.add(k++, seq);
+												}
+											}
+										} else if( line.startsWith(">") ) {
+											int qstart = -1;
+											int qstop = 0;
+											int sstart = -1;
+											int sstop = 0;
+											
+											String val = line.substring(2);//line.split("[\t ]+")[1];
+											line = br.readLine();
+											Sequence seq = null;
+											int ind = -1;
+											while( !line.startsWith(">") && !line.startsWith("Query=") ) {
+												String trim = line.trim();
+												if( trim.startsWith("Score") ) {
+													String end = trim.substring(trim.length()-3);
+													if( end.equals("0.0") && hitmap.get(val) == 1 ) {
+														if( serifier.mseq.containsKey( val ) ) {
+															seq = serifier.mseq.get( val );
+															ind = serifier.lgseq.indexOf( seq );
+															if( ind >= k ) {
+																serifier.lgseq.remove( seq );
+																serifier.lgseq.add(k, seq);
+															}/* else {											
+																seq = null;
+															}*/
+														}
+													} else {
+														break;
+													}
+												} else if( trim.startsWith("Query") ) {
+													int li = trim.lastIndexOf(' ');
+													int qtmp = Integer.parseInt( trim.substring( li+1 ) );
+													qstop = qtmp;
+													if( qstart == -1 ) {
+														qtmp = Integer.parseInt( trim.split("[ ]+")[1] );
+														qstart = qtmp;
+													}
+												} else if( trim.startsWith("Sbjct") ) {
+													int li = trim.lastIndexOf(' ');
+													int stmp = Integer.parseInt( trim.substring( li+1 ) );
+													sstop = stmp;
+													if( sstart == -1 ) {
+														stmp = Integer.parseInt( trim.split("[ ]+")[1] );
+														sstart = stmp;
+													}
+												}
+												line = br.readLine();
+											}
+											
+											if( ind != -1 ) {
+												if( ind >= k ) {
+													if( sstart > sstop ) {
+														seq.revcomp = 2;
+														int sval = qstart-(seq.length()-sstart+1);
+														seq.setStart( sval );
+													} else {
+														seq.setStart( qstart-sstart );
+													}
+													k++;
+												} else if( tseq != null ) {
+													if( sstart > sstop ) {
+														if( seq.revcomp == 2 ) {
+															int sval = (seq.length()-sstart+1)-qstart  +  seq.getStart();
+															tseq.setStart( sval );
+														} else {
+															tseq.revcomp = 2;
+															int sval = sstart-qstart  +  seq.getStart();
+															tseq.setStart( sval );
+														}
+													} else {
+														if( seq.revcomp == 2 ) {
+															tseq.revcomp = 2;
+															int sval = sstart-qstart  +  seq.getStart();
+															tseq.setStart( sval );
+														} else {
+															tseq.setStart( sstart-qstart  +  seq.getStart() );
+														}
+													}
+												}
+											}
+											
+											continue;
+										}
+										
+										line = br.readLine();
+									}
+									br.close();
+									
+									updateView();
+								} else {
+									BufferedReader	br = new BufferedReader( new FileReader( f ) );
+									importReader( br );
+									/*String line = br.readLine();
+									while( line != null ) {
+										if( line.startsWith(">") ) {
+											if( s != null ) {
+												if( s.getEnd() > max ) max = s.getEnd();
+											}
+											s = new Sequence( line.substring(1) );
+											lseq.add( s );
+										} else if( s != null ) {
+											int start = 0;
+											int i = line.indexOf(' ');
+											while( i != -1 ) {
+												String substr = line.substring(0, i);
+												s.append( substr );
+												start = i+1;
+												i = line.indexOf(' ', start);
+											}
+											s.append( line.substring(start, i) );
+										}
+										line = br.readLine();
+									}
+									br.close();
+									
+									if( s != null ) {
+										if( s.length() > max ) max = s.length();
+									}*/
+								}
+							}
+							
+							updateView();
+							
+							return true;
+						} else if( support.isDataFlavorSupported( df ) ) {							
+							Object obj = support.getTransferable().getTransferData( df );
+							InputStream is = (InputStream)obj;
+							
+							System.err.println( charset );
+							importReader( new BufferedReader(new InputStreamReader(is, charset)) );
+							
+							updateView();
+							
+							return true;
+						}  else if( support.isDataFlavorSupported( DataFlavor.stringFlavor ) ) {							
+							Object obj = support.getTransferable().getTransferData( DataFlavor.stringFlavor );
+							String str = (String)obj;
+							importReader( new BufferedReader( new StringReader(str) ) );
+							
+							updateView();
+							
+							return true;
+						}
+					} catch (UnsupportedFlavorException e) {
+						e.printStackTrace();
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+					return false;
+				}
+			};
+		} catch( Exception e ) {
+			e.printStackTrace();
+		}
+		return th;
+	}
+	
 	int[]	currentRowSelection;
 	Point	p;
 	public void initGui( final Container cnt ) {
@@ -2022,8 +2379,63 @@ public class JavaFasta extends JApplet {
 		JMenu file = new JMenu("File");
 		JMenu edit = new JMenu("Edit");
 		JMenu name = new JMenu("Name");
+		JMenu group = new JMenu("Groups");
 		JMenu phylogeny = new JMenu("Phylogeny");
 		
+		AbstractAction reorderGroups = new AbstractAction( "Reorder groups" ) {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				TableModel tm = new TableModel() {
+					@Override
+					public int getRowCount() {
+						return serifier.lgseq.size();
+					}
+
+					@Override
+					public int getColumnCount() {
+						return 1;
+					}
+
+					@Override
+					public String getColumnName(int columnIndex) {
+						return "Group";
+					}
+
+					@Override
+					public Class<?> getColumnClass(int columnIndex) {
+						return String.class;
+					}
+
+					@Override
+					public boolean isCellEditable(int rowIndex, int columnIndex) {
+						// TODO Auto-generated method stub
+						return false;
+					}
+
+					@Override
+					public Object getValueAt(int rowIndex, int columnIndex) {
+						return serifier.lgseq.get( rowIndex );
+					}
+
+					@Override
+					public void setValueAt(Object aValue, int rowIndex,int columnIndex) {}
+
+					@Override
+					public void addTableModelListener(TableModelListener l) {}
+
+					@Override
+					public void removeTableModelListener(TableModelListener l) {}
+				};
+				JTable gtable = new JTable();
+				gtable.setDragEnabled( true );
+				TransferHandler th = dragRows( gtable );
+				gtable.setTransferHandler( th );
+				gtable.setModel( tm );
+				JScrollPane	gscroll = new JScrollPane( gtable );
+				JOptionPane.showMessageDialog(null, gscroll);
+			}
+		};
+		group.add( reorderGroups );
 		//Window window = SwingUtilities.windowForComponent(cnt);
 		initDataStructures();
 		
@@ -2120,30 +2532,33 @@ public class JavaFasta extends JApplet {
 
 			@Override
 			public int getColumnCount() {
-				return 7;
+				return 8;
 			}
 
 			@Override
 			public String getColumnName(int columnIndex) {
 				if( columnIndex == 0 ) return "Name";
-				else if( columnIndex == 1 ) return "Length";
-				else if( columnIndex == 2 ) return "Unaligned length";
-				else if( columnIndex == 3 ) return "Start";
-				else if( columnIndex == 4 ) return "RevComp";
-				else if( columnIndex == 5 ) return "GC%";
-				else if( columnIndex == 6 ) return "Sort";
+				else if( columnIndex == 1 ) return "Group";
+				
+				else if( columnIndex == 2 ) return "Length";
+				else if( columnIndex == 3 ) return "Unaligned length";
+				else if( columnIndex == 4 ) return "Start";
+				else if( columnIndex == 5 ) return "RevComp";
+				else if( columnIndex == 6 ) return "GC%";
+				else if( columnIndex == 7 ) return "Sort";
 				return null;
 			}
 
 			@Override
 			public Class<?> getColumnClass(int columnIndex) {
 				if( columnIndex == 0 ) return String.class;
-				else if( columnIndex == 1 ) return Integer.class;
+				else if( columnIndex == 1 ) return String.class;
 				else if( columnIndex == 2 ) return Integer.class;
 				else if( columnIndex == 3 ) return Integer.class;
 				else if( columnIndex == 4 ) return Integer.class;
 				else if( columnIndex == 5 ) return Integer.class;
-				else if( columnIndex == 6 ) return String.class;
+				else if( columnIndex == 6 ) return Integer.class;
+				else if( columnIndex == 7 ) return String.class;
 				return null;
 			}
 
@@ -2157,12 +2572,13 @@ public class JavaFasta extends JApplet {
 				if( rowIndex < serifier.lseq.size() ) {
 					Sequence seq = serifier.lseq.get( rowIndex );
 					if( columnIndex == 0 ) return seq.getName();
-					else if( columnIndex == 1 ) return seq.getAlignedLength();
-					else if( columnIndex == 2 ) return seq.getUnalignedLength();
-					else if( columnIndex == 3 ) return seq.getRealStart();
-					else if( columnIndex == 4 ) return seq.getRevComp();
-					else if( columnIndex == 5 ) return seq.getGCP();
-					else if( columnIndex == 6 ) {
+					else if( columnIndex == 1 ) return seq.getGroup();
+					else if( columnIndex == 2 ) return seq.getAlignedLength();
+					else if( columnIndex == 4 ) return seq.getUnalignedLength();
+					else if( columnIndex == 5 ) return seq.getRealStart();
+					else if( columnIndex == 6 ) return seq.getRevComp();
+					else if( columnIndex == 7 ) return seq.getGCP();
+					else if( columnIndex == 8 ) {
 						int begin = c.selectedRect.x-seq.getStart();
 						int stop = begin+c.selectedRect.width;
 						
@@ -2213,6 +2629,8 @@ public class JavaFasta extends JApplet {
 		fastascroll.getViewport().setBackground( Color.white );
 		fastascroll.setRowHeaderView( table );
 		fastascroll.setColumnHeaderView( ruler );
+		
+		fastascroll.getHorizontalScrollBar().setUnitIncrement( (int)c.cw );
 		
 		JScrollPane	tablescroll = new JScrollPane();
 		tablescroll.setViewport( fastascroll.getRowHeader() );
@@ -4466,6 +4884,7 @@ public class JavaFasta extends JApplet {
 			mb.add( file );
 			mb.add( edit );
 			mb.add( name );
+			mb.add( group );
 			mb.add( phylogeny );
 			frame.setJMenuBar( mb );
 		}
