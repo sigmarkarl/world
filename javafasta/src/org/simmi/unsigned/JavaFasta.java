@@ -713,6 +713,19 @@ public class JavaFasta extends JApplet {
 									g.setColor( Color.black );
 									g.drawString( Character.toString( ct ), startx, starty+rh-2);
 								}
+							} else if( aacolors ) {
+								for( int x = Math.max(seq.getStart()-serifier.getMin(), xmin); x < Math.min(seq.getEnd()-serifier.getMin(), xmax); x++ ) {
+									char ct = seq.charAt(x+serifier.getMin());
+									
+									Color col = Sequence.aacolor.get(ct);
+									int startx = (int)(x*cw);
+									int starty = (int)(y*rh);
+									if( col != null ) g.setColor( col );
+									else g.setColor( Color.white );
+									g.fillRect( startx, starty, (int)cw, (int)rh );
+									g.setColor( Color.black );
+									g.drawString( Character.toString( ct ), startx, starty+rh-2);
+								}
 							} else {
 								for( int x = Math.max(seq.getStart()-serifier.getMin(), xmin); x < Math.min(seq.getEnd()-serifier.getMin(), xmax); x++ ) {
 									g.drawString( Character.toString( seq.charAt(x+serifier.getMin()) ), (int)(x*cw), y*rh+rh-2);
@@ -2625,11 +2638,11 @@ public class JavaFasta extends JApplet {
 					if( columnIndex == 0 ) return seq.getName();
 					else if( columnIndex == 1 ) return seq.getGroup();
 					else if( columnIndex == 2 ) return seq.getAlignedLength();
-					else if( columnIndex == 4 ) return seq.getUnalignedLength();
-					else if( columnIndex == 5 ) return seq.getRealStart();
-					else if( columnIndex == 6 ) return seq.getRevComp();
-					else if( columnIndex == 7 ) return seq.getGCP();
-					else if( columnIndex == 8 ) {
+					else if( columnIndex == 3 ) return seq.getUnalignedLength();
+					else if( columnIndex == 4 ) return seq.getRealStart();
+					else if( columnIndex == 5 ) return seq.getRevComp();
+					else if( columnIndex == 6 ) return seq.getGCP();
+					else if( columnIndex == 7 ) {
 						int begin = c.selectedRect.x-seq.getStart();
 						int stop = begin+c.selectedRect.width;
 						

@@ -958,7 +958,7 @@ public class Serifier {
 		}
 	}
 	
-	public List<Set<String>> makeBlastCluster( final Path osf, final Path blastfile, int clustermap ) throws IOException {
+	public List<Set<String>> makeBlastCluster( final Path osf, final Path blastfile, int clustermap, float id, float len ) throws IOException {
 		//InputStream fis = new FileInputStream( blastfile );
 		BufferedReader is;
 		if( blastfile.getFileName().toString().endsWith(".gz") ) {
@@ -985,7 +985,7 @@ public class Serifier {
 			}
 		}*/
 		
-		List<Set<String>> total = makeBlastCluster( is, fos, clustermap );
+		List<Set<String>> total = makeBlastCluster( is, fos, clustermap, id, len );
 		is.close();
 		
 		//scotoductus1572_scaffold00003_4 # 2808 # 3941 # -1 # ID=3_4;partial=00;start_type=GTG;rbs_motif=None;rbs_spacer=None;gc_cont=0.959
@@ -1053,13 +1053,13 @@ public class Serifier {
 		return total;
 	}
 	
-	public List<Set<String>> makeBlastCluster( final BufferedReader is, final BufferedWriter fos, int clustermap ) throws IOException {
+	public List<Set<String>> makeBlastCluster( final BufferedReader is, final BufferedWriter fos, int clustermap, float id, float len ) throws IOException {
 		List<Set<String>>	total = new ArrayList<Set<String>>();
 				
 			if( clustermap%2 == 0 ) {
 				joinBlastSets( is, null, true, total, 0.0 );
 			} else {
-				joinBlastSetsThermus( is, Paths.get("/home/sigmar/check.txt"), true, total );
+				joinBlastSetsThermus( is, Paths.get("/home/sigmar/check.txt"), true, total, id, len );
 			}
 			is.close();
 			
@@ -1143,7 +1143,7 @@ public class Serifier {
 		}*/
 	}
 	
-	public void joinBlastSetsThermus( BufferedReader br, Path write, boolean union, List<Set<String>> total ) throws IOException {		
+	public void joinBlastSetsThermus( BufferedReader br, Path write, boolean union, List<Set<String>> total, float id, float cmplen ) throws IOException {		
 		//File file = null;
 		BufferedWriter fw = null;
 		if( write != null ) {
@@ -1230,7 +1230,7 @@ public class Serifier {
 							int lenid = Integer.parseInt( line.substring(idx0+1, idx1-1) );
 							//int v = val.indexOf("contig");
 							
-							if( percid >= 50 && lenid >= len/2 ) {
+							if( percid >= id*100 && lenid >= len*cmplen ) {
 								int i = trim.indexOf(' ');
 								if( i == -1 ) i = trim.length();
 								String astr = trim.substring(0, i);
@@ -2916,8 +2916,10 @@ public class Serifier {
 		if( i >= 0 ) {
 			String blastfile = args[i+1];
 			int splnum = Integer.parseInt( args[i+2] );
+			float id = Float.parseFloat( args[i+3] );
+			float len = Float.parseFloat( args[i+4] );
 			
-			makeBlastCluster( /*inf,*/ outf.toPath(), Paths.get(blastfile), splnum );
+			makeBlastCluster( /*inf,*/ outf.toPath(), Paths.get(blastfile), splnum, id, len );
 			//for( Sequences seqs : this.sequences ) {
 				//seqs.setNSeq( countSequences( inf ) );
 				//List<Sequences> retlseqs = splitit( splnum, seqs, outf == null ? new File(".") : outf );

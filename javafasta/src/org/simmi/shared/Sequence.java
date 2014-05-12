@@ -25,6 +25,7 @@ public class Sequence implements Comparable<Sequence> {
 	public static ArrayList<Annotation>	lann = new ArrayList<Annotation>();
 	public static Map<String,Annotation>	mann = new HashMap<String,Annotation>();*/
 	
+	public static Map<Character, Color> 		aacolor = new HashMap<Character, Color>();
 	static Map<Character, Character> 	sidechainpolarity = new HashMap<Character, Character>();
 	static Map<Character, Integer> 		sidechaincharge = new HashMap<Character, Integer>();
 	static Map<Character, Double> 		hydropathyindex = new HashMap<Character, Double>();
@@ -191,6 +192,27 @@ public class Sequence implements Comparable<Sequence> {
 		rc.put('n', 'n');
 		rc.put('x', 'x');
 		rc.put('-', '-');
+		
+		aacolor.put('A', new Color(0.0f,0.0f,1.0f));
+		aacolor.put('R', new Color(0.0f,1.0f,1.0f));
+		aacolor.put('N', new Color(0.0f,1.0f,0.0f));
+		aacolor.put('D', new Color(1.0f,1.0f,0.0f));
+		aacolor.put('C', new Color(1.0f,0.0f,0.0f));
+		aacolor.put('E', new Color(1.0f,0.0f,1.0f));
+		aacolor.put('Q', new Color(0.5f,0.5f,0.1f));
+		aacolor.put('G', new Color(0.5f,1.0f,1.0f));
+		aacolor.put('H', new Color(0.5f,1.0f,0.5f));
+		aacolor.put('I', new Color(1.0f,1.0f,0.5f));
+		aacolor.put('L', new Color(1.0f,0.5f,0.5f));
+		aacolor.put('K', new Color(1.0f,0.5f,1.0f));
+		aacolor.put('M', new Color(0.0f,1.0f,0.5f));
+		aacolor.put('F', new Color(0.0f,0.5f,1.0f));
+		aacolor.put('P', new Color(1.0f,0.5f,0.0f));
+		aacolor.put('S', new Color(0.5f,1.0f,0.0f));
+		aacolor.put('T', new Color(1.0f,0.0f,0.5f));
+		aacolor.put('W', new Color(0.5f,0.0f,1.0f));
+		aacolor.put('Y', new Color(0.8f,0.0f,0.8f));
+		aacolor.put('V', new Color(0.8f,0.8f,0.0f));
 		
 		sidechainpolarity.put('A', 'n');
 		sidechainpolarity.put('R', 'p');
