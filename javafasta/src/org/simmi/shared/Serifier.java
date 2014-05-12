@@ -104,7 +104,7 @@ public class Serifier {
 		File 				tmpdir = new File("/Users/sigmar/");
 		try {
 			FileWriter fw = new FileWriter( new File(tmpdir, "tmp.fasta") );
-			writeFasta( lseq, fw, null);
+			writeFasta( lseq, fw, null, true);
 			fw.close();
 
 			ProcessBuilder pb = new ProcessBuilder("/Users/sigmar/FastTree", "tmp.fasta");
@@ -1828,7 +1828,7 @@ public class Serifier {
 				len++;
 				for( Sequence seq : seqlist ) {
 					char c2 = seq.charAt(i+len); //getCharAt(i, r);
-					if( c2 != '.' && c2 != '-' && c2 != ' ' && c2 != 'X' && c2 != 'x' ) {
+					if( c2 != '.' && c2 != '-' && c2 != ' ' && c2 != 'X' && c2 != 'x' && c2 != 'N' && c2 != 'n' ) {
 						rem = false;
 						break;
 					}
@@ -1916,7 +1916,7 @@ public class Serifier {
 			try {
 				Writer osw = Files.newBufferedWriter(path, Charset.defaultCharset(), StandardOpenOption.WRITE);
 				//OutputStreamWriter osw = new OutputStreamWriter( url.openConnection().getOutputStream() );
-				writeFasta( lseq, osw, null );
+				writeFasta( lseq, osw, null, false );
 				osw.close();
 				
 				retlseq.add( new Sequences("", fname, "", path, 0) );
@@ -3875,6 +3875,10 @@ public class Serifier {
 	}
 	
 	public void writeFasta( List<Sequence> seqlist, Writer osw, Rectangle selectedRect ) throws IOException {
+		writeFasta(seqlist, osw, selectedRect, false);
+	}
+	
+	public void writeFasta( List<Sequence> seqlist, Writer osw, Rectangle selectedRect, boolean italic ) throws IOException {
 		for( Sequence seq : seqlist ) {
 			int val = 0;
 	   		int end = seq.length();
@@ -3884,7 +3888,14 @@ public class Serifier {
 	   			 end = Math.min( end, selectedRect.x+selectedRect.width-seq.getStart() );
 	   		}
 	   		 
-	   		if( val <= end ) osw.write( ">" + seq.name + "\n" );
+	   		if( val <= end ) {
+	   			if( italic ) {
+	   				osw.write( "><i>" + seq.name + "</i>\n" );
+	   			} else {
+	   				osw.write( ">" + seq.name + "\n" );
+	   			}
+	   		}
+	   		
 	   		while( val < end ) {
 	   			 osw.write( seq.sb.substring(val, Math.min( end, val+70 )) + "\n" );
 	   			 val += 70;
@@ -3946,7 +3957,7 @@ public class Serifier {
 						if( m == -1 || m > c ) m = c; 
 						String bull = line.substring(k, m)+line.substring(c,line.length());*/
 						
-						if( (endswith && line.endsWith(f)) || (!endswith && line.contains(f)) ) {
+						if( (endswith && line.endsWith(f)) || (!endswith && line.contains(f+" ")) ) {
 							Object swap = (filterset instanceof Map) ? ((Map)filterset).get(f) : null;
 							
 							nseq++;

@@ -1,7 +1,9 @@
 package org.simmi.shared;
 
+import java.awt.Color;
 import java.nio.IntBuffer;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -22,6 +24,25 @@ public class Sequence implements Comparable<Sequence> {
 	public static Map<String,Sequence>		mseq = new HashMap<String,Sequence>();
 	public static ArrayList<Annotation>	lann = new ArrayList<Annotation>();
 	public static Map<String,Annotation>	mann = new HashMap<String,Annotation>();*/
+	
+	static Map<Character, Character> 	sidechainpolarity = new HashMap<Character, Character>();
+	static Map<Character, Integer> 		sidechaincharge = new HashMap<Character, Integer>();
+	static Map<Character, Double> 		hydropathyindex = new HashMap<Character, Double>();
+	static Map<Character, Double> 		aamass = new HashMap<Character, Double>();
+	static Map<Character, Double> 		isoelectricpoint = new HashMap<Character, Double>();
+
+	public static Color[] colorCodes = new Color[9];
+
+	// abundance
+	// aliphatic - aromatic
+	// size
+	// sortcoeff
+
+	public static List<Erm> uff = new ArrayList<Erm>();
+	public static List<Erm> uff2 = new ArrayList<Erm>();
+	public static List<Erm> uff3 = new ArrayList<Erm>();
+	public static List<Erm> mass = new ArrayList<Erm>();
+	public static List<Erm> isoel = new ArrayList<Erm>();
 	
 	static Map<String,String>				amimap = new HashMap<String,String>();
 	static Map<String,String>				revcom = new HashMap<String,String>();
@@ -170,6 +191,145 @@ public class Sequence implements Comparable<Sequence> {
 		rc.put('n', 'n');
 		rc.put('x', 'x');
 		rc.put('-', '-');
+		
+		sidechainpolarity.put('A', 'n');
+		sidechainpolarity.put('R', 'p');
+		sidechainpolarity.put('N', 'p');
+		sidechainpolarity.put('D', 'p');
+		sidechainpolarity.put('C', 'n');
+		sidechainpolarity.put('E', 'p');
+		sidechainpolarity.put('Q', 'p');
+		sidechainpolarity.put('G', 'n');
+		sidechainpolarity.put('H', 'p');
+		sidechainpolarity.put('I', 'n');
+		sidechainpolarity.put('L', 'n');
+		sidechainpolarity.put('K', 'p');
+		sidechainpolarity.put('M', 'n');
+		sidechainpolarity.put('F', 'n');
+		sidechainpolarity.put('P', 'n');
+		sidechainpolarity.put('S', 'p');
+		sidechainpolarity.put('T', 'p');
+		sidechainpolarity.put('W', 'n');
+		sidechainpolarity.put('Y', 'p');
+		sidechainpolarity.put('V', 'n');
+
+		sidechaincharge.put('A', 0);
+		sidechaincharge.put('R', 1);
+		sidechaincharge.put('N', 0);
+		sidechaincharge.put('D', -1);
+		sidechaincharge.put('C', 0);
+		sidechaincharge.put('E', -1);
+		sidechaincharge.put('Q', 0);
+		sidechaincharge.put('G', 0);
+		sidechaincharge.put('H', 0);
+		sidechaincharge.put('I', 0);
+		sidechaincharge.put('L', 0);
+		sidechaincharge.put('K', 1);
+		sidechaincharge.put('M', 0);
+		sidechaincharge.put('F', 0);
+		sidechaincharge.put('P', 0);
+		sidechaincharge.put('S', 0);
+		sidechaincharge.put('T', 0);
+		sidechaincharge.put('W', 0);
+		sidechaincharge.put('Y', 0);
+		sidechaincharge.put('V', 0);
+
+		hydropathyindex.put('A', 1.8);
+		hydropathyindex.put('R', -4.5);
+		hydropathyindex.put('N', -3.5);
+		hydropathyindex.put('D', -3.5);
+		hydropathyindex.put('C', 2.5);
+		hydropathyindex.put('E', -3.5);
+		hydropathyindex.put('Q', -3.5);
+		hydropathyindex.put('G', -0.4);
+		hydropathyindex.put('H', -3.2);
+		hydropathyindex.put('I', 4.5);
+		hydropathyindex.put('L', 3.8);
+		hydropathyindex.put('K', -3.9);
+		hydropathyindex.put('M', 1.9);
+		hydropathyindex.put('F', 2.8);
+		hydropathyindex.put('P', -1.6);
+		hydropathyindex.put('S', -0.8);
+		hydropathyindex.put('T', -0.7);
+		hydropathyindex.put('W', -0.9);
+		hydropathyindex.put('Y', -1.3);
+		hydropathyindex.put('V', 4.2);
+
+		aamass.put('A', 89.09404);
+		aamass.put('C', 121.15404);
+		aamass.put('D', 133.10384);
+		aamass.put('E', 147.13074);
+		aamass.put('F', 165.19184);
+		aamass.put('G', 75.06714);
+		aamass.put('H', 155.15634);
+		aamass.put('I', 131.17464);
+		aamass.put('K', 146.18934);
+		aamass.put('L', 131.17464);
+		aamass.put('M', 149.20784);
+		aamass.put('N', 132.11904);
+		aamass.put('O', 100.0);
+		aamass.put('P', 115.13194);
+		aamass.put('Q', 146.14594);
+		aamass.put('R', 174.20274);
+		aamass.put('S', 105.09344);
+		aamass.put('T', 119.12034);
+		aamass.put('U', 168.053);
+		aamass.put('V', 117.14784);
+		aamass.put('W', 204.22844);
+		aamass.put('Y', 181.19124);
+
+		isoelectricpoint.put('A', 6.01);
+		isoelectricpoint.put('C', 5.05);
+		isoelectricpoint.put('D', 2.85);
+		isoelectricpoint.put('E', 3.15);
+		isoelectricpoint.put('F', 5.49);
+		isoelectricpoint.put('G', 6.06);
+		isoelectricpoint.put('H', 7.6);
+		isoelectricpoint.put('I', 6.05);
+		isoelectricpoint.put('K', 9.6);
+		isoelectricpoint.put('L', 6.01);
+		isoelectricpoint.put('M', 5.74);
+		isoelectricpoint.put('N', 5.41);
+		isoelectricpoint.put('O', 21.0);
+		isoelectricpoint.put('P', 6.3);
+		isoelectricpoint.put('Q', 5.65);
+		isoelectricpoint.put('R', 10.76);
+		isoelectricpoint.put('S', 5.68);
+		isoelectricpoint.put('T', 5.6);
+		isoelectricpoint.put('U', 20.0);
+		isoelectricpoint.put('V', 6.0);
+		isoelectricpoint.put('W', 5.89);
+		isoelectricpoint.put('Y', 5.64);
+
+		for (char c : hydropathyindex.keySet()) {
+			double d = hydropathyindex.get(c);
+			uff.add(new Erm(d, c));
+		}
+		Collections.sort(uff);
+
+		for (char c : sidechainpolarity.keySet()) {
+			double d = sidechainpolarity.get(c);
+			uff2.add(new Erm(d, c));
+		}
+		Collections.sort(uff2);
+
+		for (char c : sidechaincharge.keySet()) {
+			double d = sidechaincharge.get(c);
+			uff3.add(new Erm(d, c));
+		}
+		Collections.sort(uff3);
+
+		for (char c : aamass.keySet()) {
+			double d = aamass.get(c);
+			mass.add(new Erm(d, c));
+		}
+		Collections.sort(mass);
+
+		for (char c : isoelectricpoint.keySet()) {
+			double d = isoelectricpoint.get(c);
+			isoel.add(new Erm(d, c));
+		}
+		Collections.sort(isoel);
 	}
 	
 	public void initIndexBuffers() {
@@ -193,6 +353,7 @@ public class Sequence implements Comparable<Sequence> {
 		}
 	}
 	
+	public Sequence				consensus;
 	public String 				name;
 	//public String				group;
 	public String				id;
@@ -495,6 +656,19 @@ public class Sequence implements Comparable<Sequence> {
 		}
 		
 		//return dmat;
+	}
+	
+	public void reverseComplement() {
+		for( int i = 0; i < length()/2; i++ ) {
+			char c = sb.charAt(i);
+			char cc = rc.containsKey( c ) ? rc.get(c) : c;
+			
+			char nc = sb.charAt(length()-1-i);
+			char ncc = rc.containsKey( nc ) ? rc.get(nc) : nc;
+			
+			sb.setCharAt( i, ncc );
+			sb.setCharAt( length()-1-i, cc );
+		}
 	}
 	
 	public void reverse() {

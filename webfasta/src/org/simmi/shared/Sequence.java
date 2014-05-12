@@ -191,6 +191,15 @@ public class Sequence implements Comparable<Sequence> {
 		
 	}
 	
+	public void removeAllGaps() {
+		StringBuilder	newsb = new StringBuilder();
+		for( int i = 0; i < sb.length(); i++ ) {
+			char c = sb.charAt(i);
+			if( c != '-' && c != '*' ) newsb.append( c );
+		}
+		sb = newsb;
+	}
+	
 	public static String getPhylip( List<Sequence> lseq, boolean numeric ) {
 		StringBuilder out = new StringBuilder();
 		

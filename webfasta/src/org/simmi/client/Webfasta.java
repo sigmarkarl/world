@@ -64,8 +64,10 @@ import com.google.gwt.event.logical.shared.ValueChangeEvent;
 import com.google.gwt.event.logical.shared.ValueChangeHandler;
 import com.google.gwt.typedarrays.client.Float64ArrayNative;
 import com.google.gwt.typedarrays.client.Int8ArrayNative;
+import com.google.gwt.typedarrays.client.Uint8ArrayNative;
 import com.google.gwt.typedarrays.shared.ArrayBuffer;
 import com.google.gwt.typedarrays.shared.Int8Array;
+import com.google.gwt.typedarrays.shared.Uint8Array;
 import com.google.gwt.user.client.Command;
 import com.google.gwt.user.client.Element;
 import com.google.gwt.user.client.Timer;
@@ -502,12 +504,27 @@ public class Webfasta implements EntryPoint {
 			int stop = getLength();
 			for( int i = getLength()-1; i >= 0; i-- ) {
 				char c = charAt(i);
-				if( c == '.' || c == '-' || c == ' ' ) start = i;
+				if( c == '.' || c == '-' || c == ' ' || c == '*' ) start = i;
 				else {
 					if( stop > start ) this.delete( start, stop );
 					stop = i;
 				}
 			}
+			if( stop > start ) this.delete( start, stop );
+		}
+		
+		public void removeAllGaps() {
+			int start = getLength();
+			int stop = getLength();
+			for( int i = getLength()-1; i >= 0; i-- ) {
+				char c = charAt(i);
+				if( c == '.' || c == '-' || c == ' ' || c == '*' ) start = i;
+				else {
+					if( stop > start ) this.delete( start, stop );
+					stop = i;
+				}
+			}
+			if( stop > start ) this.delete( start, stop );
 		}
 
 		@Override
@@ -1462,6 +1479,24 @@ public class Webfasta implements EntryPoint {
 
 		draw(xstart, ystart);
 	}
+	
+	public native String emuscle(  String fstr ) /*-{
+		//$wnd.console.log('bleh' + fstr);
+		
+		var buf = new ArrayBuffer(fstr.length); // 2 bytes for each char
+		var bufView = new Uint8Array(buf);
+		for (var i=0; i<fstr.length; i++) {
+		   bufView[i] = fstr.charCodeAt(i);
+		}
+		
+		//$wnd.console.log('bleh2' + bufView[0] + '  ' + bufView[1]);
+		
+		var mbuf = $wnd.Module._malloc( buf.byteLength );
+		$wnd.Module.HEAPU8.set( bufView, mbuf );
+		var ptr = $wnd.Module.ccall( 'check', 'number', ['number', 'number'], [mbuf, buf.byteLength] );
+		var str = $wnd.Pointer_stringify( ptr );
+		return str;
+	}-*/;
 
 	public native String fetchTreeSel(elemental.html.Window myPopup) /*-{
 		var ret = "erm";
@@ -1738,6 +1773,27 @@ public class Webfasta implements EntryPoint {
 				// "TreeDraw");
 			}
 		});
+		epopup.addItem("EMuscle", new Command() {
+			@Override
+			public void execute() {
+				String fasta = exportString();
+				String ret = emuscle( fasta );
+				
+				Int8Array ia8 = Int8ArrayNative.create( ret.length() );
+				for (int i=0; i<ret.length(); i++) {
+				   ia8.set(i, ret.charAt(i));
+				}
+				
+				shorten( ia8 );
+				//Browser.getWindow().getConsole().log( ret );
+				// elemental.html.EmbedElement ee =
+				// (elemental.html.EmbedElement)e;
+
+				// myPopup =
+				// Browser.getWindow().open("http://webconnectron.appspot.com/Treedraw.html?callback=webfasta",
+				// "TreeDraw");
+			}
+		});
 		epopup.addSeparator();
 		epopup.addItem("Delete selection", new Command() {
 			@Override
@@ -1779,6 +1835,18 @@ public class Webfasta implements EntryPoint {
 				for( Sequence seq : val ) {
 					if( seq.isSelected() ) {
 						seq.removeGaps();
+					}
+				}
+				resetMax();
+				draw(xstart, ystart);
+			}
+		});
+		epopup.addItem("Remove all gaps", new Command() {
+			@Override
+			public void execute() {
+				for( Sequence seq : val ) {
+					if( seq.isSelected() ) {
+						seq.removeAllGaps();
 					}
 				}
 				resetMax();
@@ -2689,8 +2757,8 @@ public class Webfasta implements EntryPoint {
 				canvas.setWidth(w + "px");
 				canvas.setHeight(h + "px");
 
-				canvas.setCoordinateSpaceWidth(w);
-				canvas.setCoordinateSpaceHeight(h);
+				canvas.setCoordinateSpaceWidth(w*2);
+				canvas.setCoordinateSpaceHeight(h*2);
 
 				draw(xstart, ystart);
 
@@ -2936,7 +3004,7 @@ public class Webfasta implements EntryPoint {
 			@Override
 			public void onMouseMove(MouseMoveEvent event) {
 				if (mousedown) {
-					Browser.getWindow().getConsole().log("fucking true");
+					//Browser.getWindow().getConsole().log("fucking true");
 					dragging = true;
 					int x = event.getX();
 					int y = event.getY();

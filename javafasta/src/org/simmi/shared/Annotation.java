@@ -55,6 +55,10 @@ public class Annotation implements Comparable<Object> {
 		this.ori = ori;
 	}
 	
+	public Sequence getContig() {
+		return seq;
+	}
+	
 	public boolean isReverse() {
 		return ori == -1;
 	}
