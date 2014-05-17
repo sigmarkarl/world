@@ -26,7 +26,6 @@ import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -61,7 +60,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.TreeSet;
+import java.util.TreeMap;
 
 import javax.imageio.ImageIO;
 import javax.jnlp.ClipboardService;
@@ -816,9 +815,26 @@ public class JavaFasta extends JApplet {
 					//selectedRect.width;
 					c.repaint();
 				} else if( keycode == KeyEvent.VK_SPACE ) {
+					int k = -1;
+					int o = 1;
+					while( o < 10 ) {
+						char c = '-';
+						for( Sequence s : seq ) {
+							int i = this.selectedRect.x-s.getStart()+o;
+							c = s.sb.charAt(i);
+							if( c != '-' ) break;
+						}
+						if( c == '-' ) {
+							k = o;
+							break;
+						}
+						o++;
+					}
+					
 					for( Sequence s : seq ) {
 						int i = this.selectedRect.x-s.getStart();
 						if( i >= 0 && i < s.sb.length() ) {
+							if( k != -1 ) s.sb.delete(i+k, i+k+1);
 							s.sb.insert( i, '-' );
 							s.edited = true;
 						}
@@ -827,10 +843,12 @@ public class JavaFasta extends JApplet {
 					c.repaint();
 				} else if( (keychar >= 'a' && keychar <= 'z') || (keychar >= 'A' && keychar <= 'Z') ) {
 					for( Sequence s : seq ) {
-						int i = this.selectedRect.x-s.getStart();
-						if( i >= 0 && i < s.sb.length() ) {
-							s.sb.replace(i, i+1, Character.toString(keychar) );
-							s.edited = true;
+						for( int k = this.selectedRect.x; k < this.selectedRect.x+this.selectedRect.width; k++ ) {
+							int i = k-s.getStart();
+							if( i >= 0 && i < s.sb.length() ) {
+								s.sb.replace(i, i+1, Character.toString(keychar) );
+								s.edited = true;
+							}
 						}
 					}
 					c.repaint();
@@ -869,6 +887,65 @@ public class JavaFasta extends JApplet {
 		@Override
 		public void keyReleased(KeyEvent e) {}
 	};
+	
+	public void importBlastReader( BufferedReader br ) throws IOException {
+		String line = br.readLine();
+		Sequence s = null;
+		while( line != null ) {
+			if( line.startsWith("Query=") ) {
+				serifier.checkMaxMin();
+				s = new Sequence( line.substring(7), null );
+				/*for( int i = 0; i < serifier.max; i++ ) {
+					s.sb.append('-');
+				}*/
+				
+				serifier.lseq.add( s );
+				serifier.mseq.put( s.name, s );
+				s.setStart(0);
+			} else if( line.startsWith("Query ") ) {
+				int last = line.lastIndexOf(' ');
+				String qseq = line.substring(12, last ).trim();
+				String[] qsplit = line.split("[ ]+");
+				line = br.readLine();
+				line = br.readLine();
+				last = line.lastIndexOf(' ');
+				String sseq = line.substring(12, last ).trim();
+				String[] ssplit = line.split("[ ]+");
+				
+				int qstart = Integer.parseInt(qsplit[1]);
+				int qstop = Integer.parseInt( qsplit[ qsplit.length-1 ] );
+				int sstart = Integer.parseInt(ssplit[1]);
+				int sstop = Integer.parseInt( ssplit[ ssplit.length-1 ] );
+				
+				if( sstop > sstart ) {
+					int k = 0;
+					for( int i = 0; i < sseq.length(); i++ ) {
+						if( sseq.charAt(i) != '-' ) {
+							//if( k+sstart-1 >= s.sb.length() ) break;
+							while( s.sb.length() < k+sstart ) {
+								s.sb.append('-');
+							}
+							s.sb.setCharAt(k+sstart-1, qseq.charAt(i));
+							k++;
+						}
+					}
+				} else {
+					int k = 0;
+					for( int i = 0; i < sseq.length(); i++ ) {
+						if( sseq.charAt(i) != '-' ) {
+							//if( k+sstop-1 >= s.sb.length() ) break;
+							while( s.sb.length() < sstart-k ) {
+								s.sb.append('-');
+							}
+							s.sb.setCharAt(sstart-k-1, Sequence.rc.get(qseq.charAt(i)) );
+							k++;
+						}
+					}
+				}
+			}
+			line = br.readLine();
+		}
+	}
 	
 	public void importAceReader( BufferedReader br ) throws IOException {
 		String line = br.readLine();
@@ -962,7 +1039,10 @@ public class JavaFasta extends JApplet {
 	
 	public void importFile( String name, InputStream is ) throws IOException {
 		if( name.endsWith(".ab1") || name.endsWith(".abi") ) addAbiSequence( name, is );
-		else if( name.endsWith(".ace") ) {
+		else if( name.endsWith(".blastout") ) {
+			BufferedReader	br = new BufferedReader( new InputStreamReader(is) );
+			importBlastReader( br );
+		} else if( name.endsWith(".ace") ) {
 			BufferedReader	br = new BufferedReader( new InputStreamReader(is) );
 			importAceReader( br );
 		} else {
@@ -2423,6 +2503,176 @@ public class JavaFasta extends JApplet {
 		return th;
 	}
 	
+	class Ab1FileVisitor extends SimpleFileVisitor<Path> {
+	
+	};
+	
+	public void importFile( File f ) throws IOException {
+		String fname = f.getName();
+		if( fname.endsWith(".ab1") ) {
+			int flen = (int)f.length();
+			ByteBuffer bb = ByteBuffer.allocate( flen );
+			FileInputStream fis = new FileInputStream( f );
+			fis.read( bb.array() );
+			fis.close();
+			Ab1Reader abi = new Ab1Reader( bb );
+			Sequence s = new Sequence( f.getName(), serifier.mseq );
+			s.append( abi.getSequence() );
+			serifier.lseq.add( s );
+			
+			if( s.length() > serifier.getMax() ) serifier.setMax( s.length() );
+			
+			bb.clear();
+		} else if( fname.endsWith(".blastout") ) {
+			FileReader fr = new FileReader( f );
+			BufferedReader br = new BufferedReader( fr );
+			String line = br.readLine();
+			
+			Map<String,Integer>	hitmap = new HashMap<String,Integer>();
+			while( line != null ) {
+				if( line.startsWith(">") ) {
+					System.err.println( line );
+					String val = line.substring(2);
+					
+					System.err.println( line );
+					
+					line = br.readLine();
+					//boolean erm = true;
+					//while( erm && !line.startsWith(">") && !line.startsWith("Query=") ) {
+					while( line != null && !line.startsWith(">") && !line.startsWith("Query=") ) {
+						String trim = line.trim();
+						if( trim.startsWith("Score") ) {
+							String end = trim.substring(trim.length()-3);
+							if( end.equals("0.0") ) {
+								if( hitmap.containsKey( val ) ) {
+									hitmap.put( val, hitmap.get(val)+1 );
+								} else {
+									hitmap.put( val, 1 );
+								}
+							}
+						}
+						
+						line = br.readLine();
+					}
+				} else {
+					line = br.readLine();
+				}
+			}
+			br.close();
+			fr = new FileReader( f );
+			br = new BufferedReader( fr );
+			
+			line = br.readLine();
+			String query;
+			Sequence tseq = null;
+			int k = 0;
+			while( line != null ) {
+				if( line.startsWith( "Query=" ) ) {
+					query = line.substring(7);
+					if( serifier.mseq.containsKey( query ) ) {
+						Sequence seq = serifier.mseq.get( query );
+						int ind = serifier.lseq.indexOf( seq );
+						if( ind >= k ) {
+							tseq = seq;
+							serifier.lseq.remove( seq );
+							serifier.lseq.add(k++, seq);
+						}
+					}
+				} else if( line.startsWith(">") ) {
+					int qstart = -1;
+					int qstop = 0;
+					int sstart = -1;
+					int sstop = 0;
+					
+					String val = line.substring(2);//line.split("[\t ]+")[1];
+					line = br.readLine();
+					Sequence seq = null;
+					int ind = -1;
+					while( !line.startsWith(">") && !line.startsWith("Query=") ) {
+						String trim = line.trim();
+						if( trim.startsWith("Score") ) {
+							String end = trim.substring(trim.length()-3);
+							if( end.equals("0.0") && hitmap.get(val) == 1 ) {
+								if( serifier.mseq.containsKey( val ) ) {
+									seq = serifier.mseq.get( val );
+									ind = serifier.lseq.indexOf( seq );
+									if( ind >= k ) {
+										serifier.lseq.remove( seq );
+										serifier.lseq.add(k, seq);
+									}/* else {											
+										seq = null;
+									}*/
+								}
+							} else {
+								break;
+							}
+						} else if( trim.startsWith("Query") ) {
+							int li = trim.lastIndexOf(' ');
+							int qtmp = Integer.parseInt( trim.substring( li+1 ) );
+							qstop = qtmp;
+							if( qstart == -1 ) {
+								qtmp = Integer.parseInt( trim.split("[ ]+")[1] );
+								qstart = qtmp;
+							}
+						} else if( trim.startsWith("Sbjct") ) {
+							int li = trim.lastIndexOf(' ');
+							int stmp = Integer.parseInt( trim.substring( li+1 ) );
+							sstop = stmp;
+							if( sstart == -1 ) {
+								stmp = Integer.parseInt( trim.split("[ ]+")[1] );
+								sstart = stmp;
+							}
+						}
+						line = br.readLine();
+					}
+					
+					if( ind != -1 ) {
+						if( ind >= k ) {
+							if( sstart > sstop ) {
+								seq.revcomp = 2;
+								int sval = qstart-(seq.length()-sstart+1);
+								seq.setStart( sval );
+							} else {
+								seq.setStart( qstart-sstart );
+							}
+							k++;
+						} else if( tseq != null ) {
+							if( sstart > sstop ) {
+								if( seq.revcomp == 2 ) {
+									int sval = (seq.length()-sstart+1)-qstart  +  seq.getStart();
+									tseq.setStart( sval );
+								} else {
+									tseq.revcomp = 2;
+									int sval = sstart-qstart  +  seq.getStart();
+									tseq.setStart( sval );
+								}
+							} else {
+								if( seq.revcomp == 2 ) {
+									tseq.revcomp = 2;
+									int sval = sstart-qstart  +  seq.getStart();
+									tseq.setStart( sval );
+								} else {
+									tseq.setStart( sstart-qstart  +  seq.getStart() );
+								}
+							}
+						}
+					}
+					
+					continue;
+				}
+				
+				line = br.readLine();
+			}
+			br.close();
+			
+			serifier.checkMaxMin();
+			updateView();
+		} else {
+			BufferedReader	br = new BufferedReader( new FileReader( f ) );
+			importReader( br );
+		}
+	}
+	
 	int[]	currentRowSelection;
 	Point	p;
 	public void initGui( final Container cnt ) {
@@ -2806,172 +3056,34 @@ public class JavaFasta extends JApplet {
 							c.repaint();
 							
 							return true;
-					} else if( support.isDataFlavorSupported( DataFlavor.javaFileListFlavor ) ) {
+						} else if( support.isDataFlavorSupported( DataFlavor.javaFileListFlavor ) ) {
 							Object obj = support.getTransferable().getTransferData( DataFlavor.javaFileListFlavor );
 							//InputStream is = (InputStream)obj;
 							List<File>	lfile = (List<File>)obj;
 							
 							for( File f : lfile ) {
-								String fname = f.getName();
-								if( fname.endsWith(".ab1") ) {
-									int flen = (int)f.length();
-									ByteBuffer bb = ByteBuffer.allocate( flen );
-									FileInputStream fis = new FileInputStream( f );
-									fis.read( bb.array() );
-									Ab1Reader abi = new Ab1Reader( bb );
-									Sequence s = new Sequence( f.getName(), serifier.mseq );
-									s.append( abi.getSequence() );
-									serifier.lseq.add( s );
-									
-									if( s.length() > serifier.getMax() ) serifier.setMax( s.length() );
-									
-									bb.clear();
-								} else if( fname.endsWith(".blastout") ) {
-									FileReader fr = new FileReader( f );
-									BufferedReader br = new BufferedReader( fr );
-									String line = br.readLine();
-									
-									Map<String,Integer>	hitmap = new HashMap<String,Integer>();
-									while( line != null ) {
-										if( line.startsWith(">") ) {
-											System.err.println( line );
-											String val = line.substring(2);
-											
-											System.err.println( line );
-											
-											line = br.readLine();
-											//boolean erm = true;
-											//while( erm && !line.startsWith(">") && !line.startsWith("Query=") ) {
-											while( line != null && !line.startsWith(">") && !line.startsWith("Query=") ) {
-												String trim = line.trim();
-												if( trim.startsWith("Score") ) {
-													String end = trim.substring(trim.length()-3);
-													if( end.equals("0.0") ) {
-														if( hitmap.containsKey( val ) ) {
-															hitmap.put( val, hitmap.get(val)+1 );
-														} else {
-															hitmap.put( val, 1 );
-														}
-													}
+								if( f.isDirectory() ) {
+									Files.walkFileTree( f.toPath(), new SimpleFileVisitor<Path>() {
+										public FileVisitResult visitFile(Path file, BasicFileAttributes attr) {
+									        if (attr.isSymbolicLink()) {
+									            System.out.format("Symbolic link: %s ", file);
+									        } else if (attr.isRegularFile() && file.getFileName().toString().endsWith(".ab1")) {
+												System.err.println( file.getFileName().toString() + "  " + file.toFile().length() );
+												try {
+													importFile( file.toFile() );
+												} catch (IOException e) {
+													e.printStackTrace();
 												}
-												
-												line = br.readLine();
-											}
-										} else {
-											line = br.readLine();
+									        } else {
+									            System.out.format("Other: %s ", file);
+									        }
+									       
+									        return FileVisitResult.CONTINUE;
 										}
-									}
-									br.close();
-									fr = new FileReader( f );
-									br = new BufferedReader( fr );
-									
-									line = br.readLine();
-									String query;
-									Sequence tseq = null;
-									int k = 0;
-									while( line != null ) {
-										if( line.startsWith( "Query=" ) ) {
-											query = line.substring(7);
-											if( serifier.mseq.containsKey( query ) ) {
-												Sequence seq = serifier.mseq.get( query );
-												int ind = serifier.lseq.indexOf( seq );
-												if( ind >= k ) {
-													tseq = seq;
-													serifier.lseq.remove( seq );
-													serifier.lseq.add(k++, seq);
-												}
-											}
-										} else if( line.startsWith(">") ) {
-											int qstart = -1;
-											int qstop = 0;
-											int sstart = -1;
-											int sstop = 0;
-											
-											String val = line.substring(2);//line.split("[\t ]+")[1];
-											line = br.readLine();
-											Sequence seq = null;
-											int ind = -1;
-											while( !line.startsWith(">") && !line.startsWith("Query=") ) {
-												String trim = line.trim();
-												if( trim.startsWith("Score") ) {
-													String end = trim.substring(trim.length()-3);
-													if( end.equals("0.0") && hitmap.get(val) == 1 ) {
-														if( serifier.mseq.containsKey( val ) ) {
-															seq = serifier.mseq.get( val );
-															ind = serifier.lseq.indexOf( seq );
-															if( ind >= k ) {
-																serifier.lseq.remove( seq );
-																serifier.lseq.add(k, seq);
-															}/* else {											
-																seq = null;
-															}*/
-														}
-													} else {
-														break;
-													}
-												} else if( trim.startsWith("Query") ) {
-													int li = trim.lastIndexOf(' ');
-													int qtmp = Integer.parseInt( trim.substring( li+1 ) );
-													qstop = qtmp;
-													if( qstart == -1 ) {
-														qtmp = Integer.parseInt( trim.split("[ ]+")[1] );
-														qstart = qtmp;
-													}
-												} else if( trim.startsWith("Sbjct") ) {
-													int li = trim.lastIndexOf(' ');
-													int stmp = Integer.parseInt( trim.substring( li+1 ) );
-													sstop = stmp;
-													if( sstart == -1 ) {
-														stmp = Integer.parseInt( trim.split("[ ]+")[1] );
-														sstart = stmp;
-													}
-												}
-												line = br.readLine();
-											}
-											
-											if( ind != -1 ) {
-												if( ind >= k ) {
-													if( sstart > sstop ) {
-														seq.revcomp = 2;
-														int sval = qstart-(seq.length()-sstart+1);
-														seq.setStart( sval );
-													} else {
-														seq.setStart( qstart-sstart );
-													}
-													k++;
-												} else if( tseq != null ) {
-													if( sstart > sstop ) {
-														if( seq.revcomp == 2 ) {
-															int sval = (seq.length()-sstart+1)-qstart  +  seq.getStart();
-															tseq.setStart( sval );
-														} else {
-															tseq.revcomp = 2;
-															int sval = sstart-qstart  +  seq.getStart();
-															tseq.setStart( sval );
-														}
-													} else {
-														if( seq.revcomp == 2 ) {
-															tseq.revcomp = 2;
-															int sval = sstart-qstart  +  seq.getStart();
-															tseq.setStart( sval );
-														} else {
-															tseq.setStart( sstart-qstart  +  seq.getStart() );
-														}
-													}
-												}
-											}
-											
-											continue;
-										}
-										
-										line = br.readLine();
-									}
-									br.close();
-									
-									updateView();
+									});
 								} else {
-									BufferedReader	br = new BufferedReader( new FileReader( f ) );
-									importReader( br );
+									importFile( f );
+								}
 									/*String line = br.readLine();
 									while( line != null ) {
 										if( line.startsWith(">") ) {
@@ -2998,11 +3110,11 @@ public class JavaFasta extends JApplet {
 									if( s != null ) {
 										if( s.length() > max ) max = s.length();
 									}*/
-								}
 							}
 							
+							serifier.checkMaxMin();
 							updateView();
-							
+								
 							return true;
 						} else if( support.isDataFlavorSupported( df ) ) {							
 							Object obj = support.getTransferable().getTransferData( df );
@@ -3011,6 +3123,7 @@ public class JavaFasta extends JApplet {
 							System.err.println( charset );
 							importReader( new BufferedReader(new InputStreamReader(is, charset)) );
 							
+							serifier.checkMaxMin();
 							updateView();
 							
 							return true;
@@ -3019,6 +3132,7 @@ public class JavaFasta extends JApplet {
 							String str = (String)obj;
 							importReader( new BufferedReader( new StringReader(str) ) );
 							
+							serifier.checkMaxMin();
 							updateView();
 							
 							return true;
@@ -3234,9 +3348,9 @@ public class JavaFasta extends JApplet {
 		    	 }
 		    	 final Path tmpdir = Paths.get( System.getProperty("user.home") );
 		    	 try {
-					BufferedWriter fw = Files.newBufferedWriter( tmpdir.resolve( "tmp.fasta" ) ); //new FileWriter( new File( tmpdir, "tmp.fasta" ) );
-					serifier.writeFasta( seqlist, fw, null );
-			    	fw.close();
+					//BufferedWriter fw = Files.newBufferedWriter( tmpdir.resolve( "tmp.fasta" ) ); //new FileWriter( new File( tmpdir, "tmp.fasta" ) );
+					//serifier.writeFasta( seqlist, fw, null );
+			    	//fw.close();
 			    	
 			    	ProcessBuilder pb = new ProcessBuilder("muscle"); //, "-in", "tmp.fasta", "-out", "tmpout.fasta");
 			    	pb.directory( tmpdir.toFile() );
@@ -3260,13 +3374,17 @@ public class JavaFasta extends JApplet {
 			    		public void run() {
 			    			try {
 			    				OutputStream os = p.getOutputStream();
-			    				serifier.writeFasta( seqlist, new OutputStreamWriter( os ), null );
+			    				OutputStreamWriter osw = new OutputStreamWriter( os );
+			    				serifier.writeFasta( seqlist, osw, null );
+			    				osw.close();
 				    			os.close();
 				    			
 				    			serifier.lseq.removeAll( seqlist );
 				    			
 			    				InputStream is = p.getInputStream();
-			    				importReader( new BufferedReader( new InputStreamReader(is) ) );
+			    				BufferedReader br = new BufferedReader( new InputStreamReader(is) );
+			    				importReader( br );
+			    				br.close();
 			    				is.close();
 				    			
 			    				/*ByteArrayOutputStream	baos = new ByteArrayOutputStream();
@@ -3948,14 +4066,16 @@ public class JavaFasta extends JApplet {
 				c.repaint();
 			}
 		});
-		cbmi.setAction( new AbstractAction("AA colors") {
+		popup.add( cbmi );
+		final JCheckBoxMenuItem		cbmi3 = new JCheckBoxMenuItem();
+		cbmi3.setAction( new AbstractAction("AA colors") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				c.aacolors = cbmi.getState();
 				c.repaint();
 			}
 		});
-		popup.add( cbmi );
+		popup.add( cbmi3 );
 		phylogeny.add( new AbstractAction("Dis-mat exclude gaps") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -4122,7 +4242,8 @@ public class JavaFasta extends JApplet {
 				}
 				
 				if( !succ ) {
-					String 				tree = serifier.getFastTree();
+					String 				tree = serifier.getFastTree( seqlist );
+					System.err.println( tree );
 					if( cs.connections().size() > 0 ) {
 			    		cs.sendToAll( tree );
 			    	} else if( Desktop.isDesktopSupported() ) {
@@ -4308,7 +4429,100 @@ public class JavaFasta extends JApplet {
 				c.updateCoords();
 			}
 		});
-		name.add( new AbstractAction("Join") {
+		name.add( new AbstractAction("Join same names") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				int[] rr = table.getSelectedRows();
+				//String name = "";
+				Map<String,Set<Sequence>>	remseqmap = new HashMap<String,Set<Sequence>>();
+				for( int r : rr ) {
+					int i = table.convertRowIndexToModel(r);
+					Sequence seq = serifier.lseq.get(i);
+					String name = seq.getName();
+					Set<Sequence> remseq;
+					if( remseqmap.containsKey( name ) ) {
+						remseq = remseqmap.get( name );
+					} else {
+						remseq = new HashSet<Sequence>();
+						remseqmap.put(name, remseq);
+					}
+					remseq.add( seq );
+					/*if( name.length() == 0 ) name = seq.getName();
+					else {
+						int k = 0;
+						char c = name.charAt(k);
+						while( c == seq.getName().charAt(k) ) {
+							k++;
+							if( k == name.length() || k == seq.getName().length() ) break;
+							c = name.charAt(k);
+						}
+						name = name.substring(0,k);
+					}
+					remseq.add( seq );*/
+				}
+				
+				for( String name : remseqmap.keySet() ) {
+					Set<Sequence> remseq = remseqmap.get( name );
+					Sequence newseq = new Sequence(name, serifier.mseq);
+					int start = Integer.MAX_VALUE;
+					int end = 0;
+					for( Sequence s : remseq ) {
+						if( s.getStart() < start ) start = s.getStart();
+						if( s.getEnd() > end ) end = s.getEnd();
+					}
+					
+					newseq.setStart( start );
+					Map<Character,Integer>	charset = new TreeMap<Character,Integer>();
+					for( int i = start; i < end; i++ ) {
+						for( Sequence s : remseq ) {
+							char c = s.charAt(i);
+							char cc = Character.toUpperCase(c);
+							//if( c != '-' && c != ' ' ) 
+							int k = 0;
+							if( charset.containsKey(cc) ) {
+								k = charset.get(cc);
+							}
+							charset.put( cc, k+1 );
+						}
+						
+						if( charset.size() == 0 ) newseq.sb.append('-');
+						else if( charset.size() == 1 ) newseq.sb.append( charset.keySet().iterator().next() );
+						else if( charset.size() > 1 ) {
+							char val = '-';
+							int max = 0;
+							for( char c : charset.keySet() ) {
+								if( c != '-' && c != ' ' ) {
+									int m = charset.get(c);
+									if( m > max ) {
+										max = m;
+										val = c;
+									}
+								}
+							}
+							newseq.sb.append( val );
+							
+							/*	newseq.sb.append( charset.iterator().next() );
+							} else if( charset.size() == 3 ) {
+								newseq.sb.append( charset.iterator().next() );
+							} else newseq.sb.append( 'N' );*/
+						}
+						
+						charset.clear();
+					}
+					
+					serifier.lseq.removeAll( remseq );
+					serifier.lseq.add( newseq );
+				}
+				
+				serifier.checkMaxMin();
+				c.updateCoords();
+				table.tableChanged( new TableModelEvent(table.getModel()) );
+				c.repaint();
+				overview.reval();
+				overview.repaint();
+			}
+		});
+		name.add( new AbstractAction("Join selected") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				int[] rr = table.getSelectedRows();
@@ -4340,23 +4554,40 @@ public class JavaFasta extends JApplet {
 				}
 				
 				newseq.setStart( start );
-				Set<Character>	charset = new TreeSet<Character>();
+				Map<Character,Integer>	charset = new TreeMap<Character,Integer>();
 				for( int i = start; i < end; i++ ) {
 					for( Sequence s : remseq ) {
 						char c = s.charAt(i);
-						if( c != '-' && c != ' ' ) charset.add( Character.toUpperCase(c) );
+						char cc = Character.toUpperCase(c);
+						//if( c != '-' && c != ' ' ) 
+						int k = 0;
+						if( charset.containsKey(cc) ) {
+							k = charset.get(cc);
+						}
+						charset.put( cc, k+1 );
 					}
 					
 					if( charset.size() == 0 ) newseq.sb.append('-');
-					else if( charset.size() == 1 ) newseq.sb.append( charset.iterator().next() );
-					else if( charset.size() == 2 ) {
-						if( charset.contains('A') || charset.contains('a') ) {
-							
+					else if( charset.size() == 1 ) newseq.sb.append( charset.keySet().iterator().next() );
+					else if( charset.size() > 1 ) {
+						char val = '-';
+						int max = 0;
+						for( char c : charset.keySet() ) {
+							if( c != '-' && c != ' ' ) {
+								int m = charset.get(c);
+								if( m > max ) {
+									max = m;
+									val = c;
+								}
+							}
 						}
-						newseq.sb.append( charset.iterator().next() );
-					} else if( charset.size() == 3 ) {
-						newseq.sb.append( charset.iterator().next() );
-					} else newseq.sb.append( 'N' );
+						newseq.sb.append( val );
+						
+						/*	newseq.sb.append( charset.iterator().next() );
+						} else if( charset.size() == 3 ) {
+							newseq.sb.append( charset.iterator().next() );
+						} else newseq.sb.append( 'N' );*/
+					}
 					
 					charset.clear();
 				}
@@ -4532,8 +4763,23 @@ public class JavaFasta extends JApplet {
 		name.add( new AbstractAction("Strip names") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				for( Sequence seq : serifier.lseq ) {
-					seq.setName( seq.getName().split("[\t ]+")[0] );
+				int[] rr = table.getSelectedRows();
+				for( int r : rr ) {
+					int i = table.convertRowIndexToModel(r);
+					Sequence seq = serifier.lseq.get(i);
+					seq.setName( seq.getName().split("[\t _]+")[0] );
+				}
+				updateView();
+			}
+		});
+		name.add( new AbstractAction("Strip front level") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				int[] rr = table.getSelectedRows();
+				for( int r : rr ) {
+					int i = table.convertRowIndexToModel(r);
+					Sequence seq = serifier.lseq.get(i);
+					seq.setName( seq.getName().substring(seq.getName().indexOf('_')+1) );
 				}
 				updateView();
 			}
@@ -4541,8 +4787,17 @@ public class JavaFasta extends JApplet {
 		name.add( new AbstractAction("Strip level") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				for( Sequence seq : serifier.lseq ) {
-					seq.setName( seq.getName().substring(0,seq.getName().lastIndexOf(';')) );
+				int[] rr = table.getSelectedRows();
+				for( int r : rr ) {
+					int i = table.convertRowIndexToModel(r);
+					Sequence seq = serifier.lseq.get(i);
+					
+					String name = seq.getName();
+					int d = name.lastIndexOf('-');
+					if( d == -1 ) d = name.length();
+					int u = name.lastIndexOf('_');
+					if( u == -1 ) u = name.length();
+					seq.setName( seq.getName().substring(0,Math.min( d,u )) );
 				}
 				updateView();
 			}
@@ -4563,12 +4818,16 @@ public class JavaFasta extends JApplet {
 			
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				for( Sequence seq : serifier.lseq ) {
+				int[] rr = table.getSelectedRows();
+				for( int r : rr ) {
+					int k = table.convertRowIndexToModel(r);
+					Sequence seq = serifier.lseq.get(k);
+				//for( Sequence seq : serifier.lseq ) {
 					String name = seq.getName();
-					String[] split = name.split(";");
+					String[] split = name.split("_");
 					String newname = "";
 					for( int i = split.length-1; i >= 1; i-- ) {
-						newname += split[i] + ";";
+						newname += split[i] + "_";
 					}
 					newname += split[0];
 					//int i = name.indexOf(' ');

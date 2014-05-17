@@ -78,7 +78,9 @@ public class Serifier {
 		Sequence s = null;
 		String line = br.readLine();
 		while( line != null ) {
+			//System.err.println( line );
 			if( line.startsWith(">") ) {
+				System.err.println( line );
 				s = new Sequence( line.substring(1), null );
 				//serifier.lseq.add( s );
 				ret.add( s );
@@ -99,12 +101,12 @@ public class Serifier {
 		return ret;
 	}
 	
-	public String getFastTree() {
+	public String getFastTree( List<Sequence> tlseq ) {
 		String 				ret = "";
 		File 				tmpdir = new File("/Users/sigmar/");
 		try {
 			FileWriter fw = new FileWriter( new File(tmpdir, "tmp.fasta") );
-			writeFasta( lseq, fw, null, true);
+			writeFasta( tlseq, fw, null, true);
 			fw.close();
 
 			ProcessBuilder pb = new ProcessBuilder("/Users/sigmar/FastTree", "tmp.fasta");
@@ -1501,7 +1503,7 @@ public class Serifier {
 								//mapstr += name.substring(i);
 								
 								mapstr = newcurrent.substring(bilt+1,spc);
-								mapHit.put( nm, mapstr );
+								mapHit.put( nm, nm+mapstr );
 							}
 						}
 						
@@ -2579,9 +2581,9 @@ public class Serifier {
 		i = arglist.indexOf("-trim");
 		if( i >= 0 ) {
 			String add = "";
-			if( i+2 < args.length && !args[i+2].startsWith("-") ) {
+			/*if( i+2 < args.length && !args[i+2].startsWith("-") ) {
 				add = " "; //args[i+1];
-			}
+			}*/
 			FileWriter fw = new FileWriter(outf);
 			FileReader fr = new FileReader( inf );
 			trimFasta( new BufferedReader(fr), fw, makeFset(args[i+1], add), false, false );
@@ -3959,7 +3961,7 @@ public class Serifier {
 						if( m == -1 || m > c ) m = c; 
 						String bull = line.substring(k, m)+line.substring(c,line.length());*/
 						
-						if( (endswith && line.endsWith(f)) || (!endswith && line.contains(f+" ")) ) {
+						if( (endswith && line.endsWith(f)) || (!endswith && line.contains(f/*+" "*/)) ) {
 							Object swap = (filterset instanceof Map) ? ((Map)filterset).get(f) : null;
 							
 							nseq++;
