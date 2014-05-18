@@ -11,14 +11,14 @@ import java.util.Random;
 
 public class Sequence implements Comparable<Sequence> {
 	/*public static int						max = 0;
-	public static int						min = 0;
+	public static int						min = 0;s
 	
 	public static ArrayList<Sequence>		lseq = new ArrayList<Sequence>() {
 		private static final long serialVersionUID = 1L;
 
 		public boolean add( Sequence seq ) {
 			seq.index = Sequence.lseq.size();
-			return super.add( seq );
+			return super.add( Oseq );
 		}
 	};
 	public static Map<String,Sequence>		mseq = new HashMap<String,Sequence>();
