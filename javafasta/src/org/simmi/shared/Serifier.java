@@ -103,13 +103,13 @@ public class Serifier {
 	
 	public String getFastTree( List<Sequence> tlseq ) {
 		String 				ret = "";
-		File 				tmpdir = new File("/Users/sigmar/");
+		File 				tmpdir = new File( System.getProperty("user.home") );
 		try {
 			FileWriter fw = new FileWriter( new File(tmpdir, "tmp.fasta") );
 			writeFasta( tlseq, fw, null, true);
 			fw.close();
 
-			ProcessBuilder pb = new ProcessBuilder("/Users/sigmar/FastTree", "tmp.fasta");
+			ProcessBuilder pb = new ProcessBuilder("fasttree", "tmp.fasta");
 			pb.directory(tmpdir);
 			Process p = pb.start();
 			InputStream is = p.getInputStream();
