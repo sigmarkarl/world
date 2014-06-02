@@ -109,7 +109,7 @@ public class Serifier {
 			writeFasta( tlseq, fw, null, true);
 			fw.close();
 
-			ProcessBuilder pb = new ProcessBuilder("fasttree", "tmp.fasta");
+			ProcessBuilder pb = new ProcessBuilder("/Users/sigmar/FastTree", "tmp.fasta");
 			pb.directory(tmpdir);
 			Process p = pb.start();
 			InputStream is = p.getInputStream();
@@ -286,7 +286,7 @@ public class Serifier {
 					List<Annotation> lann = mapan.get(key);
 					int ac = 1;
 					
-					if( sbld.revcomp == -1 ) {
+					if( sbld.getRevComp() == -1 ) {
 						for( int i = lann.size()-1; i >= 0; i-- ) {
 							Annotation annn = lann.get(i);
 							
@@ -361,7 +361,7 @@ public class Serifier {
 					if( (count-1)%60 == 0 ) fw.write( String.format( "\n%10s ", Integer.toString(count) ) );
 					else if( (count-1)%10 == 0 ) fw.write( " " );
 					
-					fw.write( sbld.revcomp == -1 ? sbld.revCompCharAt(k) : sbld.charAt(k) );
+					fw.write( sbld.getRevComp() == -1 ? sbld.revCompCharAt(k) : sbld.getCharAt(k) );
 					
 					count++;
 				}
@@ -400,7 +400,7 @@ public class Serifier {
 						ac++;
 					}*/
 					
-					if( sbld.revcomp == -1 ) {
+					if( sbld.getRevComp() == -1 ) {
 						for( int i = lann.size()-1; i >= 0; i-- ) {
 							Annotation annn = lann.get(i);
 							String locstr = ((sbld.length()-annn.stop)+count)+".."+((sbld.length()-annn.start)+count);
@@ -475,7 +475,7 @@ public class Serifier {
 					if( (count-1)%60 == 0 ) fw.write( String.format( "\n%10s ", Integer.toString(count) ) );
 					else if( (count-1)%10 == 0 ) fw.write( " " );
 					
-					fw.write( sbld.revcomp == -1 ? sbld.revCompCharAt(k) : sbld.charAt(k) );
+					fw.write( sbld.getRevComp() == -1 ? sbld.revCompCharAt(k) : sbld.getCharAt(k) );
 					
 					count++;
 				}
@@ -715,7 +715,7 @@ public class Serifier {
 							if( (count-1)%60 == 0 ) fw.write( String.format( "\n%10s ", Integer.toString(count) ) );
 							else if( (count-1)%10 == 0 ) fw.write( " " );
 							
-							fw.write( sbld.charAt(k) );
+							fw.write( sbld.getCharAt(k) );
 							
 							count++;
 						}
@@ -1829,7 +1829,7 @@ public class Serifier {
 			while( rem && i+len < max ) {
 				len++;
 				for( Sequence seq : seqlist ) {
-					char c2 = seq.charAt(i+len); //getCharAt(i, r);
+					char c2 = seq.getCharAt(i+len); //getCharAt(i, r);
 					if( c2 != '.' && c2 != '-' && c2 != ' ' && c2 != 'X' && c2 != 'x' && c2 != 'N' && c2 != 'n' ) {
 						rem = false;
 						break;

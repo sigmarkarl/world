@@ -55,6 +55,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.zip.GZIPInputStream;
 
 import javax.jnlp.ClipboardService;
 import javax.jnlp.FileContents;
@@ -2843,7 +2844,7 @@ public class DataTable extends JApplet implements ClipboardOwner {
 							for( int x = start; x < end; x++ ) {
 								boolean skip = false;
 								for( Sequence seq : currentserifier.lseq ) {
-									char c = seq.charAt( x );
+									char c = seq.getCharAt( x );
 									if( c != '-' && c != '.' && c == ' ' ) {
 										skip = true;
 										break;
@@ -4232,7 +4233,7 @@ public class DataTable extends JApplet implements ClipboardOwner {
 	
 	public static void main(String[] args) {
 		try {
-			Path p = new File("/Users/sigmar/resskip_otu_table.biom").toPath();
+			Path p = new File("/Users/sigmar/res.biom").toPath();
 			ByteArrayOutputStream baos = new ByteArrayOutputStream();
 			Files.copy(p, baos);
 			baos.close();
@@ -4250,12 +4251,12 @@ public class DataTable extends JApplet implements ClipboardOwner {
 			countLocation( 3, mobj, 12, "Class", type );
 			countLocation( 2, mobj, 12, "Phylum", type );*/
 			
-			/*countLevels( 7, mobj, 12, "Species", type );
+			countLevels( 7, mobj, 12, "Species", type );
 			countLevels( 6, mobj, 12, "Genus", type );
 			countLevels( 5, mobj, 12, "Family", type );
 			countLevels( 4, mobj, 12, "Order", type );
 			countLevels( 3, mobj, 12, "Class", type );
-			countLevels( 2, mobj, 12, "Phylum", type );*/
+			countLevels( 2, mobj, 12, "Phylum", type );
 			/*for( Object os : mobj.keySet() ) {
 				String ostr = os.toString();
 				String mstr = mobj.get(os).toString();
@@ -4263,7 +4264,7 @@ public class DataTable extends JApplet implements ClipboardOwner {
 			}*/
 			//printMap( mobj );
 			
-			//BufferedReader br = new BufferedReader( new InputStreamReader( new GZIPInputStream( Files.newInputStream( new File("/Users/sigmar/rep_set.blastout.gz").toPath() ) ) ) );
+			// br = Files.newBufferedReader( new File("/Users/sigmar/rep_set.blastout").toPath() ); //new BufferedReader( new InputStreamReader( new GZIPInputStream( Files.newInputStream( new File("/Users/sigmar/rep_set.blastout").toPath() ) ) ) );
 			//BufferedWriter bw = Files.newBufferedWriter( new File("/Users/sigmar/res.txt").toPath() );
 			//assigntax( br, bw );
 		} catch (IOException e) {
@@ -4272,6 +4273,9 @@ public class DataTable extends JApplet implements ClipboardOwner {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (ScriptException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (URISyntaxException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}

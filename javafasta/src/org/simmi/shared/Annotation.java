@@ -1,5 +1,6 @@
 package org.simmi.shared;
 
+import java.awt.Color;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -14,7 +15,7 @@ public class Annotation implements Comparable<Object> {
 	public int				start;
 	public int				stop;
 	public int				ori;
-	public Object			color;
+	public Object			color = Color.green;
 	
 	public Annotation() {
 		
@@ -115,5 +116,10 @@ public class Annotation implements Comparable<Object> {
 	@Override
 	public int compareTo(Object o) {
 		return start - ((Annotation)o).start;
+	}
+	
+	@Override
+	public boolean equals( Object o ) {
+		return compareTo(o) == 0;
 	}
 };

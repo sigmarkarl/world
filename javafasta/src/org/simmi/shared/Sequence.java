@@ -383,7 +383,7 @@ public class Sequence implements Comparable<Sequence> {
 	public IntBuffer			ib = null;
 	public IntBuffer			rib = null;
 	public int					offset = 0;
-	public int					revcomp = 0;
+	private int					revcomp = 0;
 	int							gcp = -1;
 	int							alignedlength = -1;
 	int							unalignedlength = -1;
@@ -393,6 +393,14 @@ public class Sequence implements Comparable<Sequence> {
 	public int					index = -1;
 	public boolean				edited = false;
 	public boolean				selected = false;
+	
+	public boolean isReverse() {
+		return revcomp == -1;
+	}
+	
+	public void setReverse( boolean rev ) {
+		revcomp = rev ? -1 : 1;
+	}
 	
 	static final Random r = new Random();
 	
@@ -475,7 +483,7 @@ public class Sequence implements Comparable<Sequence> {
 					if( l % 10 == 0 ) {
 						out.append(" ");
 					}
-					out.append( seq.charAt(l + seq.getStart()) );
+					out.append( seq.getCharAt(l + seq.getStart()) );
 				}
 				out.append("\n");
 			}
@@ -496,7 +504,7 @@ public class Sequence implements Comparable<Sequence> {
 			
 			int count = 0;
 			for( Sequence seq : lseq ) {
-				char c = seq.charAt( x );
+				char c = seq.getCharAt( x );
 				if( c != '.' && c != '-' && c != ' ' && c != '\n' ) {
 					int val = 0;
 					if( shanmap.containsKey(c) ) val = shanmap.get(c);
@@ -539,8 +547,8 @@ public class Sequence implements Comparable<Sequence> {
 								for( int k : idxs ) {
 									int ir = r.nextInt( idxs.size() );
 									int u = idxs.get(ir);
-									char c1 = seq1.charAt( u-seq1.getStart() );
-									char c2 = seq2.charAt( u-seq2.getStart() );
+									char c1 = seq1.getCharAt( u-seq1.getStart() );
+									char c2 = seq2.getCharAt( u-seq2.getStart() );
 									
 									if( c1 != c2 ) mism += 1.0/ent[u];
 									//count++;
@@ -548,8 +556,8 @@ public class Sequence implements Comparable<Sequence> {
 								}
 							} else {
 								for( int k : idxs ) {
-									char c1 = seq1.charAt( k-seq1.getStart() );
-									char c2 = seq2.charAt( k-seq2.getStart() );
+									char c1 = seq1.getCharAt( k-seq1.getStart() );
+									char c2 = seq2.getCharAt( k-seq2.getStart() );
 									
 									if( c1 != c2 ) mism += 1.0/ent[k];
 									i++;
@@ -559,15 +567,15 @@ public class Sequence implements Comparable<Sequence> {
 							if( bootstrap ) {
 								for( int k : idxs ) {
 									int ir = r.nextInt( idxs.size() );
-									char c1 = seq1.charAt( idxs.get(ir)-seq1.getStart() );
-									char c2 = seq2.charAt( idxs.get(ir)-seq2.getStart() );
+									char c1 = seq1.getCharAt( idxs.get(ir)-seq1.getStart() );
+									char c2 = seq2.getCharAt( idxs.get(ir)-seq2.getStart() );
 									
 									if( c1 != c2 ) mism++;
 								}
 							} else {
 								for( int k : idxs ) {
-									char c1 = seq1.charAt( k-seq1.getStart() );
-									char c2 = seq2.charAt( k-seq2.getStart() );
+									char c1 = seq1.getCharAt( k-seq1.getStart() );
+									char c2 = seq2.getCharAt( k-seq2.getStart() );
 									
 									if( c1 != c2 ) mism++;
 								}
@@ -602,8 +610,8 @@ public class Sequence implements Comparable<Sequence> {
 						if( bootstrap ) {
 							for( int k = start; k < end; k++ ) {
 								int ir = start + r.nextInt( end-start );
-								char c1 = seq1.charAt( ir-seq1.getStart() );
-								char c2 = seq2.charAt( ir-seq2.getStart() );
+								char c1 = seq1.getCharAt( ir-seq1.getStart() );
+								char c2 = seq2.getCharAt( ir-seq2.getStart() );
 								
 								if( c1 != '.' && c1 != '-' && c1 != ' ' && c1 != '\n' &&  c2 != '.' && c2 != '-' && c2 != ' ' && c2 != '\n') {
 									if( c1 != c2 ) mism += 1.0/ent[ir];
@@ -614,8 +622,8 @@ public class Sequence implements Comparable<Sequence> {
 							if( blosum != null ) {
 								/////-----
 								for( int k = start; k < end; k++ ) {
-									char c1 = seq1.charAt( k-seq1.getStart() );
-									char c2 = seq2.charAt( k-seq2.getStart() );
+									char c1 = seq1.getCharAt( k-seq1.getStart() );
+									char c2 = seq2.getCharAt( k-seq2.getStart() );
 									
 									if( c1 != '.' && c1 != '-' && c1 != ' ' && c1 != '\n' &&  c2 != '.' && c2 != '-' && c2 != ' ' && c2 != '\n') {
 										if( c1 != c2 ) {
@@ -629,8 +637,8 @@ public class Sequence implements Comparable<Sequence> {
 								}
 							} else {
 								for( int k = start; k < end; k++ ) {
-									char c1 = seq1.charAt( k-seq1.getStart() );
-									char c2 = seq2.charAt( k-seq2.getStart() );
+									char c1 = seq1.getCharAt( k-seq1.getStart() );
+									char c2 = seq2.getCharAt( k-seq2.getStart() );
 									
 									if( c1 != '.' && c1 != '-' && c1 != ' ' && c1 != '\n' &&  c2 != '.' && c2 != '-' && c2 != ' ' && c2 != '\n') {
 										if( c1 != c2 ) {
@@ -648,8 +656,8 @@ public class Sequence implements Comparable<Sequence> {
 						if( bootstrap ) {
 							for( int k = start; k < end; k++ ) {
 								int ir = start + r.nextInt( end-start );
-								char c1 = seq1.charAt( ir-seq1.getStart() );
-								char c2 = seq2.charAt( ir-seq2.getStart() );
+								char c1 = seq1.getCharAt( ir-seq1.getStart() );
+								char c2 = seq2.getCharAt( ir-seq2.getStart() );
 								
 								if( c1 != '.' && c1 != '-' && c1 != ' ' && c1 != '\n' &&  c2 != '.' && c2 != '-' && c2 != ' ' && c2 != '\n') {
 									if( c1 != c2 ) mism++;
@@ -658,8 +666,8 @@ public class Sequence implements Comparable<Sequence> {
 							}
 						} else {
 							for( int k = start; k < end; k++ ) {
-								char c1 = seq1.charAt( k-seq1.getStart() );
-								char c2 = seq2.charAt( k-seq2.getStart() );
+								char c1 = seq1.getCharAt( k-seq1.getStart() );
+								char c2 = seq2.getCharAt( k-seq2.getStart() );
 								
 								if( c1 != '.' && c1 != '-' && c1 != ' ' && c1 != '\n' &&  c2 != '.' && c2 != '-' && c2 != ' ' && c2 != '\n') {
 									if( c1 != c2 ) mism++;
@@ -693,11 +701,32 @@ public class Sequence implements Comparable<Sequence> {
 		}
 	}
 	
+	public void reverse( int start, int end ) {
+		System.err.println( sb.substring(start,end) + " " + getName() );
+		for( int i = start; i < start+(end-start)/2; i++ ) {
+			char c = sb.charAt(i);
+			int ri = end-1-i+start;
+			sb.setCharAt( i, sb.charAt(ri) );
+			sb.setCharAt( ri, c );
+		}
+	}
+	
 	public void reverse() {
 		for( int i = 0; i < length()/2; i++ ) {
 			char c = sb.charAt(i);
 			sb.setCharAt( i, sb.charAt(length()-1-i) );
 			sb.setCharAt( length()-1-i, c );
+		}
+	}
+	
+	public void complement( int start, int end ) {
+		for( int i = start; i < end; i++ ) {
+			char c = sb.charAt(i);
+			char cc = rc.containsKey( c ) ? rc.get(c) : c;
+			/*if( c == rc ) {
+				System.err.println();
+			}*/
+			sb.setCharAt( i, cc );
 		}
 	}
 		
@@ -821,9 +850,18 @@ public class Sequence implements Comparable<Sequence> {
 		return annset;
 	}
 	
+	public void removeAnnotation( Annotation a ) {
+		if( annset != null ) {
+			annset.remove( a );
+		}
+	}
+	
 	public void addAnnotation( Annotation a ) {
 		if( annset == null ) {
 			annset = new ArrayList<Annotation>();
+		}
+		if( annset.contains(a) ) {
+			System.err.println();
 		}
 		annset.add( a );
 	}
@@ -876,6 +914,10 @@ public class Sequence implements Comparable<Sequence> {
 		}
 	}
 	
+	public char charAt( int i ) {
+		return revcomp == -1 ? revCompCharAt( i ) : getCharAt( i );
+	}
+	
 	public void clearCharAt( int i ) {
 		int ind = i-offset;
 		if( ind >= 0 && ind < sb.length() ) {
@@ -891,7 +933,7 @@ public class Sequence implements Comparable<Sequence> {
 		}
 	}
 	
-	public char charAt( int i ) {
+	public char getCharAt( int i ) {
 		int ind = i-offset;
 		if( ind >= 0 && ind < length() ) {
 			return sb.charAt( ind );
@@ -993,6 +1035,10 @@ public class Sequence implements Comparable<Sequence> {
 	
 	public int getRevComp() {
 		return revcomp;
+	}
+	
+	public void setRevComp( int rc ) {
+		this.revcomp = rc;
 	}
 	
 	public int getGCCount() {
