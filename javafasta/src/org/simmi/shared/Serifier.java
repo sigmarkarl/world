@@ -848,7 +848,19 @@ public class Serifier {
 			for( String et : t ) {
 				Sequence seq = mseq.get( et );
 				if( seq == null ) {
-					System.err.println(et);
+					if( idspec != null ) {
+						String tegstr = idspec.get(et);
+						if( tegstr == null ) {
+							System.err.println();
+						}
+						
+						teg.add( tegstr );
+						if( species != null ) {
+							species.add( tegstr );
+						} else {
+							System.err.println();
+						}
+					}
 				} else {
 					String e = seq.name;
 					//System.err.println( "e " + e );
@@ -889,7 +901,9 @@ public class Serifier {
 								}
 							}
 						} else {
-							
+							String tegstr = idspec.get(et);
+							teg.add( tegstr );
+							species.add( tegstr );
 						}
 					}
 				}
@@ -908,30 +922,48 @@ public class Serifier {
 			
 			for( String et : t ) {
 				Sequence seq = mseq.get( et );
-				if( seq != null ) {
+				if( seq == null ) {
+					if( idspec != null ) {
+						String tegstr = idspec.get(et);
+						
+						Set<String>	set;
+						if( submap.containsKey( tegstr ) ) {
+							set = submap.get(tegstr);
+						} else {
+							set = new HashSet<String>();
+							submap.put( tegstr, set );
+						}
+						set.add( et );
+					}
+				} else {
 					String e = seq.name;
 					if( e != null ) {
 						String tegstr;
-						int ind = e.indexOf('[');
-						//if( e.contains("_JL2_") ) ind = e.indexOf('_', ind+1);
 						
-						if( ind != -1 ) {
-							int ind2 = e.indexOf(']', ind+1);
-							String str = e.substring( ind+1, ind2 );
+						if( idspec == null ) {
+							int ind = e.indexOf('[');
+							//if( e.contains("_JL2_") ) ind = e.indexOf('_', ind+1);
 							
-							int uid = str.indexOf("uid");
-							int nuid = uid != -1 ? str.indexOf('_', uid) : str.length();
-							if( nuid == -1 ) nuid = str.length();
-							
-							int c = str.indexOf("contig");
-							if( c == -1 ) c = str.indexOf("scaffold");
-							if( c == -1 ) c = str.length()+1;
-							
-							tegstr = str.substring( 0, Math.min( c-1, nuid) );
+							if( ind != -1 ) {
+								int ind2 = e.indexOf(']', ind+1);
+								String str = e.substring( ind+1, ind2 );
+								
+								int uid = str.indexOf("uid");
+								int nuid = uid != -1 ? str.indexOf('_', uid) : str.length();
+								if( nuid == -1 ) nuid = str.length();
+								
+								int c = str.indexOf("contig");
+								if( c == -1 ) c = str.indexOf("scaffold");
+								if( c == -1 ) c = str.length()+1;
+								
+								tegstr = str.substring( 0, Math.min( c-1, nuid) );
+							} else {
+								ind = e.indexOf("contig");
+								if( ind == -1 ) ind = e.indexOf("scaffold");
+								tegstr = e.substring(0, ind-1);
+							}
 						} else {
-							ind = e.indexOf("contig");
-							if( ind == -1 ) ind = e.indexOf("scaffold");
-							tegstr = e.substring(0, ind-1);
+							tegstr = idspec.get( et );
 						}
 						
 						Set<String>	set;
@@ -1069,7 +1101,7 @@ public class Serifier {
 			if( clustermap%2 == 0 ) {
 				joinBlastSets( is, null, true, total, 0.0 );
 			} else {
-				joinBlastSetsThermus( is, Paths.get("/Users/sigmar/check.txt"), true, total, id, len );
+				joinBlastSetsThermus( is, Paths.get("/home/sigmar/check.txt"), true, total, id, len );
 			}
 			is.close();
 			
@@ -1285,8 +1317,8 @@ public class Serifier {
 				else continue;
 			}
 			
-			/*if( cnt++ % 100000 == 0 ) {
-				System.err.println( cnt );
+			/*if( cnt++ > 10000000 ) {
+				break;
 			}*/
 			line = br.readLine();
 		}
@@ -2931,7 +2963,15 @@ public class Serifier {
 			float id = Float.parseFloat( args[i+3] );//100.0f;
 			float len = Float.parseFloat( args[i+4] );//100.0f;
 			
-			makeBlastCluster( /*inf,*/ outf.toPath(), Paths.get(blastfile), splnum, id, len, null );
+			Map<String,String> idspecmap = new HashMap<String,String>();
+			String idspecfile = args[i+5];
+			List<String> lines = Files.readAllLines( Paths.get(idspecfile) );
+			for( String line : lines ) {
+				String[] split = line.split("\t");
+				if( split.length > 1 ) idspecmap.put(split[0], split[1]);
+			}
+			
+			makeBlastCluster( /*inf,*/ outf.toPath(), Paths.get(blastfile), splnum, id, len, idspecmap );
 			//for( Sequences seqs : this.sequences ) {
 				//seqs.setNSeq( countSequences( inf ) );
 				//List<Sequences> retlseqs = splitit( splnum, seqs, outf == null ? new File(".") : outf );
