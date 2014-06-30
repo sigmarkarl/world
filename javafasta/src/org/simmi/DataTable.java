@@ -55,7 +55,6 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.zip.GZIPInputStream;
 
 import javax.jnlp.ClipboardService;
 import javax.jnlp.FileContents;
@@ -3983,7 +3982,7 @@ public class DataTable extends JApplet implements ClipboardOwner {
 		return str;
 	}
 	
-	public static String countLocation( int val, Map<Object,Object> mobj, int maxcount, String level, String type ) throws URISyntaxException, IOException {
+	public static String countLocation( int val, Map<Object,Object> mobj, int maxcount, String level, String type, boolean which ) throws URISyntaxException, IOException {
 		String str = ""; //'Taxa','Count'],\n";
 		
 		List<List<String>>	rows = new ArrayList<List<String>>();
@@ -4032,8 +4031,6 @@ public class DataTable extends JApplet implements ClipboardOwner {
 			vals[row*columns.size()+column] = count;
 		}
 		
-		
-		
 		Map<List<String>,Integer>	mstuffall = new HashMap<List<String>,Integer>();
 		int rowval = 0;
 		for( List<String> row : rows ) {
@@ -4076,8 +4073,8 @@ public class DataTable extends JApplet implements ClipboardOwner {
 		for( String cstr : columns ) {
 			Map<List<String>,Integer>	mstuff;// = new HashMap<String,Integer>();
 			
-			//cstr = cstr.substring( cstr.lastIndexOf('.')+1, cstr.length() );
-			cstr = cstr.substring(0, cstr.lastIndexOf('.') );
+			cstr = cstr.substring( cstr.lastIndexOf('.')+1, cstr.length() );
+			//cstr = cstr.substring(0, cstr.lastIndexOf('.') );
 			
 			if( stuffmap.containsKey( cstr ) ) mstuff = stuffmap.get( cstr );
 			else {
@@ -4233,7 +4230,7 @@ public class DataTable extends JApplet implements ClipboardOwner {
 	
 	public static void main(String[] args) {
 		try {
-			Path p = new File("/Users/sigmar/res.biom").toPath();
+			Path p = new File("/Users/sigmar/otu_table_all_primer1_99.biom").toPath();
 			ByteArrayOutputStream baos = new ByteArrayOutputStream();
 			Files.copy(p, baos);
 			baos.close();
@@ -4244,19 +4241,20 @@ public class DataTable extends JApplet implements ClipboardOwner {
 			
 			countSpecies( 2, mobj, "Phylum" );
 			
-			/*countLocation( 7, mobj, 12, "Species", type );
-			countLocation( 6, mobj, 12, "Genus", type );
-			countLocation( 5, mobj, 12, "Family", type );
-			countLocation( 4, mobj, 12, "Order", type );
-			countLocation( 3, mobj, 12, "Class", type );
-			countLocation( 2, mobj, 12, "Phylum", type );*/
+			countLocation( 7, mobj, 12, "Species", type, true );
+			countLocation( 6, mobj, 12, "Genus", type, true );
+			countLocation( 5, mobj, 12, "Family", type, true );
+			countLocation( 4, mobj, 12, "Order", type, true );
+			countLocation( 3, mobj, 12, "Class", type, true );
+			countLocation( 2, mobj, 12, "Phylum", type, true );
 			
-			countLevels( 7, mobj, 12, "Species", type );
+			/*countLevels( 7, mobj, 12, "Species", type );
 			countLevels( 6, mobj, 12, "Genus", type );
 			countLevels( 5, mobj, 12, "Family", type );
 			countLevels( 4, mobj, 12, "Order", type );
 			countLevels( 3, mobj, 12, "Class", type );
-			countLevels( 2, mobj, 12, "Phylum", type );
+			countLevels( 2, mobj, 12, "Phylum", type );*/
+			
 			/*for( Object os : mobj.keySet() ) {
 				String ostr = os.toString();
 				String mstr = mobj.get(os).toString();
@@ -4270,13 +4268,10 @@ public class DataTable extends JApplet implements ClipboardOwner {
 		} catch (IOException e) {
 			e.printStackTrace();
 		} catch (JSONException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (ScriptException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (URISyntaxException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		
