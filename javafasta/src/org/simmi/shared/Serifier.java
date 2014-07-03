@@ -1428,6 +1428,49 @@ public class Serifier {
 		}
 	}
 	
+	public List<Sequences> psplitit( Sequences seqs, Path dir, String suffix ) {
+		List<Sequences>	retlseq = new ArrayList<Sequences>();
+		
+		try {
+			//File inf = new File( new URI(seqs.getPath() ) );
+			//String name = seqs.getPath().getFileName().toString();
+			//int ind = name.lastIndexOf('.');
+			//int spin = (int)Math.ceil( (double)seqs.getNSeq()/(double)nspin );
+			
+			Map<String,BufferedWriter>	bmap = new HashMap<String,BufferedWriter>();
+			
+			BufferedReader	br = Files.newBufferedReader(seqs.getPath(), Charset.defaultCharset());
+			String line = br.readLine();
+			BufferedWriter bw = null;
+			while( line != null ) {
+				if( line.startsWith(">") ) {
+					String field = line.substring(1,line.indexOf('_'));
+					if( bmap.containsKey(field) ) {
+						bw = bmap.get( field );
+					} else {
+						Path nfile = dir.resolve( field + suffix + ".fna" );
+						bw = Files.newBufferedWriter(nfile);
+						bmap.put(field, bw);
+					}
+				}
+				bw.write( line+"\n" );
+				
+				line = br.readLine();
+			}
+			br.close();
+			for( String bstr : bmap.keySet() ) {
+				bw = bmap.get( bstr );
+				bw.close();
+			}
+		} catch (FileNotFoundException e1) {
+			e1.printStackTrace();
+		} catch (IOException e1) {
+			e1.printStackTrace();
+		}
+		
+		return retlseq;
+	}
+	
 	public List<Sequences> splitit( int nspin, Sequences seqs, File dir ) {
 		List<Sequences>	retlseq = new ArrayList<Sequences>();
 		
@@ -2916,6 +2959,59 @@ public class Serifier {
 				appendSequenceInJavaFasta( seqs, null, val);
 			}
 			writeFasta( lseq, new FileWriter( outf ), null);*/
+		}
+		
+		i = arglist.indexOf("-silvaqiimesplit");
+		if( i >= 0 ) {
+			String taxafile = args[i+1];
+			
+			Path tp = new File( taxafile ).toPath();
+			BufferedWriter bwt = Files.newBufferedWriter(tp);
+			
+			for( Sequences seqs : this.sequences ) {
+				BufferedReader	br = Files.newBufferedReader(seqs.getPath(), Charset.defaultCharset());
+				String line = br.readLine();
+				BufferedWriter bw = Files.newBufferedWriter( outf.toPath() );
+				while( line != null ) {
+					if( line.startsWith(">") ) {
+						String[] split = line.split("\t");
+						if( split.length >= 2 ) {
+							bw.write(split[0]+"\n");
+							bwt.write( split[0].substring(1) + "\t" + split[1] + "\n" );
+						} else {
+							String teg = line.substring(1);
+							String tax = "Bacteria;Deinococcus-Thermus;Deinococci;Thermales;Thermaceae;Thermus;" + teg.replace("T.", "Thermus_");
+							
+							bw.write( teg +"\n");
+							bwt.write( teg + "\t" + tax + "\n" );
+						}
+					}
+					bw.write( line+"\n" );
+					
+					line = br.readLine();
+				}
+				br.close();
+			}
+			
+			bwt.close();
+		}
+		
+		i = arglist.indexOf("-psplit");
+		if( i >= 0 ) {
+			String suffix = args[i+1];
+			
+			for( Sequences seqs : this.sequences ) {
+				//seqs.setNSeq( countSequences( inf ) );
+				
+				//List<Sequences> retlseqs = 
+				psplitit( seqs, outf == null ? new File(".").toPath() : outf.toPath(), suffix );
+				
+				/*for( Sequences nseqs : retlseqs ) {
+					appendSequenceInJavaFasta( nseqs, null, true);
+					File noutf = new File( nseqs.getPath() );
+					writeFasta( lseq, new FileWriter( noutf ), null );
+				}*/
+			}
 		}
 		
 		i = arglist.indexOf("-split");
