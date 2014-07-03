@@ -266,7 +266,9 @@ public class Serifier {
 			for( Sequence sbld : lseq ) {
 				String key = sbld.getName();
 				int ival = s.getName().indexOf('.');
-				String loc = "LOCUS       "+s.getName().substring(0, ival == -1 ? s.getName().length() : ival )+"_"+key+"                "+count+" bp    dna     linear   UNK";
+				String spec = s.getName().substring(0, ival == -1 ? s.getName().length() : ival );
+				String locus = key.contains(spec) ? key : spec + "_" + key;
+				String loc = "LOCUS       "+locus+"                "+count+" bp    dna     linear   UNK";
 				String def = "DEFINITION  [organism=Unknown] [strain=Unknown] [gcode=11] [date=6-26-2012]";
 				String acc = "ACCESSION   "+s.getName()+"_Unknown";
 				String keyw = "KEYWORDS    .";
@@ -291,7 +293,7 @@ public class Serifier {
 							Annotation annn = lann.get(i);
 							
 							if( annn.name != null && !annn.name.contains("No hits") ) {
-								String locstr = ((sbld.length()-annn.stop)+count)+".."+((sbld.length()-annn.start)+count);
+								String locstr = ((sbld.length()-annn.stop+1)+count)+".."+((sbld.length()-annn.start+1)+count);
 								
 								fw.write( "     "+annn.type );
 								int len = annn.type.length();
@@ -331,7 +333,7 @@ public class Serifier {
 					} else {
 						for( Annotation annn : lann ) {
 							if( annn.name != null && !annn.name.contains("No hits") ) {
-								String locstr = (annn.start+count)+".."+(annn.stop+count);
+								String locstr = (annn.start-1+count)+".."+(annn.stop-1+count);
 								
 								fw.write( "     "+annn.type );
 								int len = annn.type.length();
@@ -421,7 +423,7 @@ public class Serifier {
 					if( sbld.getRevComp() == -1 ) {
 						for( int i = lann.size()-1; i >= 0; i-- ) {
 							Annotation annn = lann.get(i);
-							String locstr = ((sbld.length()-annn.stop)+count)+".."+((sbld.length()-annn.start)+count);
+							String locstr = ((sbld.length()-annn.stop+1)+count)+".."+((sbld.length()-annn.start+1)+count);
 							
 							fw.write( "     "+annn.type );
 							int len = annn.type.length();
@@ -458,7 +460,7 @@ public class Serifier {
 						}
 					} else {
 						for( Annotation annn : lann ) {
-							String locstr = (annn.start+count)+".."+(annn.stop+count);
+							String locstr = (annn.start-1+count)+".."+(annn.stop-1+count);
 							
 							fw.write( "     "+annn.type );
 							int len = annn.type.length();

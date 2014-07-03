@@ -1086,7 +1086,7 @@ public class Sequence implements Comparable<Sequence> {
 		//}
 		
 		if( ori == -1 ) {
-			int begin = stop - 1 - 3*((stop-start)/3);
+			int begin = stop - 3*((stop-start)/3) - 1;
 			
 			//String aaa = sb.substring(start-1, start+2);
 			//String aa = amimap.get( aaa );
@@ -1106,7 +1106,7 @@ public class Sequence implements Comparable<Sequence> {
 				}
 			}
 		} else {
-			int end = start - 1 + 3*((stop-start)/3);
+			int end = start + 3*((stop-start)/3) - 1;
 			for( int i = start-1; i < end; i+=3 ) {
 				String aaa = sb.substring(i, i+3).toUpperCase();
 				if( aaa.contains("N") || aaa.contains("n") || aaa.contains("X") || aaa.contains("x") ) {
