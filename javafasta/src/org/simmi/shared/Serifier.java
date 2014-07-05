@@ -2974,19 +2974,22 @@ public class Serifier {
 				BufferedWriter bw = Files.newBufferedWriter( outf.toPath() );
 				while( line != null ) {
 					if( line.startsWith(">") ) {
-						String[] split = line.split("\t");
+						String[] split = line.split("[ ]+");
 						if( split.length >= 2 ) {
 							bw.write(split[0]+"\n");
-							bwt.write( split[0].substring(1) + "\t" + split[1] + "\n" );
+							String tax = split[1];
+							for( int k = 2; k < split.length; k++ ) {
+								tax += "_"+split[k];
+							}
+							bwt.write( split[0].substring(1) + "\t" + tax + "\n" );
 						} else {
 							String teg = line.substring(1);
 							String tax = "Bacteria;Deinococcus-Thermus;Deinococci;Thermales;Thermaceae;Thermus;" + teg.replace("T.", "Thermus_");
 							
-							bw.write( teg +"\n");
+							bw.write( line +"\n");
 							bwt.write( teg + "\t" + tax + "\n" );
 						}
-					}
-					bw.write( line+"\n" );
+					} else bw.write( line+"\n" );
 					
 					line = br.readLine();
 				}
