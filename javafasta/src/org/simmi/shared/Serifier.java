@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.io.PrintStream;
 import java.io.Writer;
 import java.net.MalformedURLException;
@@ -109,11 +110,16 @@ public class Serifier {
 			writeFasta( tlseq, fw, null, true);
 			fw.close();
 
-			ProcessBuilder pb = new ProcessBuilder("/Users/sigmar/FastTree", "tmp.fasta");
+			ProcessBuilder pb = new ProcessBuilder("/Users/sigmar/FastTree");
 			pb.directory(tmpdir);
 			Process p = pb.start();
+			OutputStream os = p.getOutputStream();
+			Writer w = new OutputStreamWriter(os);
+			writeFasta(tlseq, w, null, true);
+			w.close();
+			os.close();
+			
 			InputStream is = p.getInputStream();
-
 			ByteArrayOutputStream baos = new ByteArrayOutputStream();
 			byte[] bb = new byte[1024];
 			int r = is.read(bb);
