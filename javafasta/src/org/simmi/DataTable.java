@@ -3791,6 +3791,54 @@ public class DataTable extends JApplet implements ClipboardOwner {
 		bw.close();
 	}
 	
+	public static void writeObject( Object vo, StringBuilder sb ) {
+		if( vo instanceof String ) {
+			String vs = (String)vo;
+			sb.append( "\""+vs+"\"" );
+		} else if( vo instanceof ArrayList ) {
+			ArrayList al = (ArrayList)vo;
+			sb.append("[");
+			boolean first = true;
+			for( Object o : al ) {
+				String s = (String)o;
+				if( !first ) sb.append(",");
+				writeObject( o, sb );
+				first = false;
+			}
+			sb.append("]");
+		} else if( vo instanceof HashMap ) {
+			HashMap hm = (HashMap)vo;
+			sb.append("{");
+			boolean first = true;
+			for( Object o : hm.keySet() ) {
+				String s = (String)o;
+				if( !first ) sb.append(",");
+				sb.append("\""+s+"\":");
+				Object svo = hm.get(o);
+				writeObject( svo, sb );
+				first = false;
+			}
+			sb.append("}");
+		}
+	}
+	
+	public static void saveBiomTableNashorn( Map<Object,Object> map, Path p ) throws IOException {
+		StringBuilder sb = new StringBuilder();
+		sb.append("{");
+		boolean first = true;
+		for( Object o : map.keySet() ) {
+			String s = (String)o;
+			if( !first ) sb.append(",");
+			sb.append("\""+s+"\":");
+			Object vo = map.get(o);
+			writeObject( vo, sb );
+			first = false;
+		}
+		sb.append("}");
+		
+		Files.write( p, sb.toString().getBytes() );
+	}
+	
 	public static Map<Object,Object> loadBiomTableNashorn( String biom ) throws JSONException, ScriptException {
 		ScriptEngineManager manager = new ScriptEngineManager();
 		ScriptEngine engine = manager.getEngineByName("nashorn");
@@ -4226,6 +4274,60 @@ public class DataTable extends JApplet implements ClipboardOwner {
 			}
 			System.err.println( loc + "\t" + count );
 		}
+	}
+	
+	static class Mapping {
+		public Mapping( String name ) {
+			this.name = name;
+		}
+		
+		String	name;
+		Map<String,String> mapping = new HashMap<String,String>();
+	}
+	
+	public static void sortBiom( Map<Object, Object> map, List<Mapping> mapping, final String column, final boolean numeric ) {
+		Collections.sort( mapping, new Comparator<Mapping>() {
+			@Override
+			public int compare(Mapping o1, Mapping o2) {
+				String s1 = o1.mapping.get(column);
+				String s2 = o2.mapping.get(column);
+				if( numeric ) {
+					float f1 = -1.0f;
+					try {
+						f1 = Float.parseFloat(s1);
+					} catch( Exception e ) {}
+					
+					float f2 = -1.0f;
+					try {
+						f2 = Float.parseFloat(s2);
+					} catch( Exception e ) {}
+					
+					return Float.compare(f1, f2);
+				} else {
+					return s1.compareTo(s2);
+				}
+			}
+		});
+	}
+	
+	public static List<Mapping> loadMapping( Path p ) throws IOException {
+		List<Mapping> ml = new ArrayList<Mapping>();
+		
+		BufferedReader br = Files.newBufferedReader(p);
+		String line = br.readLine();
+		String[] split = line.split("\t");
+		line = br.readLine();
+		while( line != null ) {
+			String[] ssplit = line.split("\t");
+			Mapping m = new Mapping( ssplit[0] );
+			for( int i = 1; i < ssplit.length; i++ ) {
+				m.mapping.put( split[i], ssplit[i] );
+			}
+			line = br.readLine();
+		}
+		br.close();
+		
+		return ml;
 	}
 	
 	public static void main(String[] args) {
