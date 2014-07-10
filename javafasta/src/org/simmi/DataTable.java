@@ -3791,34 +3791,42 @@ public class DataTable extends JApplet implements ClipboardOwner {
 		bw.close();
 	}
 	
-	public static void writeObject( Object vo, StringBuilder sb ) {
+	public static void writeObject( Object vo, StringBuilder sb, int level, int maxlevel, int maxsize ) {
 		if( vo instanceof String ) {
 			String vs = (String)vo;
 			sb.append( "\""+vs+"\"" );
 		} else if( vo instanceof ArrayList ) {
 			ArrayList al = (ArrayList)vo;
 			sb.append("[");
-			boolean first = true;
-			for( Object o : al ) {
-				String s = (String)o;
-				if( !first ) sb.append(",");
-				writeObject( o, sb );
-				first = false;
+			if( al.size() < maxsize ) {
+				boolean first = true;
+				for( Object o : al ) {
+					//String s = (String)o;
+					if( !first ) sb.append(",");
+					//if( level < maxlevel ) 
+					writeObject( o, sb, level+1, maxlevel, maxsize );
+					first = false;
+				}
 			}
 			sb.append("]");
 		} else if( vo instanceof HashMap ) {
 			HashMap hm = (HashMap)vo;
-			sb.append("{");
-			boolean first = true;
-			for( Object o : hm.keySet() ) {
-				String s = (String)o;
-				if( !first ) sb.append(",");
-				sb.append("\""+s+"\":");
-				Object svo = hm.get(o);
-				writeObject( svo, sb );
-				first = false;
+			if( hm.size() < maxsize ) {
+				sb.append("{");
+				if( level < maxlevel ) sb.append("\n");
+				boolean first = true;
+				for( Object o : hm.keySet() ) {
+					String s = (String)o;
+					if( !first ) sb.append(",\n");
+					sb.append("\""+s+"\":");
+					Object svo = hm.get(o);
+					//if( level < maxlevel ) 
+					writeObject( svo, sb, level+1, maxlevel, maxsize );
+					first = false;
+				}
 			}
 			sb.append("}");
+			if( level < maxlevel ) sb.append("\n");
 		}
 	}
 	
@@ -3831,7 +3839,7 @@ public class DataTable extends JApplet implements ClipboardOwner {
 			if( !first ) sb.append(",");
 			sb.append("\""+s+"\":");
 			Object vo = map.get(o);
-			writeObject( vo, sb );
+			writeObject( vo, sb, 1, Integer.MAX_VALUE, Integer.MAX_VALUE );
 			first = false;
 		}
 		sb.append("}");
@@ -4332,14 +4340,21 @@ public class DataTable extends JApplet implements ClipboardOwner {
 	
 	public static void main(String[] args) {
 		try {
-			Path p = new File("/Users/sigmar/otu_table_all_primer1_99.biom").toPath();
+			Path p = new File("/Users/sigmar/otu_table.biom").toPath();
 			ByteArrayOutputStream baos = new ByteArrayOutputStream();
 			Files.copy(p, baos);
 			baos.close();
 			String biom = baos.toString();
 			Map<Object, Object> mobj = loadBiomTableNashorn( biom );
 			
-			String type = "Column";
+			StringBuilder sb = new StringBuilder();
+			writeObject( mobj, sb, 0, 1, Integer.MAX_VALUE );
+			System.err.println( sb.toString() );
+			
+			Path np = new File("/Users/sigmar/new_otu_table.biom").toPath();
+			saveBiomTableNashorn( mobj, np );
+			
+			/*String type = "Column";
 			
 			countSpecies( 2, mobj, "Phylum" );
 			
@@ -4373,9 +4388,9 @@ public class DataTable extends JApplet implements ClipboardOwner {
 			e.printStackTrace();
 		} catch (ScriptException e) {
 			e.printStackTrace();
-		} catch (URISyntaxException e) {
+		}/* catch (URISyntaxException e) {
 			e.printStackTrace();
-		}
+		}*/
 		
 		/*JFrame frame = new JFrame();
 		frame.setSize(800, 600);

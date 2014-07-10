@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.io.PrintStream;
 import java.io.Writer;
 import java.net.MalformedURLException;
@@ -112,8 +113,13 @@ public class Serifier {
 			ProcessBuilder pb = new ProcessBuilder("fasttree", "tmp.fasta");
 			pb.directory(tmpdir);
 			Process p = pb.start();
+			OutputStream os = p.getOutputStream();
+			Writer w = new OutputStreamWriter(os);
+			writeFasta(tlseq, w, null, true);
+			w.close();
+			os.close();
+			
 			InputStream is = p.getInputStream();
-
 			ByteArrayOutputStream baos = new ByteArrayOutputStream();
 			byte[] bb = new byte[1024];
 			int r = is.read(bb);
@@ -1767,6 +1773,29 @@ public class Serifier {
 		return ret;
 	}
 	
+	public void renameDuplicates() {
+		for( Sequence seq : this.lseq ) {
+			String seqstr = seq.getName();
+			
+			int count = 0;
+			for( Sequence seq2 : this.lseq ) {
+				String seqstr2 = seq2.getName();
+				
+				if( seqstr.compareTo( seqstr2 ) == 0 ) {
+					int curi = seqstr2.indexOf('[');
+					if( curi == -1 ) {
+						seqstr2 += "_"+(++count);
+					} else {
+						seqstr2 = seqstr2.substring(0,curi)+"_"+(++count)+seqstr2.substring(curi, seqstr2.length());
+					}
+					seq2.setName( seqstr2 );
+					//removee.add( seq2 );
+					//removei.add( n );
+				}
+			}
+		}
+	}
+	
 	public Sequences filtit( int nspin, Sequences seqs, File dir ) {
 		Sequences ret = null;
 		try {
@@ -2246,6 +2275,11 @@ public class Serifier {
 		if( i >= 0 ) {
 			outf = new File( args[i+1] );
 			//ex
+		}
+		
+		i = arglist.indexOf("-stats");
+		if( i >= 0 ) {
+			//this.seq
 		}
 		
 		i = arglist.indexOf("-huge");
