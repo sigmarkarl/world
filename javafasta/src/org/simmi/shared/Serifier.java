@@ -109,7 +109,7 @@ public class Serifier {
 			writeFasta( tlseq, fw, null, true);
 			fw.close();
 
-			ProcessBuilder pb = new ProcessBuilder("/Users/sigmar/FastTree", "tmp.fasta");
+			ProcessBuilder pb = new ProcessBuilder("fasttree", "tmp.fasta");
 			pb.directory(tmpdir);
 			Process p = pb.start();
 			InputStream is = p.getInputStream();
@@ -124,6 +124,7 @@ public class Serifier {
 			baos.close();
 
 			ret = baos.toString();
+			System.err.println( ret );
 			/*Node n = treeutil.parseTreeRecursive( tree, false );
 			treeutil.setLoc( 0 );
 			n.nodeCalcMap( nmap );*/
