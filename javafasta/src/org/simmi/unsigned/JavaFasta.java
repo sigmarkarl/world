@@ -138,32 +138,36 @@ public class JavaFasta extends JApplet {
 	
 	boolean		collapseView = false;
 	
-	public static Map<String,Integer> getBlosumMap() throws IOException {
+	public static Map<String,Integer> getBlosumMap() {
 		Map<String,Integer> blosumap = new HashMap<String,Integer>();
 		InputStream is = JavaFasta.class.getResourceAsStream("BLOSUM62");
 		InputStreamReader 	ir = new InputStreamReader( is );
 		BufferedReader		br = new BufferedReader( ir );
 		String[] abet = null;
 		//int i = 0;
-		String line = br.readLine();
-		while( line != null ) {
-			if( line.charAt(0) != '#' ) {
-				String[] split = line.trim().split("[ ]+");
-				char chr = line.charAt(0);
-				if( chr == ' ' ) {
-					abet = split;
-					abet[abet.length-1] = "-";
-				} else {
-					if( chr == '*' ) chr = '-';
-					int k = 0;
-					for( String a : abet ) {
-						blosumap.put( chr+a, Integer.parseInt(split[++k]) );
+		try {
+			String line = br.readLine();
+			while( line != null ) {
+				if( line.charAt(0) != '#' ) {
+					String[] split = line.trim().split("[ ]+");
+					char chr = line.charAt(0);
+					if( chr == ' ' ) {
+						abet = split;
+						abet[abet.length-1] = "-";
+					} else {
+						if( chr == '*' ) chr = '-';
+						int k = 0;
+						for( String a : abet ) {
+							blosumap.put( chr+a, Integer.parseInt(split[++k]) );
+						}
 					}
 				}
+				line = br.readLine();
 			}
-			line = br.readLine();
+			br.close();
+		} catch (IOException e) {
+			e.printStackTrace();
 		}
-		br.close();
 		
 		return blosumap;
 	}
@@ -4320,12 +4324,7 @@ public class JavaFasta extends JApplet {
 		phylogeny.add( new AbstractAction("Draw tree") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				Map<String, Integer> blosumap = null;
-				try {
-					blosumap = getBlosumMap();
-				} catch (IOException e2) {
-					e2.printStackTrace();
-				}
+				Map<String, Integer> blosumap = getBlosumMap();
 				double[] dd = distanceMatrixNumeric( false, null, blosumap );
 				System.err.println("about to call showTree");
 				List<String> corrInd = new ArrayList<String>();
