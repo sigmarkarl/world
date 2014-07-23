@@ -3741,7 +3741,114 @@ public class DataTable extends JApplet implements ClipboardOwner {
 		return ret;
 	}
 	
-	public static void assigntax( BufferedReader br, BufferedWriter bw ) throws IOException {
+	public static Map<Object,Object> assigntax( Path rp, BufferedWriter bw, Map<String,String> taxmap, Map<String,Mapping> mapping, String cat, int groups, Map<String,Integer> taxcount ) throws IOException {
+		Map<Object,Object> biom = new HashMap<Object,Object>();
+		
+		Map<String,Integer>	cntm = new HashMap<String,Integer>();
+		Map<String,Integer> mapt = new HashMap<String,Integer>();
+		Map<String,Integer>	maps = new HashMap<String,Integer>();
+		List<String>		lt = new ArrayList<String>();
+		List<String>		ls = new ArrayList<String>();
+		//List<String>		li = new ArrayList<String>();
+		
+		int sidx = 0;
+		int tidx = 0;
+		
+		double min = Integer.MAX_VALUE;
+		double max = Integer.MIN_VALUE;
+		
+		for( String key : mapping.keySet() ) {
+			Mapping m = mapping.get(key);
+			try {
+				double val = Double.parseDouble( m.mapping.get( cat ) );
+				if( val > max ) max = val;
+				if( val < min ) min = val;
+			} catch( Exception e ) {
+				
+			}
+		}
+		double bil = max-min;
+		double del = bil/groups;
+		
+		double selectedval = -1.0;
+		if( mapping != null ) {
+			if( groups == 2 ) {
+				int total = 0;
+				Map<Double,Integer> treem = new TreeMap<Double,Integer>();
+				String current = null;
+				BufferedReader br = Files.newBufferedReader(rp);
+				String line = br.readLine();
+				while (line != null) {
+					String trim = line.trim();
+					if (trim.startsWith("Query=")) {
+						String[] split = trim.substring(7).trim().split("[ ]+");
+						current = split[0];
+						
+						String sample = current.substring(0,current.indexOf('_'));
+						if( mapping.containsKey(sample) ) {
+							Mapping m = mapping.get(sample);
+							try {
+								double val = Double.parseDouble( m.mapping.get(cat) );
+								int cnt = 0;
+								if( treem.containsKey(val) ) {
+									cnt = treem.get(val);
+								}
+								treem.put( val, cnt+1 );
+								total++;
+							} catch( Exception e ) {
+								int cnt = 0;
+								if( treem.containsKey(-1.0) ) {
+									cnt = treem.get(-1.0);
+								}
+								treem.put( -1.0, cnt+1 );
+							}
+						}
+					}
+					
+					line = br.readLine();
+				}
+				br.close();
+				
+				int tot = 0;
+				for( Double dval : treem.keySet() ) {
+					if( dval != -1.0 ) {
+						tot += treem.get(dval);
+						if( tot > total/2 ) {
+							String sample = cat+"_"+min+"_"+dval;
+							maps.put(sample, 0);
+							ls.add( sample );
+							
+							sample = cat+"_"+dval+"_"+max;
+							maps.put(sample, 1);
+							ls.add( sample );
+							
+							if( treem.containsKey(-1.0) ) {
+								sample = cat+"_unknown";
+								maps.put(sample, 2);
+								ls.add( sample );
+							}
+							selectedval = dval;
+							
+							break;
+						}
+					}
+				}
+			} else {
+				for( int i = 0; i < groups; i++ ) {
+					double start = min+Math.floor(100.0*i*del)/100.0;
+					double stop = min+Math.floor(100.0*(i+1)*del)/100.0;
+					
+					String sample = cat+"_"+start+"_"+stop;
+					maps.put(sample, i);
+					ls.add( sample );
+				}
+			}
+		}
+		
+		int uu = 0;
+		int oo = 0;
+		
+		BufferedReader br = Files.newBufferedReader(rp);
 		String line = br.readLine();
 		String current = null;
 		String currid = null;
@@ -3751,13 +3858,65 @@ public class DataTable extends JApplet implements ClipboardOwner {
 			if (trim.startsWith("Query=")) {
 				String[] split = trim.substring(7).trim().split("[ ]+");
 				current = split[0];
+				
+				String sample = current.substring(0,current.indexOf('_'));
+				
+				if( groups == -1 ) {
+					sample = sample.substring( sample.lastIndexOf('.') );
+				} if( groups == -2 ) {
+					sample = sample.substring( sample.indexOf('.'), sample.lastIndexOf('.') );
+				} else if( mapping != null ) {
+					if( mapping.containsKey(sample) ) {
+						Mapping m = mapping.get(sample);
+						try {
+							double val = Double.parseDouble( m.mapping.get(cat) );
+							
+							if( groups == 2 ) {
+								if( val <= selectedval ) {
+									sample = cat+"_"+min+"_"+selectedval;
+								} else {
+									sample = cat+"_"+selectedval+"_"+max;
+								}
+							} else {
+								int k = (int)( (val-min) * groups / bil );
+								
+								if( k == groups ) k = groups-1;
+								
+								double start = min+Math.floor(100.0*k*del)/100.0;
+								double stop = min+Math.floor(100.0*(k+1)*del)/100.0;
+								sample = cat+"_"+start+"_"+stop;
+							}
+						} catch( Exception e ) {
+							sample = cat+"_unknown";
+						}
+					}
+				}
+				
+				if( !maps.containsKey(sample) ) {
+					sidx = maps.size();
+					maps.put(sample, sidx);
+					ls.add( sample );
+				} else sidx = maps.get(sample);
 			} else if (line.startsWith("> ")) {
 				String teg = line.substring(2);
 				int k = teg.indexOf(' ');
-				if( k != -1 ) {
-					currid = teg.substring(0,k);
-					teg = teg.substring(k+1);
-					line = br.readLine();
+				if( k == -1 ) {
+					k = teg.length();
+				}
+				currid = teg.substring(0,k);
+				if( taxmap != null ) teg = taxmap.get(currid);
+				//if( taxmap != null ) teg = taxmap.get(currid);
+				//else teg = teg.substring(k+1);
+					
+				if( teg != null && taxcount.isEmpty() || taxcount.containsKey(currid) ) {
+					if( !mapt.containsKey(currid) ) {
+						tidx = mapt.size();
+						mapt.put(currid, tidx);
+						lt.add( currid );
+						//li.add( currid );
+					} else tidx = mapt.get( currid );
+					
+					/*line = br.readLine();
 					while (!line.startsWith("Length=")) {
 						teg += line;
 						line = br.readLine();
@@ -3770,13 +3929,22 @@ public class DataTable extends JApplet implements ClipboardOwner {
 						for( int u = count.length; u < 7; u++ ) {
 							currteg += ";"+last;
 						}
-					}
-				} else {
+					}*/
+					
+					String key = tidx + "," + sidx;
+					if( cntm.containsKey(key) ) cntm.put(key, cntm.get(key)+1);
+					else cntm.put(key, 1);
+					
+					oo++;
+				}
+				uu++;
+				
+				/*} else {
 					currid = teg;
 					int y = teg.lastIndexOf('_');
 					if( y != -1 ) teg = teg.substring(0,y);
 					currteg = "Bacteria;Deinococcus-Thermus;Deinococci;Thermales;Thermaceae;Thermus;" + teg.replace("T.", "Thermus_");
-				}
+				}*/
 			} else if (trim.contains("Expect =")) {
 				int k = trim.indexOf("Expect =");
 				String evalstr = trim.substring( k+9 ).trim();
@@ -3789,49 +3957,141 @@ public class DataTable extends JApplet implements ClipboardOwner {
 		}
 		br.close();
 		bw.close();
+		
+		//System.err.println( uu + " uo " + oo + "  " + maps.size() );
+		
+		ArrayList<Map>	columnarray = new ArrayList<Map>();
+		for( String str : ls ) {
+			HashMap<String,String> m = new HashMap<String,String>();
+			m.put("metadata", null);
+			m.put("id", str);
+			System.err.println( str );
+			columnarray.add( m );
+		}
+		int i = 0;
+		ArrayList<Map>	rowarray = new ArrayList<Map>();
+		for( String str : lt ) {
+			HashMap<String,Object> m = new HashMap<String,Object>();
+			
+			String teg = str;
+			if( taxmap != null ) teg = taxmap.get(str);
+			//else teg = teg.substring(k+1);
+			
+			ArrayList<String>	ta = new ArrayList<String>();
+			String[] spl = teg.split(";");
+			for( String tax : spl ) {
+				ta.add( tax );
+			}
+			
+			HashMap<String,Object> sm = new HashMap<String,Object>();
+			sm.put("taxonomy", ta);
+			
+			m.put("metadata", sm);
+			m.put("id", lt.get(i));
+			rowarray.add( m );
+			
+			i++;
+		}
+		
+		Map<Integer,Integer>	totm = new HashMap<Integer,Integer>();
+		ArrayList<ArrayList> dataarray = new ArrayList<ArrayList>();
+		for( String key : cntm.keySet() ) {
+			int cnt = cntm.get( key );
+			String[] spl = key.split(",");
+			int o = Integer.parseInt( spl[0] );
+			int t = Integer.parseInt( spl[1] );
+			
+			int c = 0;
+			if( totm.containsKey(t) ) c = totm.get(t);
+			totm.put(t, c+cnt);
+		
+			ArrayList<Integer> d = new ArrayList<Integer>();
+			d.add(o);
+			d.add(t);
+			d.add(cnt);
+			dataarray.add( d );
+		}
+		
+		for( int k : totm.keySet() ) {
+			int c = totm.get(k);
+			System.err.println( ls.get(k) + ": " + c );
+		}
+		
+		biom.put("date", "2014-04-22T22:40:03.805568");
+		biom.put("matrix_element_type","int");
+		biom.put("generated_by","QIIME 1.8.0-dev");
+		biom.put("shape", new ArrayList<Integer>( Arrays.asList(new Integer[] {rowarray.size(),columnarray.size()}) ));
+		biom.put("data",dataarray);
+		biom.put("format_url","http://biom-format.org");
+		biom.put("columns",columnarray);
+		biom.put("format","Biological Observation Matrix 1.0.0");
+		biom.put("matrix_type","sparse");
+		biom.put("id","None");
+		biom.put("type","OTU table");
+		biom.put("rows",rowarray);
+		
+		return biom;
 	}
 	
-	public static void writeObject( Object vo, StringBuilder sb, int level, int maxlevel, int maxsize ) {
+	public static void writeObject( Object vo, Appendable sb, int level, int maxlevel, int maxsize, String offset ) throws IOException {
 		if( vo instanceof String ) {
 			String vs = (String)vo;
 			sb.append( "\""+vs+"\"" );
+		} else if( vo instanceof Integer ) {
+			sb.append( ((Integer)vo).toString() );
+		} else if( vo instanceof Double ) {
+			double d = (Double)vo;
+			if( d == Math.floor(d) ) sb.append( Integer.toString( (int)d) );
+			else sb.append( Double.toString(d) );
 		} else if( vo instanceof ArrayList ) {
 			ArrayList al = (ArrayList)vo;
 			sb.append("[");
-			if( al.size() < maxsize ) {
-				boolean first = true;
-				for( Object o : al ) {
-					//String s = (String)o;
-					if( !first ) sb.append(",");
-					//if( level < maxlevel ) 
-					writeObject( o, sb, level+1, maxlevel, maxsize );
-					first = false;
-				}
+			boolean first = true;
+			int count = 0;
+			for( Object o : al ) {
+				if( !first ) sb.append(",");
+				
+				//if( level < maxlevel ) 
+				writeObject( o, sb, level+1, maxlevel, maxsize, offset );
+				first = false;
+				
+				count++;
+				
+				if( count > maxsize ) break;
 			}
 			sb.append("]");
 		} else if( vo instanceof HashMap ) {
 			HashMap hm = (HashMap)vo;
-			if( hm.size() < maxsize ) {
-				sb.append("{");
-				if( level < maxlevel ) sb.append("\n");
-				boolean first = true;
-				for( Object o : hm.keySet() ) {
-					String s = (String)o;
-					if( !first ) sb.append(",\n");
-					sb.append("\""+s+"\":");
-					Object svo = hm.get(o);
-					//if( level < maxlevel ) 
-					writeObject( svo, sb, level+1, maxlevel, maxsize );
-					first = false;
+			sb.append("{"); 
+			//sb.append("\n");
+			boolean first = true;
+			for( Object o : hm.keySet() ) {
+				String s = (String)o;
+				if( !first ) sb.append(",");
+				sb.append("\""+s+"\": ");
+				Object svo = hm.get(o);
+				//if( level < maxlevel )
+				if( svo == null ) sb.append( "null" );
+				else {
+					//if( !s.equals("data") ) 
+					writeObject( svo, sb, level+1, maxlevel, maxsize, offset+"\t" );
 				}
+				first = false;
+				
+				//break;
 			}
 			sb.append("}");
-			if( level < maxlevel ) sb.append("\n");
+			//if( level < maxlevel ) 
+			//sb.append("\n");
 		}
 	}
 	
 	public static void saveBiomTableNashorn( Map<Object,Object> map, Path p ) throws IOException {
-		StringBuilder sb = new StringBuilder();
+		BufferedWriter bw = Files.newBufferedWriter(p);
+		writeObject(map, bw, 0, 0, Integer.MAX_VALUE, "");
+		bw.close();
+		
+		/*StringBuilder sb = new StringBuilder();
 		sb.append("{");
 		boolean first = true;
 		for( Object o : map.keySet() ) {
@@ -3839,12 +4099,12 @@ public class DataTable extends JApplet implements ClipboardOwner {
 			if( !first ) sb.append(",");
 			sb.append("\""+s+"\":");
 			Object vo = map.get(o);
-			writeObject( vo, sb, 1, Integer.MAX_VALUE, Integer.MAX_VALUE );
+			writeObject( vo, sb, 1, Integer.MAX_VALUE, Integer.MAX_VALUE, "" );
 			first = false;
 		}
 		sb.append("}");
 		
-		Files.write( p, sb.toString().getBytes() );
+		Files.write( p, sb.toString().getBytes() );*/
 	}
 	
 	public static Map<Object,Object> loadBiomTableNashorn( String biom ) throws JSONException, ScriptException {
@@ -4318,8 +4578,8 @@ public class DataTable extends JApplet implements ClipboardOwner {
 		});
 	}
 	
-	public static List<Mapping> loadMapping( Path p ) throws IOException {
-		List<Mapping> ml = new ArrayList<Mapping>();
+	public static Map<String,Mapping> loadMapping( Path p ) throws IOException {
+		Map<String,Mapping> ml = new HashMap<String,Mapping>();
 		
 		BufferedReader br = Files.newBufferedReader(p);
 		String line = br.readLine();
@@ -4332,6 +4592,8 @@ public class DataTable extends JApplet implements ClipboardOwner {
 				m.mapping.put( split[i], ssplit[i] );
 			}
 			line = br.readLine();
+			
+			ml.put(m.name, m);
 		}
 		br.close();
 		
@@ -4339,20 +4601,116 @@ public class DataTable extends JApplet implements ClipboardOwner {
 	}
 	
 	public static void main(String[] args) {
+		/*Path dir = Paths.get( "/Users/sigmar" );
+		Path p = dir.resolve("silva119_tmp.tax");
+		Path r = dir.resolve("silva119.tax");
+		try {
+			BufferedWriter bw = Files.newBufferedWriter(r);
+			for( String str : Files.readAllLines( p ) ) {
+				String id = str.substring(0,10).trim();
+				String name1 = str.substring(10,60).trim().replace(' ', '_');
+				String name2 = str.substring(60,110).trim().replace(' ', '_');
+				String tax1 = str.substring(110,260).trim().replace("\"", "");
+				String tax2 = str.substring(260,str.length()).trim();
+				
+				String[] sp1 = tax1.split(";");
+				String[] sp2 = tax2.split(";");
+				
+				int i = tax1.indexOf("Bacteria;");
+				if( i > 0 ) tax1 = tax1.substring(i);
+				i = tax2.indexOf("Bacteria;");
+				if( i > 0 ) tax2 = tax2.substring(i);
+				
+				i = tax1.indexOf("Archaea;");
+				if( i > 0 ) tax1 = tax1.substring(i);
+				i = tax2.indexOf("Archaea;");
+				if( i > 0 ) tax2 = tax2.substring(i);
+				
+				//System.err.println( sp1.length + "  " + sp2.length );
+				
+				if( sp2.length == 6 ) {
+					String name;
+					if( name2.length() == 0 ) name = name1;
+					else name = name2;
+					bw.write(id + "\t" + tax2+name + ";\n");
+				} else if( sp1.length == 6 ) {
+					String name;
+					if( name1.length() == 0 ) name = name2;
+					else name = name1;
+					bw.write(id + "\t" + tax1+name + ";\n");
+				} else if( sp2.length < 6 ) {
+					if( sp1.length > sp2.length && sp1.length < 6 ) {
+						i = sp1.length;
+						bw.write(id + "\t" + tax1 );
+						while( i < 6 ) {
+							bw.write( sp1[sp1.length-1]+";" );
+							i++;
+						}
+						
+						String name;
+						if( name1.length() == 0 ) name = name2;
+						else name = name1;
+						bw.write( name+";\n" );
+					} else {
+						i = sp2.length;
+						bw.write( id + "\t" + tax2 );
+						while( i < 6 ) {
+							bw.write( sp2[sp2.length-1]+";" );
+							i++;
+						}
+						
+						String name;
+						if( name2.length() == 0 ) name = name1;
+						else name = name2;
+						bw.write( name+";\n" );
+					}
+				} else if( sp1.length < 6 ) {
+					i = sp1.length;
+					bw.write( id + "\t" + tax1 );
+					while( i < 6 ) {
+						bw.write( sp1[sp1.length-1]+";" );
+						i++;
+					}
+					
+					String name;
+					if( name1.length() == 0 ) name = name2;
+					else name = name1;
+					bw.write( name+";\n" );
+				} else if( sp2.length == 7 ) {
+					bw.write(id + "\t" + tax2 + "\n");
+				} else if( sp1.length == 7 ) {
+					bw.write(id + "\t" + tax1 + "\n");
+				} else if( sp2.length == 8 ) {
+					String ttax = tax2.substring(0,tax2.lastIndexOf(';', tax2.length()-2)) + ";";
+					System.err.println( "\t" + ttax );
+					bw.write(id + "\t" + ttax + "\n");
+				} else {
+					System.err.println( tax1 );
+					System.err.println( tax2 );
+					System.err.println();
+				}
+			}
+			bw.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}*/
+		
 		try {
 			Path p = new File("/Users/sigmar/otu_table.biom").toPath();
 			ByteArrayOutputStream baos = new ByteArrayOutputStream();
 			Files.copy(p, baos);
 			baos.close();
-			String biom = baos.toString();
-			Map<Object, Object> mobj = loadBiomTableNashorn( biom );
+			String biomstr = baos.toString();
+			Map<Object, Object> mobj = loadBiomTableNashorn( biomstr );
 			
-			StringBuilder sb = new StringBuilder();
-			writeObject( mobj, sb, 0, 1, Integer.MAX_VALUE );
-			System.err.println( sb.toString() );
+			//StringBuilder sb = new StringBuilder();
+			FileWriter fw = new FileWriter("/Users/sigmar/erm.biom");
+			writeObject( mobj, fw, 0, 1, Integer.MAX_VALUE, "" );
+			fw.close();
+			//System.err.println( sb.toString() );
 			
-			Path np = new File("/Users/sigmar/new_otu_table.biom").toPath();
-			saveBiomTableNashorn( mobj, np );
+			//Path np = new File("/Users/sigmar/new_otu_table.biom").toPath();
+			//saveBiomTableNashorn( mobj, np );
 			
 			/*String type = "Column";
 			
@@ -4379,9 +4737,59 @@ public class DataTable extends JApplet implements ClipboardOwner {
 			}*/
 			//printMap( mobj );
 			
-			// br = Files.newBufferedReader( new File("/Users/sigmar/rep_set.blastout").toPath() ); //new BufferedReader( new InputStreamReader( new GZIPInputStream( Files.newInputStream( new File("/Users/sigmar/rep_set.blastout").toPath() ) ) ) );
-			//BufferedWriter bw = Files.newBufferedWriter( new File("/Users/sigmar/res.txt").toPath() );
-			//assigntax( br, bw );
+			p = Paths.get("/Users/sigmar/SILVA119/m_mapping_pra.txt");
+			Map<String,Mapping> mapping = loadMapping( p );
+			
+			Map<String,String> taxmap = new HashMap<String,String>();
+			p = Paths.get("/Users/sigmar/SILVA119/silva119nr.tax");
+			List<String> ll = Files.readAllLines( p );
+			for( String line : ll ) {
+				String[] spl = line.split("\t");
+				taxmap.put( spl[0], spl[1] );
+			}
+			Path rp = new File("/Users/sigmar/SILVA119/seqs.blastout").toPath();
+			//BufferedReader br = Files.newBufferedReader( new File("/Users/sigmar/SILVA119/seqs.blastout").toPath() ); //new BufferedReader( new InputStreamReader( new GZIPInputStream( Files.newInputStream( new File("/Users/sigmar/rep_set.blastout").toPath() ) ) ) );
+			BufferedWriter bw = Files.newBufferedWriter( new File("/Users/sigmar/SILVA119/seqs.tax").toPath() );
+			
+			HashMap<String,Integer>	taxcount = new HashMap<String,Integer>();
+			BufferedReader br = Files.newBufferedReader(rp);
+			String line = br.readLine();
+			while (line != null) {
+				//String trim = line.trim();
+				if (line.startsWith("> ")) {
+					String teg = line.substring(2);
+					int k = teg.indexOf(' ');
+					if( k == -1 ) {
+						k = teg.length();
+					}
+					String currid = teg.substring(0,k);
+					//if( taxmap != null ) teg = taxmap.get(currid);
+					//else teg = teg.substring(k+1);
+						
+					int tcnt = 0;
+					if( taxcount.containsKey(currid) ) {
+						tcnt = taxcount.get(currid);
+					}
+					taxcount.put( currid, tcnt+1 );
+				}
+				
+				line = br.readLine();
+			}
+			br.close();
+			
+			Set<String> dein = new HashSet<String>();
+			for( String key : taxcount.keySet() ) {
+				String tax = taxmap.get(key);
+				int cnt = taxcount.get(key);
+				if( tax != null && (tax.contains( "Deinococcus") || tax.contains("Aquificae")) && cnt > 100 ) {
+					dein.add( key );
+				}
+			}
+			taxcount.keySet().retainAll( dein );
+			Map<Object,Object> biom = assigntax( rp, bw, taxmap, mapping, "pHT", 4, taxcount );
+			
+			Path biomp = Paths.get("/Users/sigmar/seqs.biom");
+			saveBiomTableNashorn(biom, biomp);
 		} catch (IOException e) {
 			e.printStackTrace();
 		} catch (JSONException e) {

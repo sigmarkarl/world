@@ -389,7 +389,7 @@ public class Sequence implements Comparable<Sequence> {
 	int							unalignedlength = -1;
 	int							substart = -1;
 	int							substop = 0;
-	public List<Annotation>		annset;
+	public List<Annotation>	annset;
 	public int					index = -1;
 	public boolean				edited = false;
 	public boolean				selected = false;
@@ -856,14 +856,18 @@ public class Sequence implements Comparable<Sequence> {
 		}
 	}
 	
-	public void addAnnotation( Annotation a ) {
+	public boolean addAnnotation( Annotation a ) {
 		if( annset == null ) {
 			annset = new ArrayList<Annotation>();
+		} else for( Annotation an : annset ) {
+			if( an.start == a.start && a.start > 0 ) return true;
 		}
-		if( annset.contains(a) ) {
-			System.err.println();
-		}
+		/*if( annset.contains(a) ) {
+			if( a.start == 0 ) annset.add( a );
+		} else*/ 
 		annset.add( a );
+		
+		return false;
 	}
 	
 	public String getName() {
