@@ -56,6 +56,26 @@ import java.util.Random;
 import java.util.Set;
 import java.util.TreeMap;
 
+import javafx.application.Platform;
+import javafx.collections.FXCollections;
+import javafx.embed.swing.JFXPanel;
+import javafx.embed.swing.SwingFXUtils;
+import javafx.event.EventHandler;
+import javafx.geometry.Side;
+import javafx.scene.Scene;
+import javafx.scene.SnapshotParameters;
+import javafx.scene.chart.CategoryAxis;
+import javafx.scene.chart.NumberAxis;
+import javafx.scene.chart.ScatterChart;
+import javafx.scene.chart.StackedBarChart;
+import javafx.scene.chart.XYChart;
+import javafx.scene.control.ContextMenu;
+import javafx.scene.control.MenuItem;
+import javafx.scene.control.Tooltip;
+import javafx.scene.image.WritableImage;
+import javafx.scene.layout.Background;
+
+import javax.imageio.ImageIO;
 import javax.jnlp.ClipboardService;
 import javax.jnlp.FileContents;
 import javax.jnlp.FileOpenService;
@@ -103,6 +123,7 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.simmi.shared.Annotation;
+import org.simmi.shared.PrincipleComponentAnalysis;
 import org.simmi.shared.Sequence;
 import org.simmi.shared.Serifier;
 import org.simmi.shared.TreeUtil;
@@ -137,6 +158,191 @@ public class DataTable extends JApplet implements ClipboardOwner {
 			e.printStackTrace();
 		}
 	}
+	
+	public static Scene createStackedBarChartScene( Map<String,Map<String,Integer>> map, boolean uniform ) {
+        final CategoryAxis 	xAxis = new CategoryAxis();
+        final NumberAxis 	yAxis = new NumberAxis();
+        
+        xAxis.setTickLabelRotation( 90.0 );
+        
+        Set<String>	all = new HashSet<String>();
+        List<String> speclist = new ArrayList<String>();
+        for( String spec : map.keySet() ) {
+        	speclist.add( spec );
+        }
+        xAxis.setCategories( FXCollections.<String>observableArrayList( speclist ) );
+        //yAxis.
+        
+        final StackedBarChart<String,Number> sc = new StackedBarChart<String,Number>(xAxis,yAxis);
+        sc.setLegendSide( Side.RIGHT );
+        xAxis.setLabel("");
+        yAxis.setLabel("");
+        sc.setTitle("COG catogories");
+        
+        //Font f = sc.getXAxis().settic
+        //sc.setStyle( "-fx-font-size: 2.4em;" );
+        //System.err.println( sc.getXAxis().getStyle() );
+        sc.getXAxis().setStyle("-fx-tick-label-font-size: 1.4em;");
+        sc.getYAxis().setStyle("-fx-tick-label-font-size: 1.4em;");
+       
+        Map<String,Integer> countmap = new HashMap<String,Integer>();
+        for( String spec : map.keySet() ) {
+        	Map<String,Integer> submap = map.get(spec);
+        	int total = 0;
+        	for( String f : submap.keySet() ) {
+        		total += submap.get(f);
+        		
+        		all.add(f);
+        	}
+        	countmap.put( spec, total );
+        }
+        
+        for( String flock : all ) {
+        	//Map<String,Integer> submap = map.get( spec );
+        	//String longname = all.get(flock);
+	        XYChart.Series<String,Number> core = new XYChart.Series<String,Number>();
+	        core.setName( flock );
+	        for( String spec : map.keySet() ) {
+	        	Map<String,Integer> submap = map.get(spec);
+	        	//int last = 0;
+	        	//for( String f : submap.keySet() ) {
+	        	if( submap.containsKey(flock) ) {
+	        		int total = countmap.get(spec);
+		        	int ival = submap.get( flock );
+		        	String fixspec = spec;
+		        	XYChart.Data<String,Number> d = uniform ?  new XYChart.Data<String,Number>( fixspec, (double)ival/(double)total ) : new XYChart.Data<String,Number>( fixspec, ival );
+		        	//Tooltip.install( d.getNode(), new Tooltip( flock ) );
+		        	core.getData().add( d );
+	        	}
+	        	
+		        //last = last+ival;
+	        }
+	        sc.getData().add( core );
+        }
+        
+        /*XYChart.Series<String,Number> pan = new XYChart.Series<String,Number>();
+        pan.setName("Pan");
+        //for( int i = 0; i < ydata.length; i++ ) {
+        	XYChart.Data<String,Number> d = new XYChart.Data<String,Number>( "dd", 100 );
+        	//Tooltip.install( d.getNode(), new Tooltip( names[i] ) );
+        	pan.getData().add( d );
+        //}
+        XYChart.Series<String,Number> pan2 = new XYChart.Series<String,Number>();
+        pan2.setName("Core");
+        //for( int i = 0; i < ydata.length; i++ ) {
+        	XYChart.Data<String,Number> d2 = new XYChart.Data<String,Number>( "2", 200 );
+        	//Tooltip.install( d.getNode(), new Tooltip( names[i] ) );
+        	pan2.getData().add( d2 );
+        //}
+        sc.getData().addAll(pan, pan2);*/
+        Scene scene = new Scene( sc );
+        //scene.setRoot( sc );
+        
+        for (XYChart.Series<String, Number> s : sc.getData()) {
+        	//int i = 0;
+            for (XYChart.Data<String, Number> d : s.getData()) {
+                Tooltip.install( d.getNode(), new Tooltip( s.getName()+": "+d.getYValue() ) );
+            }
+        }
+        
+        sc.setBackground( Background.EMPTY );
+        
+        final ContextMenu menu = new ContextMenu();
+        MenuItem mi = new MenuItem();
+        mi.setOnAction( new EventHandler<javafx.event.ActionEvent>() {
+			@Override
+			public void handle(javafx.event.ActionEvent arg0) {
+				WritableImage fximg = sc.snapshot(new SnapshotParameters(), null);
+				try {
+					ImageIO.write(SwingFXUtils.fromFXImage(fximg, null), "png", new File("c:/fximg.png"));
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		});
+        menu.getItems().add( mi );
+        sc.setOnMouseClicked( new EventHandler<javafx.scene.input.MouseEvent>() {
+        	 @Override
+             public void handle(javafx.scene.input.MouseEvent event) {
+               if (javafx.scene.input.MouseButton.SECONDARY.equals(event.getButton())) {
+                 menu.show(sc, event.getScreenX(), event.getScreenY());
+               }
+             }
+        });
+        
+        return scene;
+    }
+	
+	public static Scene createBiplotScene( String[] names, double[] xdata, double[] ydata, String[] snames, double[] sxdata, double[] sydata ) {
+        final NumberAxis xAxis = new NumberAxis(-1.0, 1.0, 0.2);
+        final NumberAxis yAxis = new NumberAxis(-1.0, 1.0, 0.2);    
+        final ScatterChart<Number,Number> sc = new ScatterChart<Number,Number>(xAxis,yAxis);
+        xAxis.setLabel("Dim 1");
+        yAxis.setLabel("Dim 2");
+        sc.setTitle("Genes");
+       
+        XYChart.Series series1 = new XYChart.Series();
+        series1.setName("Taxa");
+        for( int i = 0; i < xdata.length; i++ ) {
+        	XYChart.Data d = new XYChart.Data( xdata[i], ydata[i] );
+        	Tooltip.install( d.getNode(), new Tooltip( names[i] ) );
+        	series1.getData().add( d );
+        }
+        sc.getData().addAll(series1);
+        
+        XYChart.Series series2 = new XYChart.Series();
+        series2.setName("Samples");
+        for( int i = 0; i < sxdata.length; i++ ) {
+        	XYChart.Data d = new XYChart.Data( sxdata[i], sydata[i] );
+        	Tooltip.install( d.getNode(), new Tooltip( snames[i] ) );
+        	series2.getData().add( d );
+        }
+        sc.getData().addAll(series2);
+        
+        Scene scene = new Scene( sc );
+        //scene.setRoot( sc );
+        
+        for (XYChart.Series<Number, Number> s : sc.getData()) {
+        	if( s.getName().equals("Taxa") ) {
+	        	int i = 0;
+	            for (XYChart.Data<Number, Number> d : s.getData()) {
+	                Tooltip.install( d.getNode(), new Tooltip( names[i++] ) );
+	            }
+        	} else if( s.getName().equals("Samples") ) {
+	        	int i = 0;
+	            for (XYChart.Data<Number, Number> d : s.getData()) {
+	                Tooltip.install( d.getNode(), new Tooltip( snames[i++] ) );
+	            }
+        	}
+        }
+        
+        sc.setBackground( Background.EMPTY );
+        
+        final ContextMenu menu = new ContextMenu();
+        MenuItem mi = new MenuItem();
+        mi.setOnAction( new EventHandler<javafx.event.ActionEvent>() {
+			@Override
+			public void handle(javafx.event.ActionEvent arg0) {
+				WritableImage fximg = sc.snapshot(new SnapshotParameters(), null);
+				try {
+					ImageIO.write(SwingFXUtils.fromFXImage(fximg, null), "png", new File("c:/fximg.png"));
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		});
+        menu.getItems().add( mi );
+        sc.setOnMouseClicked( new EventHandler<javafx.scene.input.MouseEvent>() {
+        	 @Override
+             public void handle(javafx.scene.input.MouseEvent event) {
+               if (javafx.scene.input.MouseButton.SECONDARY.equals(event.getButton())) {
+                 menu.show(sc, event.getScreenX(), event.getScreenY());
+               }
+             }
+        });
+        
+        return scene;
+    }
 	
 	Map<String,Sequence>	seqcache = new HashMap<String,Sequence>();
 	String[] specs = {"antranikianii","aquaticus","arciformis","brockianus","eggertsoni","filiformis","igniterrae","islandicus","kawarayensis","oshimai","scotoductus","thermophilus","yunnanensis","rehai","composti","unknownchile"};
@@ -3741,7 +3947,7 @@ public class DataTable extends JApplet implements ClipboardOwner {
 		return ret;
 	}
 	
-	public static Map<Object,Object> assigntax( Path rp, BufferedWriter bw, Map<String,String> taxmap, Map<String,Mapping> mapping, String cat, int groups, Map<String,Integer> taxcount ) throws IOException {
+	public static Map<Object,Object> assigntax( Path rp, BufferedWriter bw, Map<String,String> taxmap, Map<String,Mapping> mapping, String cat, int groups, Map<String,Integer> taxcount, double[][] dd, String[][] names, Map<String,Map<String,Integer>> countmap ) throws IOException {
 		Map<Object,Object> biom = new HashMap<Object,Object>();
 		
 		Map<String,Integer>	cntm = new HashMap<String,Integer>();
@@ -3845,9 +4051,6 @@ public class DataTable extends JApplet implements ClipboardOwner {
 			}
 		}
 		
-		int uu = 0;
-		int oo = 0;
-		
 		BufferedReader br = Files.newBufferedReader(rp);
 		String line = br.readLine();
 		String current = null;
@@ -3892,11 +4095,13 @@ public class DataTable extends JApplet implements ClipboardOwner {
 					}
 				}
 				
-				if( !maps.containsKey(sample) ) {
-					sidx = maps.size();
-					maps.put(sample, sidx);
-					ls.add( sample );
-				} else sidx = maps.get(sample);
+				if( !sample.contains("jardvl") && !sample.contains("nknown") ) {
+					if( !maps.containsKey(sample) ) {
+						sidx = maps.size();
+						maps.put(sample, sidx);
+						ls.add( sample );
+					} else sidx = maps.get(sample);
+				}
 			} else if (line.startsWith("> ")) {
 				String teg = line.substring(2);
 				int k = teg.indexOf(' ');
@@ -3934,10 +4139,7 @@ public class DataTable extends JApplet implements ClipboardOwner {
 					String key = tidx + "," + sidx;
 					if( cntm.containsKey(key) ) cntm.put(key, cntm.get(key)+1);
 					else cntm.put(key, 1);
-					
-					oo++;
 				}
-				uu++;
 				
 				/*} else {
 					currid = teg;
@@ -3960,6 +4162,9 @@ public class DataTable extends JApplet implements ClipboardOwner {
 		
 		//System.err.println( uu + " uo " + oo + "  " + maps.size() );
 		
+		names[1] = new String[ls.size()];
+		
+		int i = 0;
 		ArrayList<Map>	columnarray = new ArrayList<Map>();
 		for( String str : ls ) {
 			HashMap<String,String> m = new HashMap<String,String>();
@@ -3967,8 +4172,15 @@ public class DataTable extends JApplet implements ClipboardOwner {
 			m.put("id", str);
 			System.err.println( str );
 			columnarray.add( m );
+			
+			names[1][i] = str;
+			
+			i++;
 		}
-		int i = 0;
+		
+		names[0] = new String[lt.size()];
+		
+		i = 0;
 		ArrayList<Map>	rowarray = new ArrayList<Map>();
 		for( String str : lt ) {
 			HashMap<String,Object> m = new HashMap<String,Object>();
@@ -3982,15 +4194,28 @@ public class DataTable extends JApplet implements ClipboardOwner {
 			for( String tax : spl ) {
 				ta.add( tax );
 			}
+			ta.add( str );
 			
 			HashMap<String,Object> sm = new HashMap<String,Object>();
 			sm.put("taxonomy", ta);
+			
+			names[0][i] = spl[ spl.length-1 ];
 			
 			m.put("metadata", sm);
 			m.put("id", lt.get(i));
 			rowarray.add( m );
 			
 			i++;
+		}
+		
+		double[] sq = new double[columnarray.size()];
+		double[] so = new double[rowarray.size()];
+		if( dd != null ) {
+			double[] d = new double[columnarray.size()*rowarray.size()];
+			Arrays.fill(d, 0.0);
+			dd[0] = d;
+			
+			Arrays.fill(sq, 0.0);
 		}
 		
 		Map<Integer,Integer>	totm = new HashMap<Integer,Integer>();
@@ -4005,12 +4230,69 @@ public class DataTable extends JApplet implements ClipboardOwner {
 			if( totm.containsKey(t) ) c = totm.get(t);
 			totm.put(t, c+cnt);
 		
+			if( dd != null ) {
+				dd[0][t*rowarray.size()+o] += cnt;
+				sq[t] += cnt;
+				so[o] += cnt;
+			}
+			
 			ArrayList<Integer> d = new ArrayList<Integer>();
 			d.add(o);
 			d.add(t);
 			d.add(cnt);
 			dataarray.add( d );
+			
+			String teg = lt.get(o);
+			String smp = ls.get(t);
+			
+			Map<String,Integer>	mval;
+			if( countmap.containsKey( smp ) ) {
+				mval = countmap.get(smp);
+			} else {
+				mval = new HashMap<String,Integer>();
+				countmap.put(smp, mval);
+			}
+			mval.put( teg, cnt );
 		}
+		
+		/*for( int r = 0; r < rowarray.size(); r++ ) {
+			double mean = so[r]/columnarray.size();
+			so[r] = 0.0;
+			for( int c = 0; c < columnarray.size(); c++ ) {
+				dd[0][c*rowarray.size()+r] -= mean;
+				so[r] += dd[0][c*rowarray.size()+r]*dd[0][c*rowarray.size()+r];
+			}
+		}
+		
+		for( int r = 0; r < rowarray.size(); r++ ) {
+			double stddev = Math.sqrt(so[r]/columnarray.size());
+			so[r] = 0.0;
+			for( int c = 0; c < columnarray.size(); c++ ) {
+				dd[0][c*rowarray.size()+r] /= stddev;
+			}
+		}*/
+		
+		for( int c = 0; c < columnarray.size(); c++ ) {
+			double mean = sq[c]/rowarray.size();
+			sq[c] = 0.0;
+			for( int r = 0; r < rowarray.size(); r++ ) {
+				dd[0][c*rowarray.size()+r] -= mean;
+				sq[c] += dd[0][c*rowarray.size()+r]*dd[0][c*rowarray.size()+r];
+			}
+		}
+		
+		for( int c = 0; c < columnarray.size(); c++ ) {
+			double stddev = Math.sqrt(sq[c]/rowarray.size());
+			sq[c] = 0.0;
+			for( int r = 0; r < rowarray.size(); r++ ) {
+				dd[0][c*rowarray.size()+r] /= stddev;
+			}
+		}
+		
+		double[] dimd = new double[2];
+		dimd[0] = rowarray.size();
+		dimd[1] = columnarray.size();
+		dd[1] = dimd;
 		
 		for( int k : totm.keySet() ) {
 			int c = totm.get(k);
@@ -4786,7 +5068,73 @@ public class DataTable extends JApplet implements ClipboardOwner {
 				}
 			}
 			taxcount.keySet().retainAll( dein );
-			Map<Object,Object> biom = assigntax( rp, bw, taxmap, mapping, "pHT", 4, taxcount );
+			
+			final Map<String,Map<String,Integer>> countmap = new HashMap<String,Map<String,Integer>>();
+			
+			final String[][] names = new String[2][];
+			double[][] dd = new double[2][];
+			Map<Object,Object> biom = assigntax( rp, bw, taxmap, mapping, "pHT", 4, taxcount, dd, names, countmap );
+			
+			PrincipleComponentAnalysis pca = new PrincipleComponentAnalysis();
+			
+			int sampleSize = (int)dd[1][0];
+			int numSamples = (int)dd[1][1];
+			pca.setup(numSamples, sampleSize);
+			
+			double[] dv = dd[0];
+			for( int i = 0; i < numSamples; i++ ) {
+				double[] sampleData = Arrays.copyOfRange( dv, i*sampleSize, (i+1)*sampleSize );
+				pca.addSample(sampleData);
+			}
+			
+			pca.computeBasis(2, true);
+			
+			final double[] xdata = pca.getBasisVector(0);
+			final double[] ydata = pca.getBasisVector(1);
+			
+			final double[] sxdata = pca.getBasisVector(pca.U_t,0);//new double[numSamples];
+			final double[] sydata = pca.getBasisVector(pca.U_t,1);//new double[numSamples];
+			
+			/*double[] udd = pca.U_t.getData();
+			for( int k = 0; k < numSamples; k++ ) {
+				sxdata[k] = udd[k*pca.U_t.numCols];
+				sydata[k] = udd[k*pca.U_t.numCols+1];
+			}*/
+			
+			final JFrame frame = new JFrame("Gene phyl");
+			frame.setDefaultCloseOperation( JFrame.HIDE_ON_CLOSE );
+			frame.setSize(800, 600);
+			
+			final JFXPanel	fxpanel = new JFXPanel();
+			frame.add( fxpanel );
+			
+			final String[] ns = names[0];
+			final String[] sn = names[1];
+			Platform.runLater(new Runnable() {
+                 @Override
+                 public void run() {
+                	 Scene scene = createBiplotScene( ns, xdata, ydata, sn, sxdata, sydata );
+                	 fxpanel.setScene(scene);
+                	 frame.setVisible( true );
+                     //geneset.initFXChart( fxpanel, names, b0, b1 );
+                 }
+            });
+			
+			final JFrame frame2 = new JFrame("Box plot");
+			frame2.setDefaultCloseOperation( JFrame.HIDE_ON_CLOSE );
+			frame2.setSize(800, 600);
+			
+			final JFXPanel	fxpanel2 = new JFXPanel();
+			frame2.add( fxpanel2 );
+			Platform.runLater(new Runnable() {
+                 @Override
+                 public void run() {
+                	 Scene scene = createStackedBarChartScene( countmap, true );
+                	 fxpanel2.setScene(scene);
+                	 frame2.setVisible( true );
+                     //geneset.initFXChart( fxpanel, names, b0, b1 );
+                 }
+            });
 			
 			Path biomp = Paths.get("/Users/sigmar/seqs.biom");
 			saveBiomTableNashorn(biom, biomp);
