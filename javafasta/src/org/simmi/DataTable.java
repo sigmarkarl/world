@@ -5063,7 +5063,7 @@ public class DataTable extends JApplet implements ClipboardOwner {
 			for( String key : taxcount.keySet() ) {
 				String tax = taxmap.get(key);
 				int cnt = taxcount.get(key);
-				if( tax != null && (tax.contains( "Deinococcus") || tax.contains("Aquificae")) && cnt > 100 ) {
+				if( tax != null && (tax.contains( "Deinococcus") || tax.contains("Aquificae") || tax.contains("Chloroflex") || tax.contains("Cyanobacteria") ) && cnt > 100 ) {
 					dein.add( key );
 				}
 			}
