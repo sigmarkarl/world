@@ -1874,6 +1874,31 @@ public class JavaFasta extends JApplet {
 		return X;
 	}
 	
+	public StringBuilder printDistanceMatrix( double[] dd, List<String> names ) {
+		StringBuilder	text = new StringBuilder();
+		text.append("\t"+names.size()+"\n");
+		
+		int k = 0;
+		for( String name : names ) {
+			text.append( name );
+			for( int i = 0; i < names.size(); i++ ) {
+				text.append( "\t"+dd[k*names.size()+i] );
+			}
+			text.append("\n");
+			k++;
+		}
+		/*for( double d : dd ) {
+			text.append( d );
+		}*/
+		
+		return text;
+	}
+	
+	public StringBuilder distanceMatrix( boolean excludeGaps, Map<String,Integer> blosumap, List<String> names ) {
+		double[] dd = distanceMatrixNumeric( false, null, blosumap );
+		return printDistanceMatrix( dd, names );
+	}
+	
 	public StringBuilder distanceMatrix( boolean excludeGaps ) {
 		JCheckBox	jukes = new JCheckBox("Jukes-cantor correction");
 		JCheckBox	boots = new JCheckBox("Bootstrap");
@@ -2178,6 +2203,14 @@ public class JavaFasta extends JApplet {
 		
 		double[] dd = new double[ serifier.lseq.size()*serifier.lseq.size() ];
 		Sequence.distanceMatrixNumeric( serifier.lseq, dd, idxs, boots.isSelected(), cantor, ent, blosum );
+		
+		int i = 0;
+		for( double d : dd ) {
+			System.err.print( "  " + d );
+			i++;
+			if( i % serifier.lseq.size() == 0 ) System.err.println();
+		}
+		
 		return dd;
 	}
 	
@@ -4321,15 +4354,67 @@ public class JavaFasta extends JApplet {
 				}
 			}
 		});
+		phylogeny.add( new AbstractAction("Distance matrix blosum") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				Map<String,Integer> blosumap = JavaFasta.getBlosumMap();
+				
+				List<String> names = new ArrayList<String>();
+				for( Sequence seq : serifier.lseq ) {
+					names.add( seq.getName() );
+				}
+				
+				StringBuilder sb = distanceMatrix( false, blosumap, names );
+				
+				System.err.println( sb.toString().split("\n").length );
+				
+				File save = null;
+				try {
+					JFileChooser	fc = new JFileChooser();
+					if( fc.showOpenDialog( parentApplet ) == JFileChooser.APPROVE_OPTION ) {
+						save = fc.getSelectedFile();
+					}
+				} catch( Exception e1 ) {
+					
+				}
+				
+				if( save != null ) {
+					try {
+						FileWriter fw = new FileWriter( save );
+						fw.write( sb.toString() );
+						fw.close();
+					} catch (IOException e1) {
+						e1.printStackTrace();
+					}
+				} else {
+					JTextArea		text = new JTextArea( sb.toString() );
+					JScrollPane	sp = new JScrollPane( text );
+					JFrame	fr = new JFrame("Distance matrix");
+					fr.add( sp );
+					fr.setSize(800, 600);
+					fr.setDefaultCloseOperation( JFrame.DISPOSE_ON_CLOSE );
+					fr.setVisible( true );
+				}
+			}
+		});
 		phylogeny.add( new AbstractAction("Draw tree") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				Map<String, Integer> blosumap = getBlosumMap();
 				double[] dd = distanceMatrixNumeric( false, null, blosumap );
+				
 				System.err.println("about to call showTree");
 				List<String> corrInd = new ArrayList<String>();
 				for( Sequence seq : serifier.lseq ) {
 					corrInd.add( seq.getName() );
+				}
+				
+				StringBuilder sb = printDistanceMatrix( dd, corrInd );
+				Path p = Paths.get( "/Users/sigmar/dist.txt" );
+				try {
+					Files.write( p, sb.toString().getBytes() );
+				} catch (IOException e2) {
+					e2.printStackTrace();
 				}
 				
 				TreeUtil tu = new TreeUtil();

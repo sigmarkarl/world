@@ -598,8 +598,8 @@ public class Sequence implements Comparable<Sequence> {
 					int count = 0;
 					double mism = 0;
 					
-					int start = Math.max( seq1.getRealStart(), seq2.getRealStart() );
-					int end = Math.min( seq1.getRealStop(), seq2.getRealStop() );
+					int start = 0;//Math.max( seq1.getRealStart(), seq2.getRealStart() );
+					int end = seq1.length();//Math.min( seq1.getRealStop(), seq2.getRealStop() );
 					
 					if( ent != null ) {
 						/*if( start < 0 || end >= ent.length ) {
@@ -665,18 +665,36 @@ public class Sequence implements Comparable<Sequence> {
 								}
 							}
 						} else {
-							for( int k = start; k < end; k++ ) {
-								char c1 = seq1.getCharAt( k-seq1.getStart() );
-								char c2 = seq2.getCharAt( k-seq2.getStart() );
-								
-								if( c1 != '.' && c1 != '-' && c1 != ' ' && c1 != '\n' &&  c2 != '.' && c2 != '-' && c2 != ' ' && c2 != '\n') {
-									if( c1 != c2 ) mism++;
-									count++;
+							if( blosum != null ) {
+								for( int k = start; k < end; k++ ) {
+									char c1 = seq1.getCharAt( k-seq1.getStart() );
+									char c2 = seq2.getCharAt( k-seq2.getStart() );
+									
+									if( c1 != '.' && c1 != '-' && c1 != ' ' && c1 != '\n' &&  c2 != '.' && c2 != '-' && c2 != ' ' && c2 != '\n') {
+										String str = c1+""+c2;
+										String fstr = c1+""+c1;
+										mism += blosum.get( str );
+										count += blosum.get( fstr );
+									}
+								}
+								if( count == 0 ) {
+									System.err.println();
+								}
+							} else {
+								for( int k = start; k < end; k++ ) {
+									char c1 = seq1.getCharAt( k-seq1.getStart() );
+									char c2 = seq2.getCharAt( k-seq2.getStart() );
+									
+									if( c1 != '.' && c1 != '-' && c1 != ' ' && c1 != '\n' &&  c2 != '.' && c2 != '-' && c2 != ' ' && c2 != '\n') {
+										if( c1 != c2 ) mism++;
+										count++;
+									}
 								}
 							}
 						}
 					}
-					double d = count == 0 ? 0.0 : mism/(double)count;
+					double d = count == 0 ? 0.0 : (double)mism/(double)count;
+					if( blosum != null ) d = 1.0-d;
 					if( cantor ) d = -3.0*Math.log( 1.0 - 4.0*d/3.0 )/4.0;
 					
 					dmat[x*len+y] = d;

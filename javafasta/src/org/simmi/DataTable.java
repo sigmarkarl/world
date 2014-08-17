@@ -50,6 +50,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -123,7 +124,6 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.simmi.shared.Annotation;
-import org.simmi.shared.PrincipleComponentAnalysis;
 import org.simmi.shared.Sequence;
 import org.simmi.shared.Serifier;
 import org.simmi.shared.TreeUtil;
@@ -3963,7 +3963,7 @@ public class DataTable extends JApplet implements ClipboardOwner {
 		double min = Integer.MAX_VALUE;
 		double max = Integer.MIN_VALUE;
 		
-		for( String key : mapping.keySet() ) {
+		if( mapping != null ) for( String key : mapping.keySet() ) {
 			Mapping m = mapping.get(key);
 			try {
 				double val = Double.parseDouble( m.mapping.get( cat ) );
@@ -4039,16 +4039,80 @@ public class DataTable extends JApplet implements ClipboardOwner {
 						}
 					}
 				}
-			} else {
+			} else if( groups == -3 ) {
+				Map<Double,Set<String>> valmap = new TreeMap<Double,Set<String>>();
+				BufferedReader br = Files.newBufferedReader(rp);
+				String line = br.readLine();
+				while (line != null) {
+					String trim = line.trim();
+					if (trim.startsWith("Query=")) {
+						String[] split = trim.substring(7).trim().split("[ ]+");
+						String current = split[0];
+						
+						String sample = current.substring(0,current.indexOf('_'));
+						if( mapping.containsKey(sample) ) {
+							Mapping m = mapping.get(sample);
+							String sval = m.mapping.get(cat);
+							double val = -1.0;
+							try {
+								val = Double.parseDouble( sval );
+							} catch( Exception e ) {
+								val = -1.0;
+							}
+							
+							String subsample = sample.substring(0,sample.lastIndexOf('.')) + "_" + sval;
+							if( valmap.containsKey(val) ) {
+								Set<String> valset = valmap.get(val);
+								valset.add( subsample );
+							} else {
+								Set<String> valset = new HashSet<String>();
+								valset.add( subsample );
+								valmap.put( val, valset );
+							}
+						}
+					}
+					
+					line = br.readLine();
+				}
+				br.close();
+				
+				sidx = 0;
+				for( Double d : valmap.keySet() ) {
+					Set<String> valset = valmap.get( d );
+					for( String val : valset ) {
+						maps.put(val, sidx++);
+						ls.add( val );
+					}
+				}
+			} else if( groups != 0 && del > 0 ) {
 				for( int i = 0; i < groups; i++ ) {
 					double start = min+Math.floor(100.0*i*del)/100.0;
 					double stop = min+Math.floor(100.0*(i+1)*del)/100.0;
 					
-					String sample = cat+"_"+start+"_"+stop;
+					String startstr = Double.toString(start);
+					String stopstr = Double.toString(stop);
+					
+					int si = startstr.indexOf('.');
+					if( si == -1 ) si = startstr.length();
+					else si = Math.min( startstr.length(), si+3 );
+					
+					int sti = stopstr.indexOf('.');
+					if( sti == -1 ) sti = stopstr.length();
+					else sti = Math.min( stopstr.length(), sti+3 );
+					
+					String sample = cat+"_"+startstr.substring(0,si)+"_"+stopstr.substring(0,sti);
 					maps.put(sample, i);
 					ls.add( sample );
 				}
-			}
+			} /*else if( groups == 0 ) {
+				int i = 0;
+				for( String key : mapping.keySet() ) {
+					Mapping m = mapping.get(key);
+					String sample = m.name;
+					maps.put(sample, i++);
+					ls.add( sample );
+				}
+			}*/
 		}
 		
 		BufferedReader br = Files.newBufferedReader(rp);
@@ -4056,6 +4120,7 @@ public class DataTable extends JApplet implements ClipboardOwner {
 		String current = null;
 		String currid = null;
 		String currteg = null;
+		sidx = 0;
 		while (line != null) {
 			String trim = line.trim();
 			if (trim.startsWith("Query=")) {
@@ -4064,11 +4129,22 @@ public class DataTable extends JApplet implements ClipboardOwner {
 				
 				String sample = current.substring(0,current.indexOf('_'));
 				
+				/*if( sample.equals("813.hrafntinnusker.jardvegur") ) {
+					System.err.println();
+				}*/
+				
+				String sval = "";
 				if( groups == -1 ) {
 					sample = sample.substring( sample.lastIndexOf('.') );
 				} if( groups == -2 ) {
 					sample = sample.substring( sample.indexOf('.'), sample.lastIndexOf('.') );
-				} else if( mapping != null ) {
+				} if( groups == -3 ) {
+					if( mapping.containsKey(sample) ) {
+						Mapping m = mapping.get(sample);
+						sval = m.mapping.get(cat);
+					}
+					sample = sample.substring( 0, sample.lastIndexOf('.') ) + "_" + sval;
+				} else if( mapping != null && cat != null ) {
 					if( mapping.containsKey(sample) ) {
 						Mapping m = mapping.get(sample);
 						try {
@@ -4087,7 +4163,21 @@ public class DataTable extends JApplet implements ClipboardOwner {
 								
 								double start = min+Math.floor(100.0*k*del)/100.0;
 								double stop = min+Math.floor(100.0*(k+1)*del)/100.0;
-								sample = cat+"_"+start+"_"+stop;
+								
+								String startstr = Double.toString(start);
+								String stopstr = Double.toString(stop);
+								
+								int si = startstr.indexOf('.');
+								if( si == -1 ) si = startstr.length();
+								else si = Math.min( startstr.length(), si+3 );
+								
+								int sti = stopstr.indexOf('.');
+								if( sti == -1 ) sti = stopstr.length();
+								else sti = Math.min( stopstr.length(), sti+3 );
+								
+								sample = cat+"_"+startstr.substring(0,si)+"_"+stopstr.substring(0,sti);
+								
+								//sample = cat+"_"+start+"_"+stop;
 							}
 						} catch( Exception e ) {
 							sample = cat+"_unknown";
@@ -4095,13 +4185,14 @@ public class DataTable extends JApplet implements ClipboardOwner {
 					}
 				}
 				
-				if( !sample.contains("jardvl") && !sample.contains("nknown") ) {
+				//if( !sample.contains("jardvl") && !sample.contains("nknown") ) {
 					if( !maps.containsKey(sample) ) {
 						sidx = maps.size();
 						maps.put(sample, sidx);
+						//System.err.println("    " + sample);
 						ls.add( sample );
 					} else sidx = maps.get(sample);
-				}
+				//}
 			} else if (line.startsWith("> ")) {
 				String teg = line.substring(2);
 				int k = teg.indexOf(' ');
@@ -4164,13 +4255,14 @@ public class DataTable extends JApplet implements ClipboardOwner {
 		
 		names[1] = new String[ls.size()];
 		
+		System.err.println( "samples: " + ls.size() );
 		int i = 0;
 		ArrayList<Map>	columnarray = new ArrayList<Map>();
 		for( String str : ls ) {
 			HashMap<String,String> m = new HashMap<String,String>();
 			m.put("metadata", null);
 			m.put("id", str);
-			System.err.println( str );
+			//System.err.println( str );
 			columnarray.add( m );
 			
 			names[1][i] = str;
@@ -4186,7 +4278,12 @@ public class DataTable extends JApplet implements ClipboardOwner {
 			HashMap<String,Object> m = new HashMap<String,Object>();
 			
 			String teg = str;
-			if( taxmap != null ) teg = taxmap.get(str);
+			if( taxmap != null ) {
+				teg = taxmap.get(str);
+				//System.err.println( str + "   " + teg );
+			}/* else {
+				System.err.println( "null taxmap" );
+			}*/
 			//else teg = teg.substring(k+1);
 			
 			ArrayList<String>	ta = new ArrayList<String>();
@@ -4218,6 +4315,7 @@ public class DataTable extends JApplet implements ClipboardOwner {
 			Arrays.fill(sq, 0.0);
 		}
 		
+		Map<String,Map<String,Integer>> tmpcountmap = new HashMap<String,Map<String,Integer>>();
 		Map<Integer,Integer>	totm = new HashMap<Integer,Integer>();
 		ArrayList<ArrayList> dataarray = new ArrayList<ArrayList>();
 		for( String key : cntm.keySet() ) {
@@ -4246,13 +4344,17 @@ public class DataTable extends JApplet implements ClipboardOwner {
 			String smp = ls.get(t);
 			
 			Map<String,Integer>	mval;
-			if( countmap.containsKey( smp ) ) {
-				mval = countmap.get(smp);
+			if( tmpcountmap.containsKey( smp ) ) {
+				mval = tmpcountmap.get(smp);
 			} else {
 				mval = new HashMap<String,Integer>();
-				countmap.put(smp, mval);
+				tmpcountmap.put(smp, mval);
 			}
 			mval.put( teg, cnt );
+		}
+		
+		for( String ss : ls ) {
+			countmap.put(ss, tmpcountmap.get(ss));
 		}
 		
 		/*for( int r = 0; r < rowarray.size(); r++ ) {
@@ -5029,7 +5131,8 @@ public class DataTable extends JApplet implements ClipboardOwner {
 				String[] spl = line.split("\t");
 				taxmap.put( spl[0], spl[1] );
 			}
-			Path rp = new File("/Users/sigmar/SILVA119/seqs.blastout").toPath();
+			System.err.println( taxmap.size() );
+			Path rp = new File("/Users/sigmar/SILVA119/seqs2.blastout").toPath();
 			//BufferedReader br = Files.newBufferedReader( new File("/Users/sigmar/SILVA119/seqs.blastout").toPath() ); //new BufferedReader( new InputStreamReader( new GZIPInputStream( Files.newInputStream( new File("/Users/sigmar/rep_set.blastout").toPath() ) ) ) );
 			BufferedWriter bw = Files.newBufferedWriter( new File("/Users/sigmar/SILVA119/seqs.tax").toPath() );
 			
@@ -5059,23 +5162,34 @@ public class DataTable extends JApplet implements ClipboardOwner {
 			}
 			br.close();
 			
+			Path idump = Paths.get("/Users/sigmar/idump.txt");
+			BufferedWriter bwt = Files.newBufferedWriter(idump);
+			for( String key : taxcount.keySet() ) {
+				bwt.write(key+"\n");
+			}
+			bwt.close();
+			
 			Set<String> dein = new HashSet<String>();
 			for( String key : taxcount.keySet() ) {
 				String tax = taxmap.get(key);
 				int cnt = taxcount.get(key);
-				if( tax != null && (tax.contains( "Deinococcus") || tax.contains("Aquificae") || tax.contains("Chloroflex") || tax.contains("Cyanobacteria") ) && cnt > 100 ) {
+				//if( tax != null && (tax.contains( "Deinococcus") || tax.contains("Aquificae") || tax.contains("Chloroflex") || tax.contains("Cyanobacteria") ) && cnt > 100 ) {
+				//if( tax != null && (tax.contains("Deinococcus")) ) {
 					dein.add( key );
-				}
+				//}
 			}
 			taxcount.keySet().retainAll( dein );
 			
-			final Map<String,Map<String,Integer>> countmap = new HashMap<String,Map<String,Integer>>();
+			final Map<String,Map<String,Integer>> countmap = new LinkedHashMap<String,Map<String,Integer>>();
 			
 			final String[][] names = new String[2][];
 			double[][] dd = new double[2][];
-			Map<Object,Object> biom = assigntax( rp, bw, taxmap, mapping, "pHT", 4, taxcount, dd, names, countmap );
 			
-			PrincipleComponentAnalysis pca = new PrincipleComponentAnalysis();
+			//Map<Object,Object> biom = assigntax( rp, bw, taxmap, mapping, "pHT", 4, taxcount, dd, names, countmap );
+			//Map<Object,Object> biom = assigntax( rp, bw, taxmap, mapping, "pHT", -3, taxcount, dd, names, countmap );
+			Map<Object,Object> biom = assigntax( rp, bw, taxmap, mapping, null, 0, taxcount, dd, names, countmap );
+			
+			/*PrincipleComponentAnalysis pca = new PrincipleComponentAnalysis();
 			
 			int sampleSize = (int)dd[1][0];
 			int numSamples = (int)dd[1][1];
@@ -5099,7 +5213,7 @@ public class DataTable extends JApplet implements ClipboardOwner {
 			for( int k = 0; k < numSamples; k++ ) {
 				sxdata[k] = udd[k*pca.U_t.numCols];
 				sydata[k] = udd[k*pca.U_t.numCols+1];
-			}*/
+			}*
 			
 			final JFrame frame = new JFrame("Gene phyl");
 			frame.setDefaultCloseOperation( JFrame.HIDE_ON_CLOSE );
@@ -5118,9 +5232,9 @@ public class DataTable extends JApplet implements ClipboardOwner {
                 	 frame.setVisible( true );
                      //geneset.initFXChart( fxpanel, names, b0, b1 );
                  }
-            });
+            });*/
 			
-			final JFrame frame2 = new JFrame("Box plot");
+			/*final JFrame frame2 = new JFrame("Box plot");
 			frame2.setDefaultCloseOperation( JFrame.HIDE_ON_CLOSE );
 			frame2.setSize(800, 600);
 			
@@ -5134,7 +5248,7 @@ public class DataTable extends JApplet implements ClipboardOwner {
                 	 frame2.setVisible( true );
                      //geneset.initFXChart( fxpanel, names, b0, b1 );
                  }
-            });
+            });*/
 			
 			Path biomp = Paths.get("/Users/sigmar/seqs.biom");
 			saveBiomTableNashorn(biom, biomp);
