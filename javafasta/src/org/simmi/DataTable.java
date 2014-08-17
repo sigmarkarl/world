@@ -5132,7 +5132,7 @@ public class DataTable extends JApplet implements ClipboardOwner {
 				taxmap.put( spl[0], spl[1] );
 			}
 			System.err.println( taxmap.size() );
-			Path rp = new File("/Users/sigmar/SILVA119/seqs.blastout").toPath();
+			Path rp = new File("/Users/sigmar/SILVA119/seqs2.blastout").toPath();
 			//BufferedReader br = Files.newBufferedReader( new File("/Users/sigmar/SILVA119/seqs.blastout").toPath() ); //new BufferedReader( new InputStreamReader( new GZIPInputStream( Files.newInputStream( new File("/Users/sigmar/rep_set.blastout").toPath() ) ) ) );
 			BufferedWriter bw = Files.newBufferedWriter( new File("/Users/sigmar/SILVA119/seqs.tax").toPath() );
 			
@@ -5161,6 +5161,13 @@ public class DataTable extends JApplet implements ClipboardOwner {
 				line = br.readLine();
 			}
 			br.close();
+			
+			Path idump = Paths.get("/Users/sigmar/idump.txt");
+			BufferedWriter bwt = Files.newBufferedWriter(idump);
+			for( String key : taxcount.keySet() ) {
+				bwt.write(key+"\n");
+			}
+			bwt.close();
 			
 			Set<String> dein = new HashSet<String>();
 			for( String key : taxcount.keySet() ) {
