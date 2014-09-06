@@ -2738,6 +2738,17 @@ public class Serifier {
 			fw.close();*/
 		}
 		
+		i = arglist.indexOf("-strip");
+		if( i >= 0 ) {
+			appendSequenceInJavaFasta(this.sequences.get(0), null, true);
+			for( Sequence seq : this.lseq ) {
+				seq.setName( seq.getName().split("[\t _]+")[0] );
+			}
+			FileWriter fw = new FileWriter( outf );
+			this.writeFasta(this.lseq, fw, null);
+			fw.close();
+		}
+		
 		i = arglist.indexOf("-trim");
 		if( i >= 0 ) {
 			String add = "";
