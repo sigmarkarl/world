@@ -27,6 +27,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -57,9 +58,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.TreeMap;
 
-import javafx.application.Platform;
 import javafx.collections.FXCollections;
-import javafx.embed.swing.JFXPanel;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.event.EventHandler;
 import javafx.geometry.Side;
@@ -4238,6 +4237,23 @@ public class DataTable extends JApplet implements ClipboardOwner {
 					if( y != -1 ) teg = teg.substring(0,y);
 					currteg = "Bacteria;Deinococcus-Thermus;Deinococci;Thermales;Thermaceae;Thermus;" + teg.replace("T.", "Thermus_");
 				}*/
+			} else if (line.contains("No hits")) {
+				String teg = "No hit";
+				currid = teg;
+				//if( taxmap != null ) teg = taxmap.get(currid);
+					
+				if( teg != null && taxcount.isEmpty() || taxcount.containsKey(currid) ) {
+					if( !mapt.containsKey(currid) ) {
+						tidx = mapt.size();
+						mapt.put(currid, tidx);
+						lt.add( currid );
+						//li.add( currid );
+					} else tidx = mapt.get( currid );
+					
+					String key = tidx + "," + sidx;
+					if( cntm.containsKey(key) ) cntm.put(key, cntm.get(key)+1);
+					else cntm.put(key, 1);
+				}
 			} else if (trim.contains("Expect =")) {
 				int k = trim.indexOf("Expect =");
 				String evalstr = trim.substring( k+9 ).trim();
@@ -4280,6 +4296,7 @@ public class DataTable extends JApplet implements ClipboardOwner {
 			String teg = str;
 			if( taxmap != null ) {
 				teg = taxmap.get(str);
+				if( teg == null ) teg = "No hit";
 				//System.err.println( str + "   " + teg );
 			}/* else {
 				System.err.println( "null taxmap" );
@@ -4984,6 +5001,51 @@ public class DataTable extends JApplet implements ClipboardOwner {
 		return ml;
 	}
 	
+	public static void printSummary( String filename, Map<String,Integer> taxcount, Map<String,String> taxmap, Sheet sheet ) throws IOException {
+		List<Map.Entry<String,Integer>> entries = new ArrayList<Map.Entry<String,Integer>>( taxcount.entrySet() );
+		Collections.sort(entries, new Comparator<Map.Entry<String, Integer>>() {
+			  public int compare(Map.Entry<String, Integer> a, Map.Entry<String, Integer> b){
+			    return b.getValue().compareTo(a.getValue());
+			  }
+		});
+		Map<String, Integer> sortedMap = new LinkedHashMap<String, Integer>();
+		for (Map.Entry<String, Integer> entry : entries) {
+		  sortedMap.put(entry.getKey(), entry.getValue());
+		}
+		
+		int r = 0;
+		Path xdump = Paths.get(filename);
+		BufferedWriter bwt = Files.newBufferedWriter(xdump);
+		for( String key : sortedMap.keySet() ) {
+			int count = sortedMap.get(key);
+			String tax = taxmap.get(key);
+			
+			Row row = null;
+			if( sheet != null ) {
+				row = sheet.createRow(r++);
+				row.createCell(0).setCellValue( key );
+			}
+			
+			if( tax != null ) {
+				String[] split = tax.split(";");
+				if( row != null ) for( int u = 0; u < split.length; u++ ) {
+					row.createCell(u+1).setCellValue( split[u] );
+				}
+				
+				int k = split.length;
+				for( int i = k; i < 7; i++ ) {
+					tax += ";"+split[split.length-1];
+				}
+			} else {
+				tax = "No hit";
+				if( row != null ) row.createCell(1).setCellValue( "No hit" );
+			}
+			bwt.write(key+"\t"+tax+"\t"+count+"\n");
+			if( row != null ) row.createCell(9).setCellValue( count );
+		}
+		bwt.close();
+	}
+	
 	public static void main(String[] args) {
 		/*Path dir = Paths.get( "/Users/sigmar" );
 		Path p = dir.resolve("silva119_tmp.tax");
@@ -5125,16 +5187,17 @@ public class DataTable extends JApplet implements ClipboardOwner {
 			Map<String,Mapping> mapping = loadMapping( p );
 			
 			Map<String,String> taxmap = new HashMap<String,String>();
-			p = Paths.get("/Users/sigmar/SILVA119/silva119nr.tax");
+			p = Paths.get("/Users/sigmar/SILVA119/SILVA_119_SSURef_Nr99_tax_silva_trunc.tax");
 			List<String> ll = Files.readAllLines( p );
 			for( String line : ll ) {
-				String[] spl = line.split("\t");
-				taxmap.put( spl[0], spl[1] );
+				//String[] spl = 
+				int k = line.indexOf(' '); //split(" "); //\t
+				taxmap.put( line.substring(1,k), line.substring(k+1) );
 			}
 			System.err.println( taxmap.size() );
-			Path rp = new File("/Users/sigmar/SILVA119/seqs2.blastout").toPath();
+			Path rp = new File("/Users/sigmar/SILVA119/seqs2_silva.blastout").toPath();
 			//BufferedReader br = Files.newBufferedReader( new File("/Users/sigmar/SILVA119/seqs.blastout").toPath() ); //new BufferedReader( new InputStreamReader( new GZIPInputStream( Files.newInputStream( new File("/Users/sigmar/rep_set.blastout").toPath() ) ) ) );
-			BufferedWriter bw = Files.newBufferedWriter( new File("/Users/sigmar/SILVA119/seqs.tax").toPath() );
+			BufferedWriter bw = Files.newBufferedWriter( new File("/Users/sigmar/SILVA119/seqs2_silva.tax").toPath() );
 			
 			HashMap<String,Integer>	taxcount = new HashMap<String,Integer>();
 			BufferedReader br = Files.newBufferedReader(rp);
@@ -5156,13 +5219,26 @@ public class DataTable extends JApplet implements ClipboardOwner {
 						tcnt = taxcount.get(currid);
 					}
 					taxcount.put( currid, tcnt+1 );
+				} else if( line.contains("No hits") ) {
+					String teg = "No hit";
+					String currid = teg;
+					//if( taxmap != null ) teg = taxmap.get(currid);
+					//else teg = teg.substring(k+1);
+						
+					int tcnt = 0;
+					if( taxcount.containsKey(currid) ) {
+						tcnt = taxcount.get(currid);
+					}
+					taxcount.put( currid, tcnt+1 );
 				}
 				
 				line = br.readLine();
 			}
 			br.close();
 			
-			Path idump = Paths.get("/Users/sigmar/idump.txt");
+			printSummary( "/Users/sigmar/SILVA119/xdump.txt", taxcount, taxmap, null );
+			
+			Path idump = Paths.get("/Users/sigmar/SILVA119/idump.txt");
 			BufferedWriter bwt = Files.newBufferedWriter(idump);
 			for( String key : taxcount.keySet() ) {
 				bwt.write(key+"\n");
@@ -5188,6 +5264,15 @@ public class DataTable extends JApplet implements ClipboardOwner {
 			//Map<Object,Object> biom = assigntax( rp, bw, taxmap, mapping, "pHT", 4, taxcount, dd, names, countmap );
 			//Map<Object,Object> biom = assigntax( rp, bw, taxmap, mapping, "pHT", -3, taxcount, dd, names, countmap );
 			Map<Object,Object> biom = assigntax( rp, bw, taxmap, mapping, null, 0, taxcount, dd, names, countmap );
+			
+			Workbook wb = new XSSFWorkbook();
+			for( String key : countmap.keySet() ) {
+				Map<String,Integer> cnt = countmap.get( key );
+				
+				Sheet sheet = wb.createSheet(key);
+				printSummary( "/Users/sigmar/SILVA119/"+key+".txt", cnt, taxmap, sheet );
+			}
+			wb.write( new FileOutputStream("/Users/sigmar/SILVA119/tax_report2.xlsx") );
 			
 			/*PrincipleComponentAnalysis pca = new PrincipleComponentAnalysis();
 			

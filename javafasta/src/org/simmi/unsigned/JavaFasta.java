@@ -4283,7 +4283,7 @@ public class JavaFasta extends JApplet {
 		cbmi3.setAction( new AbstractAction("AA colors") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				c.aacolors = cbmi.getState();
+				c.aacolors = cbmi3.getState();
 				c.repaint();
 			}
 		});

@@ -864,6 +864,10 @@ public class Sequence implements Comparable<Sequence> {
 		}
 	}
 	
+	public Annotation getAnnotation( int i ) {
+		return annset.get(i);
+	}
+	
 	public List<Annotation> getAnnotations() {
 		return annset;
 	}
@@ -872,6 +876,20 @@ public class Sequence implements Comparable<Sequence> {
 		if( annset != null ) {
 			annset.remove( a );
 		}
+	}
+	
+	public boolean addAnnotation( int i, Annotation a ) {
+		if( annset == null ) {
+			annset = new ArrayList<Annotation>();
+		} else for( Annotation an : annset ) {
+			if( an.start == a.start && a.start > 0 ) return true;
+		}
+		/*if( annset.contains(a) ) {
+			if( a.start == 0 ) annset.add( a );
+		} else*/ 
+		annset.add( i, a );
+		
+		return false;
 	}
 	
 	public boolean addAnnotation( Annotation a ) {
