@@ -882,16 +882,126 @@ public class Serifier {
 		fos.close();
 	}
 	
+	private static Map<Set<String>, Set<Map<String, Set<String>>>> initClusterOld(Collection<Set<String>> total) {
+		Map<Set<String>, Set<Map<String, Set<String>>>> clusterMap = new HashMap<Set<String>, Set<Map<String, Set<String>>>>();
+
+		for (Set<String> t : total) {
+			Set<String> teg = new HashSet<String>();
+			for (String e : t) {				
+				int i =  e.lastIndexOf('[');
+				if( i != -1 ) {
+					String str = e.substring(i+1, e.indexOf(']', i+1));
+					
+					String spec;
+					int u = Contig.specCheck( str );
+					
+					if( u == -1 ) {
+						u = contigIndex(str);
+						spec = str.substring( 0, u-1 );
+					} else {
+						int l = str.indexOf('_', u+1);
+						spec = str.substring( 0, l );
+					}
+					/*
+					 * if( joinmap.containsKey( str ) ) { str = joinmap.get(str); }
+					 */
+					teg.add(spec);
+				} else {
+					i = contigIndex(e);
+					/*i = e.indexOf("contig");
+					if( i == -1 ) i = e.indexOf("scaffold");
+					if( i == -1 ) i = e.lastIndexOf('_')+1;*/
+					String spec = i == -1 ? "Unknown" : e.substring(0, i-1);
+					
+					teg.add(spec);
+				}
+
+				//species.add(str);
+			}
+
+			Set<Map<String, Set<String>>> setmap;
+			if (clusterMap.containsKey(teg)) {
+				setmap = clusterMap.get(teg);
+			} else {
+				setmap = new HashSet<Map<String, Set<String>>>();
+				clusterMap.put(teg, setmap);
+			}
+
+			Map<String, Set<String>> submap = new HashMap<String, Set<String>>();
+			setmap.add(submap);
+
+			for (String e : t) {
+				//int i = e.indexOf('_');
+				int ei = e.indexOf(' ');
+				if( ei == -1 ) ei = e.length();
+				String id = e.substring(0, ei);
+				int i =  e.lastIndexOf('[');
+				if( i != -1 ) {
+					//String str = e.substring(0,i);
+					String str = e.substring(i+1, e.indexOf(']', i+1));
+					/*
+					 * if( joinmap.containsKey( str ) ) { str = joinmap.get(str); }
+					 */
+					
+					String spec;
+					int u = Contig.specCheck( str );
+					
+					if( u == -1 ) {
+						u = contigIndex( str );
+						spec = str.substring( 0, u-1 );
+					} else {
+						int l = str.indexOf('_', u+1);
+						spec = str.substring( 0, l );
+					}
+	
+					Set<String> set;
+					if (submap.containsKey(spec)) {
+						set = submap.get(spec);
+					} else {
+						set = new HashSet<String>();
+						submap.put(spec, set);
+					}
+					set.add( e ); //id );
+				} else {
+					i = contigIndex(e);
+					String spec = i == -1 ? "Unknown" : e.substring(0, i-1);
+					
+					Set<String> set;
+					if (submap.containsKey(spec)) {
+						set = submap.get(spec);
+					} else {
+						set = new HashSet<String>();
+						submap.put(spec, set);
+					}
+					set.add( e ); // id );
+				}
+			}
+		}
+
+		return clusterMap;
+	}
+	
+	public static int contigIndex( String lname ) {
+		int i = lname.indexOf("contig");
+		if( i == -1 ) i = lname.indexOf("scaffold");
+		if( i == -1 ) i = lname.lastIndexOf('_')+1;
+		if( i <= 0 ) i = 5;
+		return i;
+	}
+	
 	private Map<Set<String>,Set<Map<String,Set<String>>>> initCluster( Collection<Set<String>>	total, Set<String> species, Map<String,String> idspec ) {
 		Map<Set<String>,Set<Map<String,Set<String>>>> clusterMap = new HashMap<Set<String>,Set<Map<String,Set<String>>>>();
 		
 		for( Set<String>	t : total ) {
 			Set<String>	teg = new HashSet<String>();
 			for( String et : t ) {
+				int si = et.indexOf(' ');
+				String et2 = et.substring(0,si);
+				
 				Sequence seq = mseq.get( et );
 				if( seq == null ) {
 					if( idspec != null ) {
-						String tegstr = idspec.get(et);
+						String tegstr = idspec.get(et2);
 						if( tegstr == null ) {
 							System.err.println();
 						}
@@ -943,7 +1053,7 @@ public class Serifier {
 								}
 							}
 						} else {
-							String tegstr = idspec.get(et);
+							String tegstr = idspec.get(et2);
 							teg.add( tegstr );
 							species.add( tegstr );
 						}
@@ -1044,11 +1154,13 @@ public class Serifier {
 	
 	public List<Set<String>> makeBlastCluster( final Path osf, final Path blastfile, int clustermap, float id, float len, Map<String,String> idspec, List<Set<String>> total ) throws IOException {
 		//InputStream fis = new FileInputStream( blastfile );
-		BufferedReader is;
-		if( blastfile.getFileName().toString().endsWith(".gz") ) {
-			is = new BufferedReader( new InputStreamReader( new GZIPInputStream( Files.newInputStream(blastfile) ) ) );
-		} else {
-			is = Files.newBufferedReader(blastfile);
+		BufferedReader is = null;
+		if( blastfile != null ) {
+			if( blastfile.getFileName().toString().endsWith(".gz") ) {
+				is = new BufferedReader( new InputStreamReader( new GZIPInputStream( Files.newInputStream(blastfile) ) ) );
+			} else {
+				is = Files.newBufferedReader(blastfile);
+			}
 		}
 		
 		BufferedWriter fos;
@@ -1060,7 +1172,7 @@ public class Serifier {
 				System.err.println(mseq.size());
 			}
 			
-			fos = Files.newBufferedWriter( osf.resolve( "clusters.txt" ), StandardOpenOption.CREATE );
+			fos = Files.newBufferedWriter( osf.resolve( "clusters2.txt" ), StandardOpenOption.CREATE );
 		} else fos = Files.newBufferedWriter( osf );
 		
 		/*for( String str : mseq.keySet() ) {
@@ -1071,7 +1183,7 @@ public class Serifier {
 		
 		//List<Set<String>> total = new ArrayList<Set<String>>();
 		makeBlastCluster( is, fos, clustermap, id, len, idspec, total );
-		is.close();
+		if( is != null ) is.close();
 		
 		//scotoductus1572_scaffold00003_4 # 2808 # 3941 # -1 # ID=3_4;partial=00;start_type=GTG;rbs_motif=None;rbs_spacer=None;gc_cont=0.959
 		//scotoductus1572_scaffold00003_4 # 2808 # 3941 # -1 #ID=3_4;partial=00;start_type=GTG;rbs_motif=None;rbs_spacer=None;gc_cont=0.959
@@ -1140,13 +1252,15 @@ public class Serifier {
 	
 	public void makeBlastCluster( final BufferedReader is, final BufferedWriter fos, int clustermap, float id, float len, Map<String,String> idspec, List<Set<String>> total ) throws IOException {
 		//List<Set<String>>	total = new ArrayList<Set<String>>();
-				
-		if( clustermap%2 == 0 ) {
-			joinBlastSets( is, null, true, total, 0.0 );
-		} else {
-			joinBlastSetsThermus( is, Paths.get("/home/sigmar/check.txt"), true, total, id, len );
+		
+		if( is != null ) {
+			if( clustermap%2 == 0 ) {
+				joinBlastSets( is, null, true, total, 0.0 );
+			} else {
+				joinBlastSetsThermus( is, Paths.get("/Users/sigmar/check.txt"), true, total, id, len );
+			}
+			is.close();
 		}
-		is.close();
 		
 		if( fos != null ) {
 			if( clustermap/2 == 0 ) {
@@ -1234,7 +1348,7 @@ public class Serifier {
 		if( write != null ) {
 			//File file = new File( write );
 			if( Files.isDirectory(write) ) {
-				fw = Files.newBufferedWriter( write.resolve("clusters.txt" ) );
+				fw = Files.newBufferedWriter( write.resolve("clusters2.txt" ) );
 			} else {
 				fw = Files.newBufferedWriter(write); //new FileWriter("/home/sigmar/blastcluster.txt");
 			}
