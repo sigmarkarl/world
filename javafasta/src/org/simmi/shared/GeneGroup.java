@@ -14,7 +14,7 @@ public class GeneGroup {
 	public Set<Gene>           		genes = new HashSet<Gene>();
 	public Map<String, Teginfo>  	species = new TreeMap<String, Teginfo>();
 	public int                	 	groupIndex = -10;
-	int                 	groupCount = -1;
+	int                 			groupCount = -1;
 	public int						index;
 	//int			groupGeneCount;
 	
@@ -257,8 +257,8 @@ public class GeneGroup {
 			String id = g.getId();
 			if( ret == null ) ret = id;
 			else {
-				boolean jsome = ret.startsWith("J") && ret.charAt(5) == '0';
-				boolean isome = id.startsWith("J") && id.charAt(5) == '0';
+				boolean jsome = ret.startsWith("J") && ret.charAt(4) == '0';
+				boolean isome = id.startsWith("J") && id.charAt(4) == '0';
 				if( ((jsome || ret.contains("contig") || ret.contains("scaffold")) && !ret.contains(":")) || 
 						!(isome || id.contains("contig") || id.contains("scaffold") || id.contains("unnamed") || id.contains("hypot")) ) ret = id;
 			}
@@ -272,8 +272,13 @@ public class GeneGroup {
 			String name = g.getName();
 			if( ret == null ) ret = name;
 			else {
-				boolean jsome = ret.startsWith("J") && ret.charAt(5) == '0';
-				boolean nsome = name.startsWith("J") && name.charAt(5) == '0';
+				boolean jsome = ret.startsWith("J") && ret.charAt(4) == '0';
+				boolean nsome = name.startsWith("J") && name.charAt(4) == '0';
+				
+				/*if( jsome || nsome ) {
+					System.err.println();
+				}*/
+				
 				if( (
 						(jsome || ret.contains("contig") || ret.contains("scaffold")) && !ret.contains(":")
 					) || 

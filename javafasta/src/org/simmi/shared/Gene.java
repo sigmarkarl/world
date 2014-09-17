@@ -112,6 +112,16 @@ public class Gene {
 		return name;
 	}
 	
+	public String getLongName() {
+		//String longname = this.getId() + " " + this.getName() + (this.idstr != null ? " (" + this.idstr + ") [" : " [") + this.tegeval.name + "]" +" # " + this.tegeval.start + " # " + this.tegeval.stop + " # " + this.tegeval.ori;
+		String longname = this.getId() + " " + this.getName() + (this.idstr != null ? " (" + this.idstr + ") [" : " [") + this.getContig().getName() + "]" +" # " + this.tegeval.start + " # " + this.tegeval.stop + " # " + this.tegeval.ori;
+		
+		/*if( longname.split("#").length > 6 ) {
+			System.err.println();
+		}*/
+		return longname;
+	}
+	
 	public String getId() {
 		return id;
 	}
