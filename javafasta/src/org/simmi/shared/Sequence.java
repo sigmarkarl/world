@@ -389,7 +389,7 @@ public class Sequence implements Comparable<Sequence> {
 	int							unalignedlength = -1;
 	int							substart = -1;
 	int							substop = 0;
-	public List<Annotation>	annset;
+	public List<Annotation>		annset;
 	public int					index = -1;
 	public boolean				edited = false;
 	public boolean				selected = false;
@@ -1167,17 +1167,19 @@ public class Sequence implements Comparable<Sequence> {
 	}
 	
 	public String getSubstring( int start, int end, int ori ) {
-		if( start < sb.length() && end <= sb.length() ) {
-			if( ori == -1 ) {
-				StringBuilder subsb = new StringBuilder();
-				for( int i = end-1; i >= start; i-- ) {
-					char c = sb.charAt(i);
-					char cc = rc.containsKey(c) ? rc.get( c ) : c;
-					subsb.append( cc );
-				}
-				return subsb.toString();
-			} else return sb.substring(start, end);
-		}
-		return "";
+		//if( start < sb.length() && end <= sb.length() ) {
+		if( ori == -1 ) {
+			StringBuilder subsb = new StringBuilder();
+			start = Math.max(0, start);
+			end = Math.min(sb.length(), end);
+			for( int i = end-1; i >= start; i-- ) {
+				char c = sb.charAt(i);
+				char cc = rc.containsKey(c) ? rc.get( c ) : c;
+				subsb.append( cc );
+			}
+			return subsb.toString();
+		} else return sb.substring( Math.max(0,start), Math.min(sb.length(),end) );
+		//}
+		//return "";
 	}
 }

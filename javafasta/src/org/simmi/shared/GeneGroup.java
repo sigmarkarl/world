@@ -447,12 +447,14 @@ public class GeneGroup {
 		else {
 			genes.add( gene );
 			
+			String specstr = gene.getSpecies();
+			
 			Teginfo tigenes;
-			if( species.containsKey( gene.getSpecies() ) ) {
-				tigenes = species.get( gene.getSpecies() );
+			if( species.containsKey( specstr ) ) {
+				tigenes = species.get( specstr );
 			} else {
 				tigenes = new Teginfo();
-				species.put( gene.getSpecies(), tigenes );
+				species.put( specstr, tigenes );
 			}
 			tigenes.add( gene.tegeval );
         }

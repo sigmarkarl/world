@@ -290,20 +290,20 @@ public class Tegeval extends Annotation implements Teg {
 	}
 
 	public Sequence		alignedsequence;
-	double			gc;
-	double			gcskew;
-	public String 			teg;
-	public double 			eval;
+	double				gc;
+	double				gcskew;
+	public String 		teg;
+	public double 		eval;
 	//Contig 			contshort;
-	public String 			contloc;
-	//Sequence	 	seq;
+	public String 		contloc;
+	//Sequence	 		seq;
 	//StringBuilder 	dna;
-	int 			numCys;
-	private int		num;
-	Gene			gene;
+	int 				numCys;
+	private int			num;
+	Gene				gene;
 	//Tegeval			next;
 	//Tegeval			prev;
-	public boolean			selected = false;
+	public boolean		selected = false;
 	
 	public boolean			dirty = false;
 	public boolean			backgap = false;

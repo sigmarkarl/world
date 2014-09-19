@@ -114,7 +114,7 @@ public class Gene {
 	
 	public String getLongName() {
 		//String longname = this.getId() + " " + this.getName() + (this.idstr != null ? " (" + this.idstr + ") [" : " [") + this.tegeval.name + "]" +" # " + this.tegeval.start + " # " + this.tegeval.stop + " # " + this.tegeval.ori;
-		String longname = this.getId() + " " + this.getName() + (this.idstr != null ? " (" + this.idstr + ") [" : " [") + this.getContig().getName() + "]" +" # " + this.tegeval.start + " # " + this.tegeval.stop + " # " + this.tegeval.ori;
+		String longname = this.getId() + " " + this.getName() + (this.idstr != null ? "(" + this.idstr + ") [" : " [") + this.getContig().getName() + "]" +" # " + this.tegeval.start + " # " + this.tegeval.stop + " # " + this.tegeval.ori;
 		
 		/*if( longname.split("#").length > 6 ) {
 			System.err.println();
@@ -144,7 +144,72 @@ public class Gene {
 		//teginfo.add( tegeval );
 	}
 	
+	public String parseSpecies( String lname ) {
+		int i = lname.lastIndexOf('[');
+		if( i == -1 ) {
+			i = lname.indexOf("contig");
+			if( i == -1 ) {
+				i = lname.indexOf("scaffold");
+			}
+			if( i == -1 && lname.length() > 5 && lname.startsWith("J") && lname.charAt(4) == '0' ) i = 5;
+			int u = lname.lastIndexOf('_');
+			//contigstr = lname.substring(0, u);
+			return lname.substring(0, i-1);
+			//contloc = lname.substring(i, lname.length());
+			//name = lname;
+			//id = lname;
+		} else {
+			int n = lname.indexOf(']', i+1);
+			if( n < 0 || n > lname.length() ) {
+				System.err.println();
+			}
+			String contigstr = lname.substring(i+1, n);
+			int u = lname.indexOf(' ');
+			id = lname.substring(0, u);
+			
+			String spec = lname.substring(i+1, n);
+			if( id.contains("..") ) {
+				id = spec + "_" + id;
+			}
+			
+			name = lname.substring(u+1, i).trim();
+			
+			u = Contig.specCheck( contigstr );
+			
+			String origin;
+			if( u == -1 ) {
+				u = Serifier.contigIndex( contigstr );
+				origin = contigstr.substring(0, u-1);
+				//contloc = contigstr.substring(u, contigstr.length());
+			} else {
+				n = contigstr.indexOf("_", u+1);
+				if( n == -1 ) n = contigstr.length();
+				origin = contigstr.substring(0, n);
+				//contloc = n < contigstr.length() ? contigstr.substring(n+1) : "";
+			}
+			
+			/*if( line != null ) {
+				i = line.lastIndexOf('#');
+				if( i != -1 ) {
+					u = line.indexOf(';', i+1);
+					if( u != -1 ) {
+						id = line.substring(u+1, line.length());
+						mu.add( id );
+					}
+				}
+			}*/
+			
+			return origin;
+		}
+	}
+	
 	public String getSpecies() {
+		if( species == null ) {
+			species = parseSpecies( tegeval.name );
+			if( tegeval.teg == null ) {
+				tegeval.teg = species;
+			}
+		}
 		return species;
 	}
 

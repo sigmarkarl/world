@@ -4,12 +4,19 @@ import java.util.Collections;
 import java.util.List;
 
 public class Contig extends Sequence {
+	int tk = 0;
+	
 	public Contig(String name ) {
 		super( name, null );
 		loc = 0.0;
 	}
 	
 	public void add( Tegeval tv ) {
+		if( name.contains("scotoductus2101_scaffold00007") ) {
+			System.err.println( "adding " + tv.name + " " + (tk++) + " .........................................................");
+			System.err.print(" ");
+		}
+		
 		addAnnotation( tv );
 		//addAnnotation( tv );
 	}
@@ -71,7 +78,9 @@ public class Contig extends Sequence {
 	}*/
 	
 	public int getGeneCount() {
-		if( annset != null ) return annset.size();
+		if( annset != null ) {
+			return annset.size();
+		}
 		return 0;
 	}
 	
@@ -81,7 +90,7 @@ public class Contig extends Sequence {
 	}
 	
 	public Tegeval getNext( Tegeval from ) {
-		int i = annset.indexOf( from );
+		int i = annset != null ? annset.indexOf( from ) : -1;
 		if( i != -1 ) {
 			if( isReverse() ) {
 				if( i > 0 ) return (Tegeval)annset.get( i-1 );
@@ -99,7 +108,7 @@ public class Contig extends Sequence {
 	}
 	
 	public Tegeval getPrev( Tegeval from ) {
-		int i = annset.indexOf( from );
+		int i = annset != null ? annset.indexOf( from ) : -1;
 		if( i != -1 ) {
 			if( isReverse() ) {
 				if( i < annset.size()-1  ) return (Tegeval)annset.get( i+1 );
