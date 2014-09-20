@@ -1178,7 +1178,7 @@ public class Serifier {
 				System.err.println(mseq.size());
 			}
 			
-			fos = Files.newBufferedWriter( osf.resolve( "clusters2.txt" ), StandardOpenOption.CREATE );
+			fos = Files.newBufferedWriter( osf.resolve( "clusters.txt" ), StandardOpenOption.CREATE );
 		} else fos = Files.newBufferedWriter( osf );
 		
 		/*for( String str : mseq.keySet() ) {
@@ -1358,7 +1358,7 @@ public class Serifier {
 		if( write != null ) {
 			//File file = new File( write );
 			if( Files.isDirectory(write) ) {
-				fw = Files.newBufferedWriter( write.resolve("clusters2.txt" ) );
+				fw = Files.newBufferedWriter( write.resolve("clusters.txt" ) );
 			} else {
 				fw = Files.newBufferedWriter(write); //new FileWriter("/home/sigmar/blastcluster.txt");
 			}
