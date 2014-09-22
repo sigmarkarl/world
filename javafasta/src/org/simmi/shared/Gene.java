@@ -9,6 +9,11 @@ import org.simmi.shared.Contig;
 public class Gene {
 	public Gene(GeneGroup gg, String id, String name, String origin) {
 		//super();
+		
+		/*if( origin != null && origin.length() == 2 ) {
+			System.err.println();
+		}*/
+		
 		this.name = name;
 		this.species = origin;
 		this.gg = gg;
@@ -206,6 +211,11 @@ public class Gene {
 	public String getSpecies() {
 		if( species == null ) {
 			species = parseSpecies( tegeval.name );
+			
+			/*if( species.length() == 2 ) {
+				System.err.println();
+			}*/
+			
 			if( tegeval.teg == null ) {
 				tegeval.teg = species;
 			}
