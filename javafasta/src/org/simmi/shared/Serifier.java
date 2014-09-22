@@ -991,7 +991,7 @@ public class Serifier {
 		int i = lname.indexOf("contig");
 		if( i == -1 ) i = lname.indexOf("scaffold");
 		if( i == -1 ) i = lname.lastIndexOf('_')+1;
-		if( i <= 0 && lname.length() > 5 && lname.startsWith("J") && lname.charAt(4) == '0' ) i = 5;
+		if( i <= 0 && lname.length() > 5 && (lname.startsWith("J") || lname.startsWith("A")) && lname.charAt(4) == '0' ) i = 5;
 		return i;
 	}
 	

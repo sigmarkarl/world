@@ -156,8 +156,17 @@ public class Gene {
 			if( i == -1 ) {
 				i = lname.indexOf("scaffold");
 			}
-			if( i == -1 && lname.length() > 5 && lname.startsWith("J") && lname.charAt(4) == '0' ) i = 5;
-			int u = lname.lastIndexOf('_');
+			if( i == -1 && lname.length() > 5 && (lname.startsWith("J") || lname.startsWith("A")) && lname.charAt(4) == '0' ) i = 5;
+			
+			if( i == -1 ) {
+				i = lname.indexOf("uid");
+			}
+			
+			//int u = lname.lastIndexOf('_');
+			
+			if( i == -1 ) {
+				System.err.println();
+			}
 			//contigstr = lname.substring(0, u);
 			return lname.substring(0, i-1);
 			//contloc = lname.substring(i, lname.length());
