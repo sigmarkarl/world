@@ -45,74 +45,74 @@ public class Sequence implements Comparable<Sequence> {
 	public static List<Erm> mass = new ArrayList<Erm>();
 	public static List<Erm> isoel = new ArrayList<Erm>();
 	
-	static Map<String,String>				amimap = new HashMap<String,String>();
-	static Map<String,String>				revcom = new HashMap<String,String>();
+	public static Map<String,Character>				amimap = new HashMap<String,Character>();
+	public static Map<String,String>				revcom = new HashMap<String,String>();
 	public static Map<Character,Character>	rc = new HashMap<Character,Character>();
 	static {
-		amimap.put("TTT","F");
-		amimap.put("TTC","F");
-		amimap.put("TTA","L");
-		amimap.put("TTG","L");
-		amimap.put("TCT","S");
-		amimap.put("TCC","S");
-		amimap.put("TCA","S");
-		amimap.put("TCG","S");
-		amimap.put("TAT","Y");
-		amimap.put("TAC","Y");
-		amimap.put("TAA","X");
-		amimap.put("TAG","X");
-		amimap.put("TGT","C");
-		amimap.put("TGC","C");
-		amimap.put("TGA","X");
-		amimap.put("TGG","W");
-		amimap.put("CTT","L");
-		amimap.put("CTC","L");
-		amimap.put("CTA","L");
-		amimap.put("CTG","L");
-		amimap.put("CCT","P");
-		amimap.put("CCC","P");
-		amimap.put("CCA","P");
-		amimap.put("CCG","P");
-		amimap.put("CAT","H");
-		amimap.put("CAC","H");
-		amimap.put("CAA","Q");
-		amimap.put("CAG","Q");
-		amimap.put("CGT","R");
-		amimap.put("CGC","R");
-		amimap.put("CGA","R");
-		amimap.put("CGG","R");
-		amimap.put("ATT","I");
-		amimap.put("ATC","I");
-		amimap.put("ATA","I");
-		amimap.put("ATG","M");
-		amimap.put("ACT","T");
-		amimap.put("ACC","T");
-		amimap.put("ACA","T");
-		amimap.put("ACG","T");
-		amimap.put("AAT","N");
-		amimap.put("AAC","N");
-		amimap.put("AAA","K");
-		amimap.put("AAG","K");
-		amimap.put("AGT","S");
-		amimap.put("AGC","S");
-		amimap.put("AGA","R");
-		amimap.put("AGG","R");
-		amimap.put("GTT","V");
-		amimap.put("GTC","V");
-		amimap.put("GTA","V");
-		amimap.put("GTG","V");
-		amimap.put("GCT","A");
-		amimap.put("GCC","A");
-		amimap.put("GCA","A");
-		amimap.put("GCG","A");
-		amimap.put("GAT","D");
-		amimap.put("GAC","D");
-		amimap.put("GAA","E");
-		amimap.put("GAG","E");
-		amimap.put("GGT","G");
-		amimap.put("GGC","G");
-		amimap.put("GGA","G");
-		amimap.put("GGG","G");
+		amimap.put("TTT",'F');
+		amimap.put("TTC",'F');
+		amimap.put("TTA",'L');
+		amimap.put("TTG",'L');
+		amimap.put("TCT",'S');
+		amimap.put("TCC",'S');
+		amimap.put("TCA",'S');
+		amimap.put("TCG",'S');
+		amimap.put("TAT",'Y');
+		amimap.put("TAC",'Y');
+		amimap.put("TAA",'X');
+		amimap.put("TAG",'X');
+		amimap.put("TGT",'C');
+		amimap.put("TGC",'C');
+		amimap.put("TGA",'X');
+		amimap.put("TGG",'W');
+		amimap.put("CTT",'L');
+		amimap.put("CTC",'L');
+		amimap.put("CTA",'L');
+		amimap.put("CTG",'L');
+		amimap.put("CCT",'P');
+		amimap.put("CCC",'P');
+		amimap.put("CCA",'P');
+		amimap.put("CCG",'P');
+		amimap.put("CAT",'H');
+		amimap.put("CAC",'H');
+		amimap.put("CAA",'Q');
+		amimap.put("CAG",'Q');
+		amimap.put("CGT",'R');
+		amimap.put("CGC",'R');
+		amimap.put("CGA",'R');
+		amimap.put("CGG",'R');
+		amimap.put("ATT",'I');
+		amimap.put("ATC",'I');
+		amimap.put("ATA",'I');
+		amimap.put("ATG",'M');
+		amimap.put("ACT",'T');
+		amimap.put("ACC",'T');
+		amimap.put("ACA",'T');
+		amimap.put("ACG",'T');
+		amimap.put("AAT",'N');
+		amimap.put("AAC",'N');
+		amimap.put("AAA",'K');
+		amimap.put("AAG",'K');
+		amimap.put("AGT",'S');
+		amimap.put("AGC",'S');
+		amimap.put("AGA",'R');
+		amimap.put("AGG",'R');
+		amimap.put("GTT",'V');
+		amimap.put("GTC",'V');
+		amimap.put("GTA",'V');
+		amimap.put("GTG",'V');
+		amimap.put("GCT",'A');
+		amimap.put("GCC",'A');
+		amimap.put("GCA",'A');
+		amimap.put("GCG",'A');
+		amimap.put("GAT",'D');
+		amimap.put("GAC",'D');
+		amimap.put("GAA",'E');
+		amimap.put("GAG",'E');
+		amimap.put("GGT",'G');
+		amimap.put("GGC",'G');
+		amimap.put("GGA",'G');
+		amimap.put("GGG",'G');
 		
 		revcom.put("TTT","AAA");
 		revcom.put("TTC","GAA");
@@ -192,6 +192,7 @@ public class Sequence implements Comparable<Sequence> {
 		rc.put('n', 'n');
 		rc.put('x', 'x');
 		rc.put('-', '-');
+		rc.put(' ', ' ');
 		
 		aacolor.put('A', new Color(0.0f,0.0f,1.0f));
 		aacolor.put('R', new Color(0.0f,1.0f,1.0f));
@@ -598,8 +599,8 @@ public class Sequence implements Comparable<Sequence> {
 					int count = 0;
 					double mism = 0;
 					
-					int start = Math.max( seq1.getRealStart(), seq2.getRealStart() );
-					int end = Math.min( seq1.getRealStop(), seq2.getRealStop() );
+					int start = 0;//Math.max( seq1.getRealStart(), seq2.getRealStart() );
+					int end = seq1.length();//Math.min( seq1.getRealStop(), seq2.getRealStop() );
 					
 					if( ent != null ) {
 						/*if( start < 0 || end >= ent.length ) {
@@ -665,18 +666,36 @@ public class Sequence implements Comparable<Sequence> {
 								}
 							}
 						} else {
-							for( int k = start; k < end; k++ ) {
-								char c1 = seq1.getCharAt( k-seq1.getStart() );
-								char c2 = seq2.getCharAt( k-seq2.getStart() );
-								
-								if( c1 != '.' && c1 != '-' && c1 != ' ' && c1 != '\n' &&  c2 != '.' && c2 != '-' && c2 != ' ' && c2 != '\n') {
-									if( c1 != c2 ) mism++;
-									count++;
+							if( blosum != null ) {
+								for( int k = start; k < end; k++ ) {
+									char c1 = seq1.getCharAt( k-seq1.getStart() );
+									char c2 = seq2.getCharAt( k-seq2.getStart() );
+									
+									if( c1 != '.' && c1 != '-' && c1 != ' ' && c1 != '\n' &&  c2 != '.' && c2 != '-' && c2 != ' ' && c2 != '\n') {
+										String str = c1+""+c2;
+										String fstr = c1+""+c1;
+										mism += blosum.get( str );
+										count += blosum.get( fstr );
+									}
+								}
+								if( count == 0 ) {
+									System.err.println();
+								}
+							} else {
+								for( int k = start; k < end; k++ ) {
+									char c1 = seq1.getCharAt( k-seq1.getStart() );
+									char c2 = seq2.getCharAt( k-seq2.getStart() );
+									
+									if( c1 != '.' && c1 != '-' && c1 != ' ' && c1 != '\n' &&  c2 != '.' && c2 != '-' && c2 != ' ' && c2 != '\n') {
+										if( c1 != c2 ) mism++;
+										count++;
+									}
 								}
 							}
 						}
 					}
-					double d = count == 0 ? 0.0 : mism/(double)count;
+					double d = count == 0 ? 0.0 : (double)mism/(double)count;
+					if( blosum != null ) d = 1.0-d;
 					if( cantor ) d = -3.0*Math.log( 1.0 - 4.0*d/3.0 )/4.0;
 					
 					dmat[x*len+y] = d;
@@ -846,6 +865,10 @@ public class Sequence implements Comparable<Sequence> {
 		}
 	}
 	
+	public Annotation getAnnotation( int i ) {
+		return annset.get(i);
+	}
+	
 	public List<Annotation> getAnnotations() {
 		return annset;
 	}
@@ -856,14 +879,32 @@ public class Sequence implements Comparable<Sequence> {
 		}
 	}
 	
-	public void addAnnotation( Annotation a ) {
+	public boolean addAnnotation( int i, Annotation a ) {
 		if( annset == null ) {
 			annset = new ArrayList<Annotation>();
+		} else for( Annotation an : annset ) {
+			if( an.start == a.start && a.start > 0 ) return true;
 		}
-		if( annset.contains(a) ) {
-			System.err.println();
+		/*if( annset.contains(a) ) {
+			if( a.start == 0 ) annset.add( a );
+		} else*/ 
+		annset.add( i, a );
+		
+		return false;
+	}
+	
+	public boolean addAnnotation( Annotation a ) {
+		if( annset == null ) {
+			annset = new ArrayList<Annotation>();
+		} else for( Annotation an : annset ) {
+			if( an.start == a.start && a.start > 0 ) return true;
 		}
+		/*if( annset.contains(a) ) {
+			if( a.start == 0 ) annset.add( a );
+		} else*/ 
 		annset.add( a );
+		
+		return false;
 	}
 	
 	public String getName() {
@@ -895,6 +936,14 @@ public class Sequence implements Comparable<Sequence> {
 	
 	public void append( String str ) {
 		sb.append( str );
+	}
+	
+	public void append( char c ) {
+		sb.append( c );
+	}
+	
+	public void appendSubseq( Sequence subs, int start, int end ) {
+		//getSubstring(-3000, subs.getLength()+3000);
 	}
 	
 	public void deleteCharAt( int i ) {
@@ -1100,7 +1149,7 @@ public class Sequence implements Comparable<Sequence> {
 				if( aaa.contains("N") || aaa.contains("n") || aaa.contains("X") || aaa.contains("x") ) {
 					ret.append( "X" );
 				} else {
-					String aa = amimap.get( revcom.get(aaa) );
+					Character aa = amimap.get( revcom.get(aaa) );
 					if( aa != null ) ret.append( i != stop-3 ? aa : (aa.equals("V") || aa.equals("L") ? "M" : aa) );
 					//else break;
 				}
@@ -1112,8 +1161,8 @@ public class Sequence implements Comparable<Sequence> {
 				if( aaa.contains("N") || aaa.contains("n") || aaa.contains("X") || aaa.contains("x") ) {
 					ret.append( "X" );
 				} else {
-					String aa = amimap.get( aaa );
-					if( aa != null ) ret.append( i != start-1 ? aa : (aa.equals("V") || aa.equals("L") ? "M" : aa) );
+					Character aa = amimap.get( aaa );
+					if( aa != null ) ret.append( i != start-1 ? aa : (aa.equals('V') || aa.equals('L') ? 'M' : aa) );
 					//else break;
 				}
 			}
@@ -1127,17 +1176,19 @@ public class Sequence implements Comparable<Sequence> {
 	}
 	
 	public String getSubstring( int start, int end, int ori ) {
-		if( start < sb.length() && end <= sb.length() ) {
-			if( ori == -1 ) {
-				StringBuilder subsb = new StringBuilder();
-				for( int i = end-1; i >= start; i-- ) {
-					char c = sb.charAt(i);
-					char cc = rc.containsKey(c) ? rc.get( c ) : c;
-					subsb.append( cc );
-				}
-				return subsb.toString();
-			} else return sb.substring(start, end);
-		}
+		//if( start < sb.length() && end <= sb.length() ) {
+		if( ori == -1 ) {
+			StringBuilder subsb = new StringBuilder();
+			start = Math.max(0, start);
+			end = Math.min(sb.length(), end);
+			for( int i = end-1; i >= start; i-- ) {
+				char c = sb.charAt(i);
+				char cc = rc.containsKey(c) ? rc.get( c ) : c;
+				subsb.append( cc );
+			}
+			return subsb.toString();
+		} else if( start < sb.length() ) return sb.substring( Math.max(0,start), Math.min(sb.length(),end) );
+		//}
 		return "";
 	}
 }

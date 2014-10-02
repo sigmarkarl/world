@@ -27,6 +27,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -50,12 +51,31 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.TreeMap;
 
+import javafx.collections.FXCollections;
+import javafx.embed.swing.SwingFXUtils;
+import javafx.event.EventHandler;
+import javafx.geometry.Side;
+import javafx.scene.Scene;
+import javafx.scene.SnapshotParameters;
+import javafx.scene.chart.CategoryAxis;
+import javafx.scene.chart.NumberAxis;
+import javafx.scene.chart.ScatterChart;
+import javafx.scene.chart.StackedBarChart;
+import javafx.scene.chart.XYChart;
+import javafx.scene.control.ContextMenu;
+import javafx.scene.control.MenuItem;
+import javafx.scene.control.Tooltip;
+import javafx.scene.image.WritableImage;
+import javafx.scene.layout.Background;
+
+import javax.imageio.ImageIO;
 import javax.jnlp.ClipboardService;
 import javax.jnlp.FileContents;
 import javax.jnlp.FileOpenService;
@@ -137,6 +157,191 @@ public class DataTable extends JApplet implements ClipboardOwner {
 			e.printStackTrace();
 		}
 	}
+	
+	public static Scene createStackedBarChartScene( Map<String,Map<String,Integer>> map, boolean uniform ) {
+        final CategoryAxis 	xAxis = new CategoryAxis();
+        final NumberAxis 	yAxis = new NumberAxis();
+        
+        xAxis.setTickLabelRotation( 90.0 );
+        
+        Set<String>	all = new HashSet<String>();
+        List<String> speclist = new ArrayList<String>();
+        for( String spec : map.keySet() ) {
+        	speclist.add( spec );
+        }
+        xAxis.setCategories( FXCollections.<String>observableArrayList( speclist ) );
+        //yAxis.
+        
+        final StackedBarChart<String,Number> sc = new StackedBarChart<String,Number>(xAxis,yAxis);
+        sc.setLegendSide( Side.RIGHT );
+        xAxis.setLabel("");
+        yAxis.setLabel("");
+        sc.setTitle("COG catogories");
+        
+        //Font f = sc.getXAxis().settic
+        //sc.setStyle( "-fx-font-size: 2.4em;" );
+        //System.err.println( sc.getXAxis().getStyle() );
+        sc.getXAxis().setStyle("-fx-tick-label-font-size: 1.4em;");
+        sc.getYAxis().setStyle("-fx-tick-label-font-size: 1.4em;");
+       
+        Map<String,Integer> countmap = new HashMap<String,Integer>();
+        for( String spec : map.keySet() ) {
+        	Map<String,Integer> submap = map.get(spec);
+        	int total = 0;
+        	for( String f : submap.keySet() ) {
+        		total += submap.get(f);
+        		
+        		all.add(f);
+        	}
+        	countmap.put( spec, total );
+        }
+        
+        for( String flock : all ) {
+        	//Map<String,Integer> submap = map.get( spec );
+        	//String longname = all.get(flock);
+	        XYChart.Series<String,Number> core = new XYChart.Series<String,Number>();
+	        core.setName( flock );
+	        for( String spec : map.keySet() ) {
+	        	Map<String,Integer> submap = map.get(spec);
+	        	//int last = 0;
+	        	//for( String f : submap.keySet() ) {
+	        	if( submap.containsKey(flock) ) {
+	        		int total = countmap.get(spec);
+		        	int ival = submap.get( flock );
+		        	String fixspec = spec;
+		        	XYChart.Data<String,Number> d = uniform ?  new XYChart.Data<String,Number>( fixspec, (double)ival/(double)total ) : new XYChart.Data<String,Number>( fixspec, ival );
+		        	//Tooltip.install( d.getNode(), new Tooltip( flock ) );
+		        	core.getData().add( d );
+	        	}
+	        	
+		        //last = last+ival;
+	        }
+	        sc.getData().add( core );
+        }
+        
+        /*XYChart.Series<String,Number> pan = new XYChart.Series<String,Number>();
+        pan.setName("Pan");
+        //for( int i = 0; i < ydata.length; i++ ) {
+        	XYChart.Data<String,Number> d = new XYChart.Data<String,Number>( "dd", 100 );
+        	//Tooltip.install( d.getNode(), new Tooltip( names[i] ) );
+        	pan.getData().add( d );
+        //}
+        XYChart.Series<String,Number> pan2 = new XYChart.Series<String,Number>();
+        pan2.setName("Core");
+        //for( int i = 0; i < ydata.length; i++ ) {
+        	XYChart.Data<String,Number> d2 = new XYChart.Data<String,Number>( "2", 200 );
+        	//Tooltip.install( d.getNode(), new Tooltip( names[i] ) );
+        	pan2.getData().add( d2 );
+        //}
+        sc.getData().addAll(pan, pan2);*/
+        Scene scene = new Scene( sc );
+        //scene.setRoot( sc );
+        
+        for (XYChart.Series<String, Number> s : sc.getData()) {
+        	//int i = 0;
+            for (XYChart.Data<String, Number> d : s.getData()) {
+                Tooltip.install( d.getNode(), new Tooltip( s.getName()+": "+d.getYValue() ) );
+            }
+        }
+        
+        sc.setBackground( Background.EMPTY );
+        
+        final ContextMenu menu = new ContextMenu();
+        MenuItem mi = new MenuItem();
+        mi.setOnAction( new EventHandler<javafx.event.ActionEvent>() {
+			@Override
+			public void handle(javafx.event.ActionEvent arg0) {
+				WritableImage fximg = sc.snapshot(new SnapshotParameters(), null);
+				try {
+					ImageIO.write(SwingFXUtils.fromFXImage(fximg, null), "png", new File("c:/fximg.png"));
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		});
+        menu.getItems().add( mi );
+        sc.setOnMouseClicked( new EventHandler<javafx.scene.input.MouseEvent>() {
+        	 @Override
+             public void handle(javafx.scene.input.MouseEvent event) {
+               if (javafx.scene.input.MouseButton.SECONDARY.equals(event.getButton())) {
+                 menu.show(sc, event.getScreenX(), event.getScreenY());
+               }
+             }
+        });
+        
+        return scene;
+    }
+	
+	public static Scene createBiplotScene( String[] names, double[] xdata, double[] ydata, String[] snames, double[] sxdata, double[] sydata ) {
+        final NumberAxis xAxis = new NumberAxis(-1.0, 1.0, 0.2);
+        final NumberAxis yAxis = new NumberAxis(-1.0, 1.0, 0.2);    
+        final ScatterChart<Number,Number> sc = new ScatterChart<Number,Number>(xAxis,yAxis);
+        xAxis.setLabel("Dim 1");
+        yAxis.setLabel("Dim 2");
+        sc.setTitle("Genes");
+       
+        XYChart.Series series1 = new XYChart.Series();
+        series1.setName("Taxa");
+        for( int i = 0; i < xdata.length; i++ ) {
+        	XYChart.Data d = new XYChart.Data( xdata[i], ydata[i] );
+        	Tooltip.install( d.getNode(), new Tooltip( names[i] ) );
+        	series1.getData().add( d );
+        }
+        sc.getData().addAll(series1);
+        
+        XYChart.Series series2 = new XYChart.Series();
+        series2.setName("Samples");
+        for( int i = 0; i < sxdata.length; i++ ) {
+        	XYChart.Data d = new XYChart.Data( sxdata[i], sydata[i] );
+        	Tooltip.install( d.getNode(), new Tooltip( snames[i] ) );
+        	series2.getData().add( d );
+        }
+        sc.getData().addAll(series2);
+        
+        Scene scene = new Scene( sc );
+        //scene.setRoot( sc );
+        
+        for (XYChart.Series<Number, Number> s : sc.getData()) {
+        	if( s.getName().equals("Taxa") ) {
+	        	int i = 0;
+	            for (XYChart.Data<Number, Number> d : s.getData()) {
+	                Tooltip.install( d.getNode(), new Tooltip( names[i++] ) );
+	            }
+        	} else if( s.getName().equals("Samples") ) {
+	        	int i = 0;
+	            for (XYChart.Data<Number, Number> d : s.getData()) {
+	                Tooltip.install( d.getNode(), new Tooltip( snames[i++] ) );
+	            }
+        	}
+        }
+        
+        sc.setBackground( Background.EMPTY );
+        
+        final ContextMenu menu = new ContextMenu();
+        MenuItem mi = new MenuItem();
+        mi.setOnAction( new EventHandler<javafx.event.ActionEvent>() {
+			@Override
+			public void handle(javafx.event.ActionEvent arg0) {
+				WritableImage fximg = sc.snapshot(new SnapshotParameters(), null);
+				try {
+					ImageIO.write(SwingFXUtils.fromFXImage(fximg, null), "png", new File("c:/fximg.png"));
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		});
+        menu.getItems().add( mi );
+        sc.setOnMouseClicked( new EventHandler<javafx.scene.input.MouseEvent>() {
+        	 @Override
+             public void handle(javafx.scene.input.MouseEvent event) {
+               if (javafx.scene.input.MouseButton.SECONDARY.equals(event.getButton())) {
+                 menu.show(sc, event.getScreenX(), event.getScreenY());
+               }
+             }
+        });
+        
+        return scene;
+    }
 	
 	Map<String,Sequence>	seqcache = new HashMap<String,Sequence>();
 	String[] specs = {"antranikianii","aquaticus","arciformis","brockianus","eggertsoni","filiformis","igniterrae","islandicus","kawarayensis","oshimai","scotoductus","thermophilus","yunnanensis","rehai","composti","unknownchile"};
@@ -3741,23 +3946,272 @@ public class DataTable extends JApplet implements ClipboardOwner {
 		return ret;
 	}
 	
-	public static void assigntax( BufferedReader br, BufferedWriter bw ) throws IOException {
+	public static Map<Object,Object> assigntax( Path rp, BufferedWriter bw, Map<String,String> taxmap, Map<String,Mapping> mapping, String cat, int groups, Map<String,Integer> taxcount, double[][] dd, String[][] names, Map<String,Map<String,Integer>> countmap ) throws IOException {
+		Map<Object,Object> biom = new HashMap<Object,Object>();
+		
+		Map<String,Integer>	cntm = new HashMap<String,Integer>();
+		Map<String,Integer> mapt = new HashMap<String,Integer>();
+		Map<String,Integer>	maps = new HashMap<String,Integer>();
+		List<String>		lt = new ArrayList<String>();
+		List<String>		ls = new ArrayList<String>();
+		//List<String>		li = new ArrayList<String>();
+		
+		int sidx = 0;
+		int tidx = 0;
+		
+		double min = Integer.MAX_VALUE;
+		double max = Integer.MIN_VALUE;
+		
+		if( mapping != null ) for( String key : mapping.keySet() ) {
+			Mapping m = mapping.get(key);
+			try {
+				double val = Double.parseDouble( m.mapping.get( cat ) );
+				if( val > max ) max = val;
+				if( val < min ) min = val;
+			} catch( Exception e ) {
+				
+			}
+		}
+		double bil = max-min;
+		double del = bil/groups;
+		
+		double selectedval = -1.0;
+		if( mapping != null ) {
+			if( groups == 2 ) {
+				int total = 0;
+				Map<Double,Integer> treem = new TreeMap<Double,Integer>();
+				String current = null;
+				BufferedReader br = Files.newBufferedReader(rp);
+				String line = br.readLine();
+				while (line != null) {
+					String trim = line.trim();
+					if (trim.startsWith("Query=")) {
+						String[] split = trim.substring(7).trim().split("[ ]+");
+						current = split[0];
+						
+						String sample = current.substring(0,current.indexOf('_'));
+						if( mapping.containsKey(sample) ) {
+							Mapping m = mapping.get(sample);
+							try {
+								double val = Double.parseDouble( m.mapping.get(cat) );
+								int cnt = 0;
+								if( treem.containsKey(val) ) {
+									cnt = treem.get(val);
+								}
+								treem.put( val, cnt+1 );
+								total++;
+							} catch( Exception e ) {
+								int cnt = 0;
+								if( treem.containsKey(-1.0) ) {
+									cnt = treem.get(-1.0);
+								}
+								treem.put( -1.0, cnt+1 );
+							}
+						}
+					}
+					
+					line = br.readLine();
+				}
+				br.close();
+				
+				int tot = 0;
+				for( Double dval : treem.keySet() ) {
+					if( dval != -1.0 ) {
+						tot += treem.get(dval);
+						if( tot > total/2 ) {
+							String sample = cat+"_"+min+"_"+dval;
+							maps.put(sample, 0);
+							ls.add( sample );
+							
+							sample = cat+"_"+dval+"_"+max;
+							maps.put(sample, 1);
+							ls.add( sample );
+							
+							if( treem.containsKey(-1.0) ) {
+								sample = cat+"_unknown";
+								maps.put(sample, 2);
+								ls.add( sample );
+							}
+							selectedval = dval;
+							
+							break;
+						}
+					}
+				}
+			} else if( groups == -3 ) {
+				Map<Double,Set<String>> valmap = new TreeMap<Double,Set<String>>();
+				BufferedReader br = Files.newBufferedReader(rp);
+				String line = br.readLine();
+				while (line != null) {
+					String trim = line.trim();
+					if (trim.startsWith("Query=")) {
+						String[] split = trim.substring(7).trim().split("[ ]+");
+						String current = split[0];
+						
+						String sample = current.substring(0,current.indexOf('_'));
+						if( mapping.containsKey(sample) ) {
+							Mapping m = mapping.get(sample);
+							String sval = m.mapping.get(cat);
+							double val = -1.0;
+							try {
+								val = Double.parseDouble( sval );
+							} catch( Exception e ) {
+								val = -1.0;
+							}
+							
+							String subsample = sample.substring(0,sample.lastIndexOf('.')) + "_" + sval;
+							if( valmap.containsKey(val) ) {
+								Set<String> valset = valmap.get(val);
+								valset.add( subsample );
+							} else {
+								Set<String> valset = new HashSet<String>();
+								valset.add( subsample );
+								valmap.put( val, valset );
+							}
+						}
+					}
+					
+					line = br.readLine();
+				}
+				br.close();
+				
+				sidx = 0;
+				for( Double d : valmap.keySet() ) {
+					Set<String> valset = valmap.get( d );
+					for( String val : valset ) {
+						maps.put(val, sidx++);
+						ls.add( val );
+					}
+				}
+			} else if( groups != 0 && del > 0 ) {
+				for( int i = 0; i < groups; i++ ) {
+					double start = min+Math.floor(100.0*i*del)/100.0;
+					double stop = min+Math.floor(100.0*(i+1)*del)/100.0;
+					
+					String startstr = Double.toString(start);
+					String stopstr = Double.toString(stop);
+					
+					int si = startstr.indexOf('.');
+					if( si == -1 ) si = startstr.length();
+					else si = Math.min( startstr.length(), si+3 );
+					
+					int sti = stopstr.indexOf('.');
+					if( sti == -1 ) sti = stopstr.length();
+					else sti = Math.min( stopstr.length(), sti+3 );
+					
+					String sample = cat+"_"+startstr.substring(0,si)+"_"+stopstr.substring(0,sti);
+					maps.put(sample, i);
+					ls.add( sample );
+				}
+			} /*else if( groups == 0 ) {
+				int i = 0;
+				for( String key : mapping.keySet() ) {
+					Mapping m = mapping.get(key);
+					String sample = m.name;
+					maps.put(sample, i++);
+					ls.add( sample );
+				}
+			}*/
+		}
+		
+		BufferedReader br = Files.newBufferedReader(rp);
 		String line = br.readLine();
 		String current = null;
 		String currid = null;
 		String currteg = null;
+		sidx = 0;
 		while (line != null) {
 			String trim = line.trim();
 			if (trim.startsWith("Query=")) {
 				String[] split = trim.substring(7).trim().split("[ ]+");
 				current = split[0];
+				
+				String sample = current.substring(0,current.indexOf('_'));
+				
+				/*if( sample.equals("813.hrafntinnusker.jardvegur") ) {
+					System.err.println();
+				}*/
+				
+				String sval = "";
+				if( groups == -1 ) {
+					sample = sample.substring( sample.lastIndexOf('.') );
+				} if( groups == -2 ) {
+					sample = sample.substring( sample.indexOf('.'), sample.lastIndexOf('.') );
+				} if( groups == -3 ) {
+					if( mapping.containsKey(sample) ) {
+						Mapping m = mapping.get(sample);
+						sval = m.mapping.get(cat);
+					}
+					sample = sample.substring( 0, sample.lastIndexOf('.') ) + "_" + sval;
+				} else if( mapping != null && cat != null ) {
+					if( mapping.containsKey(sample) ) {
+						Mapping m = mapping.get(sample);
+						try {
+							double val = Double.parseDouble( m.mapping.get(cat) );
+							
+							if( groups == 2 ) {
+								if( val <= selectedval ) {
+									sample = cat+"_"+min+"_"+selectedval;
+								} else {
+									sample = cat+"_"+selectedval+"_"+max;
+								}
+							} else {
+								int k = (int)( (val-min) * groups / bil );
+								
+								if( k == groups ) k = groups-1;
+								
+								double start = min+Math.floor(100.0*k*del)/100.0;
+								double stop = min+Math.floor(100.0*(k+1)*del)/100.0;
+								
+								String startstr = Double.toString(start);
+								String stopstr = Double.toString(stop);
+								
+								int si = startstr.indexOf('.');
+								if( si == -1 ) si = startstr.length();
+								else si = Math.min( startstr.length(), si+3 );
+								
+								int sti = stopstr.indexOf('.');
+								if( sti == -1 ) sti = stopstr.length();
+								else sti = Math.min( stopstr.length(), sti+3 );
+								
+								sample = cat+"_"+startstr.substring(0,si)+"_"+stopstr.substring(0,sti);
+								
+								//sample = cat+"_"+start+"_"+stop;
+							}
+						} catch( Exception e ) {
+							sample = cat+"_unknown";
+						}
+					}
+				}
+				
+				//if( !sample.contains("jardvl") && !sample.contains("nknown") ) {
+					if( !maps.containsKey(sample) ) {
+						sidx = maps.size();
+						maps.put(sample, sidx);
+						//System.err.println("    " + sample);
+						ls.add( sample );
+					} else sidx = maps.get(sample);
+				//}
 			} else if (line.startsWith("> ")) {
 				String teg = line.substring(2);
 				int k = teg.indexOf(' ');
-				if( k != -1 ) {
-					currid = teg.substring(0,k);
-					teg = teg.substring(k+1);
-					line = br.readLine();
+				if( k == -1 ) {
+					k = teg.length();
+				}
+				currid = teg.substring(0,k);
+				if( taxmap != null ) teg = taxmap.get(currid);
+				//if( taxmap != null ) teg = taxmap.get(currid);
+				//else teg = teg.substring(k+1);
+					
+				if( teg != null && taxcount.isEmpty() || taxcount.containsKey(currid) ) {
+					if( !mapt.containsKey(currid) ) {
+						tidx = mapt.size();
+						mapt.put(currid, tidx);
+						lt.add( currid );
+						//li.add( currid );
+					} else tidx = mapt.get( currid );
+					
+					/*line = br.readLine();
 					while (!line.startsWith("Length=")) {
 						teg += line;
 						line = br.readLine();
@@ -3770,12 +4224,35 @@ public class DataTable extends JApplet implements ClipboardOwner {
 						for( int u = count.length; u < 7; u++ ) {
 							currteg += ";"+last;
 						}
-					}
-				} else {
+					}*/
+					
+					String key = tidx + "," + sidx;
+					if( cntm.containsKey(key) ) cntm.put(key, cntm.get(key)+1);
+					else cntm.put(key, 1);
+				}
+				
+				/*} else {
 					currid = teg;
 					int y = teg.lastIndexOf('_');
 					if( y != -1 ) teg = teg.substring(0,y);
 					currteg = "Bacteria;Deinococcus-Thermus;Deinococci;Thermales;Thermaceae;Thermus;" + teg.replace("T.", "Thermus_");
+				}*/
+			} else if (line.contains("No hits")) {
+				String teg = "No hit";
+				currid = teg;
+				//if( taxmap != null ) teg = taxmap.get(currid);
+					
+				if( teg != null && taxcount.isEmpty() || taxcount.containsKey(currid) ) {
+					if( !mapt.containsKey(currid) ) {
+						tidx = mapt.size();
+						mapt.put(currid, tidx);
+						lt.add( currid );
+						//li.add( currid );
+					} else tidx = mapt.get( currid );
+					
+					String key = tidx + "," + sidx;
+					if( cntm.containsKey(key) ) cntm.put(key, cntm.get(key)+1);
+					else cntm.put(key, 1);
 				}
 			} else if (trim.contains("Expect =")) {
 				int k = trim.indexOf("Expect =");
@@ -3789,49 +4266,233 @@ public class DataTable extends JApplet implements ClipboardOwner {
 		}
 		br.close();
 		bw.close();
+		
+		//System.err.println( uu + " uo " + oo + "  " + maps.size() );
+		
+		names[1] = new String[ls.size()];
+		
+		System.err.println( "samples: " + ls.size() );
+		int i = 0;
+		ArrayList<Map>	columnarray = new ArrayList<Map>();
+		for( String str : ls ) {
+			HashMap<String,String> m = new HashMap<String,String>();
+			m.put("metadata", null);
+			m.put("id", str);
+			//System.err.println( str );
+			columnarray.add( m );
+			
+			names[1][i] = str;
+			
+			i++;
+		}
+		
+		names[0] = new String[lt.size()];
+		
+		i = 0;
+		ArrayList<Map>	rowarray = new ArrayList<Map>();
+		for( String str : lt ) {
+			HashMap<String,Object> m = new HashMap<String,Object>();
+			
+			String teg = str;
+			if( taxmap != null ) {
+				teg = taxmap.get(str);
+				if( teg == null ) teg = "No hit";
+				//System.err.println( str + "   " + teg );
+			}/* else {
+				System.err.println( "null taxmap" );
+			}*/
+			//else teg = teg.substring(k+1);
+			
+			ArrayList<String>	ta = new ArrayList<String>();
+			String[] spl = teg.split(";");
+			for( String tax : spl ) {
+				ta.add( tax );
+			}
+			ta.add( str );
+			
+			HashMap<String,Object> sm = new HashMap<String,Object>();
+			sm.put("taxonomy", ta);
+			
+			names[0][i] = spl[ spl.length-1 ];
+			
+			m.put("metadata", sm);
+			m.put("id", lt.get(i));
+			rowarray.add( m );
+			
+			i++;
+		}
+		
+		double[] sq = new double[columnarray.size()];
+		double[] so = new double[rowarray.size()];
+		if( dd != null ) {
+			double[] d = new double[columnarray.size()*rowarray.size()];
+			Arrays.fill(d, 0.0);
+			dd[0] = d;
+			
+			Arrays.fill(sq, 0.0);
+		}
+		
+		Map<String,Map<String,Integer>> tmpcountmap = new HashMap<String,Map<String,Integer>>();
+		Map<Integer,Integer>	totm = new HashMap<Integer,Integer>();
+		ArrayList<ArrayList> dataarray = new ArrayList<ArrayList>();
+		for( String key : cntm.keySet() ) {
+			int cnt = cntm.get( key );
+			String[] spl = key.split(",");
+			int o = Integer.parseInt( spl[0] );
+			int t = Integer.parseInt( spl[1] );
+			
+			int c = 0;
+			if( totm.containsKey(t) ) c = totm.get(t);
+			totm.put(t, c+cnt);
+		
+			if( dd != null ) {
+				dd[0][t*rowarray.size()+o] += cnt;
+				sq[t] += cnt;
+				so[o] += cnt;
+			}
+			
+			ArrayList<Integer> d = new ArrayList<Integer>();
+			d.add(o);
+			d.add(t);
+			d.add(cnt);
+			dataarray.add( d );
+			
+			String teg = lt.get(o);
+			String smp = ls.get(t);
+			
+			Map<String,Integer>	mval;
+			if( tmpcountmap.containsKey( smp ) ) {
+				mval = tmpcountmap.get(smp);
+			} else {
+				mval = new HashMap<String,Integer>();
+				tmpcountmap.put(smp, mval);
+			}
+			mval.put( teg, cnt );
+		}
+		
+		for( String ss : ls ) {
+			countmap.put(ss, tmpcountmap.get(ss));
+		}
+		
+		/*for( int r = 0; r < rowarray.size(); r++ ) {
+			double mean = so[r]/columnarray.size();
+			so[r] = 0.0;
+			for( int c = 0; c < columnarray.size(); c++ ) {
+				dd[0][c*rowarray.size()+r] -= mean;
+				so[r] += dd[0][c*rowarray.size()+r]*dd[0][c*rowarray.size()+r];
+			}
+		}
+		
+		for( int r = 0; r < rowarray.size(); r++ ) {
+			double stddev = Math.sqrt(so[r]/columnarray.size());
+			so[r] = 0.0;
+			for( int c = 0; c < columnarray.size(); c++ ) {
+				dd[0][c*rowarray.size()+r] /= stddev;
+			}
+		}*/
+		
+		for( int c = 0; c < columnarray.size(); c++ ) {
+			double mean = sq[c]/rowarray.size();
+			sq[c] = 0.0;
+			for( int r = 0; r < rowarray.size(); r++ ) {
+				dd[0][c*rowarray.size()+r] -= mean;
+				sq[c] += dd[0][c*rowarray.size()+r]*dd[0][c*rowarray.size()+r];
+			}
+		}
+		
+		for( int c = 0; c < columnarray.size(); c++ ) {
+			double stddev = Math.sqrt(sq[c]/rowarray.size());
+			sq[c] = 0.0;
+			for( int r = 0; r < rowarray.size(); r++ ) {
+				dd[0][c*rowarray.size()+r] /= stddev;
+			}
+		}
+		
+		double[] dimd = new double[2];
+		dimd[0] = rowarray.size();
+		dimd[1] = columnarray.size();
+		dd[1] = dimd;
+		
+		for( int k : totm.keySet() ) {
+			int c = totm.get(k);
+			System.err.println( ls.get(k) + ": " + c );
+		}
+		
+		biom.put("date", "2014-04-22T22:40:03.805568");
+		biom.put("matrix_element_type","int");
+		biom.put("generated_by","QIIME 1.8.0-dev");
+		biom.put("shape", new ArrayList<Integer>( Arrays.asList(new Integer[] {rowarray.size(),columnarray.size()}) ));
+		biom.put("data",dataarray);
+		biom.put("format_url","http://biom-format.org");
+		biom.put("columns",columnarray);
+		biom.put("format","Biological Observation Matrix 1.0.0");
+		biom.put("matrix_type","sparse");
+		biom.put("id","None");
+		biom.put("type","OTU table");
+		biom.put("rows",rowarray);
+		
+		return biom;
 	}
 	
-	public static void writeObject( Object vo, StringBuilder sb, int level, int maxlevel, int maxsize ) {
+	public static void writeObject( Object vo, Appendable sb, int level, int maxlevel, int maxsize, String offset ) throws IOException {
 		if( vo instanceof String ) {
 			String vs = (String)vo;
 			sb.append( "\""+vs+"\"" );
+		} else if( vo instanceof Integer ) {
+			sb.append( ((Integer)vo).toString() );
+		} else if( vo instanceof Double ) {
+			double d = (Double)vo;
+			if( d == Math.floor(d) ) sb.append( Integer.toString( (int)d) );
+			else sb.append( Double.toString(d) );
 		} else if( vo instanceof ArrayList ) {
 			ArrayList al = (ArrayList)vo;
 			sb.append("[");
-			if( al.size() < maxsize ) {
-				boolean first = true;
-				for( Object o : al ) {
-					//String s = (String)o;
-					if( !first ) sb.append(",");
-					//if( level < maxlevel ) 
-					writeObject( o, sb, level+1, maxlevel, maxsize );
-					first = false;
-				}
+			boolean first = true;
+			int count = 0;
+			for( Object o : al ) {
+				if( !first ) sb.append(",");
+				
+				//if( level < maxlevel ) 
+				writeObject( o, sb, level+1, maxlevel, maxsize, offset );
+				first = false;
+				
+				count++;
+				
+				if( count > maxsize ) break;
 			}
 			sb.append("]");
 		} else if( vo instanceof HashMap ) {
 			HashMap hm = (HashMap)vo;
-			if( hm.size() < maxsize ) {
-				sb.append("{");
-				if( level < maxlevel ) sb.append("\n");
-				boolean first = true;
-				for( Object o : hm.keySet() ) {
-					String s = (String)o;
-					if( !first ) sb.append(",\n");
-					sb.append("\""+s+"\":");
-					Object svo = hm.get(o);
-					//if( level < maxlevel ) 
-					writeObject( svo, sb, level+1, maxlevel, maxsize );
-					first = false;
+			sb.append("{"); 
+			//sb.append("\n");
+			boolean first = true;
+			for( Object o : hm.keySet() ) {
+				String s = (String)o;
+				if( !first ) sb.append(",");
+				sb.append("\""+s+"\": ");
+				Object svo = hm.get(o);
+				//if( level < maxlevel )
+				if( svo == null ) sb.append( "null" );
+				else {
+					//if( !s.equals("data") ) 
+					writeObject( svo, sb, level+1, maxlevel, maxsize, offset+"\t" );
 				}
+				first = false;
+				
+				//break;
 			}
 			sb.append("}");
-			if( level < maxlevel ) sb.append("\n");
+			//if( level < maxlevel ) 
+			//sb.append("\n");
 		}
 	}
 	
 	public static void saveBiomTableNashorn( Map<Object,Object> map, Path p ) throws IOException {
-		StringBuilder sb = new StringBuilder();
+		BufferedWriter bw = Files.newBufferedWriter(p);
+		writeObject(map, bw, 0, 0, Integer.MAX_VALUE, "");
+		bw.close();
+		
+		/*StringBuilder sb = new StringBuilder();
 		sb.append("{");
 		boolean first = true;
 		for( Object o : map.keySet() ) {
@@ -3839,12 +4500,12 @@ public class DataTable extends JApplet implements ClipboardOwner {
 			if( !first ) sb.append(",");
 			sb.append("\""+s+"\":");
 			Object vo = map.get(o);
-			writeObject( vo, sb, 1, Integer.MAX_VALUE, Integer.MAX_VALUE );
+			writeObject( vo, sb, 1, Integer.MAX_VALUE, Integer.MAX_VALUE, "" );
 			first = false;
 		}
 		sb.append("}");
 		
-		Files.write( p, sb.toString().getBytes() );
+		Files.write( p, sb.toString().getBytes() );*/
 	}
 	
 	public static Map<Object,Object> loadBiomTableNashorn( String biom ) throws JSONException, ScriptException {
@@ -4318,8 +4979,8 @@ public class DataTable extends JApplet implements ClipboardOwner {
 		});
 	}
 	
-	public static List<Mapping> loadMapping( Path p ) throws IOException {
-		List<Mapping> ml = new ArrayList<Mapping>();
+	public static Map<String,Mapping> loadMapping( Path p ) throws IOException {
+		Map<String,Mapping> ml = new HashMap<String,Mapping>();
 		
 		BufferedReader br = Files.newBufferedReader(p);
 		String line = br.readLine();
@@ -4332,27 +4993,170 @@ public class DataTable extends JApplet implements ClipboardOwner {
 				m.mapping.put( split[i], ssplit[i] );
 			}
 			line = br.readLine();
+			
+			ml.put(m.name, m);
 		}
 		br.close();
 		
 		return ml;
 	}
 	
+	public static void printSummary( String filename, Map<String,Integer> taxcount, Map<String,String> taxmap, Sheet sheet ) throws IOException {
+		List<Map.Entry<String,Integer>> entries = new ArrayList<Map.Entry<String,Integer>>( taxcount.entrySet() );
+		Collections.sort(entries, new Comparator<Map.Entry<String, Integer>>() {
+			  public int compare(Map.Entry<String, Integer> a, Map.Entry<String, Integer> b){
+			    return b.getValue().compareTo(a.getValue());
+			  }
+		});
+		Map<String, Integer> sortedMap = new LinkedHashMap<String, Integer>();
+		for (Map.Entry<String, Integer> entry : entries) {
+		  sortedMap.put(entry.getKey(), entry.getValue());
+		}
+		
+		int r = 0;
+		Path xdump = Paths.get(filename);
+		BufferedWriter bwt = Files.newBufferedWriter(xdump);
+		for( String key : sortedMap.keySet() ) {
+			int count = sortedMap.get(key);
+			String tax = taxmap.get(key);
+			
+			Row row = null;
+			if( sheet != null ) {
+				row = sheet.createRow(r++);
+				row.createCell(0).setCellValue( key );
+			}
+			
+			if( tax != null ) {
+				String[] split = tax.split(";");
+				if( row != null ) for( int u = 0; u < split.length; u++ ) {
+					row.createCell(u+1).setCellValue( split[u] );
+				}
+				
+				int k = split.length;
+				for( int i = k; i < 7; i++ ) {
+					tax += ";"+split[split.length-1];
+				}
+			} else {
+				tax = "No hit";
+				if( row != null ) row.createCell(1).setCellValue( "No hit" );
+			}
+			bwt.write(key+"\t"+tax+"\t"+count+"\n");
+			if( row != null ) row.createCell(9).setCellValue( count );
+		}
+		bwt.close();
+	}
+	
 	public static void main(String[] args) {
+		/*Path dir = Paths.get( "/Users/sigmar" );
+		Path p = dir.resolve("silva119_tmp.tax");
+		Path r = dir.resolve("silva119.tax");
+		try {
+			BufferedWriter bw = Files.newBufferedWriter(r);
+			for( String str : Files.readAllLines( p ) ) {
+				String id = str.substring(0,10).trim();
+				String name1 = str.substring(10,60).trim().replace(' ', '_');
+				String name2 = str.substring(60,110).trim().replace(' ', '_');
+				String tax1 = str.substring(110,260).trim().replace("\"", "");
+				String tax2 = str.substring(260,str.length()).trim();
+				
+				String[] sp1 = tax1.split(";");
+				String[] sp2 = tax2.split(";");
+				
+				int i = tax1.indexOf("Bacteria;");
+				if( i > 0 ) tax1 = tax1.substring(i);
+				i = tax2.indexOf("Bacteria;");
+				if( i > 0 ) tax2 = tax2.substring(i);
+				
+				i = tax1.indexOf("Archaea;");
+				if( i > 0 ) tax1 = tax1.substring(i);
+				i = tax2.indexOf("Archaea;");
+				if( i > 0 ) tax2 = tax2.substring(i);
+				
+				//System.err.println( sp1.length + "  " + sp2.length );
+				
+				if( sp2.length == 6 ) {
+					String name;
+					if( name2.length() == 0 ) name = name1;
+					else name = name2;
+					bw.write(id + "\t" + tax2+name + ";\n");
+				} else if( sp1.length == 6 ) {
+					String name;
+					if( name1.length() == 0 ) name = name2;
+					else name = name1;
+					bw.write(id + "\t" + tax1+name + ";\n");
+				} else if( sp2.length < 6 ) {
+					if( sp1.length > sp2.length && sp1.length < 6 ) {
+						i = sp1.length;
+						bw.write(id + "\t" + tax1 );
+						while( i < 6 ) {
+							bw.write( sp1[sp1.length-1]+";" );
+							i++;
+						}
+						
+						String name;
+						if( name1.length() == 0 ) name = name2;
+						else name = name1;
+						bw.write( name+";\n" );
+					} else {
+						i = sp2.length;
+						bw.write( id + "\t" + tax2 );
+						while( i < 6 ) {
+							bw.write( sp2[sp2.length-1]+";" );
+							i++;
+						}
+						
+						String name;
+						if( name2.length() == 0 ) name = name1;
+						else name = name2;
+						bw.write( name+";\n" );
+					}
+				} else if( sp1.length < 6 ) {
+					i = sp1.length;
+					bw.write( id + "\t" + tax1 );
+					while( i < 6 ) {
+						bw.write( sp1[sp1.length-1]+";" );
+						i++;
+					}
+					
+					String name;
+					if( name1.length() == 0 ) name = name2;
+					else name = name1;
+					bw.write( name+";\n" );
+				} else if( sp2.length == 7 ) {
+					bw.write(id + "\t" + tax2 + "\n");
+				} else if( sp1.length == 7 ) {
+					bw.write(id + "\t" + tax1 + "\n");
+				} else if( sp2.length == 8 ) {
+					String ttax = tax2.substring(0,tax2.lastIndexOf(';', tax2.length()-2)) + ";";
+					System.err.println( "\t" + ttax );
+					bw.write(id + "\t" + ttax + "\n");
+				} else {
+					System.err.println( tax1 );
+					System.err.println( tax2 );
+					System.err.println();
+				}
+			}
+			bw.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}*/
+		
 		try {
 			Path p = new File("/Users/sigmar/otu_table.biom").toPath();
 			ByteArrayOutputStream baos = new ByteArrayOutputStream();
 			Files.copy(p, baos);
 			baos.close();
-			String biom = baos.toString();
-			Map<Object, Object> mobj = loadBiomTableNashorn( biom );
+			String biomstr = baos.toString();
+			Map<Object, Object> mobj = loadBiomTableNashorn( biomstr );
 			
-			StringBuilder sb = new StringBuilder();
-			writeObject( mobj, sb, 0, 1, Integer.MAX_VALUE );
-			System.err.println( sb.toString() );
+			//StringBuilder sb = new StringBuilder();
+			FileWriter fw = new FileWriter("/Users/sigmar/erm.biom");
+			writeObject( mobj, fw, 0, 1, Integer.MAX_VALUE, "" );
+			fw.close();
+			//System.err.println( sb.toString() );
 			
-			Path np = new File("/Users/sigmar/new_otu_table.biom").toPath();
-			saveBiomTableNashorn( mobj, np );
+			//Path np = new File("/Users/sigmar/new_otu_table.biom").toPath();
+			//saveBiomTableNashorn( mobj, np );
 			
 			/*String type = "Column";
 			
@@ -4379,9 +5183,160 @@ public class DataTable extends JApplet implements ClipboardOwner {
 			}*/
 			//printMap( mobj );
 			
-			// br = Files.newBufferedReader( new File("/Users/sigmar/rep_set.blastout").toPath() ); //new BufferedReader( new InputStreamReader( new GZIPInputStream( Files.newInputStream( new File("/Users/sigmar/rep_set.blastout").toPath() ) ) ) );
-			//BufferedWriter bw = Files.newBufferedWriter( new File("/Users/sigmar/res.txt").toPath() );
-			//assigntax( br, bw );
+			p = Paths.get("/Users/sigmar/SILVA119/m_mapping_pra.txt");
+			Map<String,Mapping> mapping = loadMapping( p );
+			
+			Map<String,String> taxmap = new HashMap<String,String>();
+			p = Paths.get("/Users/sigmar/SILVA119/SILVA_119_SSURef_Nr99_tax_silva_trunc.tax");
+			List<String> ll = Files.readAllLines( p );
+			for( String line : ll ) {
+				//String[] spl = 
+				int k = line.indexOf(' '); //split(" "); //\t
+				taxmap.put( line.substring(1,k), line.substring(k+1) );
+			}
+			System.err.println( taxmap.size() );
+			Path rp = new File("/Users/sigmar/SILVA119/seqs2_silva.blastout").toPath();
+			//BufferedReader br = Files.newBufferedReader( new File("/Users/sigmar/SILVA119/seqs.blastout").toPath() ); //new BufferedReader( new InputStreamReader( new GZIPInputStream( Files.newInputStream( new File("/Users/sigmar/rep_set.blastout").toPath() ) ) ) );
+			BufferedWriter bw = Files.newBufferedWriter( new File("/Users/sigmar/SILVA119/seqs2_silva.tax").toPath() );
+			
+			HashMap<String,Integer>	taxcount = new HashMap<String,Integer>();
+			BufferedReader br = Files.newBufferedReader(rp);
+			String line = br.readLine();
+			while (line != null) {
+				//String trim = line.trim();
+				if (line.startsWith("> ")) {
+					String teg = line.substring(2);
+					int k = teg.indexOf(' ');
+					if( k == -1 ) {
+						k = teg.length();
+					}
+					String currid = teg.substring(0,k);
+					//if( taxmap != null ) teg = taxmap.get(currid);
+					//else teg = teg.substring(k+1);
+						
+					int tcnt = 0;
+					if( taxcount.containsKey(currid) ) {
+						tcnt = taxcount.get(currid);
+					}
+					taxcount.put( currid, tcnt+1 );
+				} else if( line.contains("No hits") ) {
+					String teg = "No hit";
+					String currid = teg;
+					//if( taxmap != null ) teg = taxmap.get(currid);
+					//else teg = teg.substring(k+1);
+						
+					int tcnt = 0;
+					if( taxcount.containsKey(currid) ) {
+						tcnt = taxcount.get(currid);
+					}
+					taxcount.put( currid, tcnt+1 );
+				}
+				
+				line = br.readLine();
+			}
+			br.close();
+			
+			printSummary( "/Users/sigmar/SILVA119/xdump.txt", taxcount, taxmap, null );
+			
+			Path idump = Paths.get("/Users/sigmar/SILVA119/idump.txt");
+			BufferedWriter bwt = Files.newBufferedWriter(idump);
+			for( String key : taxcount.keySet() ) {
+				bwt.write(key+"\n");
+			}
+			bwt.close();
+			
+			Set<String> dein = new HashSet<String>();
+			for( String key : taxcount.keySet() ) {
+				String tax = taxmap.get(key);
+				int cnt = taxcount.get(key);
+				//if( tax != null && (tax.contains( "Deinococcus") || tax.contains("Aquificae") || tax.contains("Chloroflex") || tax.contains("Cyanobacteria") ) && cnt > 100 ) {
+				//if( tax != null && (tax.contains("Deinococcus")) ) {
+					dein.add( key );
+				//}
+			}
+			taxcount.keySet().retainAll( dein );
+			
+			final Map<String,Map<String,Integer>> countmap = new LinkedHashMap<String,Map<String,Integer>>();
+			
+			final String[][] names = new String[2][];
+			double[][] dd = new double[2][];
+			
+			//Map<Object,Object> biom = assigntax( rp, bw, taxmap, mapping, "pHT", 4, taxcount, dd, names, countmap );
+			//Map<Object,Object> biom = assigntax( rp, bw, taxmap, mapping, "pHT", -3, taxcount, dd, names, countmap );
+			Map<Object,Object> biom = assigntax( rp, bw, taxmap, mapping, null, 0, taxcount, dd, names, countmap );
+			
+			Workbook wb = new XSSFWorkbook();
+			for( String key : countmap.keySet() ) {
+				Map<String,Integer> cnt = countmap.get( key );
+				
+				Sheet sheet = wb.createSheet(key);
+				printSummary( "/Users/sigmar/SILVA119/"+key+".txt", cnt, taxmap, sheet );
+			}
+			wb.write( new FileOutputStream("/Users/sigmar/SILVA119/tax_report2.xlsx") );
+			
+			/*PrincipleComponentAnalysis pca = new PrincipleComponentAnalysis();
+			
+			int sampleSize = (int)dd[1][0];
+			int numSamples = (int)dd[1][1];
+			pca.setup(numSamples, sampleSize);
+			
+			double[] dv = dd[0];
+			for( int i = 0; i < numSamples; i++ ) {
+				double[] sampleData = Arrays.copyOfRange( dv, i*sampleSize, (i+1)*sampleSize );
+				pca.addSample(sampleData);
+			}
+			
+			pca.computeBasis(2, true);
+			
+			final double[] xdata = pca.getBasisVector(0);
+			final double[] ydata = pca.getBasisVector(1);
+			
+			final double[] sxdata = pca.getBasisVector(pca.U_t,0);//new double[numSamples];
+			final double[] sydata = pca.getBasisVector(pca.U_t,1);//new double[numSamples];
+			
+			/*double[] udd = pca.U_t.getData();
+			for( int k = 0; k < numSamples; k++ ) {
+				sxdata[k] = udd[k*pca.U_t.numCols];
+				sydata[k] = udd[k*pca.U_t.numCols+1];
+			}*
+			
+			final JFrame frame = new JFrame("Gene phyl");
+			frame.setDefaultCloseOperation( JFrame.HIDE_ON_CLOSE );
+			frame.setSize(800, 600);
+			
+			final JFXPanel	fxpanel = new JFXPanel();
+			frame.add( fxpanel );
+			
+			final String[] ns = names[0];
+			final String[] sn = names[1];
+			Platform.runLater(new Runnable() {
+                 @Override
+                 public void run() {
+                	 Scene scene = createBiplotScene( ns, xdata, ydata, sn, sxdata, sydata );
+                	 fxpanel.setScene(scene);
+                	 frame.setVisible( true );
+                     //geneset.initFXChart( fxpanel, names, b0, b1 );
+                 }
+            });*/
+			
+			/*final JFrame frame2 = new JFrame("Box plot");
+			frame2.setDefaultCloseOperation( JFrame.HIDE_ON_CLOSE );
+			frame2.setSize(800, 600);
+			
+			final JFXPanel	fxpanel2 = new JFXPanel();
+			frame2.add( fxpanel2 );
+			Platform.runLater(new Runnable() {
+                 @Override
+                 public void run() {
+                	 Scene scene = createStackedBarChartScene( countmap, true );
+                	 fxpanel2.setScene(scene);
+                	 frame2.setVisible( true );
+                     //geneset.initFXChart( fxpanel, names, b0, b1 );
+                 }
+            });*/
+			
+			Path biomp = Paths.get("/Users/sigmar/seqs.biom");
+			saveBiomTableNashorn(biom, biomp);
 		} catch (IOException e) {
 			e.printStackTrace();
 		} catch (JSONException e) {

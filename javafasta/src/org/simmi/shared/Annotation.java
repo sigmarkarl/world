@@ -115,11 +115,13 @@ public class Annotation implements Comparable<Object> {
 
 	@Override
 	public int compareTo(Object o) {
-		return start - ((Annotation)o).start;
+		int val = start - ((Annotation)o).start;
+		//if( val == 0 && start == 0 ) return this.hashCode();
+		return val;
 	}
 	
 	@Override
 	public boolean equals( Object o ) {
-		return compareTo(o) == 0;
+		return compareTo(o) == 0 && (start > 0 || this == o);
 	}
 };

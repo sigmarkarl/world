@@ -62,6 +62,13 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 
+import javafx.application.Platform;
+import javafx.embed.swing.JFXPanel;
+import javafx.scene.Scene;
+import javafx.scene.chart.LineChart;
+import javafx.scene.chart.NumberAxis;
+import javafx.scene.chart.XYChart;
+
 import javax.imageio.ImageIO;
 import javax.jnlp.ClipboardService;
 import javax.jnlp.FileContents;
@@ -1874,6 +1881,31 @@ public class JavaFasta extends JApplet {
 		return X;
 	}
 	
+	public StringBuilder printDistanceMatrix( double[] dd, List<String> names ) {
+		StringBuilder	text = new StringBuilder();
+		text.append("\t"+names.size()+"\n");
+		
+		int k = 0;
+		for( String name : names ) {
+			text.append( name );
+			for( int i = 0; i < names.size(); i++ ) {
+				text.append( "\t"+dd[k*names.size()+i] );
+			}
+			text.append("\n");
+			k++;
+		}
+		/*for( double d : dd ) {
+			text.append( d );
+		}*/
+		
+		return text;
+	}
+	
+	public StringBuilder distanceMatrix( boolean excludeGaps, Map<String,Integer> blosumap, List<String> names ) {
+		double[] dd = distanceMatrixNumeric( false, null, blosumap );
+		return printDistanceMatrix( dd, names );
+	}
+	
 	public StringBuilder distanceMatrix( boolean excludeGaps ) {
 		JCheckBox	jukes = new JCheckBox("Jukes-cantor correction");
 		JCheckBox	boots = new JCheckBox("Bootstrap");
@@ -2178,6 +2210,14 @@ public class JavaFasta extends JApplet {
 		
 		double[] dd = new double[ serifier.lseq.size()*serifier.lseq.size() ];
 		Sequence.distanceMatrixNumeric( serifier.lseq, dd, idxs, boots.isSelected(), cantor, ent, blosum );
+		
+		int i = 0;
+		for( double d : dd ) {
+			System.err.print( "  " + d );
+			i++;
+			if( i % serifier.lseq.size() == 0 ) System.err.println();
+		}
+		
 		return dd;
 	}
 	
@@ -2709,8 +2749,11 @@ public class JavaFasta extends JApplet {
 		}
 	}
 	
-	int[]	currentRowSelection;
-	Point	p;
+	static JFrame		fxframe = new JFrame();
+	static JFXPanel		fxp = new JFXPanel();
+	static Scene 		scene;
+	int[]		currentRowSelection;
+	Point		p;
 	public void initGui( final Container cnt ) {
 		final String lof = "com.sun.java.swing.plaf.nimbus.NimbusLookAndFeel";
 		try {
@@ -3952,6 +3995,20 @@ public class JavaFasta extends JApplet {
 			}
 		});
 		view.addSeparator();
+		view.add( new AbstractAction("Remove start positions") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				int len = 0;
+				for( Sequence seq : serifier.lseq ) {
+					seq.setStart(0);
+					len = Math.max(len, seq.length());
+				}
+				serifier.setMin(0);
+				serifier.setMax( len );
+				c.repaint();
+			}
+		});
+		view.addSeparator();
 		view.add( new AbstractAction("Find repeats") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -4194,6 +4251,30 @@ public class JavaFasta extends JApplet {
 		    	}
 			}
 		});
+		file.add( new AbstractAction("AA version") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				JFrame	frame = new JFrame();
+				frame.setDefaultCloseOperation( JFrame.DISPOSE_ON_CLOSE );
+				frame.setSize(800, 600);
+				JavaFasta	jf = new JavaFasta();
+				jf.initGui( frame );
+				
+				List<Sequence> seqs = JavaFasta.this.getSequences();
+				for( Sequence s : seqs ) {
+					Sequence seq = new Sequence(s.name, jf.serifier.mseq);
+					for( int i = 0; i < s.length(); i+=3 ) {
+						String subs = s.getSubstring(i, i+3, 1);
+						Character c = Sequence.amimap.get( subs );
+						seq.append( c == null ? '-' : c );
+					}
+					jf.serifier.addSequence(seq);
+				}
+				jf.updateView();
+				
+				frame.setVisible( true );
+			}
+		});
 		file.add( new AbstractAction("Export") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -4250,7 +4331,7 @@ public class JavaFasta extends JApplet {
 		cbmi3.setAction( new AbstractAction("AA colors") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				c.aacolors = cbmi.getState();
+				c.aacolors = cbmi3.getState();
 				c.repaint();
 			}
 		});
@@ -4321,15 +4402,67 @@ public class JavaFasta extends JApplet {
 				}
 			}
 		});
+		phylogeny.add( new AbstractAction("Distance matrix blosum") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				Map<String,Integer> blosumap = JavaFasta.getBlosumMap();
+				
+				List<String> names = new ArrayList<String>();
+				for( Sequence seq : serifier.lseq ) {
+					names.add( seq.getName() );
+				}
+				
+				StringBuilder sb = distanceMatrix( false, blosumap, names );
+				
+				System.err.println( sb.toString().split("\n").length );
+				
+				File save = null;
+				try {
+					JFileChooser	fc = new JFileChooser();
+					if( fc.showOpenDialog( parentApplet ) == JFileChooser.APPROVE_OPTION ) {
+						save = fc.getSelectedFile();
+					}
+				} catch( Exception e1 ) {
+					
+				}
+				
+				if( save != null ) {
+					try {
+						FileWriter fw = new FileWriter( save );
+						fw.write( sb.toString() );
+						fw.close();
+					} catch (IOException e1) {
+						e1.printStackTrace();
+					}
+				} else {
+					JTextArea		text = new JTextArea( sb.toString() );
+					JScrollPane	sp = new JScrollPane( text );
+					JFrame	fr = new JFrame("Distance matrix");
+					fr.add( sp );
+					fr.setSize(800, 600);
+					fr.setDefaultCloseOperation( JFrame.DISPOSE_ON_CLOSE );
+					fr.setVisible( true );
+				}
+			}
+		});
 		phylogeny.add( new AbstractAction("Draw tree") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				Map<String, Integer> blosumap = getBlosumMap();
 				double[] dd = distanceMatrixNumeric( false, null, blosumap );
+				
 				System.err.println("about to call showTree");
 				List<String> corrInd = new ArrayList<String>();
 				for( Sequence seq : serifier.lseq ) {
 					corrInd.add( seq.getName() );
+				}
+				
+				StringBuilder sb = printDistanceMatrix( dd, corrInd );
+				Path p = Paths.get( "/Users/sigmar/dist.txt" );
+				try {
+					Files.write( p, sb.toString().getBytes() );
+				} catch (IOException e2) {
+					e2.printStackTrace();
 				}
 				
 				TreeUtil tu = new TreeUtil();
@@ -5335,27 +5468,25 @@ public class JavaFasta extends JApplet {
 										r = secstr.indexOf( rcheck, r+1 );
 									}
 								}
-								
-								int[] rr = atable.getSelectedRows();
-								g2.setColor( Color.green );
-								for( int r : rr ) {
-									int m = atable.convertRowIndexToModel(r);
-									Annotation a = serifier.lann.get(m);
-									int start = iy*(a.start-offset)/ry;
-									int stop = iy*(a.stop-offset)/ry;
-									
-									if( start < ix && stop > 0 ) {
-										g2.drawLine(start, start, stop, stop);
-									}
-								}
 							} else {
 								for( int i = 0; i < rx; i++ ) {
+									System.err.println( i + " of " + rx );
 									for( int k = 0; k < ry; k++ ) {
 										int count = 0;
 										int rcount = 0;
 										for( int v = 0; v < w; v++ ) {
-											if( first.getCharAt(i+v+offset) == second.getCharAt(k+v+offset) ) count++;
-											if( first.getCharAt(i+v+offset) == Sequence.rc.get( second.getCharAt(k-v+w-1+offset) ) ) rcount++;
+											char c = first.getCharAt(i+v+offset);
+											char sc = second.getCharAt(k-v+w-1+offset);
+											if( c == second.getCharAt(k+v+offset) ) count++;
+											
+											Character rC = Sequence.rc.get( sc );
+											
+											/*if( rC == null ) {
+												System.err.println();
+											}*/
+											
+											char rc = rC;
+											if( c == rc ) rcount++;
 										}
 										if( w - count <= err ) {
 											int x = (ix*i)/rx;
@@ -5371,6 +5502,19 @@ public class JavaFasta extends JApplet {
 									}
 								}
 							}
+							
+							int[] rr = atable.getSelectedRows();
+							g2.setColor( Color.green );
+							for( int r : rr ) {
+								int m = atable.convertRowIndexToModel(r);
+								Annotation a = serifier.lann.get(m);
+								int start = iy*(a.start-offset)/ry;
+								int stop = iy*(a.stop-offset)/ry;
+								
+								if( start < ix && stop > 0 ) {
+									g2.drawLine(start, start, stop, stop);
+								}
+							}
 							g2.dispose();
 							
 							JComponent	comp = new JComponent() {
@@ -5384,6 +5528,61 @@ public class JavaFasta extends JApplet {
 							JScrollPane	scrollpane = new JScrollPane();
 							scrollpane.setViewportView( comp );
 							frame.add( scrollpane );
+							
+							comp.addMouseListener( new MouseListener() {
+								int startx;
+								int starty;
+								
+								@Override
+								public void mouseReleased(MouseEvent e) {
+									int x = e.getX();
+									int y = e.getY();
+									
+									int minx = Math.min(startx, x);
+									//int miny = Math.min(starty, y);
+									
+									int maxx = Math.max(startx, x);
+									//int maxy = Math.max(starty, y);
+									
+									int start = minx; //Math.min( minx, miny );
+									int stop = maxx; //Math.max( maxx, maxy );
+									
+									double pstart = (double)(start*serifier.getDiff())/(double)ix;
+									double pstop = (double)(stop*serifier.getDiff())/(double)ix;
+									
+									c.selectedRect.y = 0;
+									c.selectedRect.height = 1;
+									c.selectedRect.x = (int)pstart;
+									c.selectedRect.width = (int)pstop - c.selectedRect.x;
+									
+									atable.clearSelection();
+									int i = 0;
+									for( Annotation a : serifier.lann ) {
+										if( a.start < c.selectedRect.x+c.selectedRect.width && a.stop > c.selectedRect.x ) {
+											int r = atable.convertRowIndexToView(i);
+											atable.addRowSelectionInterval(r, r);
+										}
+										i++;
+									}
+									
+									c.repaint();
+								}
+								
+								@Override
+								public void mousePressed(MouseEvent e) {
+									startx = e.getX();
+									starty = e.getY();
+								}
+								
+								@Override
+								public void mouseExited(MouseEvent e) {}
+								
+								@Override
+								public void mouseEntered(MouseEvent e) {}
+								
+								@Override
+								public void mouseClicked(MouseEvent e) {}
+							});
 							
 							JPopupMenu	popup = new JPopupMenu();
 							popup.add( new AbstractAction("Save image") {
@@ -5441,6 +5640,302 @@ public class JavaFasta extends JApplet {
 					
 					dialog.setVisible( true );
 				}
+			}
+		});
+		
+		popup.add( new AbstractAction("GC plot") {
+			public void actionPerformed( ActionEvent e ) {
+				final JDialog	dialog = new JDialog();
+				dialog.setSize(300, 200);
+				dialog.setDefaultCloseOperation( dialog.DISPOSE_ON_CLOSE );
+				
+				JComponent	panel = new JComponent() {};
+				Border brd = new EmptyBorder(10, 10, 10, 10);
+				panel.setBorder( brd );
+				GridLayout grid = new GridLayout( 3, 2 );
+				grid.setHgap(5);
+				grid.setVgap(5);
+				panel.setLayout( grid );
+				
+				JLabel		windlab = new JLabel("Window");
+				final JSpinner	windspin = new JSpinner( new SpinnerNumberModel(10, 1, 1000, 1) );
+				JLabel		errlab = new JLabel("Points");
+				final JSpinner	errspin = new JSpinner( new SpinnerNumberModel(2, 0, 1000, 1) );
+				/*JLabel		wlab = new JLabel("Width");
+				final JSpinner	wspin = new JSpinner( new SpinnerNumberModel(x-10, 1, x-10, 1) );
+				JLabel		hlab = new JLabel("Height");
+				final JSpinner	hspin = new JSpinner( new SpinnerNumberModel(y-10, 1, y-10, 1) );*/
+				JButton		ok = new JButton( new AbstractAction("Ok") {
+					@Override
+					public void actionPerformed(ActionEvent e) {
+						dialog.dispose();
+						
+						//JFrame	frame = new JFrame();
+						fxframe.setSize(800, 600);
+						fxframe.setDefaultCloseOperation( JFrame.HIDE_ON_CLOSE );
+						
+						if( fxp != null ) {
+							fxp = new JFXPanel();
+							fxframe.setLayout( new BorderLayout() );
+							fxframe.add( fxp, BorderLayout.CENTER );
+						}
+						
+						int w = (Integer)windspin.getValue();
+						int p = (Integer)errspin.getValue();
+						
+						int ir = 0;
+						int r = table.getSelectedRow();
+						if( r != -1 ) r = table.convertRowIndexToModel( r );
+						if( r != -1 ) ir = r;
+						
+						Sequence s = serifier.lseq.get(ir);
+						
+						XYChart.Series<Number,Number> series = new XYChart.Series<Number,Number>();
+						double[] d = new double[ p ];
+						//int start = w/2;
+						for( int i = 0; i < p; i++ ) {
+							int u = i*(s.length()-w)/p;
+							
+							int tot = 0;
+							int gctot = 0;
+							for( int k = u; k < u+w; k++ ) {
+								char c = s.charAt(k);
+								if( c == 'c' || c == 'C' || c == 'g' || c == 'G' ) {
+									gctot++;
+								}
+								tot++;
+							}
+							d[i] = (double)gctot/(double)tot;
+							
+							XYChart.Data<Number,Number> dd = new XYChart.Data<Number,Number>( i, d[i] );
+				        	//Tooltip.install( d.getNode(), new Tooltip( names[i] ) );
+				        	series.getData().add( dd );
+						}
+				       
+						final NumberAxis xAxis = new NumberAxis();
+					    final NumberAxis yAxis = new NumberAxis();
+						final LineChart<Number,Number> lineChart = new LineChart<Number,Number>(xAxis,yAxis);
+						//Scene scene = createBarChartScene( names, data, xTitle, yTitle, start, stop, step, title );
+						
+						Platform.runLater(new Runnable() {
+			                 @Override
+			                 public void run() {
+			                	 if( scene == null ) {
+			                		 scene  = new Scene(lineChart,800,600);
+			                		 //fxframe.setScene( scene );
+			                		 fxp.setScene(scene);
+			                	 } else {
+			                		 
+			                		 scene.setRoot( lineChart );
+			                	 }
+								 lineChart.getData().add(series);
+								 
+								 //lineChart.re
+			                 }
+			            });
+				        
+						/*Sequence first = seqs[0];
+						Sequence second = seqs[1];
+						int w = (Integer)windspin.getValue();
+						int err = (Integer)errspin.getValue();
+						
+						int ix = (Integer)wspin.getValue();
+						int iy = (Integer)hspin.getValue();
+						final BufferedImage	bi = new BufferedImage( ix, iy, BufferedImage.TYPE_INT_ARGB );
+						Graphics2D g2 = bi.createGraphics();
+						g2.setColor( Color.white );
+						g2.fillRect(0, 0, ix,  iy);
+						
+						int rx = x-w;
+						int ry = y-w;
+						if( err == 0 ) {
+							String secstr = second.getSubstring(offset, offset+y, 1);
+							for( int i = 0; i < rx; i++ ) {
+								int ind = i+offset;
+								String check = first.getSubstring(ind, ind+w, 1);//first.sb.substring(ind, ind+w);
+								String rcheck = first.getSubstring(ind, ind+w, -1);
+								
+								int x = (ix*i)/rx;
+								int k = secstr.indexOf( check );
+								while( k != -1 ) {
+									int y = (iy*k)/ry;
+									/*if( !(x >= 0 && x < bi.getWidth() && y >= 0 && y < bi.getHeight()) ) {
+										System.err.println();
+									}*
+									bi.setRGB(x, y, 0xFF000000);
+									
+									k = secstr.indexOf( check, k+1 );
+								}
+								int r = secstr.indexOf( rcheck );
+								while( r != -1 ) {
+									int y = (iy*r)/ry;
+									//if( x >= 0 && x < bi.getWidth() && y >= 0 && y < bi.getHeight() ) 
+									bi.setRGB(x, y, 0xFFFF0000);
+									
+									r = secstr.indexOf( rcheck, r+1 );
+								}
+							}
+						} else {
+							for( int i = 0; i < rx; i++ ) {
+								System.err.println( i + " of " + rx );
+								for( int k = 0; k < ry; k++ ) {
+									int count = 0;
+									int rcount = 0;
+									for( int v = 0; v < w; v++ ) {
+										char c = first.getCharAt(i+v+offset);
+										char sc = second.getCharAt(k-v+w-1+offset);
+										if( c == second.getCharAt(k+v+offset) ) count++;
+										
+										Character rC = Sequence.rc.get( sc );
+										
+										char rc = rC;
+										if( c == rc ) rcount++;
+									}
+									if( w - count <= err ) {
+										int x = (ix*i)/rx;
+										int y = (iy*k)/ry;
+										if( x >= 0 && x < bi.getWidth() && y >= 0 && y < bi.getHeight() ) bi.setRGB(x, y, 0xFF000000);
+									}
+									
+									if( w - rcount <= err ) {
+										int x = (ix*i)/rx;
+										int y = (iy*k)/ry;
+										if( x >= 0 && x < bi.getWidth() && y >= 0 && y < bi.getHeight() ) bi.setRGB(x, y, 0xFFFF0000);
+									}
+								}
+							}
+						}
+						
+						int[] rr = atable.getSelectedRows();
+						g2.setColor( Color.green );
+						for( int r : rr ) {
+							int m = atable.convertRowIndexToModel(r);
+							Annotation a = serifier.lann.get(m);
+							int start = iy*(a.start-offset)/ry;
+							int stop = iy*(a.stop-offset)/ry;
+							
+							if( start < ix && stop > 0 ) {
+								g2.drawLine(start, start, stop, stop);
+							}
+						}
+						g2.dispose();
+						
+						JComponent	comp = new JComponent() {
+							public void paintComponent( Graphics g ) {
+								super.paintComponent(g);
+								
+								g.drawImage( bi, 0, 0, this );
+							}
+						};
+						comp.setPreferredSize( new Dimension(ix, iy) );
+						JScrollPane	scrollpane = new JScrollPane();
+						scrollpane.setViewportView( comp );
+						frame.add( scrollpane );
+						
+						comp.addMouseListener( new MouseListener() {
+							int startx;
+							int starty;
+							
+							@Override
+							public void mouseReleased(MouseEvent e) {
+								int x = e.getX();
+								int y = e.getY();
+								
+								int minx = Math.min(startx, x);
+								int miny = Math.min(starty, y);
+								
+								int maxx = Math.max(startx, x);
+								int maxy = Math.max(starty, y);
+								
+								int start = Math.min( minx, miny );
+								int stop = Math.max( maxx, maxy );
+								
+								double pstart = (double)(start*serifier.getDiff())/(double)ix;
+								double pstop = (double)(stop*serifier.getDiff())/(double)ix;
+								
+								c.selectedRect.x = (int)pstart;
+								c.selectedRect.width = (int)pstop - c.selectedRect.x;
+								
+								atable.clearSelection();
+								int i = 0;
+								for( Annotation a : serifier.lann ) {
+									if( a.start < c.selectedRect.x+c.selectedRect.width && a.stop > c.selectedRect.x ) {
+										int r = atable.convertRowIndexToView(i);
+										atable.addRowSelectionInterval(r, r);
+									}
+									i++;
+								}
+								
+								c.repaint();
+							}
+							
+							@Override
+							public void mousePressed(MouseEvent e) {
+								startx = e.getX();
+								starty = e.getY();
+							}
+							
+							@Override
+							public void mouseExited(MouseEvent e) {}
+							
+							@Override
+							public void mouseEntered(MouseEvent e) {}
+							
+							@Override
+							public void mouseClicked(MouseEvent e) {}
+						});
+						
+						JPopupMenu	popup = new JPopupMenu();
+						popup.add( new AbstractAction("Save image") {
+							@Override
+							public void actionPerformed(ActionEvent e) {
+								ByteArrayOutputStream	baos = new ByteArrayOutputStream();
+								try {
+									ImageIO.write(bi, "png",  baos);
+									
+									FileSaveService fss; 
+									try {
+										fss = (FileSaveService)ServiceManager.lookup("javax.jnlp.FileSaveService");
+							    	} catch( UnavailableServiceException e2 ) {
+							    		fss = null;
+							    	}
+							    	 
+							         if (fss != null) {
+							        	 ByteArrayInputStream bais = new ByteArrayInputStream( baos.toByteArray() );
+							             FileContents fileContents = fss.saveFileDialog(null, null, bais, "export.png");
+							             bais.close();
+							             OutputStream os = fileContents.getOutputStream(true);
+							             os.write( baos.toByteArray() );
+							             os.close();
+							         } else {
+							        	 JFileChooser jfc = new JFileChooser();
+							        	 if( jfc.showSaveDialog( parentApplet ) == JFileChooser.APPROVE_OPTION ) {
+							        		 File f = jfc.getSelectedFile();
+							        		 FileOutputStream fos = new FileOutputStream( f );
+							        		 fos.write( baos.toByteArray() );
+							        		 fos.close();
+							        		 
+							        		 Desktop.getDesktop().browse( f.toURI() );
+							        	 }
+							         }
+								} catch (IOException e1) {
+									e1.printStackTrace();
+								}
+							}
+						});
+						comp.setComponentPopupMenu( popup );*/
+						
+						fxframe.setVisible( true );
+					}
+				});
+				dialog.add( panel );
+				panel.add( windlab );
+				panel.add( windspin );
+				panel.add( errlab );
+				panel.add( errspin );
+				panel.add( ok );
+				
+				dialog.setVisible( true );
 			}
 		});
 		table.setComponentPopupMenu( popup );
