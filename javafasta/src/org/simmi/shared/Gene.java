@@ -163,10 +163,6 @@ public class Gene {
 			}
 			
 			//int u = lname.lastIndexOf('_');
-			
-			if( i == -1 ) {
-				System.err.println();
-			}
 			//contigstr = lname.substring(0, u);
 			return lname.substring(0, i-1);
 			//contloc = lname.substring(i, lname.length());

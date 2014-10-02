@@ -110,7 +110,7 @@ public class Serifier {
 			writeFasta( tlseq, fw, null, true);
 			fw.close();
 
-			ProcessBuilder pb = new ProcessBuilder("/Users/sigmar/FastTree");
+			ProcessBuilder pb = new ProcessBuilder("/usr/local/bin/FastTree");
 			pb.directory(tmpdir);
 			Process p = pb.start();
 			OutputStream os = p.getOutputStream();
