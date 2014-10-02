@@ -1779,18 +1779,20 @@ public class Serifier {
 			
 			int count = 0;
 			for( Sequence seq2 : this.lseq ) {
-				String seqstr2 = seq2.getName();
-				
-				if( seqstr.compareTo( seqstr2 ) == 0 ) {
-					int curi = seqstr2.indexOf('[');
-					if( curi == -1 ) {
-						seqstr2 += "_"+(++count);
-					} else {
-						seqstr2 = seqstr2.substring(0,curi)+"_"+(++count)+seqstr2.substring(curi, seqstr2.length());
+				if( seq != seq2 ) {
+					String seqstr2 = seq2.getName();
+					
+					if( seqstr.compareTo( seqstr2 ) == 0 ) {
+						int curi = seqstr2.indexOf('[');
+						if( curi == -1 ) {
+							seqstr2 += "_"+(++count);
+						} else {
+							seqstr2 = seqstr2.substring(0,curi)+"_"+(++count)+seqstr2.substring(curi, seqstr2.length());
+						}
+						seq2.setName( seqstr2 );
+						//removee.add( seq2 );
+						//removei.add( n );
 					}
-					seq2.setName( seqstr2 );
-					//removee.add( seq2 );
-					//removei.add( n );
 				}
 			}
 		}
