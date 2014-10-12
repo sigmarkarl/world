@@ -1126,6 +1126,14 @@ public class Sequence implements Comparable<Sequence> {
 		return offset - o.offset;
 	}
 	
+	public boolean contains( Annotation at ) {
+		return annset.contains(at);
+	}
+	
+	public int indexOf( Annotation at ) {
+		return annset.indexOf( at );
+	}
+	
 	public StringBuilder getProteinSequence( int start, int stop, int ori ) {
 		StringBuilder ret = new StringBuilder();
 		

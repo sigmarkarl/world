@@ -52,6 +52,7 @@ import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -121,8 +122,10 @@ import javax.swing.table.TableRowSorter;
 import netscape.javascript.JSObject;
 
 import org.simmi.shared.Annotation;
+import org.simmi.shared.GeneGroup;
 import org.simmi.shared.Sequence;
 import org.simmi.shared.Serifier;
+import org.simmi.shared.Tegeval;
 import org.simmi.shared.TreeUtil;
 
 import flobb.ChatServer;
@@ -1053,6 +1056,11 @@ public class JavaFasta extends JApplet {
 		c.updateCoords();
 	}
 	
+	public void importGbkReader( BufferedReader br ) throws IOException {
+		List<Sequence> lseq = serifier.readGBK( br );
+		br.close();
+	}
+	
 	public void importReader( BufferedReader br ) throws IOException {
 		List<Sequence> seqlist = serifier.readSequences( br );
 		br.close();
@@ -1088,6 +1096,9 @@ public class JavaFasta extends JApplet {
 		} else if( name.endsWith(".ace") ) {
 			BufferedReader	br = new BufferedReader( new InputStreamReader(is) );
 			importAceReader( br );
+		} else if( name.endsWith(".gbk") || name.endsWith(".gb") ) {
+			BufferedReader	br = new BufferedReader( new InputStreamReader(is) );
+			importGbkReader( br );
 		} else {
 			BufferedReader	br = new BufferedReader( new InputStreamReader(is) );
 			importReader( br );
@@ -2141,11 +2152,11 @@ public class JavaFasta extends JApplet {
 		return ret;
 	}
 	
-	public String getFasta() {
+	public StringBuilder getFasta() {
 		return getFasta( this.getSequences() );
 	}
 	
-	public String getFasta( List<Sequence> lseq ) {
+	public StringBuilder getFasta( List<Sequence> lseq ) {
 		StringBuilder out = new StringBuilder();
 		
    	 	for( Sequence seq : lseq ) {
@@ -2164,7 +2175,7 @@ public class JavaFasta extends JApplet {
    		 }
    	 	}
    		 
-   		return out.toString();
+   		return out;
 	}
 	
 	public String getPhylip( boolean numeric ) {
@@ -3465,6 +3476,42 @@ public class JavaFasta extends JApplet {
 			    				importReader( br );
 			    				br.close();
 			    				is.close();
+			    				
+			    				for( Sequence seq : seqlist ) {
+			    					if( seq.annset != null ) for( Annotation a : seq.annset ) {
+			    						for( Sequence nseq : serifier.lseq ) {
+			    							if( nseq.getName().equals(seq.getName()) ) {
+			    								nseq.addAnnotation(a);
+			    							}
+			    						}
+			    					}
+			    				}
+			    				
+			    				for( Sequence seq : serifier.lseq ) {
+			    					if( seq.annset != null ) {
+			    						for( Annotation a : seq.annset ) {
+			    							int cnt = 0;
+			    							
+			    							int newstart = 0;
+			    							int newstop = 0;
+			    							for( int i = 0; i < seq.length(); i++ ) {
+			    								char c = seq.charAt(i);
+			    								if( c != '-' ) {
+			    									if( cnt == a.start ) newstart = i;
+			    									else if( cnt == a.stop ) {
+			    										newstop = i;
+			    										break;
+			    									}
+			    									cnt++;
+			    								}
+			    							}
+			    							a.start = newstart;
+			    							a.stop = newstop;
+			    						}
+			    					} else {
+			    						System.err.println("empt");
+			    					}
+			    				}
 				    			
 			    				/*ByteArrayOutputStream	baos = new ByteArrayOutputStream();
 				    			int r = is.read();
@@ -3960,6 +4007,123 @@ public class JavaFasta extends JApplet {
 				c.repaint();
 			}
 		});
+		
+		view.add( new AbstractAction("Physical mapping") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				JFrame frame = new JFrame();
+				frame.setDefaultCloseOperation( JFrame.DISPOSE_ON_CLOSE );
+				frame.setSize(800, 400);
+				
+				int maxseql = 0;
+				for( Sequence seq : serifier.lseq ) {
+					maxseql = Math.max( seq.length(), maxseql );
+				}
+				final int maxseqlen = Math.max(1, maxseql);
+				
+				JComponent c = new JComponent() {
+					public void paintComponent( Graphics g ) {
+						Graphics2D g2 = (Graphics2D)g;
+						g2.setColor( Color.white );
+						g2.fillRect(0, 0, this.getWidth(), this.getHeight());
+						g2.setColor( Color.darkGray );
+						int y = 0;
+						for( Sequence seq : serifier.lseq ) {
+							for( int i = 0; i < maxseqlen; i++ ) {
+								char c = seq.charAt(i);
+								if( c != '-' && c != ' ' ) {
+									Object inanno = null;
+									if( seq.annset != null ) for( Annotation a : seq.annset ) {
+										if( i >= a.start && i <= a.stop ) {
+											inanno = (Color)a.color;
+											break;
+										}
+									}
+									
+									int drawi = (i*1000)/maxseqlen;
+									if( inanno != null && inanno instanceof Color ) {
+										g2.setColor( (Color)inanno );
+										g2.drawLine(drawi, y*20+5, drawi, y*20+15);
+									} else {
+										g2.setColor( Color.darkGray );
+										g2.drawLine(drawi, y*20+9, drawi, y*20+11);
+									}
+								}
+							}
+							y++;
+						}
+					}
+				};
+				int w = 1000; //serifier.lseq.get(0).length();
+				int h = 20*serifier.lseq.size();
+				Dimension dim = new Dimension(w, h);
+				c.setPreferredSize(dim);
+				c.setSize( dim );
+				JScrollPane pane = new JScrollPane( c );
+				frame.add( pane );
+				
+				frame.setVisible(true);
+			}
+		});
+		view.add( new AbstractAction("Mummer") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				Path p = Paths.get("/Users/sigmar/in.mummer.fasta");
+				StringBuilder fasta = JavaFasta.this.getFasta();
+				try {
+					Files.write( p, fasta.toString().getBytes() );
+				} catch (IOException e2) {
+					e2.printStackTrace();
+				}
+				
+				NativeRun nrun = new NativeRun();
+				List<String> commandsList = new ArrayList<String>( Arrays.asList( new String[] {"/usr/local/Cellar/mummer/3.23/libexec/mummer", "-maxmatch", "-n", "-l", "30", "/Users/sigmar/in.mummer.fasta", "/Users/sigmar/in.mummer.fasta"} ) );
+				
+				final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+				//Path pout = Paths.get("/Users/sigmar/pout.mummer");
+				List cmds = new ArrayList<Object>();
+				cmds.add( new Object[] {null, baos, null} );
+				cmds.add( commandsList );
+				
+				Runnable run = new Runnable() {
+					@Override
+					public void run() {
+						String res = baos.toString();
+						
+						boolean rev = false;
+						String[] lines = res.split("\n");
+						for( String line : lines ) {
+							if( line.startsWith(">") ) {
+								rev = line.contains("Reverse");
+							} else {
+								String trim = line.trim();
+								String[] split = trim.split("[\t ]+");
+								if( !split[1].equals(split[2]) ) {
+									String seqname = split[0];
+									int start = Integer.parseInt(split[1]);
+									int len = Integer.parseInt(split[3]);
+									
+									Sequence seq = serifier.mseq.get(seqname);
+									Annotation ann = new Annotation( seq, start, start+len, rev ? -1 : 1, seq == null ? seqname : seq.getSubstring(start, start+len, 1) );
+									ann.type = "mummer";
+									ann.color = rev ? Color.pink : Color.cyan;
+									serifier.lann.add( ann );
+								}
+							}
+						}
+						
+						atable.tableChanged( new TableModelEvent( atable.getModel() ) );
+					}
+				};
+				Object[] cont = new Object[] {null, null, null};
+				try {
+					nrun.runProcessBuilder("Mummer", cmds, run, cont, false);
+				} catch (IOException e1) {
+					e1.printStackTrace();
+				}
+			}
+		});
+		view.addSeparator();
 		view.add( new AbstractAction("Reverse complement") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -4269,6 +4433,53 @@ public class JavaFasta extends JApplet {
 						seq.append( c == null ? '-' : c );
 					}
 					jf.serifier.addSequence(seq);
+				}
+				jf.updateView();
+				
+				frame.setVisible( true );
+			}
+		});
+		file.add( new AbstractAction("Flanking sequences") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				JFrame	frame = new JFrame();
+				frame.setDefaultCloseOperation( JFrame.DISPOSE_ON_CLOSE );
+				frame.setSize(800, 600);
+				JavaFasta	jf = new JavaFasta();
+				jf.initGui( frame );
+				
+				Map<Sequence,List<Annotation>> mann = new HashMap<Sequence,List<Annotation>>();
+				int[] rr = atable.getSelectedRows();
+				for( int r : rr ) {
+					int i = atable.convertRowIndexToModel(r);
+					Annotation ann = serifier.lann.get(i);
+					
+					List<Annotation> alist;
+					if( mann.containsKey(ann.seq) ) {
+						alist = mann.get( ann.seq );
+					} else {
+						alist = new ArrayList<Annotation>();
+						mann.put(ann.seq, alist);
+					}
+					alist.add( ann );
+				}
+				
+				for( Sequence seq : mann.keySet() ) {
+					List<Annotation> alist = mann.get(seq);
+					Collections.sort( alist );
+					for( int i = 0; i < alist.size()-1; i++ ) {
+						Annotation a = alist.get(i);
+						Annotation na = alist.get(i+1);
+						
+						Sequence nseq = new Sequence( a.seq.getName()+"-CRISPR-"+a.start, serifier.mseq );
+						
+						if( a.stop+1 > na.start-1 ) {
+							System.err.println();
+						}
+						
+						nseq.append( a.seq.getSubstring(a.stop+1, na.start-1, 1) );
+						jf.serifier.addSequence(nseq);
+					}
 				}
 				jf.updateView();
 				
@@ -5441,7 +5652,7 @@ public class JavaFasta extends JApplet {
 							
 							int rx = x-w;
 							int ry = y-w;
-							if( err == 0 ) {
+							if( err == -1 ) {
 								String secstr = second.getSubstring(offset, offset+y, 1);
 								for( int i = 0; i < rx; i++ ) {
 									int ind = i+offset;
@@ -5469,53 +5680,116 @@ public class JavaFasta extends JApplet {
 									}
 								}
 							} else {
+								Annotation rann = null;
+								
 								for( int i = 0; i < rx; i++ ) {
+									Annotation fann = null;
 									System.err.println( i + " of " + rx );
 									for( int k = 0; k < ry; k++ ) {
-										int count = 0;
-										int rcount = 0;
-										for( int v = 0; v < w; v++ ) {
-											char c = first.getCharAt(i+v+offset);
-											char sc = second.getCharAt(k-v+w-1+offset);
-											if( c == second.getCharAt(k+v+offset) ) count++;
+										if( i != k ) {
+											int count = 0;
+											int rcount = 0;
+											for( int v = 0; v < w; v++ ) {
+												char c = first.getCharAt(i+v+offset);
+												char sc = second.getCharAt(k-v+w-1+offset);
+												if( c == second.getCharAt(k+v+offset) ) count++;
+												
+												Character rC = Sequence.rc.get( sc );
+												
+												/*if( rC == null ) {
+													System.err.println();
+												}*/
+												
+												char rc = rC;
+												if( c == rc ) rcount++;
+											}
 											
-											Character rC = Sequence.rc.get( sc );
-											
-											/*if( rC == null ) {
-												System.err.println();
+											if( w - count <= err ) {
+												if( /*rann == null &&*/ fann == null ) {
+													fann = new Annotation( first,i,i+w,1, second.getSubstring(i, i+w, 1) );
+												}
+												
+												int x = (ix*i)/rx;
+												int y = (iy*k)/ry;
+												if( x >= 0 && x < bi.getWidth() && y >= 0 && y < bi.getHeight() ) {
+													bi.setRGB(x, y, 0xFF000000);
+													//bi.setRGB(y, x, 0xFF000000);
+												}
+											} /*else {
+												if( fann != null && fann.stop - fann.start > 15 ) {
+													fann.seq = first;
+													serifier.lann.add( fann );
+												}
+												fann = null;
 											}*/
 											
-											char rc = rC;
-											if( c == rc ) rcount++;
-										}
-										if( w - count <= err ) {
-											int x = (ix*i)/rx;
-											int y = (iy*k)/ry;
-											if( x >= 0 && x < bi.getWidth() && y >= 0 && y < bi.getHeight() ) bi.setRGB(x, y, 0xFF000000);
-										}
-										
-										if( w - rcount <= err ) {
-											int x = (ix*i)/rx;
-											int y = (iy*k)/ry;
-											if( x >= 0 && x < bi.getWidth() && y >= 0 && y < bi.getHeight() ) bi.setRGB(x, y, 0xFFFF0000);
+											if( w - rcount <= err ) {
+												if( /*rann == null &&*/ fann == null ) {
+													fann = new Annotation( first,i,i+w,1, first.getSubstring(i, i+w, -1) );
+												}
+												
+												int x = (ix*i)/rx;
+												int y = (iy*k)/ry;
+												if( x >= 0 && x < bi.getWidth() && y >= 0 && y < bi.getHeight() ) {
+													bi.setRGB(x, y, 0xFFFF0000);
+													//bi.setRGB(y, x, 0xFFFF0000);
+												}
+											} /*else {
+												if( rann != null && rann.stop - rann.start > 15 ) {
+													rann.seq = first;
+													serifier.lann.add( rann );
+												}
+												rann = null;
+											}*/
 										}
 									}
+									
+									if( fann != null ) {
+										if( rann != null && i-rann.start == rann.stop-rann.start-w+1 ) {
+											rann.stop++;
+										} else {
+											serifier.lann.add( fann );
+											first.addAnnotation( fann );
+											fann.color = Color.cyan;
+											rann = fann;
+										}
+									} else rann = null;
 								}
 							}
 							
+							List<Annotation> lann = new ArrayList<Annotation>();
 							int[] rr = atable.getSelectedRows();
-							g2.setColor( Color.green );
+							//g2.setColor( Color.green );
 							for( int r : rr ) {
 								int m = atable.convertRowIndexToModel(r);
 								Annotation a = serifier.lann.get(m);
+								lann.add( a );
+							}
+							g2.setColor( Color.green );
+							Collections.sort( lann );
+							for( Annotation a : lann ) {
 								int start = iy*(a.start-offset)/ry;
 								int stop = iy*(a.stop-offset)/ry;
 								
 								if( start < ix && stop > 0 ) {
+									if( g2.getColor() == Color.green ) g2.setColor( Color.darkGray );
+									else g2.setColor( Color.green );
 									g2.drawLine(start, start, stop, stop);
 								}
 							}
+							
+							//g2.setColor( Color.magenta );
+							//g2.fillRect(10, 10, 90, 90);
+							
 							g2.dispose();
+							
+							/*for( int i = 20; i < 90; i++) {
+								for( int k = 10; k < 100; k++) {
+									bi.setRGB(i, k, 0xFFaaaa00);
+								}
+							}*/
+							
+							atable.tableChanged( new TableModelEvent( atable.getModel() ) );
 							
 							JComponent	comp = new JComponent() {
 								public void paintComponent( Graphics g ) {
@@ -6053,6 +6327,144 @@ public class JavaFasta extends JApplet {
 		
 		JPopupMenu	apopup = new JPopupMenu();
 		atable.setComponentPopupMenu( apopup );
+		apopup.add( new AbstractAction("Delete") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				Set<Annotation> remannset = new HashSet<Annotation>();
+				int[] rr = atable.getSelectedRows();
+				for( int r : rr ) {
+					int i = atable.convertRowIndexToModel(r);
+					
+					Annotation a = serifier.lann.get(i);
+					remannset.add( a );
+					
+					// right?
+					//a.seq.removeAnnotation( a );
+				}
+				serifier.lann.removeAll( remannset );
+				atable.tableChanged( new TableModelEvent(atable.getModel() ) );
+			}
+		});
+		apopup.add( new AbstractAction("Delete from sequence") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				Set<Annotation> remannset = new HashSet<Annotation>();
+				int[] rr = atable.getSelectedRows();
+				for( int r : rr ) {
+					int i = atable.convertRowIndexToModel(r);
+					
+					Annotation a = serifier.lann.get(i);
+					remannset.add( a );
+					
+					a.seq.removeAnnotation( a );
+				}
+				serifier.lann.removeAll( remannset );
+				atable.tableChanged( new TableModelEvent(atable.getModel() ) );
+			}
+		});
+		apopup.addSeparator();
+		apopup.add( new AbstractAction("Retain CRISPR") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				Set<Annotation> allset = new HashSet<Annotation>();
+				
+				Map<Sequence, List<Annotation>> mann = new HashMap<Sequence, List<Annotation>>();
+				int[] rr = atable.getSelectedRows();
+				for( int r : rr ) {
+					int i = atable.convertRowIndexToModel(r);
+					Annotation ann = serifier.lann.get(i);
+				//for( Annotation ann : serifier.lann ) {
+					List<Annotation> lann;
+					if( mann.containsKey(ann.seq) ) {
+						lann = mann.get(ann.seq);
+					} else {
+						lann = new ArrayList<Annotation>();
+						mann.put( ann.seq, lann );
+					}
+					lann.add( ann );
+					allset.add( ann );
+					
+					//mann.put( ann.seq, ann );
+				}
+				
+				Set<Annotation> remannset = new HashSet<Annotation>();
+				for( Sequence seq : mann.keySet() ) {
+					List<Annotation> lann = mann.get( seq );
+					Collections.sort(lann);
+					
+					Set<Annotation> remo = new HashSet<Annotation>();
+					Annotation first = lann.get(0);
+					for( int i = 1; i < lann.size(); i++ ) {
+						Annotation second = lann.get(i);
+						
+						if( second.start < first.stop ) {
+							first.stop = Math.max(first.stop, second.stop);
+							remo.add( second );
+						} else first = second;
+					}
+					lann.removeAll( remo );
+					
+					for( int i = 0; i < lann.size()-1; i++ ) {
+						first = lann.get(i);
+						Annotation second = lann.get(i+1);
+						
+						if( first.stop-first.start < 50 && second.stop-second.start < 50 && second.start-first.stop > 15 && second.start-first.stop < 50 ) {
+							boolean similar = false;
+							String minna = first.name.length() < second.name.length() ? first.name : second.name;
+							String meira = minna == first.name ? second.name : first.name;
+							
+							minna = minna.toUpperCase();
+							meira = meira.toUpperCase();
+							
+							for( int u = 0; u < meira.length()-20; u++ ) {
+								int count = 0;
+								for( int m = 0; m < Math.min(meira.length()-u,minna.length()); m++ ) {
+									if( minna.charAt(m) == meira.charAt(m+u) ) count++;
+								}
+								
+								if( count >= 20 ) {
+									similar = true;
+									break;
+								}
+							}
+							
+							if( !similar ) for( int u = 0; u < minna.length()-20; u++ ) {
+								int count = 0;
+								for( int m = 0; m < Math.min(minna.length()-u,meira.length()); m++ ) {
+									if( minna.charAt(m) == meira.charAt(m+u) ) count++;
+								}
+								
+								if( count >= 20 ) {
+									similar = true;
+									break;
+								}
+							}
+							
+							if( similar ) {
+								remannset.add( first );
+								remannset.add( second );
+								i++;
+							}
+						}
+					}
+				}
+				
+				allset.removeAll( remannset );
+				/*int[] rr = atable.getSelectedRows();
+				for( int r : rr ) {
+					int i = atable.convertRowIndexToModel(r);
+					
+					Annotation a = serifier.lann.get(i);
+					remannset.add( a );
+					
+					a.seq.removeAnnotation( a );
+				}*/
+				
+				serifier.lann.removeAll( allset );
+				atable.tableChanged( new TableModelEvent(atable.getModel() ) );
+			}
+		});
+		apopup.addSeparator();
 		apopup.add( new AbstractAction("Export Annotation") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -6115,7 +6527,7 @@ public class JavaFasta extends JApplet {
 
 			@Override
 			public int getColumnCount() {
-				return 6;
+				return 7;
 			}
 
 			@Override
@@ -6126,6 +6538,7 @@ public class JavaFasta extends JApplet {
 				else if( columnIndex == 3 ) return "Group";
 				else if( columnIndex == 4 ) return "Start";
 				else if( columnIndex == 5 ) return "Stop";
+				else if( columnIndex == 6 ) return "Length";
 				else return "";
 			}
 
@@ -6143,12 +6556,20 @@ public class JavaFasta extends JApplet {
 			@Override
 			public Object getValueAt(int rowIndex, int columnIndex) {
 				Annotation ann = serifier.lann.get( rowIndex );
-				if( columnIndex == 0 ) return ann.name+"_"+ann.group;
-				else if( columnIndex == 1 ) return ann.name;
+				if( columnIndex == 0 ) {
+					if( ann instanceof Tegeval ) {
+						Tegeval tv = (Tegeval)ann;
+						GeneGroup gg = tv.getGene().getGeneGroup();
+						if( gg != null ) return gg.getCommonName();
+					}
+					return ann.name;
+				}
+				else if( columnIndex == 1 ) return ann.seq != null ? ann.seq.getName() : "";
 				else if( columnIndex == 2 ) return ann.type+"_"+ann.ori;
 				else if( columnIndex == 3 ) return ann.group;
 				else if( columnIndex == 4 ) return ann.start;
 				else if( columnIndex == 5 ) return ann.stop;
+				else if( columnIndex == 6 ) return ann.stop-ann.start;
 				else return "";
 			}
 

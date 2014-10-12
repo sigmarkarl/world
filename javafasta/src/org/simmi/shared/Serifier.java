@@ -38,6 +38,8 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.zip.GZIPInputStream;
 
+import sun.nio.cs.ext.GBK;
+
 public class Serifier {
 	public Serifier() {
 		super();
@@ -72,6 +74,14 @@ public class Serifier {
 			this.name = name;
 		}
 	};*/
+	
+	public List<Sequence> readGBK( BufferedReader br ) {
+		List<Sequence> ret = new ArrayList<Sequence>();
+		
+		
+		
+		return ret;
+	}
 	
 	public List<Sequence> readSequences( BufferedReader br ) throws IOException {
 		List<Sequence> ret = new ArrayList<Sequence>();

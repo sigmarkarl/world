@@ -54,6 +54,15 @@ public class Annotation implements Comparable<Object> {
 		this.start = start;
 		this.stop = stop;
 		this.ori = ori;
+		
+		/*if( seq != null ) {
+			seq.addAnnotation( this );
+		}*/
+		//if( mann != null ) mann.put( name, this );
+	}
+	
+	public String getName() {
+		return name;
 	}
 	
 	public Sequence getContig() {

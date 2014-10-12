@@ -3383,7 +3383,7 @@ public class DataTable extends JApplet implements ClipboardOwner {
 		fasttreemenu.add( new AbstractAction("FastTree current view") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				String fasta = currentjavafasta.getFasta( currentjavafasta.getSequences() );
+				StringBuilder fasta = currentjavafasta.getFasta( currentjavafasta.getSequences() );
 				Object[] objs = { "f"+fasta.toString() };
 				JSObject win = JSObject.getWindow( DataTable.this );
 				win.call("fasttree", objs);
