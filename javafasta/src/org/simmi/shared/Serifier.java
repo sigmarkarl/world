@@ -75,10 +75,23 @@ public class Serifier {
 		}
 	};*/
 	
-	public List<Sequence> readGBK( BufferedReader br ) {
-		List<Sequence> ret = new ArrayList<Sequence>();
+	public List<Sequence> readGBK( String name, StringBuilder sb ) throws IOException {
+		//GBK2AminoFasta gbk = new GBK2AminoFasta();
+		Map<String,StringBuilder> filetextmap = new HashMap<String,StringBuilder>();
+		filetextmap.put(name, sb);
 		
+		Map<String,Path> annoset = new HashMap<String,Path>();
+		annoset.put("CDS", null);
+		annoset.put("tRNA", null);
+		annoset.put("rRNA", null);
+		annoset.put("mRNA", null);
 		
+		List<Sequence> ret = GBK2AminoFasta.handleText(filetextmap, annoset, null, null, null);
+		for( Sequence seq : ret ) {
+			for( Annotation a : seq.annset ) {
+				this.addAnnotation(a);
+			}
+		}
 		
 		return ret;
 	}
@@ -120,11 +133,8 @@ public class Serifier {
 			writeFasta( tlseq, fw, null, true);
 			fw.close();
 
-<<<<<<< HEAD
-			ProcessBuilder pb = new ProcessBuilder("fasttree", "tmp.fasta");
-=======
+			//ProcessBuilder pb = new ProcessBuilder("fasttree", "tmp.fasta");
 			ProcessBuilder pb = new ProcessBuilder("/usr/local/bin/FastTree");
->>>>>>> 6e57676c6c6c3f203206429fca5edaa39e454432
 			pb.directory(tmpdir);
 			Process p = pb.start();
 			OutputStream os = p.getOutputStream();

@@ -1056,9 +1056,30 @@ public class JavaFasta extends JApplet {
 		c.updateCoords();
 	}
 	
-	public void importGbkReader( BufferedReader br ) throws IOException {
-		List<Sequence> lseq = serifier.readGBK( br );
-		br.close();
+	public void importGbkReader( String name, StringBuilder sb ) throws IOException {
+		List<Sequence> seqlist = serifier.readGBK( name, sb );
+		
+		if( seqlist != null && seqlist.size() > 0 ) {
+			Sequence seq = seqlist.get(0);
+			serifier.lgseq.add( seq );
+			seq.setId( "paste" );
+			
+			for( Sequence s : seqlist ) {
+				//s.consensus = seq;
+				s.setId( "paste" );
+				serifier.lseq.add( s );
+				serifier.mseq.put( s.name, s );
+				
+				if( s != null ) {
+					if( s.getEnd() > serifier.getMax() ) serifier.setMax( s.getEnd() );
+				}
+				/*if( s != null ) {
+					if( s.length() > serifier.getMax() ) serifier.setMax( s.length() );
+				}*/
+			}
+			
+			serifier.gseq.put( "paste", seqlist );
+		}
 	}
 	
 	public void importReader( BufferedReader br ) throws IOException {
@@ -1096,9 +1117,6 @@ public class JavaFasta extends JApplet {
 		} else if( name.endsWith(".ace") ) {
 			BufferedReader	br = new BufferedReader( new InputStreamReader(is) );
 			importAceReader( br );
-		} else if( name.endsWith(".gbk") || name.endsWith(".gb") ) {
-			BufferedReader	br = new BufferedReader( new InputStreamReader(is) );
-			importGbkReader( br );
 		} else {
 			BufferedReader	br = new BufferedReader( new InputStreamReader(is) );
 			importReader( br );
@@ -1109,6 +1127,10 @@ public class JavaFasta extends JApplet {
 		if( name.endsWith(".psi") ) {
 			List<String> lines = Files.readAllLines(path);
 			importPsiReader( lines );
+		} else if( name.endsWith(".gbk") || name.endsWith(".gb") ) {
+			byte[] bb = Files.readAllBytes( path );
+			StringBuilder sb = new StringBuilder( new String(bb) );
+			importGbkReader( name, sb );
 		} else importFile( name, Files.newInputStream(path) );
 	}
 	

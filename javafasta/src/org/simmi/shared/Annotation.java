@@ -8,6 +8,7 @@ import java.util.Set;
 public class Annotation implements Comparable<Object> {
 	public Sequence			seq;
 	public String			name;
+	public String			id;
 	public StringBuilder	desc;
 	public String			type;
 	public String			group;
@@ -19,6 +20,10 @@ public class Annotation implements Comparable<Object> {
 	
 	public Annotation() {
 		
+	}
+	
+	public Annotation( String type ) {
+		this.type = type;
 	}
 	
 	public Annotation( Sequence seq, String name, Object color, int start, int stop, int ori, Map<String,Annotation> mann ) {
@@ -63,6 +68,10 @@ public class Annotation implements Comparable<Object> {
 	
 	public String getName() {
 		return name;
+	}
+	
+	public String getType() {
+		return type;
 	}
 	
 	public Sequence getContig() {
