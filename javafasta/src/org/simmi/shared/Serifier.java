@@ -120,7 +120,11 @@ public class Serifier {
 			writeFasta( tlseq, fw, null, true);
 			fw.close();
 
+<<<<<<< HEAD
+			ProcessBuilder pb = new ProcessBuilder("fasttree", "tmp.fasta");
+=======
 			ProcessBuilder pb = new ProcessBuilder("/usr/local/bin/FastTree");
+>>>>>>> 6e57676c6c6c3f203206429fca5edaa39e454432
 			pb.directory(tmpdir);
 			Process p = pb.start();
 			OutputStream os = p.getOutputStream();
@@ -140,6 +144,7 @@ public class Serifier {
 			baos.close();
 
 			ret = baos.toString();
+			System.err.println( ret );
 			/*Node n = treeutil.parseTreeRecursive( tree, false );
 			treeutil.setLoc( 0 );
 			n.nodeCalcMap( nmap );*/
@@ -1939,18 +1944,20 @@ public class Serifier {
 			
 			int count = 0;
 			for( Sequence seq2 : this.lseq ) {
-				String seqstr2 = seq2.getName();
-				
-				if( seqstr.compareTo( seqstr2 ) == 0 ) {
-					int curi = seqstr2.indexOf('[');
-					if( curi == -1 ) {
-						seqstr2 += "_"+(++count);
-					} else {
-						seqstr2 = seqstr2.substring(0,curi)+"_"+(++count)+seqstr2.substring(curi, seqstr2.length());
+				if( seq != seq2 ) {
+					String seqstr2 = seq2.getName();
+					
+					if( seqstr.compareTo( seqstr2 ) == 0 ) {
+						int curi = seqstr2.indexOf('[');
+						if( curi == -1 ) {
+							seqstr2 += "_"+(++count);
+						} else {
+							seqstr2 = seqstr2.substring(0,curi)+"_"+(++count)+seqstr2.substring(curi, seqstr2.length());
+						}
+						seq2.setName( seqstr2 );
+						//removee.add( seq2 );
+						//removei.add( n );
 					}
-					seq2.setName( seqstr2 );
-					//removee.add( seq2 );
-					//removei.add( n );
 				}
 			}
 		}
