@@ -1083,6 +1083,10 @@ public class JavaFasta extends JApplet {
 	}
 	
 	public void importReader( BufferedReader br ) throws IOException {
+		importReader( null, br );
+	}
+	
+	public void importReader( String fname, BufferedReader br ) throws IOException {
 		List<Sequence> seqlist = serifier.readSequences( br );
 		br.close();
 		
@@ -1092,6 +1096,7 @@ public class JavaFasta extends JApplet {
 			seq.setId( "paste" );
 			
 			for( Sequence s : seqlist ) {
+				if( fname != null ) s.setName( fname+"-"+s.getName() );
 				//s.consensus = seq;
 				s.setId( "paste" );
 				serifier.lseq.add( s );
@@ -2778,7 +2783,7 @@ public class JavaFasta extends JApplet {
 			updateView();
 		} else {
 			BufferedReader	br = new BufferedReader( new FileReader( f ) );
-			importReader( br );
+			importReader( f.getName(), br );
 		}
 	}
 	
