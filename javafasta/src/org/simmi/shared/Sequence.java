@@ -395,6 +395,50 @@ public class Sequence implements Comparable<Sequence> {
 	public boolean				edited = false;
 	public boolean				selected = false;
 	
+	public static int specCheck( String str ) {
+		int i = str.indexOf("uid");
+		if( i == -1 ) {
+			i = str.indexOf("NMX");
+		}
+		if( i == -1 ) {
+			i = str.indexOf("33923_K677DRAFT");
+		}
+		if( i == -1 ) {
+			i = str.indexOf("H328");
+		}
+		if( i == -1 ) {
+			i = str.indexOf("Tb_T");
+		}
+		return i;
+	}
+	
+	public static String getSpec( String name ) {
+		String spec = "";
+		int i = specCheck( name );
+		
+		if( i == -1 ) {
+			i = name.indexOf("contig");
+			if( i == -1 ) {
+				i = name.indexOf("scaffold");
+			}
+			if( i == -1 ) {
+				i = name.lastIndexOf('_')+1;
+				System.err.println( name );
+			}
+			if( i <= 0 ) {
+				spec = name.substring(0,4);
+			} else spec = name.substring(0, i-1);
+		} else {
+			i = name.indexOf("_", i+1);
+			spec = name.substring(0, i);
+		}
+		return spec;
+	}
+	
+	public String getSpec() {
+		return getSpec( getName() );
+	}
+	
 	public boolean isReverse() {
 		return revcomp == -1;
 	}

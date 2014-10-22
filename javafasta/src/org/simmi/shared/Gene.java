@@ -162,6 +162,9 @@ public class Gene {
 				i = lname.indexOf("uid");
 			}
 			
+			if( i == -1 ) {
+				System.err.println();
+			}
 			//int u = lname.lastIndexOf('_');
 			//contigstr = lname.substring(0, u);
 			return lname.substring(0, i-1);

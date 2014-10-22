@@ -84,6 +84,21 @@ public class Contig extends Sequence {
 		return 0;
 	}
 	
+	public int getNumberOfSubContigs() {
+		int count = 0;
+		int i = sb.indexOf("NNNNN");
+		if( i != -1 ) count++;
+		
+		while( i != -1 ) {
+			int k = sb.indexOf("NNNNN", i+5);
+			if( k > i+100 ) {
+				count++;
+			}
+			i = k;
+		}
+		return count;
+	}
+	
 	public Contig( String name, StringBuilder sb ) {
 		this( name );
 		setSequenceString( sb );
@@ -118,46 +133,6 @@ public class Contig extends Sequence {
 		}
 		System.err.println( from.getGene().getSpecies() + "  " + from.getGene() );
 		return null;
-	}
-	
-	public static int specCheck( String str ) {
-		int i = str.indexOf("uid");
-		if( i == -1 ) {
-			i = str.indexOf("NMX");
-		}
-		if( i == -1 ) {
-			i = str.indexOf("33923_K677DRAFT");
-		}
-		if( i == -1 ) {
-			i = str.indexOf("H328");
-		}
-		if( i == -1 ) {
-			i = str.indexOf("Tb_T");
-		}
-		return i;
-	}
-	
-	public String getSpec() {
-		String spec = "";
-		int i = specCheck( getName() );
-		
-		if( i == -1 ) {
-			i = getName().indexOf("contig");
-			if( i == -1 ) {
-				i = getName().indexOf("scaffold");
-			}
-			if( i == -1 ) {
-				i = getName().lastIndexOf('_')+1;
-				System.err.println( getName() );
-			}
-			if( i <= 0 ) {
-				spec = getName().substring(0,4);
-			} else spec = getName().substring(0, i-1);
-		} else {
-			i = getName().indexOf("_", i+1);
-			spec = getName().substring(0, i);
-		}
-		return spec;
 	}
 	
 	/*@Override
