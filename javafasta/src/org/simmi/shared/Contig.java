@@ -131,7 +131,7 @@ public class Contig extends Sequence {
 				if( i > 0 ) return (Tegeval)annset.get( i-1 );
 			}
 		}
-		System.err.println( from.getGene().getSpecies() + "  " + from.getGene() );
+		//System.err.println( from.getGene().getSpecies() + "  " + from.getGene() );
 		return null;
 	}
 	

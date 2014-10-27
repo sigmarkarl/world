@@ -562,7 +562,7 @@ public class JavaFasta extends JApplet {
 			bg.fillRect(0, 0, bi.getWidth(), bi.getHeight());
 			bg.setColor( Color.green );
 			for( int r = 0; r < table.getRowCount(); r++ ) {
-				int i = table.convertRowIndexToModel(r);				
+				int i = table.convertRowIndexToModel(r);
 				if( serifier.getMax() != serifier.getMin() && i < serifier.lseq.size() ) {
 					Sequence s = serifier.lseq.get(i);
 					int x = ((s.getRealStart()-serifier.getMin())*bi.getWidth())/serifier.getDiff();
@@ -671,7 +671,19 @@ public class JavaFasta extends JApplet {
 				if( collapseView && prevx != vr.x ) {
 					filterset.clear();
 					
-					
+					/*Sequence prev = null;
+					Sequence next = null;
+					for( Sequence s : serifier.lgseq ) {
+						if( (s.getStart()-serifier.getMin())*cw < vr.x+vr.width && (s.getEnd()-serifier.getMin())*cw > vr.x ) {
+							filterset.add( s.index );
+							List<Sequence> lgseq = serifier.gseq.get(s.name);
+							if( lgseq != null ) for( Sequence ss : lgseq ) {
+								if( (ss.getStart()-serifier.getMin())*cw < vr.x+vr.width && (ss.getEnd()-serifier.getMin())*cw > vr.x ) {
+									filterset.add( ss.index );
+								}
+							}
+						}
+					}*/
 					
 					for( Sequence s : serifier.lseq ) {
 						if( (s.getStart()-serifier.getMin())*cw < vr.x+vr.width && (s.getEnd()-serifier.getMin())*cw > vr.x ) {
@@ -980,6 +992,7 @@ public class JavaFasta extends JApplet {
 		int lastEnd = 0;
 		Sequence s = null;
 		
+		List<Sequence> ctgs = new ArrayList<Sequence>();
 		//int k = 0;
 		while( line != null ) {
 			if( line.startsWith("CO")) {
@@ -991,7 +1004,8 @@ public class JavaFasta extends JApplet {
 				cseq.setId( consensus );
 				cseq.setStart( lastStart );
 				
-				serifier.lseq.add( cseq );
+				//serifier.lseq.add( cseq );
+				ctgs.add( cseq );
 				serifier.mseq.put( cseq.name, cseq );
 				serifier.lgseq.add( cseq );
 				
@@ -1033,6 +1047,10 @@ public class JavaFasta extends JApplet {
 			line = br.readLine();
 		}
 		br.close();
+		
+		for( Sequence seq : ctgs ) {
+			serifier.lseq.add( 0, seq );
+		}
 	}
 	
 	public void importPsiReader( List<String> lines ) throws IOException {
@@ -2840,7 +2858,6 @@ public class JavaFasta extends JApplet {
 
 					@Override
 					public boolean isCellEditable(int rowIndex, int columnIndex) {
-						// TODO Auto-generated method stub
 						return false;
 					}
 
@@ -2865,6 +2882,17 @@ public class JavaFasta extends JApplet {
 				gtable.setModel( tm );
 				JScrollPane	gscroll = new JScrollPane( gtable );
 				JOptionPane.showMessageDialog(null, gscroll);
+				
+				int o = 0;
+				for( int r = 0; r < gtable.getRowCount(); r++ ) {
+					Sequence gseq = (Sequence)gtable.getValueAt(r, 0);
+					List<Sequence> lgseq = serifier.gseq.get( gseq.name );
+					for( Sequence seq : lgseq ) {
+						seq.setStart( seq.getStart() + (o-gseq.getStart()) );
+					}
+					gseq.setStart( o );
+					o += gseq.length();
+				}
 			}
 		};
 		group.add( reorderGroups );
