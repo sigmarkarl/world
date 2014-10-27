@@ -26,6 +26,7 @@ import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -561,7 +562,7 @@ public class JavaFasta extends JApplet {
 			bg.fillRect(0, 0, bi.getWidth(), bi.getHeight());
 			bg.setColor( Color.green );
 			for( int r = 0; r < table.getRowCount(); r++ ) {
-				int i = table.convertRowIndexToModel(r);				
+				int i = table.convertRowIndexToModel(r);
 				if( serifier.getMax() != serifier.getMin() && i < serifier.lseq.size() ) {
 					Sequence s = serifier.lseq.get(i);
 					int x = ((s.getRealStart()-serifier.getMin())*bi.getWidth())/serifier.getDiff();
@@ -670,7 +671,19 @@ public class JavaFasta extends JApplet {
 				if( collapseView && prevx != vr.x ) {
 					filterset.clear();
 					
-					
+					/*Sequence prev = null;
+					Sequence next = null;
+					for( Sequence s : serifier.lgseq ) {
+						if( (s.getStart()-serifier.getMin())*cw < vr.x+vr.width && (s.getEnd()-serifier.getMin())*cw > vr.x ) {
+							filterset.add( s.index );
+							List<Sequence> lgseq = serifier.gseq.get(s.name);
+							if( lgseq != null ) for( Sequence ss : lgseq ) {
+								if( (ss.getStart()-serifier.getMin())*cw < vr.x+vr.width && (ss.getEnd()-serifier.getMin())*cw > vr.x ) {
+									filterset.add( ss.index );
+								}
+							}
+						}
+					}*/
 					
 					for( Sequence s : serifier.lseq ) {
 						if( (s.getStart()-serifier.getMin())*cw < vr.x+vr.width && (s.getEnd()-serifier.getMin())*cw > vr.x ) {
@@ -979,6 +992,7 @@ public class JavaFasta extends JApplet {
 		int lastEnd = 0;
 		Sequence s = null;
 		
+		List<Sequence> ctgs = new ArrayList<Sequence>();
 		//int k = 0;
 		while( line != null ) {
 			if( line.startsWith("CO")) {
@@ -990,7 +1004,8 @@ public class JavaFasta extends JApplet {
 				cseq.setId( consensus );
 				cseq.setStart( lastStart );
 				
-				serifier.lseq.add( cseq );
+				//serifier.lseq.add( cseq );
+				ctgs.add( cseq );
 				serifier.mseq.put( cseq.name, cseq );
 				serifier.lgseq.add( cseq );
 				
@@ -1032,6 +1047,10 @@ public class JavaFasta extends JApplet {
 			line = br.readLine();
 		}
 		br.close();
+		
+		for( Sequence seq : ctgs ) {
+			serifier.lseq.add( 0, seq );
+		}
 	}
 	
 	public void importPsiReader( List<String> lines ) throws IOException {
@@ -2839,7 +2858,6 @@ public class JavaFasta extends JApplet {
 
 					@Override
 					public boolean isCellEditable(int rowIndex, int columnIndex) {
-						// TODO Auto-generated method stub
 						return false;
 					}
 
@@ -2864,6 +2882,17 @@ public class JavaFasta extends JApplet {
 				gtable.setModel( tm );
 				JScrollPane	gscroll = new JScrollPane( gtable );
 				JOptionPane.showMessageDialog(null, gscroll);
+				
+				int o = 0;
+				for( int r = 0; r < gtable.getRowCount(); r++ ) {
+					Sequence gseq = (Sequence)gtable.getValueAt(r, 0);
+					List<Sequence> lgseq = serifier.gseq.get( gseq.name );
+					for( Sequence seq : lgseq ) {
+						seq.setStart( seq.getStart() + (o-gseq.getStart()) );
+					}
+					gseq.setStart( o );
+					o += gseq.length();
+				}
 			}
 		};
 		group.add( reorderGroups );
@@ -4095,58 +4124,103 @@ public class JavaFasta extends JApplet {
 		view.add( new AbstractAction("Mummer") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				Path p = Paths.get("/Users/sigmar/in.mummer.fasta");
-				StringBuilder fasta = JavaFasta.this.getFasta();
-				try {
-					Files.write( p, fasta.toString().getBytes() );
-				} catch (IOException e2) {
-					e2.printStackTrace();
+				Map<String,List<Sequence>> mseq = new HashMap<String,List<Sequence>>();
+				
+				for( Sequence seq : serifier.lseq ) {
+					String spec = seq.getSpec();
+					List<Sequence> lseq;
+					if( mseq.containsKey(spec) ) {
+						lseq = mseq.get(spec);
+					} else {
+						lseq = new ArrayList<Sequence>();
+						mseq.put(spec, lseq);
+					}
+					lseq.add( seq );
 				}
 				
-				NativeRun nrun = new NativeRun();
-				List<String> commandsList = new ArrayList<String>( Arrays.asList( new String[] {"/usr/local/Cellar/mummer/3.23/libexec/mummer", "-maxmatch", "-n", "-l", "30", "/Users/sigmar/in.mummer.fasta", "/Users/sigmar/in.mummer.fasta"} ) );
-				
-				final ByteArrayOutputStream baos = new ByteArrayOutputStream();
-				//Path pout = Paths.get("/Users/sigmar/pout.mummer");
-				List cmds = new ArrayList<Object>();
-				cmds.add( new Object[] {null, baos, null} );
-				cmds.add( commandsList );
-				
-				Runnable run = new Runnable() {
-					@Override
-					public void run() {
-						String res = baos.toString();
-						
-						boolean rev = false;
-						String[] lines = res.split("\n");
-						for( String line : lines ) {
-							if( line.startsWith(">") ) {
-								rev = line.contains("Reverse");
-							} else {
-								String trim = line.trim();
-								String[] split = trim.split("[\t ]+");
-								if( !split[1].equals(split[2]) ) {
-									String seqname = split[0];
-									int start = Integer.parseInt(split[1]);
-									int len = Integer.parseInt(split[3]);
-									
-									Sequence seq = serifier.mseq.get(seqname);
-									Annotation ann = new Annotation( seq, start, start+len, rev ? -1 : 1, seq == null ? seqname : seq.getSubstring(start, start+len, 1) );
-									ann.type = "mummer";
-									ann.color = rev ? Color.pink : Color.cyan;
-									serifier.lann.add( ann );
+				for( String spec : mseq.keySet() ) {
+					List<Sequence> lseq = mseq.get(spec);
+					
+					String pname = "/Users/sigmar/in."+spec+".fasta";
+					Path p = Paths.get(pname);
+					
+					try {
+						BufferedWriter bw = Files.newBufferedWriter(p);
+						serifier.writeFasta(lseq, bw, null);
+						bw.close();
+					} catch (IOException e2) {
+						e2.printStackTrace();
+					}
+					/*try {
+						Files.write( p, fasta.toString().getBytes() );
+					} catch (IOException e2) {
+						e2.printStackTrace();
+					}*/
+					
+					NativeRun nrun = new NativeRun();
+					List<String> commandsList = new ArrayList<String>( Arrays.asList( new String[] {"/usr/local/Cellar/mummer/3.23/libexec/mummer", "-maxmatch", "-n", "-l", "30", pname, pname} ) );
+					
+					final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+					//Path pout = Paths.get("/Users/sigmar/pout.mummer");
+					List cmds = new ArrayList<Object>();
+					cmds.add( new Object[] {null, baos, null} );
+					cmds.add( commandsList );
+					
+					Runnable run = new Runnable() {
+						@Override
+						public void run() {
+							String res = baos.toString();
+							
+							String name = null;
+							boolean rev = false;
+							String[] lines = res.split("\n");
+							for( String line : lines ) {
+								if( line.startsWith(">") ) {
+									name = line.substring(1).trim();
+									rev = line.contains("Reverse");
+								} else {
+									String trim = line.trim();
+									String[] split = trim.split("[\t ]+");
+									if( split.length == 4 ) {
+										if( !split[1].equals(split[2]) ) {
+											String seqname = split[0];
+											int start = Integer.parseInt(split[1]);
+											int len = Integer.parseInt(split[3]);
+											
+											Sequence seq = serifier.mseq.get(seqname);
+											Annotation ann = new Annotation( seq, start, start+len, rev ? -1 : 1, seq == null ? seqname : seq.getSubstring(start, start+len, 1) );
+											ann.type = "mummer";
+											ann.color = rev ? Color.pink : Color.cyan;
+											serifier.lann.add( ann );
+										}
+									} else if( split.length == 3 ) {
+										if( !split[0].equals(split[1]) ) {
+											String seqname = name;
+											int start = Integer.parseInt(split[0]);
+											int len = Integer.parseInt(split[2]);
+											
+											Sequence seq = serifier.mseq.get(seqname);
+											if( seq == null ) {
+												System.err.println();
+											}
+											Annotation ann = new Annotation( seq, start, start+len, rev ? -1 : 1, seq == null ? seqname : seq.getSubstring(start, start+len, 1) );
+											ann.type = "mummer";
+											ann.color = rev ? Color.pink : Color.cyan;
+											serifier.lann.add( ann );
+										}
+									}
 								}
 							}
+							
+							atable.tableChanged( new TableModelEvent( atable.getModel() ) );
 						}
-						
-						atable.tableChanged( new TableModelEvent( atable.getModel() ) );
+					};
+					Object[] cont = new Object[] {null, null, null};
+					try {
+						nrun.runProcessBuilder("Mummer", cmds, run, cont, false);
+					} catch (IOException e1) {
+						e1.printStackTrace();
 					}
-				};
-				Object[] cont = new Object[] {null, null, null};
-				try {
-					nrun.runProcessBuilder("Mummer", cmds, run, cont, false);
-				} catch (IOException e1) {
-					e1.printStackTrace();
 				}
 			}
 		});
@@ -4521,6 +4595,47 @@ public class JavaFasta extends JApplet {
 				} catch (IOException e1) {
 					e1.printStackTrace();
 				} catch (UnavailableServiceException e1) {
+					e1.printStackTrace();
+				}
+			}
+		});
+		file.add( new AbstractAction("Export flanking") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				try {
+					List<Sequence> lseq = new ArrayList<Sequence>();
+					for( String cons : serifier.gseq.keySet() ) {
+						Sequence 		parseq = serifier.mseq.get(cons);
+						List<Sequence> 	sseq = serifier.gseq.get(cons);
+						
+						for( Sequence s : sseq ) {
+							int diff = parseq.getStart() - s.getStart();
+							if( diff >= 50 ) {
+								Sequence nseq = new Sequence( parseq.name+"_left", null );
+								nseq.append( s.getSubstring(0, diff, 1) );
+								lseq.add( nseq );
+							}
+							
+							diff = s.getEnd() - parseq.getEnd();
+							if( diff >= 50 ) {
+								Sequence nseq = new Sequence( parseq.name+"_right", null );
+								nseq.append( s.getSubstring(s.length()-diff-1, s.length(), 1) );
+								lseq.add( nseq );
+							}
+						}
+					}
+					JFileChooser jfc = new JFileChooser();
+					if( jfc.showSaveDialog( parentApplet ) == JFileChooser.APPROVE_OPTION ) {
+						File f = jfc.getSelectedFile();
+	        		 //FileOutputStream fos = new FileOutputStream( f );
+	        		 //fos.write( baos.toByteArray() );
+	        		 
+	        		 	FileWriter fw = new FileWriter( f );
+	        		 	serifier.writeFasta( lseq, fw, null );
+	        		 	fw.close();
+					}
+				//exportFlanking( table, lseq );
+				} catch (IOException e1) {
 					e1.printStackTrace();
 				}
 			}
@@ -6397,22 +6512,44 @@ public class JavaFasta extends JApplet {
 				
 				Map<Sequence, List<Annotation>> mann = new HashMap<Sequence, List<Annotation>>();
 				int[] rr = atable.getSelectedRows();
-				for( int r : rr ) {
-					int i = atable.convertRowIndexToModel(r);
-					Annotation ann = serifier.lann.get(i);
-				//for( Annotation ann : serifier.lann ) {
-					List<Annotation> lann;
-					if( mann.containsKey(ann.seq) ) {
-						lann = mann.get(ann.seq);
-					} else {
-						lann = new ArrayList<Annotation>();
-						mann.put( ann.seq, lann );
+				if( rr != null && rr.length > 0 ) {
+					for( int r : rr ) {
+						int i = atable.convertRowIndexToModel(r);
+						Annotation ann = serifier.lann.get(i);
+					//for( Annotation ann : serifier.lann ) {
+						List<Annotation> lann;
+						if( mann.containsKey(ann.seq) ) {
+							lann = mann.get(ann.seq);
+						} else {
+							lann = new ArrayList<Annotation>();
+							mann.put( ann.seq, lann );
+						}
+						lann.add( ann );
+						allset.add( ann );
+						
+						//mann.put( ann.seq, ann );
 					}
-					lann.add( ann );
-					allset.add( ann );
-					
-					//mann.put( ann.seq, ann );
+				} else {
+					for( Annotation ann : serifier.lann ) {
+						if( ann == null ) {
+							System.err.println();
+						}
+						if( ann.type != null && ann.type.contains("mummer") ) {
+							List<Annotation> lann;
+							if( mann.containsKey(ann.seq) ) {
+								lann = mann.get(ann.seq);
+							} else {
+								lann = new ArrayList<Annotation>();
+								mann.put( ann.seq, lann );
+							}
+							lann.add( ann );
+							allset.add( ann );
+						}
+						
+						//mann.put( ann.seq, ann );
+					}
 				}
+				System.err.println( "reps " + allset.size() );
 				
 				Set<Annotation> remannset = new HashSet<Annotation>();
 				for( Sequence seq : mann.keySet() ) {
@@ -6458,7 +6595,7 @@ public class JavaFasta extends JApplet {
 							if( !similar ) for( int u = 0; u < minna.length()-20; u++ ) {
 								int count = 0;
 								for( int m = 0; m < Math.min(minna.length()-u,meira.length()); m++ ) {
-									if( minna.charAt(m) == meira.charAt(m+u) ) count++;
+									if( minna.charAt(m+u) == meira.charAt(m) ) count++;
 								}
 								
 								if( count >= 20 ) {
@@ -6476,6 +6613,7 @@ public class JavaFasta extends JApplet {
 					}
 				}
 				
+				System.err.println( "remann "+remannset.size() );
 				allset.removeAll( remannset );
 				/*int[] rr = atable.getSelectedRows();
 				for( int r : rr ) {
@@ -6489,6 +6627,169 @@ public class JavaFasta extends JApplet {
 				
 				serifier.lann.removeAll( allset );
 				atable.tableChanged( new TableModelEvent(atable.getModel() ) );
+			}
+		});
+		apopup.add( new AbstractAction("CRISPR report") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				//Map<String,Map<String,Map<String,List<Sequence>>>> whatf = new HashMap<String,Map<String,Map<String,List<Sequence>>>>();
+				Map<String, Map<String,List<Annotation>>>	tann = new HashMap<String,Map<String,List<Annotation>>>();
+				Map<String, List<Annotation>> 			mann = new TreeMap<String, List<Annotation>>();
+				for( Annotation ann : serifier.lann ) {
+					if( ann.type != null && ann.type.contains("mummer") ) {
+						ann.name = ann.name.toUpperCase();
+						
+						List<Annotation> lann;
+						if( mann.containsKey(ann.seq.name) ) {
+							lann = mann.get(ann.seq.name);
+						} else {
+							lann = new ArrayList<Annotation>();
+							System.err.println();
+							mann.put( ann.seq.name, lann );
+						}
+						lann.add( ann );
+						//allset.add( ann );
+						//mann.put( ann.seq, ann );
+					}
+				}
+				
+				Set<String> specset = new HashSet<String>();
+				for( String seq : mann.keySet() ) {
+					List<Annotation> lann = mann.get( seq );
+					if( lann == null ) {
+						System.err.println();
+					}
+					Collections.sort(lann);
+					
+					String spec = Sequence.getSpec( seq );
+					System.err.println( "truff " + seq + " " + lann.size() );
+					
+					specset.add( spec );
+					
+					for( int i = 0; i < lann.size(); i++ ) {
+						Annotation ann = lann.get(i);
+						
+						String similar = null;
+						for( String rep : tann.keySet() ) {
+							//String minna = ann.name.length() < rep.length() ? ann.name : rep;
+							//String meira = minna == ann.name ? rep : ann.name;
+							
+							//minna = minna.toUpperCase();
+							//meira = meira.toUpperCase();
+							
+							for( int u = 0; u < rep.length()-16; u++ ) {
+								int count = 0;
+								for( int m = 0; m < Math.min(rep.length()-u,ann.name.length()); m++ ) {
+									if( ann.name.charAt(m) == rep.charAt(m+u) ) count++;
+								}
+								
+								if( count >= 16 ) {
+									similar = rep.toUpperCase();
+								}
+							}
+							
+							if( similar == null ) for( int u = 0; u < ann.name.length()-16; u++ ) {
+								int count = 0;
+								for( int m = 0; m < Math.min(ann.name.length()-u,rep.length()); m++ ) {
+									if( ann.name.charAt(m+u) == rep.charAt(m) ) count++;
+								}
+								
+								if( count >= 16 ) {
+									similar = rep.toUpperCase();
+								}
+							}
+							
+							if( similar == null ) for( int u = 0; u < rep.length()-16; u++ ) {
+								int count = 0;
+								int size = Math.min(rep.length()-u,ann.name.length());
+								for( int m = 0; m < size; m++ ) {
+									if( ann.name.charAt(m) == Sequence.rc.get( rep.charAt(size-m-1+u) ) ) count++;
+								}
+								
+								if( count >= 16 ) {
+									similar = rep.toUpperCase();
+								}
+							}
+							
+							if( similar == null ) for( int u = 0; u < ann.name.length()-16; u++ ) {
+								int count = 0;
+								int size = Math.min(ann.name.length()-u,rep.length());
+								for( int m = 0; m < size; m++ ) {
+									if( ann.name.charAt(m+u) == Sequence.rc.get( rep.charAt(size-m-1) ) ) count++;
+								}
+								
+								if( count >= 16 ) {
+									similar = rep.toUpperCase();
+								}
+							}
+							
+							if( similar != null ) {
+								break;
+							}
+						}
+						
+						List<Annotation> lan;
+						if( similar != null && tann.containsKey(similar) ) {
+							Map<String,List<Annotation>> lanm = tann.get( similar );
+							String aspec = ann.seq.getSpec();
+							if( !aspec.equals(spec) ) {
+								System.err.println("no");
+							}
+							if( lanm.containsKey(spec) ) {
+								lan = lanm.get( spec );
+							} else {
+								lan = new ArrayList<Annotation>();
+								lanm.put( spec, lan );
+							}
+						} else {
+							Map<String,List<Annotation>> lanm = new HashMap<String,List<Annotation>>();
+							lan = new ArrayList<Annotation>();
+							lanm.put( ann.seq.getSpec(), lan );
+							tann.put( ann.name, lanm );
+						}
+						lan.add( ann );
+					}
+				}
+				
+				int total = 0;
+				for( String rep : tann.keySet() ) {
+					Map<String,List<Annotation>> lanm = tann.get( rep );
+					for( String str : lanm.keySet() ) {
+						List<Annotation> lann = lanm.get(str);
+						total += lann.size();
+					}
+				}
+				System.err.println( "\t"+total );
+				
+				System.err.print("\tsum");
+				for( String spec : specset ) {
+					System.err.print( "\t" + spec );
+				}
+				System.err.println();
+				
+				for( String rep : tann.keySet() ) {
+					Map<String,List<Annotation>> lanm = tann.get( rep );
+					int sum = 0;
+					for( String s : lanm.keySet() ) {
+						sum += lanm.get(s).size();
+					}
+					System.err.print( rep+"\t"+sum );
+					for( String spec : specset ) {
+						int count = 0;
+						if( lanm.containsKey(spec) ) {
+							count = lanm.get(spec).size();
+						}
+						System.err.print( "\t" + count );
+					}
+					System.err.println();
+				}
+				
+				int i = 0;
+				for( String rep : tann.keySet() ) {
+					System.err.println(">"+i);
+					System.err.println( rep );
+					i++;
+				}
 			}
 		});
 		apopup.addSeparator();
@@ -7019,6 +7320,6 @@ public class JavaFasta extends JApplet {
 	}
 	
 	class Repeat extends Annotation {
-			public int length;
+		public int length;
 	};
 }
