@@ -5810,8 +5810,8 @@ public class JavaFasta extends JApplet {
 							int w = (Integer)windspin.getValue();
 							int err = (Integer)errspin.getValue();
 							
-							int ix = (Integer)wspin.getValue();
-							int iy = (Integer)hspin.getValue();
+							final int ix = (Integer)wspin.getValue();
+							final int iy = (Integer)hspin.getValue();
 							final BufferedImage	bi = new BufferedImage( ix, iy, BufferedImage.TYPE_INT_ARGB );
 							Graphics2D g2 = bi.createGraphics();
 							g2.setColor( Color.white );
@@ -6131,7 +6131,7 @@ public class JavaFasta extends JApplet {
 						
 						Sequence s = serifier.lseq.get(ir);
 						
-						XYChart.Series<Number,Number> series = new XYChart.Series<Number,Number>();
+						final XYChart.Series<Number,Number> series = new XYChart.Series<Number,Number>();
 						double[] d = new double[ p ];
 						//int start = w/2;
 						for( int i = 0; i < p; i++ ) {
