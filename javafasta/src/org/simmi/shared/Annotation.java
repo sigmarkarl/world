@@ -17,6 +17,24 @@ public class Annotation implements Comparable<Object> {
 	public int				stop;
 	public int				ori;
 	public Object			color = Color.green;
+	public Gene				gene;
+	public boolean			selected = false;
+	double					gc;
+	double					gcskew;
+	public boolean			dirty = false;
+	public String 			teg;
+	public double 			eval;
+	public int				num;
+	public boolean			backgap = false;
+	public boolean			frontgap = false;
+	
+	public boolean isSelected() {
+		return selected;
+	}
+	
+	public void setSelected( boolean sel ) {
+		this.selected = sel;
+	}
 	
 	public Annotation() {
 		
@@ -44,6 +62,98 @@ public class Annotation implements Comparable<Object> {
 		if( mann != null ) mann.put( name, this );
 	}
 	
+	public String getSpecies() {
+		return teg;
+	}
+	
+	public Sequence		alignedsequence;
+	public Sequence getAlignedSequence() {
+		return alignedsequence;
+	}
+	
+	public StringBuilder getProteinSubsequence( int u, int e ) {
+		return seq.getProteinSequence( start+u, start+e, ori );
+	}
+	
+	public Color getBackFlankingGapColor() {
+		//if( ori == 1 ) return new Color( 1.0f, 1.0f, 1.0f );
+		
+		//int i = contshort.tlist.indexOf(this);
+		//if( i == 0 || i == contshort.tlist.size()-1 ) return Color.blue;
+		//else if( unresolvedGap() > 0 ) return Color.red;
+		return backgap ? Color.red : Color.lightGray;
+	}
+	
+	public Color getFrontFlankingGapColor() {
+		//if( ori == 1 ) return new Color( 1.0f, 1.0f, 1.0f );
+		
+		//int i = contshort.tlist.indexOf(this);
+		//if( i == 0 || i == contshort.tlist.size()-1 ) return Color.blue;
+		//else if( unresolvedGap() > 0 ) return Color.red;
+		return frontgap ? Color.red : Color.lightGray;
+	}
+	
+	public int getSequenceLength() {
+		return alignedsequence == null ? 0 : alignedsequence.length();
+	}
+	
+	public int getProteinLength() {
+		return getLength()/3;
+	}
+	
+	public int getNum() {
+		return num;
+	}
+
+	public void setNum(int i) {
+		num = i;
+	}
+	
+	public double gcPerc() {
+		int gc = 0;
+		int total = 0;
+		//for( int i = 0; i < dna.length(); i++ ) {
+		if( seq != null ) for( int i = start; i < stop; i++ ) {
+			char c = /*this.ori == -1 ? contshort.revCompCharAt(i) :*/ seq.getCharAt(i);
+			if( c == 'g' || c == 'G' || c == 'c' || c == 'C' ) gc++;
+			if( c != '-' && c != 'x' || c != 'X' ) total++;
+		}
+		return (double)gc/(double)total;
+	}
+	
+	public double getGCPerc() {
+		return gc;
+	}
+	
+	public double getGCSkew() {
+		return gcskew;
+	}
+	
+	public Color getGCColor() {
+		if( isDirty() ) return Color.red;
+		double gcp = Math.min( Math.max( 0.5, gc ), 0.8 );
+		return new Color( (float)(0.8-gcp)/0.3f, (float)(gcp-0.5)/0.3f, 1.0f );
+		
+		/*double gcp = Math.min( Math.max( 0.35, gc ), 0.55 );
+		return new Color( (float)(0.55-gcp)/0.2f, (float)(gcp-0.35)/0.2f, 1.0f );*/
+	}
+	
+	public boolean isDirty() {
+		return dirty;
+	}
+	
+	public Color getGCSkewColor() {
+		return new Color( (float)Math.min( 1.0, Math.max( 0.0, 0.5+5.0*gcskew ) ), 0.5f, (float)Math.min( 1.0, Math.max( 0.0, 0.5-5.0*gcskew ) ) );
+	}
+	
+	public void setGene( Gene gene ) {
+		this.gene = gene;
+	}
+	
+	public Gene getGene() {
+		return this.gene;
+	}
+	
 	public StringBuilder getProteinSequence() {
 		return seq.getProteinSequence(start, stop, ori);
 	}
@@ -51,6 +161,14 @@ public class Annotation implements Comparable<Object> {
 	public void addDbRef( String val ) {
 		if( dbref == null ) dbref = new HashSet<String>();
 		dbref.add( val );
+	}
+	
+	public String getSubstring( int u, int e ) {
+		return seq.getSubstring(start+u, start+e, ori);
+	}
+	
+	public String getSequence() {
+		return seq.getSubstring(start, stop, ori);
 	}
 	
 	public Annotation( Sequence seq, int start, int stop, int ori, String name ) {
@@ -76,6 +194,18 @@ public class Annotation implements Comparable<Object> {
 	
 	public Sequence getContig() {
 		return seq;
+	}
+	
+	public Annotation getNext() {
+		if( seq != null ) 
+			return getContig().getNext( this );
+		return null;
+	}
+	
+	public Annotation getPrevious() {
+		if( seq != null ) 
+			return getContig().getPrev( this );
+		return null;
 	}
 	
 	public boolean isReverse() {

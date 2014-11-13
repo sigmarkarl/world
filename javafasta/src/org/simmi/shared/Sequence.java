@@ -33,7 +33,7 @@ public class Sequence implements Comparable<Sequence> {
 	static Map<Character, Double> 		isoelectricpoint = new HashMap<Character, Double>();
 
 	public static Color[] colorCodes = new Color[9];
-
+	public boolean			plasmid;
 	// abundance
 	// aliphatic - aromatic
 	// size
@@ -355,6 +355,48 @@ public class Sequence implements Comparable<Sequence> {
 		Collections.sort(isoel);
 	}
 	
+	public int getNumberOfSubContigs() {
+		int count = 0;
+		int i = sb.indexOf("NNNNN");
+		if( i != -1 ) count++;
+		
+		while( i != -1 ) {
+			int k = sb.indexOf("NNNNN", i+5);
+			if( k > i+100 ) {
+				count++;
+			}
+			i = k;
+		}
+		return count;
+	}
+	
+	public void deleteAfter( Annotation cur ) {
+		int i = annset.indexOf( cur );
+		if( i != -1 && i < annset.size() && ((Tegeval)annset.get(i+1)).getGene() == null ) {
+			annset.remove( i+1 );
+		}
+	}
+	
+	public void deleteBefore( Annotation cur ) {
+		int i = annset.indexOf( cur );
+		if( i > 0 && annset.get(i-1).getGene() == null )
+			annset.remove( i-1 );
+	}
+	
+	public void injectAfter( Annotation cur, Annotation tv ) {
+		int i = annset.indexOf( cur );
+		if( i != -1 ) {
+			addAnnotation(i+1, tv);
+		}
+	}
+	
+	public void injectBefore( Annotation cur, Annotation tv ) {
+		int i = annset.indexOf( cur );
+		if( i != -1 ) {
+			addAnnotation( i, tv );
+		}
+	}
+	
 	public void initIndexBuffers() {
 		ib = IntBuffer.allocate( sb.length() );
 		int count = 0;
@@ -395,6 +437,19 @@ public class Sequence implements Comparable<Sequence> {
 	public boolean				edited = false;
 	public boolean				selected = false;
 	
+	public Sequence			next;
+	public Sequence			prev;
+	public List<Sequence>	partof;
+	
+	public double 			loc;
+	
+	public int getAnnotationCount() {
+		if( annset != null ) {
+			return annset.size();
+		}
+		return 0;
+	}
+	
 	public static int specCheck( String str ) {
 		int i = str.indexOf("uid");
 		if( i == -1 ) {
@@ -412,6 +467,19 @@ public class Sequence implements Comparable<Sequence> {
 		return i;
 	}
 	
+	public void sortLocs() {
+		if( annset != null ) {
+			Collections.sort( annset );
+			int i = 0;
+			//Tegeval prev = null;
+			for( Annotation tv : annset ) {
+				((Tegeval)tv).setNum( i++ );
+				//if( prev != null ) tv.setPrevious( prev );
+				//prev = tv;
+			}
+		}
+	}
+	
 	public static String getSpec( String name ) {
 		String spec = "";
 		int i = specCheck( name );
@@ -423,7 +491,7 @@ public class Sequence implements Comparable<Sequence> {
 			}
 			if( i == -1 ) {
 				i = name.lastIndexOf('_')+1;
-				System.err.println( name );
+				//System.err.println( name );
 			}
 			if( i <= 0 ) {
 				spec = name.substring(0,4);
@@ -433,6 +501,67 @@ public class Sequence implements Comparable<Sequence> {
 			spec = name.substring(0, i);
 		}
 		return spec;
+	}
+	
+	public Annotation getNext( Annotation from ) {
+		int i = annset != null ? annset.indexOf( from ) : -1;
+		if( i != -1 ) {
+			if( isReverse() ) {
+				if( i > 0 ) return annset.get( i-1 );
+			} else {
+				 if( i < annset.size()-1 ) {
+					 Annotation ret = annset.get( i+1 );
+					 return ret;
+				 }
+			}
+		}
+		//if( from.getGene().getSpecies().contains("140") ) {
+		//	System.err.println( from.getGene().getSpecies() + " bobbou " + from.getGene() );
+		//}
+		return null;
+	}
+	
+	public Annotation getPrev( Annotation from ) {
+		int i = annset != null ? annset.indexOf( from ) : -1;
+		if( i != -1 ) {
+			if( isReverse() ) {
+				if( i < annset.size()-1  ) return annset.get( i+1 );
+			} else {
+				if( i > 0 ) return annset.get( i-1 );
+			}
+		}
+		//System.err.println( from.getGene().getSpecies() + "  " + from.getGene() );
+		return null;
+	}
+	
+	public Annotation getEndAnnotation() {
+		if( annset != null ) return annset.get( annset.size()-1 );
+		return null;
+	}
+	
+	public Annotation getStartAnnotation() {
+		if( annset != null ) return annset.get( 0 );
+		return null;
+	}
+	
+	public Annotation getFirst() {
+		return isReverse() ? getEndAnnotation() : getStartAnnotation();
+	}
+	
+	public Annotation getLast() {
+		return isReverse() ? getStartAnnotation() : getEndAnnotation();
+	}
+	
+	public Annotation getIndex( int i ) {
+		Annotation first = getFirst();
+	
+		int k = 0;
+		while( first != null && k < i ) {
+			first = first.getNext();
+			k++;
+		}
+		
+		return first;
 	}
 	
 	public String getSpec() {
@@ -1069,6 +1198,14 @@ public class Sequence implements Comparable<Sequence> {
 		return sb.length();
 	}
 	
+	public boolean isChromosome() {
+		return this.length() > 1500000;
+	}
+	
+	public boolean isPlasmid() {
+		return plasmid;
+	}
+	
 	public int getAlignedLength() {
 		if( alignedlength == -1 ) {
 			checkLengths();
@@ -1163,6 +1300,81 @@ public class Sequence implements Comparable<Sequence> {
 			gcp = count > 0 ? 100*gcp/count : 0;
 		}
 		return gcp;
+	}
+	
+	public void setConnection( Sequence contig, boolean rev, boolean forw ) {
+		if( forw ) setForwardConnection( contig, rev );
+		else setBackwardConnection( contig, rev );
+	}
+	
+	public void setForwardConnection( Sequence contig, boolean rev ) {
+		this.next = contig;
+		if( rev ) {
+			contig.next = this;
+			
+			/*if( this.getEnd() != null ) this.getEnd().next = contig.getEnd();
+			if( contig.getEnd() != null ) contig.getEnd().next = this.getEnd();
+			
+			if( this.isReverse() == contig.isReverse() ) {
+				Contig nextc = contig;
+				while( nextc != null ) {
+					nextc.setReverse( !nextc.isReverse() );
+					nextc = nextc.isReverse() ? nextc.prev : nextc.next;
+				}
+			}*/
+		} else {
+			contig.prev = this;
+			
+			/*if( this.getEnd() != null ) this.getEnd().next = contig.getStart();
+			if( contig.getStart() != null ) contig.getStart().prev = this.getEnd();
+			
+			if( this.isReverse() != contig.isReverse() ) {
+				Contig nextc = contig;
+				while( nextc != null ) {
+					nextc.setReverse( !nextc.isReverse() );
+					nextc = nextc.isReverse() ? nextc.prev : nextc.next;
+				}
+			}*/
+		}
+	}
+	
+	public void setBackwardConnection( Sequence contig, boolean rev ) {
+		this.prev = contig;
+		if( rev ) {
+			contig.next = this;
+			
+			/*this.getStart().prev = contig.getEnd();
+			if( contig.getEnd() != null ) contig.getEnd().next = this.getStart();
+			
+			if( this.isReverse() != contig.isReverse() ) {
+				Contig nextc = contig;
+				while( nextc != null ) {
+					nextc.setReverse( !nextc.isReverse() );
+					nextc = nextc.isReverse() ? nextc.next : nextc.prev;
+				}
+			}*/
+		} else {
+			contig.prev = this;
+			
+			/*this.getStart().prev = contig.getStart();
+			if( contig.getStart() != null ) contig.getStart().prev = this.getStart();
+			
+			if( this.isReverse() == contig.isReverse() ) {
+				Contig nextc = contig;
+				while( nextc != null ) {
+					nextc.setReverse( !nextc.isReverse() );
+					nextc = nextc.isReverse() ? nextc.next : nextc.prev;
+				}
+			}*/
+		}
+	}
+	
+	public Sequence getNextContig() {
+		return next;
+	}
+	
+	public Sequence getPrevContig() {
+		return prev;
 	}
 
 	@Override

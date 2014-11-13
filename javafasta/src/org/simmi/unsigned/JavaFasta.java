@@ -59,10 +59,12 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 
 import javafx.application.Platform;
 import javafx.embed.swing.JFXPanel;
@@ -122,7 +124,15 @@ import javax.swing.table.TableRowSorter;
 
 import netscape.javascript.JSObject;
 
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.IndexedColors;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.simmi.shared.Annotation;
+import org.simmi.shared.Contig;
 import org.simmi.shared.GeneGroup;
 import org.simmi.shared.Sequence;
 import org.simmi.shared.Serifier;
@@ -2806,6 +2816,21 @@ public class JavaFasta extends JApplet {
 		}
 	}
 	
+	static class RepeatNum implements Comparable<RepeatNum> {
+		public RepeatNum( String r, int t ) {
+			this.repeat = r;
+			this.total = t;
+		}
+		
+		String 	repeat;
+		int		total;
+		
+		@Override
+		public int compareTo(RepeatNum o) {
+			return o.total-total;
+		}
+	}
+	
 	static JFrame		fxframe = new JFrame();
 	static JFXPanel		fxp = new JFXPanel();
 	static Scene 		scene;
@@ -4158,7 +4183,7 @@ public class JavaFasta extends JApplet {
 					}*/
 					
 					NativeRun nrun = new NativeRun();
-					List<String> commandsList = new ArrayList<String>( Arrays.asList( new String[] {"/usr/local/Cellar/mummer/3.23/libexec/mummer", "-maxmatch", "-n", "-l", "30", pname, pname} ) );
+					List<String> commandsList = new ArrayList<String>( Arrays.asList( new String[] {"/usr/local/Cellar/mummer/3.23/libexec/mummer", "-maxmatch", "-n", "-l", "25", pname, pname} ) );
 					
 					final ByteArrayOutputStream baos = new ByteArrayOutputStream();
 					//Path pout = Paths.get("/Users/sigmar/pout.mummer");
@@ -6477,8 +6502,10 @@ public class JavaFasta extends JApplet {
 				for( int r : rr ) {
 					int i = atable.convertRowIndexToModel(r);
 					
-					Annotation a = serifier.lann.get(i);
-					remannset.add( a );
+					if( i >= 0 && i < serifier.lann.size() ) {
+						Annotation a = serifier.lann.get(i);
+						remannset.add( a );
+					}
 					
 					// right?
 					//a.seq.removeAnnotation( a );
@@ -6505,6 +6532,32 @@ public class JavaFasta extends JApplet {
 			}
 		});
 		apopup.addSeparator();
+		apopup.add( new AbstractAction("Select mummer") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				int i = 0;
+				for( Annotation ann : serifier.lann ) {
+					if( ann != null && ann.type != null && ann.type.contains("mummer") ) {
+						int r = atable.convertRowIndexToView(i);
+						atable.addRowSelectionInterval(r, r);
+					}
+					i++;
+				}
+			}
+		});
+		apopup.add( new AbstractAction("Inject annotation") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				int[] rr = atable.getSelectedRows();
+				if( rr != null && rr.length > 0 ) {
+					for( int r : rr ) {
+						int i = atable.convertRowIndexToModel(r);
+						Annotation ann = serifier.lann.get(i);
+						ann.seq.addAnnotation( ann );
+					}
+				}
+			}
+		});
 		apopup.add( new AbstractAction("Retain CRISPR") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -6534,7 +6587,7 @@ public class JavaFasta extends JApplet {
 						if( ann == null ) {
 							System.err.println();
 						}
-						if( ann.type != null && ann.type.contains("mummer") ) {
+						if( ann != null && ann.type != null && ann.type.contains("mummer") ) {
 							List<Annotation> lann;
 							if( mann.containsKey(ann.seq) ) {
 								lann = mann.get(ann.seq);
@@ -6607,7 +6660,7 @@ public class JavaFasta extends JApplet {
 							if( similar ) {
 								remannset.add( first );
 								remannset.add( second );
-								i++;
+								//i++;
 							}
 						}
 					}
@@ -6633,10 +6686,10 @@ public class JavaFasta extends JApplet {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				//Map<String,Map<String,Map<String,List<Sequence>>>> whatf = new HashMap<String,Map<String,Map<String,List<Sequence>>>>();
-				Map<String, Map<String,List<Annotation>>>	tann = new HashMap<String,Map<String,List<Annotation>>>();
+				Map<String, Map<String,List<Annotation>>>	tann = new LinkedHashMap<String,Map<String,List<Annotation>>>();
 				Map<String, List<Annotation>> 			mann = new TreeMap<String, List<Annotation>>();
 				for( Annotation ann : serifier.lann ) {
-					if( ann.type != null && ann.type.contains("mummer") ) {
+					if( ann != null && ann.type != null && ann.type.contains("mummer") ) {
 						ann.name = ann.name.toUpperCase();
 						
 						List<Annotation> lann;
@@ -6653,23 +6706,33 @@ public class JavaFasta extends JApplet {
 					}
 				}
 				
-				Set<String> specset = new HashSet<String>();
+				int maxcount = 14;
+				Set<String> specset = new TreeSet<String>();
 				for( String seq : mann.keySet() ) {
 					List<Annotation> lann = mann.get( seq );
-					if( lann == null ) {
+					/*if( lann == null ) {
 						System.err.println();
-					}
+					}*/
 					Collections.sort(lann);
 					
 					String spec = Sequence.getSpec( seq );
-					System.err.println( "truff " + seq + " " + lann.size() );
+					//System.err.println( "truff " + seq + " " + lann.size() );
 					
 					specset.add( spec );
 					
 					for( int i = 0; i < lann.size(); i++ ) {
 						Annotation ann = lann.get(i);
+						String annname = ann.name.toUpperCase();
 						
+						int storecount = 0;
 						String similar = null;
+						boolean rev = false;
+						
+						if( ann.seq.name.contains("islandicus3838_scaffold00001") ) {
+							System.err.println();
+						} //else System.err.println( "sssst  	" + ann.seq.name );
+						
+						int maxconsecount = 0;
 						for( String rep : tann.keySet() ) {
 							//String minna = ann.name.length() < rep.length() ? ann.name : rep;
 							//String meira = minna == ann.name ? rep : ann.name;
@@ -6677,79 +6740,199 @@ public class JavaFasta extends JApplet {
 							//minna = minna.toUpperCase();
 							//meira = meira.toUpperCase();
 							
-							for( int u = 0; u < rep.length()-16; u++ ) {
+							for( int u = 0; u < rep.length()-maxcount; u++ ) {
 								int count = 0;
-								for( int m = 0; m < Math.min(rep.length()-u,ann.name.length()); m++ ) {
-									if( ann.name.charAt(m) == rep.charAt(m+u) ) count++;
-								}
-								
-								if( count >= 16 ) {
-									similar = rep.toUpperCase();
-								}
-							}
-							
-							if( similar == null ) for( int u = 0; u < ann.name.length()-16; u++ ) {
-								int count = 0;
-								for( int m = 0; m < Math.min(ann.name.length()-u,rep.length()); m++ ) {
-									if( ann.name.charAt(m+u) == rep.charAt(m) ) count++;
-								}
-								
-								if( count >= 16 ) {
-									similar = rep.toUpperCase();
-								}
-							}
-							
-							if( similar == null ) for( int u = 0; u < rep.length()-16; u++ ) {
-								int count = 0;
-								int size = Math.min(rep.length()-u,ann.name.length());
+								int consecount = 0;
+								int storeconsecount = 0;
+								int size = Math.min(rep.length()-u,annname.length());
 								for( int m = 0; m < size; m++ ) {
-									if( ann.name.charAt(m) == Sequence.rc.get( rep.charAt(size-m-1+u) ) ) count++;
+									if( annname.charAt(m) == rep.charAt(m+u) ) {
+										count++;
+										consecount++;
+									} else {
+										if( consecount > storeconsecount ) storeconsecount = consecount;
+										consecount = 0;
+									}
 								}
+								if( consecount > storeconsecount ) storeconsecount = consecount;
 								
-								if( count >= 16 ) {
+								if( count >= maxcount && storeconsecount > maxconsecount ) {
+									storecount = count;
+									maxconsecount = storeconsecount;
 									similar = rep.toUpperCase();
 								}
 							}
 							
-							if( similar == null ) for( int u = 0; u < ann.name.length()-16; u++ ) {
+							for( int u = 0; u < annname.length()-maxcount; u++ ) {
 								int count = 0;
-								int size = Math.min(ann.name.length()-u,rep.length());
+								int consecount = 0;
+								int storeconsecount = 0;
+								int size = Math.min(annname.length()-u,rep.length());
 								for( int m = 0; m < size; m++ ) {
-									if( ann.name.charAt(m+u) == Sequence.rc.get( rep.charAt(size-m-1) ) ) count++;
+									if( annname.charAt(m+u) == rep.charAt(m) ) {
+										count++;
+										consecount++;
+									} else {
+										if( consecount > storeconsecount ) storeconsecount = consecount;
+										consecount = 0;
+									}
 								}
+								if( consecount > storeconsecount ) storeconsecount = consecount;
 								
-								if( count >= 16 ) {
+								if( count >= maxcount && storeconsecount > maxconsecount ) {
+									storecount = count;
+									maxconsecount = storeconsecount;
 									similar = rep.toUpperCase();
 								}
 							}
 							
-							if( similar != null ) {
+							for( int u = 0; u < rep.length()-maxcount; u++ ) {
+								int count = 0;
+								int consecount = 0;
+								int storeconsecount = 0;
+								int size = Math.min(rep.length()-u,annname.length());
+								for( int m = 0; m < size; m++ ) {
+									if( annname.charAt(m) == Sequence.rc.get( rep.charAt(rep.length()-1-(m+u)) ) ) {
+										count++;
+										consecount++;
+									} else {
+										if( consecount > storeconsecount ) storeconsecount = consecount;
+										consecount = 0;
+									}
+								}
+								if( consecount > storeconsecount ) storeconsecount = consecount;
+								
+								if( count >= maxcount && storeconsecount > maxconsecount ) {
+									rev = true;
+									storecount = count;
+									maxconsecount = storeconsecount;
+									similar = rep.toUpperCase();
+								}
+							}
+							
+							for( int u = 0; u < annname.length()-maxcount; u++ ) {
+								int count = 0;
+								int consecount = 0;
+								int storeconsecount = 0;
+								int size = Math.min(annname.length()-u,rep.length());
+								for( int m = 0; m < size; m++ ) {
+									if( annname.charAt(m+u) == Sequence.rc.get( rep.charAt(rep.length()-1-m) ) ) {
+										count++;
+										consecount++;
+									} else {
+										if( consecount > storeconsecount ) storeconsecount = consecount;
+										consecount = 0;
+									}
+								}
+								if( consecount > storeconsecount ) storeconsecount = consecount;
+								
+								if( count >= maxcount && storeconsecount > maxconsecount ) {
+									rev = true;
+									storecount = count;
+									maxconsecount = storeconsecount;
+									similar = rep.toUpperCase();
+								}
+							}
+							
+							/*if( similar != null ) {
 								break;
-							}
+							}*/
 						}
 						
 						List<Annotation> lan;
 						if( similar != null && tann.containsKey(similar) ) {
 							Map<String,List<Annotation>> lanm = tann.get( similar );
 							String aspec = ann.seq.getSpec();
-							if( !aspec.equals(spec) ) {
+							/*if( !aspec.equals(spec) ) {
 								System.err.println("no");
-							}
+							}*/
 							if( lanm.containsKey(spec) ) {
 								lan = lanm.get( spec );
 							} else {
 								lan = new ArrayList<Annotation>();
 								lanm.put( spec, lan );
 							}
+							
+							/*if( ann.seq.name.contains("2137") ) {
+								System.err.println( "setnext: " + annname + " similar to " + similar + " rev " + rev + " storecount " + storecount );
+							}*/
+							
+							//System.err.println( "blubbbbbi " + ann.seq.name );
 						} else {
 							Map<String,List<Annotation>> lanm = new HashMap<String,List<Annotation>>();
 							lan = new ArrayList<Annotation>();
 							lanm.put( ann.seq.getSpec(), lan );
-							tann.put( ann.name, lanm );
+							tann.put( annname, lanm );
+							
+							//if( ann.seq.name.contains("2137") ) System.err.println( "reference: " + annname );
 						}
 						lan.add( ann );
 					}
 				}
+				
+				Map<String,CellStyle>	repeatColor = new HashMap<String,CellStyle>();
+				
+				List<RepeatNum>	lrn = new ArrayList<RepeatNum>();
+				Map<String,String>	commonRepeatMap = new HashMap<String,String>();
+				for( String rep : tann.keySet() ) {
+					Map<String,List<Annotation>>	lanm = tann.get(rep);
+					
+					int sum = 0;
+					for( String spec : lanm.keySet() ) {
+						List<Annotation> slann = lanm.get(spec);
+						for( Annotation a : slann ) commonRepeatMap.put(a.name, rep);
+						
+						sum += slann.size();
+					}
+					
+					lrn.add( new RepeatNum(rep,sum) );
+				}
+				
+				Workbook wb = new XSSFWorkbook();
+				Sheet sh = wb.createSheet("CRISPR");
+				
+				CellStyle csPlas = wb.createCellStyle();
+				csPlas.setFillForegroundColor( IndexedColors.RED.index );
+				csPlas.setFillPattern(CellStyle.SOLID_FOREGROUND);
+				repeatColor.put("plas", csPlas);
+				
+				CellStyle csNb = wb.createCellStyle();
+				csNb.setFillForegroundColor( IndexedColors.GREEN.index );
+				csNb.setFillPattern(CellStyle.SOLID_FOREGROUND);
+				repeatColor.put("np", csNb);
+				
+				
+				CellStyle csRed = wb.createCellStyle();
+				csRed.setFillForegroundColor( IndexedColors.RED.index );
+				csRed.setFillPattern(CellStyle.SOLID_FOREGROUND);
+				CellStyle csGreen = wb.createCellStyle();
+				csGreen.setFillForegroundColor( IndexedColors.GREEN.index );
+				csGreen.setFillPattern(CellStyle.SOLID_FOREGROUND);
+				CellStyle csBlue = wb.createCellStyle();
+				csBlue.setFillForegroundColor( IndexedColors.BLUE.index );
+				csBlue.setFillPattern(CellStyle.SOLID_FOREGROUND);
+				CellStyle csCyan = wb.createCellStyle();
+				csCyan.setFillForegroundColor( IndexedColors.PLUM.index );
+				csCyan.setFillPattern(CellStyle.SOLID_FOREGROUND);
+				CellStyle csMagenta = wb.createCellStyle();
+				csMagenta.setFillForegroundColor( IndexedColors.AQUA.index );
+				csMagenta.setFillPattern(CellStyle.SOLID_FOREGROUND);
+				CellStyle csYellow = wb.createCellStyle();
+				csYellow.setFillForegroundColor( IndexedColors.YELLOW.index );
+				csYellow.setFillPattern(CellStyle.SOLID_FOREGROUND);
+				
+				int i = 0;
+				CellStyle[] colors = new CellStyle[] { csRed, csGreen, csBlue, csCyan, csMagenta, csYellow };
+				Collections.sort( lrn );
+				Map<String,Map<String,List<Annotation>>>	tann2 = new LinkedHashMap<String,Map<String,List<Annotation>>>();
+				for( RepeatNum rn : lrn ) {
+					if( i < 6 ) repeatColor.put(rn.repeat, colors[i++]);
+					tann2.put(rn.repeat, tann.get(rn.repeat));
+				}
+				tann.clear();
+				tann = tann2;
+				
+				
 				
 				int total = 0;
 				for( String rep : tann.keySet() ) {
@@ -6759,36 +6942,553 @@ public class JavaFasta extends JApplet {
 						total += lann.size();
 					}
 				}
-				System.err.println( "\t"+total );
 				
+				Map<String,Row> hrow = new HashMap<String,Row>();
+				Map<String,Integer> hcell = new HashMap<String,Integer>();
+				hcell.put("Csh2", 1);
+				hcell.put("Csm2", 2);
+				hcell.put("Cse2", 3);
+				hcell.put("Csd2", 4);
+				hcell.put("Cmr3", 5);
+				
+				Map<String,Map<String,Integer>> typeRepeat = new HashMap<String,Map<String,Integer>>();
+				
+				//hcell.put();
+				
+				Map<String,Integer> hcell2 = new HashMap<String,Integer>();
+				//hcell.put("Csh2", 1);
+				hcell2.put("III-A", 2);
+				hcell2.put("I-E", 3);
+				//hcell.put("Csd2", 4);
+				hcell2.put("III-B", 5);
+				
+				i = 0;
+				List<Row> nullrow = new ArrayList<Row>();
+				Row rw = sh.createRow(i++);
+				nullrow.add( rw );
+				for( String crispr : hcell.keySet() ) {
+					int c = hcell.get(crispr);
+					rw.createCell(c).setCellValue(crispr);
+				}
+				rw.createCell(hcell.size()+1).setCellValue("Cas6");
+				
+				rw = sh.createRow(i++);
+				nullrow.add( rw );
+				for( String crispr : hcell2.keySet() ) {
+					int c = hcell2.get(crispr);
+					rw.createCell(c).setCellValue(crispr);
+				}
+				
+				int k = 0;
+				for( String spec : specset ) {
+					rw = sh.createRow(i++);
+					nullrow.add( rw );
+					hrow.put(spec,rw);
+					rw.createCell(k).setCellValue(spec);
+				}
+				
+				i++;
+				//i = 0;
+				k = 1;
+				rw = sh.createRow(i);
+				rw = sh.createRow(i);
+				rw.createCell(k++).setCellValue("sum");
 				System.err.print("\tsum");
 				for( String spec : specset ) {
+					rw.createCell(k++).setCellValue(spec);
 					System.err.print( "\t" + spec );
 				}
 				System.err.println();
 				
+				i++;
+				Map<String,Integer> msi = new HashMap<String,Integer>();
 				for( String rep : tann.keySet() ) {
 					Map<String,List<Annotation>> lanm = tann.get( rep );
 					int sum = 0;
 					for( String s : lanm.keySet() ) {
 						sum += lanm.get(s).size();
 					}
+					
+					k = 0;
+					rw = sh.createRow(i++);
+					
+					Cell cell = rw.createCell(k++);
+					cell.setCellValue(rep);
+					CellStyle cs = repeatColor.get(rep);
+					if( cs != null ) cell.setCellStyle( cs );
+					
+					rw.createCell(k++).setCellValue(sum);
+					
 					System.err.print( rep+"\t"+sum );
 					for( String spec : specset ) {
 						int count = 0;
 						if( lanm.containsKey(spec) ) {
 							count = lanm.get(spec).size();
+							if( msi.containsKey(spec) ) {
+								msi.put(spec, msi.get(spec)+count);
+							} else {
+								msi.put(spec, count);
+							}
 						}
+						rw.createCell(k++).setCellValue(count);
 						System.err.print( "\t" + count );
 					}
 					System.err.println();
 				}
 				
-				int i = 0;
+				rw = sh.createRow(i++);
+				k = 1;
+				rw.createCell(k++).setCellValue(total);;
+				for( String spec : specset ) {
+					if( msi.containsKey(spec) ) {
+						int count = msi.get(spec);
+						rw.createCell(k++).setCellValue(count);
+						System.err.print( "\t"+count );
+					} else {
+						rw.createCell(k++).setCellValue(0);
+						System.err.print( "\t0" );
+					}
+				}
+				System.err.println();
+				File file = new File("/Users/sigmar/wb.xlsx");
+				
+				Map<String,CellStyle>	csMap = new HashMap<String,CellStyle>();
+				
+				i++;
+				List<Row> lrow = new ArrayList<Row>();
+				Row hd = sh.createRow(i++);
+				k = 2;
+				for( String spec : specset ) {
+					int u = 0;
+					hd.createCell(k).setCellValue(spec);
+					for( Sequence seq : serifier.lseq ) {
+						if( seq.name.contains(spec) && mann.containsKey(seq.name) ) {
+							List<Annotation> repeats = mann.get(seq.name);
+							
+							if( u < lrow.size() ) rw = lrow.get(u);
+							else {
+								rw = sh.createRow(i+u);
+								lrow.add(rw);
+							}
+							u++;
+							
+							rw.createCell(k).setCellValue(seq.name);
+							
+							List<Annotation> olann = seq.getAnnotations();
+							if( olann != null ) {
+								String type = null;
+								int mcount = 0;
+								String lastrep = null;
+								int count = 0;
+								
+								List<Annotation> lann = new ArrayList<Annotation>( olann );
+								lann.addAll( repeats );
+								Collections.sort( lann );
+								
+								Map<String,Integer> lastrepeats = new HashMap<String,Integer>();
+								
+								int onlycas = -1;
+								String name = null;
+								String lastname = null;
+								for( Annotation ann : lann ) {
+									name = ann.name;
+									if( ann instanceof Tegeval ) {
+										Tegeval tv = (Tegeval)ann;
+										GeneGroup gg = tv.getGene().getGeneGroup();
+										if( gg != null ) name = gg.getCommonName();
+									}
+									int m = name.indexOf('(');
+									if( m == -1 ) m = name.length();
+									name = name.substring(0,m);
+									
+									if( ann.type != null && ann.type.contains("mummer") ) {
+										if( onlycas > 3 ) {
+											Row r = hrow.get(spec);
+											int c = hcell.size()+1;
+											
+											Contig ct = (Contig)seq;
+											boolean plas = ct.isPlasmid();
+											String plastr = plas ? "plas" : "np";
+											
+											Cell cell = r.createCell(c);
+											cell.setCellValue( plastr );
+											
+											CellStyle cs = repeatColor.get(plastr);
+											if( cs != null ) {
+												cell.setCellStyle(cs);
+											}
+										}
+										onlycas = 0;
+										String rep = commonRepeatMap.get(ann.name); //null;
+										
+										if( lastrepeats.containsKey(rep) ) {
+											lastrepeats.put( rep, lastrepeats.get(rep)+1 );
+										} else {
+											lastrepeats.put(rep, 1);
+										}
+										/*for( String rp : tann.keySet() ) {
+											Map<String,List<Annotation>> mmp = tann.get(rp);
+											List<Annotation> lll = mmp.get( ann.seq.getSpec() );
+											if( lll != null ) {
+												for( Annotation a : lll ) {
+													if( a.equals(ann) ) {
+														rep = rp;
+														break;
+													}
+													//if( a.name.equals(anObject))
+												}
+											}
+										}
+										System.err.println( rep );*/
+										
+										if( mcount > 0 && lastrep != null && !lastrep.equals(rep) ) {
+											if( u < lrow.size() ) rw = lrow.get(u);
+											else {
+												rw = sh.createRow(i+u);
+												lrow.add(rw);
+											}
+											u++;
+											Cell cell = rw.createCell(k);
+											cell.setCellValue( mcount+"-"+lastrep );
+											CellStyle cs = repeatColor.get(lastrep);
+											if( cs != null ) cell.setCellStyle( cs );
+											
+											mcount = 0;
+										}
+										mcount++;
+										lastrep = rep;
+										
+										if( count > 0 ) {
+											if( u < lrow.size() ) rw = lrow.get(u);
+											else {
+												rw = sh.createRow(i+u);
+												lrow.add(rw);
+											}
+											u++;
+											rw.createCell(k).setCellValue( count == 1 ? lastname : "count "+count );
+											
+											count = 0;
+										}
+									} else if( name.contains("CRISPR") ) {
+										if( count > 0 ) {
+											if( u < lrow.size() ) rw = lrow.get(u);
+											else {
+												rw = sh.createRow(i+u);
+												lrow.add(rw);
+											}
+											u++;
+											rw.createCell(k).setCellValue( count == 1 ? lastname : "count "+count );
+											
+											count = 0;
+										} else if( mcount > 0 ) {
+											if( u < lrow.size() ) rw = lrow.get(u);
+											else {
+												rw = sh.createRow(i+u);
+												lrow.add(rw);
+											}
+											u++;
+											Cell cell = rw.createCell(k);
+											cell.setCellValue( mcount+"-"+lastrep );
+											CellStyle cs = repeatColor.get(lastrep);
+											if( cs != null ) cell.setCellStyle( cs );
+											
+											mcount = 0;
+										}
+										
+										if( u < lrow.size() ) rw = lrow.get(u);
+										else {
+											rw = sh.createRow(i+u);
+											lrow.add(rw);
+										}
+										u++;
+										
+										//int v = name.indexOf('(');
+										//if( v == -1 ) v = name.length();
+										String newname = name; //.substring(0,v);
+										newname = newname.replace("CRISPR-associated", "");
+										newname = newname.replace("CRISPR", "");
+										newname = newname.replace("protein", "");
+										newname = newname.replace("family", "");
+										newname = newname.replace("helicase", "");
+										newname = newname.replace(",", "");
+										newname = newname.trim();
+										
+										String yes = null;
+										for( String h : hcell.keySet() ) {
+											if( newname.contains(h) ) {
+												yes = h;
+												break;
+											}
+										}
+										if( yes != null ) { //hcell.containsKey(newname) ) {
+											Row r = hrow.get(spec);
+											int c = hcell.get(yes);
+											
+											Contig ct = (Contig)seq;
+											boolean plas = ct.isPlasmid();
+											String plastr = plas ? "plas" : "np";
+											
+											Cell cell = r.createCell(c);
+											cell.setCellValue( plastr );
+											
+											CellStyle cs = repeatColor.get(plastr);
+											if( cs != null ) {
+												cell.setCellStyle(cs);
+											}
+										}
+										
+										Cell cell = rw.createCell(k);
+										cell.setCellValue( newname.length() == 0 ? name : newname );
+										
+										if( newname.contains("Cse") ) {
+											String crispr = "Cse";
+											
+											onlycas = -1;
+											CellStyle cs;
+											if( csMap.containsKey("Cse") ) {
+												cs = csMap.get("Cse");
+											} else {
+												cs = wb.createCellStyle();
+												cs.setFillForegroundColor( IndexedColors.DARK_YELLOW.index );
+												cs.setFillPattern(CellStyle.SOLID_FOREGROUND);
+												csMap.put("Cse", cs);
+											}
+											cell.setCellStyle( cs );
+											
+											if( typeRepeat.containsKey(crispr) ) {
+												Map<String,Integer> mm = typeRepeat.get(crispr);
+												for( String typ : lastrepeats.keySet() ) {
+													if( mm.containsKey(typ) ) {
+														mm.put(typ, lastrepeats.get(typ)+mm.get(typ));
+													} else {
+														mm.put(typ, lastrepeats.get(typ));
+													}
+												}
+											} else {
+												typeRepeat.put( crispr, new HashMap<String,Integer>(lastrepeats) );
+											}
+											lastrepeats.clear();
+										} else if( newname.contains("Cas") ) {
+											String crispr = "Cas";
+											
+											if( onlycas != -1 ) onlycas++;
+											CellStyle cs;
+											if( csMap.containsKey("Cas") ) {
+												cs = csMap.get("Cas");
+											} else {
+												cs = wb.createCellStyle();
+												cs.setFillForegroundColor( IndexedColors.DARK_RED.index );
+												cs.setFillPattern(CellStyle.SOLID_FOREGROUND);
+												csMap.put("Cas", cs);
+											}
+											cell.setCellStyle( cs );
+											
+											if( typeRepeat.containsKey(crispr) ) {
+												Map<String,Integer> mm = typeRepeat.get(crispr);
+												for( String typ : lastrepeats.keySet() ) {
+													if( mm.containsKey(typ) ) {
+														mm.put(typ, lastrepeats.get(typ)+mm.get(typ));
+													} else {
+														mm.put(typ, lastrepeats.get(typ));
+													}
+												}
+											} else {
+												typeRepeat.put( crispr, new HashMap<String,Integer>(lastrepeats) );
+											}
+											//lastrepeats.clear();
+										} else if( newname.contains("Csm") ) {
+											String crispr = "Csm";
+											onlycas = -1;
+											CellStyle cs;
+											if( csMap.containsKey("Csm") ) {
+												cs = csMap.get("Csm");
+											} else {
+												cs = wb.createCellStyle();
+												cs.setFillForegroundColor( IndexedColors.DARK_BLUE.index );
+												cs.setFillPattern(CellStyle.SOLID_FOREGROUND);
+												csMap.put("Csm", cs);
+											}
+											cell.setCellStyle( cs );
+											
+											if( typeRepeat.containsKey(crispr) ) {
+												Map<String,Integer> mm = typeRepeat.get(crispr);
+												for( String typ : lastrepeats.keySet() ) {
+													if( mm.containsKey(typ) ) {
+														mm.put(typ, lastrepeats.get(typ)+mm.get(typ));
+													} else {
+														mm.put(typ, lastrepeats.get(typ));
+													}
+												}
+											} else {
+												typeRepeat.put( crispr, new HashMap<String,Integer>(lastrepeats) );
+											}
+											lastrepeats.clear();
+										} else if( newname.contains("Cmr") || newname.contains("Crm") ) {
+											String crispr = "Cmr";
+											onlycas = -1;
+											CellStyle cs;
+											if( csMap.containsKey("Cmr") ) {
+												cs = csMap.get("Cmr");
+											} else {
+												cs = wb.createCellStyle();
+												cs.setFillForegroundColor( IndexedColors.DARK_GREEN.index );
+												cs.setFillPattern(CellStyle.SOLID_FOREGROUND);
+												csMap.put("Cmr", cs);
+											}
+											cell.setCellStyle( cs );
+											
+											if( typeRepeat.containsKey(crispr) ) {
+												Map<String,Integer> mm = typeRepeat.get(crispr);
+												for( String typ : lastrepeats.keySet() ) {
+													if( mm.containsKey(typ) ) {
+														mm.put(typ, lastrepeats.get(typ)+mm.get(typ));
+													} else {
+														mm.put(typ, lastrepeats.get(typ));
+													}
+												}
+											} else {
+												typeRepeat.put( crispr, new HashMap<String,Integer>(lastrepeats) );
+											}
+											lastrepeats.clear();
+										} else if( newname.contains("Csd") ) {
+											String crispr = "Csd";
+											onlycas = -1;
+											
+											CellStyle cs;
+											if( csMap.containsKey("Csd") ) {
+												cs = csMap.get("Csd");
+											} else {
+												cs = wb.createCellStyle();
+												cs.setFillForegroundColor( IndexedColors.DARK_TEAL.index );
+												cs.setFillPattern(CellStyle.SOLID_FOREGROUND);
+												csMap.put("Csd", cs);
+											}
+											cell.setCellStyle( cs );
+											
+											if( typeRepeat.containsKey(crispr) ) {
+												Map<String,Integer> mm = typeRepeat.get(crispr);
+												for( String typ : lastrepeats.keySet() ) {
+													if( mm.containsKey(typ) ) {
+														mm.put(typ, lastrepeats.get(typ)+mm.get(typ));
+													} else {
+														mm.put(typ, lastrepeats.get(typ));
+													}
+												}
+											} else {
+												typeRepeat.put( crispr, new HashMap<String,Integer>(lastrepeats) );
+											}
+											lastrepeats.clear();
+										} else if( newname.contains("Csh") ) {
+											String crispr = "Csh";
+											onlycas = -1;
+											CellStyle cs;
+											if( csMap.containsKey("Csh") ) {
+												cs = csMap.get("Csh");
+											} else {
+												cs = wb.createCellStyle();
+												cs.setFillForegroundColor( IndexedColors.GOLD.index );
+												cs.setFillPattern(CellStyle.SOLID_FOREGROUND);
+												csMap.put("Csh", cs);
+											}
+											cell.setCellStyle( cs );
+											
+											if( typeRepeat.containsKey(crispr) ) {
+												Map<String,Integer> mm = typeRepeat.get(crispr);
+												for( String typ : lastrepeats.keySet() ) {
+													if( mm.containsKey(typ) ) {
+														mm.put(typ, lastrepeats.get(typ)+mm.get(typ));
+													} else {
+														mm.put(typ, lastrepeats.get(typ));
+													}
+												}
+											} else {
+												typeRepeat.put( crispr, new HashMap<String,Integer>(lastrepeats) );
+											}
+											lastrepeats.clear();
+										}
+									} else {
+										if( count > 10 ) {
+											onlycas = -1;
+											lastrepeats.clear();
+										}
+										if( mcount > 0 ) {
+											if( u < lrow.size() ) rw = lrow.get(u);
+											else {
+												rw = sh.createRow(i+u);
+												lrow.add(rw);
+											}
+											u++;
+											Cell cell = rw.createCell(k);
+											cell.setCellValue( mcount+"-"+lastrep );
+											CellStyle cs = repeatColor.get(lastrep);
+											if( cs != null ) cell.setCellStyle( cs );
+											
+											mcount = 0;
+										}
+										count++;
+									}
+									lastname = name;
+								}
+								
+								if( count > 0 ) {
+									if( u < lrow.size() ) rw = lrow.get(u);
+									else {
+										rw = sh.createRow(i+u);
+										lrow.add(rw);
+									}
+									u++;
+									rw.createCell(k).setCellValue( count == 1 ? lastname : "count "+count );
+								} else if( mcount > 0 ) {
+									if( u < lrow.size() ) rw = lrow.get(u);
+									else {
+										rw = sh.createRow(i+u);
+										lrow.add(rw);
+									}
+									u++;
+									Cell cell = rw.createCell(k);
+									cell.setCellValue( mcount+"-"+lastrep );
+									CellStyle cs = repeatColor.get(lastrep);
+									if( cs != null ) cell.setCellStyle( cs );
+								}
+							}
+							u++;
+						}
+					}
+					k++;
+					
+					//break;
+				}
+				
+				int j = 10;
+				for( String crispr : typeRepeat.keySet() ) {
+					int l = 0;
+					nullrow.get(l).createCell(j).setCellValue(crispr);
+					
+					Map<String,Integer> msti = typeRepeat.get(crispr);
+					for( String rep : msti.keySet() ) {
+						int count = msti.get(rep);
+						Cell cell = nullrow.get(++l).createCell(j);
+						cell.setCellValue(count+"-"+rep);
+						CellStyle cs = repeatColor.get(rep);
+						if( cs != null ) cell.setCellStyle(cs);
+					}
+					
+					j++;
+				}
+				
+				
+				try {
+					wb.write( new FileOutputStream(file) );
+					Desktop.getDesktop().open(file);
+				} catch (IOException e1) {
+					e1.printStackTrace();
+				}
+				
+				k = 0;
 				for( String rep : tann.keySet() ) {
-					System.err.println(">"+i);
+					System.err.println(">"+k);
 					System.err.println( rep );
-					i++;
+					k++;
 				}
 			}
 		});

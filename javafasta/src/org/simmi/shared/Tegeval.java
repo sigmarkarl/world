@@ -3,7 +3,7 @@ package org.simmi.shared;
 import java.awt.Color;
 
 public class Tegeval extends Annotation implements Teg {
-	public Tegeval(Gene gene, String tegund, double evalue, String contig, Contig shortcontig, String locontig, int sta, int sto, int orient) {
+	public Tegeval(Gene gene, String tegund, double evalue, String contig, Sequence shortcontig, String locontig, int sta, int sto, int orient) {
 		this( contig, shortcontig, locontig, sta, sto, orient );
 		
 		teg = tegund;
@@ -13,7 +13,7 @@ public class Tegeval extends Annotation implements Teg {
 		//setSequence(sequence);
 	}
 	
-	public Tegeval( String contig, Contig shortcontig, String locontig, int sta, int sto, int orient ) {
+	public Tegeval( String contig, Sequence shortcontig, String locontig, int sta, int sto, int orient ) {
 		super(shortcontig,contig,null,sta,sto,orient,null);
 		init( contig, shortcontig, locontig, sta, sto, orient );
 	}
@@ -27,7 +27,7 @@ public class Tegeval extends Annotation implements Teg {
 		alignedsequence.append( a );
 	}
 	
-	public void init( String contig, Contig shortcontig, String locontig, int sta, int sto, int orient ) {
+	public void init( String contig, Sequence shortcontig, String locontig, int sta, int sto, int orient ) {
 		name = contig;
 		if( alignedsequence != null ) {
 			String seqname = name + " # " + sta + " # " + sto + " # " + orient;
@@ -71,53 +71,8 @@ public class Tegeval extends Annotation implements Teg {
 		this.eval = eval;
 	}
 	
-	public int getNum() {
-		return num;
-	}
-
-	public void setNum(int i) {
-		num = i;
-	}
-
-	public String getSpecies() {
-		return teg;
-	}
-	
-	public String getSubstring( int u, int e ) {
-		return seq.getSubstring(start+u, start+e, ori);
-	}
-	
-	public String getSequence() {
-		return seq.getSubstring(start, stop, ori);
-	}
-	
-	public Sequence getAlignedSequence() {
-		return alignedsequence;
-	}
-	
-	public StringBuilder getProteinSubsequence( int u, int e ) {
-		return seq.getProteinSequence( start+u, start+e, ori );
-	}
-	
-	public StringBuilder getProteinSequence() {
-		StringBuilder ret = seq.getProteinSequence( start, stop, ori );
-		return ret;
-	}
-	
-	public int getLength() {
-		return stop - start;
-	}
-	
-	public int getSequenceLength() {
-		return alignedsequence == null ? 0 : alignedsequence.length();
-	}
-	
-	public int getProteinLength() {
-		return getLength()/3;
-	}
-	
 	public Contig getContshort() {
-		return (Contig)seq;
+		return (Contig)getContig();
 	}
 	
 	public String getContloc() {
@@ -126,18 +81,6 @@ public class Tegeval extends Annotation implements Teg {
 	
 	public String getContigName() {
 		return name;
-	}
-	
-	public Tegeval getNext() {
-		if( seq != null ) 
-			return getContshort().getNext( this );
-		return null;
-	}
-	
-	public Tegeval getPrevious() {
-		if( seq != null ) 
-			return getContshort().getPrev( this );
-		return null;
 	}
 	
 	/*public Tegeval setNext( Tegeval next ) {
@@ -164,58 +107,6 @@ public class Tegeval extends Annotation implements Teg {
 		}
 		double gc = g+c;
 		return gc == 0 ? gc : (g-c)/gc;
-	}
-	
-	private double gcPerc() {
-		int gc = 0;
-		int total = 0;
-		//for( int i = 0; i < dna.length(); i++ ) {
-		if( seq != null ) for( int i = start; i < stop; i++ ) {
-			char c = /*this.ori == -1 ? contshort.revCompCharAt(i) :*/ seq.getCharAt(i);
-			if( c == 'g' || c == 'G' || c == 'c' || c == 'C' ) gc++;
-			if( c != '-' && c != 'x' || c != 'X' ) total++;
-		}
-		return (double)gc/(double)total;
-	}
-	
-	public double getGCPerc() {
-		return gc;
-	}
-	
-	public double getGCSkew() {
-		return gcskew;
-	}
-	
-	public Color getGCColor() {
-		if( isDirty() ) return Color.red;
-		double gcp = Math.min( Math.max( 0.5, gc ), 0.8 );
-		return new Color( (float)(0.8-gcp)/0.3f, (float)(gcp-0.5)/0.3f, 1.0f );
-		
-		/*double gcp = Math.min( Math.max( 0.35, gc ), 0.55 );
-		return new Color( (float)(0.55-gcp)/0.2f, (float)(gcp-0.35)/0.2f, 1.0f );*/
-	}
-	
-	public Color getGCSkewColor() {
-		//if( ori == 1 ) return new Color( 1.0f, 1.0f, 1.0f );
-		return new Color( (float)Math.min( 1.0, Math.max( 0.0, 0.5+5.0*gcskew ) ), 0.5f, (float)Math.min( 1.0, Math.max( 0.0, 0.5-5.0*gcskew ) ) );
-	}
-	
-	public Color getBackFlankingGapColor() {
-		//if( ori == 1 ) return new Color( 1.0f, 1.0f, 1.0f );
-		
-		//int i = contshort.tlist.indexOf(this);
-		//if( i == 0 || i == contshort.tlist.size()-1 ) return Color.blue;
-		//else if( unresolvedGap() > 0 ) return Color.red;
-		return backgap ? Color.red : Color.lightGray;
-	}
-	
-	public Color getFrontFlankingGapColor() {
-		//if( ori == 1 ) return new Color( 1.0f, 1.0f, 1.0f );
-		
-		//int i = contshort.tlist.indexOf(this);
-		//if( i == 0 || i == contshort.tlist.size()-1 ) return Color.blue;
-		//else if( unresolvedGap() > 0 ) return Color.red;
-		return frontgap ? Color.red : Color.lightGray;
 	}
 	
 	public void unresolvedGap( int i ) {
@@ -285,46 +176,14 @@ public class Tegeval extends Annotation implements Teg {
 		//return ret;
 	}
 	
-	public boolean isDirty() {
-		return dirty;
-	}
-
-	public Sequence		alignedsequence;
-	double				gc;
-	double				gcskew;
-	public String 		teg;
-	public double 		eval;
 	//Contig 			contshort;
 	public String 		contloc;
 	//Sequence	 		seq;
 	//StringBuilder 	dna;
 	int 				numCys;
-	private int			num;
-	Gene				gene;
 	//Tegeval			next;
 	//Tegeval			prev;
-	public boolean		selected = false;
-	
-	public boolean			dirty = false;
-	public boolean			backgap = false;
-	public boolean			frontgap = false;
 	//boolean			
-	
-	public boolean isSelected() {
-		return selected;
-	}
-	
-	public void setSelected( boolean sel ) {
-		this.selected = sel;
-	}
-	
-	public void setGene( Gene gene ) {
-		this.gene = gene;
-	}
-	
-	public Gene getGene() {
-		return this.gene;
-	}
 
 	/*public void setSequence(StringBuilder seq) {
 		if (seq != null) {
