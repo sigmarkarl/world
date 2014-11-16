@@ -1,6 +1,5 @@
 package org.simmi.shared;
 
-import java.awt.Color;
 
 public class Tegeval extends Annotation implements Teg {
 	public Tegeval(Gene gene, String tegund, double evalue, String contig, Sequence shortcontig, String locontig, int sta, int sto, int orient) {
@@ -23,16 +22,23 @@ public class Tegeval extends Annotation implements Teg {
 	}
 	
 	public void append( String a ) {
-		if( alignedsequence == null ) alignedsequence = new Sequence( name + " # " + start + " # " + stop + " # " + ori, null );
-		alignedsequence.append( a );
+		Sequence alignedsequence = getAlignedSequence();
+		if( alignedsequence == null ) {
+			alignedsequence = new Sequence( name + " # " + start + " # " + stop + " # " + ori, null );
+			alignedsequence.append( a );
+			setAlignedSequence( alignedsequence );
+		}
 	}
 	
 	public void init( String contig, Sequence shortcontig, String locontig, int sta, int sto, int orient ) {
 		name = contig;
+		
+		Sequence alignedsequence = getAlignedSequence();
 		if( alignedsequence != null ) {
 			String seqname = name + " # " + sta + " # " + sto + " # " + orient;
-			alignedsequence.name = seqname;
+			alignedsequence.setName( seqname );
 		}
+		
 		seq = shortcontig;
 		contloc = locontig;
 		start = sta;
@@ -57,10 +63,6 @@ public class Tegeval extends Annotation implements Teg {
 	
 	public String getCommonFunction() {
 		return gene.getGeneGroup().getCommonFunction(true, null);
-	}
-	
-	public void setAlignedSequence( Sequence alseq ) {
-		//this.sb = alseq;
 	}
 	
 	public void setTegund( String teg ) {

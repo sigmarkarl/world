@@ -106,7 +106,7 @@ public class GBK2AminoFasta {
 						anno.seq = strbuf;
 						
 						//anno.spec = spec + (contignum > 0 ? "_contig"+(contignum+1) : "");
-						strbuf.name = locus.contains(spec) ? locus : spec+ "_"+locus;
+						strbuf.setName( locus.contains(spec) ? locus : spec+ "_"+locus );
 						
 						String[] split = trimline.split("[\t ]+");
 						if( split.length > 1 ) {
@@ -358,7 +358,7 @@ public class GBK2AminoFasta {
 								String rep = replace + ao.spec.substring( ao.spec.indexOf('_') );
 								out.write( ">"+ao.id + " " + ao.name + " [" + rep + "]" + end );
 							} else {*/
-							out.write( ">"+ao.id + " " + ao.name + " [" + ao.seq.name + "]" + end );
+							out.write( ">"+ao.id + " " + ao.name + " [" + ao.seq.getName() + "]" + end );
 							//}
 						}
 						//strbuf.

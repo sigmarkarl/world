@@ -449,6 +449,12 @@ public class GeneGroup {
 			
 			String specstr = gene.getSpecies();
 			
+			if( specstr == null ) {
+				
+				System.err.println();
+				
+			}
+			
 			Teginfo tigenes;
 			if( species.containsKey( specstr ) ) {
 				tigenes = species.get( specstr );

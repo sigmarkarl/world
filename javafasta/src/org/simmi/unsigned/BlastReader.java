@@ -91,13 +91,13 @@ public class BlastReader {
 					qsequence.refstop = Math.max(isstart, isstop);
 					
 					qsequence.offset = Math.min(isstart, isstop);
-					qsequence.name = qspec+"_"+sstart+"_"+sstop;
+					qsequence.setName( qspec+"_"+sstart+"_"+sstop );
 					//lqsequence.add( qsequence );
-					if( qsequences.containsKey( qsequence.name ) ) {
-						System.err.println( qsequence.name );
+					if( qsequences.containsKey( qsequence.getName() ) ) {
+						System.err.println( qsequence.getName() );
 						System.err.println();
 					}
-					qsequences.put(qsequence.name, qsequence);
+					qsequences.put(qsequence.getName(), qsequence);
 					lqsequence.add( qsequence );
 					continue;
 				}

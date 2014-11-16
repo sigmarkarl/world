@@ -163,7 +163,7 @@ public class Gene {
 			}
 			
 			if( i == -1 ) {
-				System.err.println();
+				return null;
 			}
 			//int u = lname.lastIndexOf('_');
 			//contigstr = lname.substring(0, u);
@@ -219,7 +219,9 @@ public class Gene {
 	public String getSpecies() {
 		if( species == null ) {
 			species = parseSpecies( tegeval.name );
-			
+			if( species == null ) {
+				species = tegeval.seq.getSpec();
+			}
 			/*if( species.length() == 2 ) {
 				System.err.println();
 			}*/

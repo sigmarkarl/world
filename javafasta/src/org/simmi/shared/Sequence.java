@@ -419,7 +419,7 @@ public class Sequence implements Comparable<Sequence> {
 	}
 	
 	public Sequence				consensus;
-	public String 				name;
+	private String 				name;
 	//public String				group;
 	public String				id;
 	public StringBuilder	 	sb;
@@ -473,7 +473,7 @@ public class Sequence implements Comparable<Sequence> {
 			int i = 0;
 			//Tegeval prev = null;
 			for( Annotation tv : annset ) {
-				((Tegeval)tv).setNum( i++ );
+				tv.setNum( i++ );
 				//if( prev != null ) tv.setPrevious( prev );
 				//prev = tv;
 			}
@@ -504,21 +504,20 @@ public class Sequence implements Comparable<Sequence> {
 	}
 	
 	public Annotation getNext( Annotation from ) {
+		Annotation ret = null;
+		
 		int i = annset != null ? annset.indexOf( from ) : -1;
 		if( i != -1 ) {
 			if( isReverse() ) {
-				if( i > 0 ) return annset.get( i-1 );
+				if( i > 0 ) ret = annset.get( i-1 );
 			} else {
 				 if( i < annset.size()-1 ) {
-					 Annotation ret = annset.get( i+1 );
-					 return ret;
+					 ret = annset.get( i+1 );
 				 }
 			}
 		}
-		//if( from.getGene().getSpecies().contains("140") ) {
-		//	System.err.println( from.getGene().getSpecies() + " bobbou " + from.getGene() );
-		//}
-		return null;
+		
+		return ret;
 	}
 	
 	public Annotation getPrev( Annotation from ) {
@@ -1017,7 +1016,7 @@ public class Sequence implements Comparable<Sequence> {
 	
 	public Sequence( String name, Map<String,Sequence> mseq ) {
 		this();
-		this.name = name;
+		setName( name );
 		if( mseq != null ) mseq.put( name, this );
 	}
 	
@@ -1027,7 +1026,7 @@ public class Sequence implements Comparable<Sequence> {
 	}
 	
 	public Sequence( String name, StringBuilder sb, Map<String,Sequence> mseq ) {
-		this.name = name;
+		setName( name );
 		this.sb = sb;
 		this.id = name;
 		if( mseq != null ) {
@@ -1085,6 +1084,10 @@ public class Sequence implements Comparable<Sequence> {
 	}
 	
 	public void setName( String name ) {
+		if( name.length() == 2 ) {
+			System.err.println();
+		}
+		
 		this.name = name;
 	}
 	

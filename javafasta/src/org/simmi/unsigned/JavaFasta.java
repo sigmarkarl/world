@@ -213,7 +213,7 @@ public class JavaFasta extends JApplet {
 				int val = 0;
 		   		int end = seq.length();
 		   		 
-		   		if( val <= end ) osw.write( seq.name + "\t" + seq.sb + "\n" );
+		   		if( val <= end ) osw.write( seq.getName() + "\t" + seq.sb + "\n" );
 		   		/*while( val < end ) {
 		   			 osw.write( seq.sb.substring(val, Math.min( end, val+70 )) + "\n" );
 		   			 val += 70;
@@ -947,7 +947,7 @@ public class JavaFasta extends JApplet {
 				}*/
 				
 				serifier.lseq.add( s );
-				serifier.mseq.put( s.name, s );
+				serifier.mseq.put( s.getName(), s );
 				s.setStart(0);
 			} else if( line.startsWith("Query ") ) {
 				int last = line.lastIndexOf(' ');
@@ -1016,10 +1016,10 @@ public class JavaFasta extends JApplet {
 				
 				//serifier.lseq.add( cseq );
 				ctgs.add( cseq );
-				serifier.mseq.put( cseq.name, cseq );
+				serifier.mseq.put( cseq.getName(), cseq );
 				serifier.lgseq.add( cseq );
 				
-				Annotation ann = new Annotation( cseq, cseq.name, null, 0, cseq.length(), cseq.getRevComp(), serifier.mann );
+				Annotation ann = new Annotation( cseq, cseq.getName(), null, 0, cseq.length(), cseq.getRevComp(), serifier.mann );
 				serifier.addAnnotation(ann);
 				
 				//k++;
@@ -1033,7 +1033,7 @@ public class JavaFasta extends JApplet {
 				seq.setId( consensus );
 				seq.setStart( Integer.parseInt( split[3] )-1+lastStart );
 				serifier.lseq.add( seq );
-				serifier.mseq.put(seq.name, seq);
+				serifier.mseq.put(seq.getName(), seq);
 				List<Sequence> lseq;
 				if( serifier.gseq.containsKey( consensus ) ) {
 					lseq = serifier.gseq.get( consensus );
@@ -1097,7 +1097,7 @@ public class JavaFasta extends JApplet {
 				//s.consensus = seq;
 				s.setId( "paste" );
 				serifier.lseq.add( s );
-				serifier.mseq.put( s.name, s );
+				serifier.mseq.put( s.getName(), s );
 				
 				if( s != null ) {
 					if( s.getEnd() > serifier.getMax() ) serifier.setMax( s.getEnd() );
@@ -1129,7 +1129,7 @@ public class JavaFasta extends JApplet {
 				//s.consensus = seq;
 				s.setId( "paste" );
 				serifier.lseq.add( s );
-				serifier.mseq.put( s.name, s );
+				serifier.mseq.put( s.getName(), s );
 				
 				if( s != null ) {
 					if( s.getEnd() > serifier.getMax() ) serifier.setMax( s.getEnd() );
@@ -1417,7 +1417,7 @@ public class JavaFasta extends JApplet {
 	   			 filemap.put( filename, fw );
 	   		 }
 	   		 
-	   		 if( val < end ) fw.write( ">" + seq.name + "\n" );
+	   		 if( val < end ) fw.write( ">" + seq.getName() + "\n" );
 	   		 while( val < end ) {
 	   			 fw.write( seq.sb.substring(val, Math.min( end, val+70 )) + "\n" );
 	   			 val += 70;
@@ -2224,7 +2224,7 @@ public class JavaFasta extends JApplet {
    			 end = Math.min( end, c.selectedRect.x+c.selectedRect.width-seq.getStart() );
    		 }
    		 
-   		 if( val < end ) out.append( ">" + seq.name + "\n" );
+   		 if( val < end ) out.append( ">" + seq.getName() + "\n" );
    		 while( val < end ) {
    			 out.append( seq.sb.substring(val, Math.min( end, val+70 )) + "\n" );
    			 val += 70;
@@ -2911,7 +2911,7 @@ public class JavaFasta extends JApplet {
 				int o = 0;
 				for( int r = 0; r < gtable.getRowCount(); r++ ) {
 					Sequence gseq = (Sequence)gtable.getValueAt(r, 0);
-					List<Sequence> lgseq = serifier.gseq.get( gseq.name );
+					List<Sequence> lgseq = serifier.gseq.get( gseq.getName() );
 					for( Sequence seq : lgseq ) {
 						seq.setStart( seq.getStart() + (o-gseq.getStart()) );
 					}
@@ -3654,7 +3654,7 @@ public class JavaFasta extends JApplet {
 			    	 fr.close();
 			    	 
 			    	 for( Sequence s : seqs ) {
-			    		 Sequence ps = serifier.mseq.get( s.name );
+			    		 Sequence ps = serifier.mseq.get( s.getName() );
 			    		 ps.sb.replace( c.selectedRect.x, c.selectedRect.x+c.selectedRect.width, s.sb.toString() );
 			    	 }
 			    	 
@@ -3722,16 +3722,16 @@ public class JavaFasta extends JApplet {
 					if( rc == null || rc.width == 0 ) {
 						seq.reverse();
 						if( seq.getRevComp() == 1 ) {
-							seq.name = seq.name.substring(0, seq.name.length()-8);
+							seq.setName( seq.getName().substring(0, seq.getName().length()-8) );
 							seq.setRevComp( 0 );
 						} else if( seq.getRevComp() == 3 ) {
-							seq.name = seq.name.substring(0, seq.name.length()-18)+"_compliment";
+							seq.setName( seq.getName().substring(0, seq.getName().length()-18)+"_compliment" );
 							seq.setRevComp( 2 );
 						} else if( seq.getRevComp() == 2 ) {
-							seq.name = seq.name.substring(0, seq.name.length()-11)+"_reversecompliment";
+							seq.setName( seq.getName().substring(0, seq.getName().length()-11)+"_reversecompliment" );
 							seq.setRevComp( 3 );
 						} else {
-							seq.name = seq.name+"_reverse";
+							seq.setName( seq.getName()+"_reverse" );
 							seq.setRevComp( 1 );
 						}
 					} else {
@@ -3760,16 +3760,16 @@ public class JavaFasta extends JApplet {
 					if( rc == null || rc.width == 0 ) {
 						seq.complement();
 						if( seq.getRevComp() == 1 ) {
-							seq.name = seq.name.substring(0, seq.name.length()-8)+"_reversecompliment";
+							seq.setName( seq.getName().substring(0, seq.getName().length()-8)+"_reversecompliment" );
 							seq.setRevComp( 3 );
 						} else if( seq.getRevComp() == 3 ) {
-							seq.name = seq.name.substring(0, seq.name.length()-18)+"_reverse";
+							seq.setName( seq.getName().substring(0, seq.getName().length()-18)+"_reverse" );
 							seq.setRevComp( 1 );
 						} else if( seq.getRevComp() == 2 ) {
-							seq.name = seq.name.substring(0, seq.name.length()-11);
+							seq.setName( seq.getName().substring(0, seq.getName().length()-11) );
 							seq.setRevComp( 0 );
 						} else {
-							seq.name = seq.name+"_compliment";
+							seq.setName( seq.getName()+"_compliment" );
 							seq.setRevComp( 2 );
 						}
 					} else {
@@ -3899,6 +3899,22 @@ public class JavaFasta extends JApplet {
 						}
 					}*/
 				}
+				c.repaint();
+			}
+		});
+		edit.add( new AbstractAction("Remove all N's") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				List<Sequence>	seqlist = new ArrayList<Sequence>();
+				int[] rr = table.getSelectedRows();
+				for( int r : rr ) {
+					int k = table.convertRowIndexToModel( r );
+					Sequence seq = serifier.lseq.get( k );
+					seqlist.add( seq );
+				}
+				serifier.removeAllNs( seqlist );
+				updateView();
+				
 				c.repaint();
 			}
 		});
@@ -4354,7 +4370,7 @@ public class JavaFasta extends JApplet {
 									
 									if( stop - start > 8 ) {
 										Repeat r = new Repeat();
-										r.name = sequence.name+"_repeat_"+i;
+										r.name = sequence.getName()+"_repeat_"+i;
 										
 										r.seq = sequence;
 										r.start = start;
@@ -4552,7 +4568,7 @@ public class JavaFasta extends JApplet {
 				
 				List<Sequence> seqs = JavaFasta.this.getSequences();
 				for( Sequence s : seqs ) {
-					Sequence seq = new Sequence(s.name, jf.serifier.mseq);
+					Sequence seq = new Sequence(s.getName(), jf.serifier.mseq);
 					for( int i = 0; i < s.length(); i+=3 ) {
 						String subs = s.getSubstring(i, i+3, 1);
 						Character c = Sequence.amimap.get( subs );
@@ -4636,14 +4652,14 @@ public class JavaFasta extends JApplet {
 						for( Sequence s : sseq ) {
 							int diff = parseq.getStart() - s.getStart();
 							if( diff >= 50 ) {
-								Sequence nseq = new Sequence( parseq.name+"_left", null );
+								Sequence nseq = new Sequence( parseq.getName()+"_left", null );
 								nseq.append( s.getSubstring(0, diff, 1) );
 								lseq.add( nseq );
 							}
 							
 							diff = s.getEnd() - parseq.getEnd();
 							if( diff >= 50 ) {
-								Sequence nseq = new Sequence( parseq.name+"_right", null );
+								Sequence nseq = new Sequence( parseq.getName()+"_right", null );
 								nseq.append( s.getSubstring(s.length()-diff-1, s.length(), 1) );
 								lseq.add( nseq );
 							}
@@ -6550,10 +6566,17 @@ public class JavaFasta extends JApplet {
 			public void actionPerformed(ActionEvent e) {
 				int[] rr = atable.getSelectedRows();
 				if( rr != null && rr.length > 0 ) {
+					Set<Sequence> sset = new HashSet<Sequence>();
 					for( int r : rr ) {
 						int i = atable.convertRowIndexToModel(r);
 						Annotation ann = serifier.lann.get(i);
 						ann.seq.addAnnotation( ann );
+						
+						sset.add( ann.seq );
+					}
+					
+					for( Sequence seq : sset ) {
+						seq.sortLocs();
 					}
 				}
 			}
@@ -6693,12 +6716,12 @@ public class JavaFasta extends JApplet {
 						ann.name = ann.name.toUpperCase();
 						
 						List<Annotation> lann;
-						if( mann.containsKey(ann.seq.name) ) {
-							lann = mann.get(ann.seq.name);
+						if( mann.containsKey(ann.seq.getName()) ) {
+							lann = mann.get(ann.seq.getName());
 						} else {
 							lann = new ArrayList<Annotation>();
 							System.err.println();
-							mann.put( ann.seq.name, lann );
+							mann.put( ann.seq.getName(), lann );
 						}
 						lann.add( ann );
 						//allset.add( ann );
@@ -6727,10 +6750,6 @@ public class JavaFasta extends JApplet {
 						int storecount = 0;
 						String similar = null;
 						boolean rev = false;
-						
-						if( ann.seq.name.contains("islandicus3838_scaffold00001") ) {
-							System.err.println();
-						} //else System.err.println( "sssst  	" + ann.seq.name );
 						
 						int maxconsecount = 0;
 						for( String rep : tann.keySet() ) {
@@ -7050,7 +7069,7 @@ public class JavaFasta extends JApplet {
 					}
 				}
 				System.err.println();
-				File file = new File("/Users/sigmar/wb.xlsx");
+				File file = new File("/Users/sigmar/wb2.xlsx");
 				
 				Map<String,CellStyle>	csMap = new HashMap<String,CellStyle>();
 				
@@ -7062,8 +7081,8 @@ public class JavaFasta extends JApplet {
 					int u = 0;
 					hd.createCell(k).setCellValue(spec);
 					for( Sequence seq : serifier.lseq ) {
-						if( seq.name.contains(spec) && mann.containsKey(seq.name) ) {
-							List<Annotation> repeats = mann.get(seq.name);
+						if( seq.getName().contains(spec) && mann.containsKey(seq.getName()) ) {
+							List<Annotation> repeats = mann.get(seq.getName());
 							
 							if( u < lrow.size() ) rw = lrow.get(u);
 							else {
@@ -7072,7 +7091,7 @@ public class JavaFasta extends JApplet {
 							}
 							u++;
 							
-							rw.createCell(k).setCellValue(seq.name);
+							rw.createCell(k).setCellValue(seq.getName());
 							
 							List<Annotation> olann = seq.getAnnotations();
 							if( olann != null ) {
@@ -7102,7 +7121,7 @@ public class JavaFasta extends JApplet {
 									name = name.substring(0,m);
 									
 									if( ann.type != null && ann.type.contains("mummer") ) {
-										if( onlycas > 3 ) {
+										if( onlycas > 2 ) {
 											Row r = hrow.get(spec);
 											int c = hcell.size()+1;
 											

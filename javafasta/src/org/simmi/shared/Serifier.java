@@ -1045,7 +1045,7 @@ public class Serifier {
 						}
 					}
 				} else {
-					String e = seq.name;
+					String e = seq.getName();
 					//System.err.println( "e " + e );
 					if( e != null ) {
 						if( idspec == null ) {
@@ -1119,7 +1119,7 @@ public class Serifier {
 						set.add( et );
 					}
 				} else {
-					String e = seq.name;
+					String e = seq.getName();
 					if( e != null ) {
 						String tegstr;
 						
@@ -1174,7 +1174,7 @@ public class Serifier {
 	}
 	
 	public void writeSequence( Sequence seq, BufferedWriter fw ) throws IOException {
-		fw.write(">"+seq.name+"\n");
+		fw.write(">"+seq.getName()+"\n");
 		for( int k = 0; k < seq.sb.length(); k+=70 ) {
 			int m = Math.min(seq.sb.length(), k+70);
 			String substr = seq.sb.substring(k, m);
@@ -2162,7 +2162,7 @@ public class Serifier {
 		
 		for( String m : mseq.keySet() ) {
 			Sequence s = mseq.get( m );
-			System.err.println( m + "    " + s.name );
+			System.err.println( m + "    " + s.getName() );
 		}
 		//return idmap;
 	}
@@ -2178,6 +2178,19 @@ public class Serifier {
 			int i = 0;
 			while( i < seq.sb.length() ) {
 				if( seq.sb.charAt(i) == '-' ) seq.sb.deleteCharAt(i);
+				else i++;
+			}
+		}
+		
+		checkMaxMin();
+	}
+	
+	public void removeAllNs( List<Sequence> seqlist ) {
+		for( Sequence seq : seqlist ) {
+			int i = 0;
+			while( i < seq.sb.length() ) {
+				char c = seq.sb.charAt(i);
+				if( c == 'N' || c == 'n' ) seq.sb.deleteCharAt(i);
 				else i++;
 			}
 		}
@@ -4363,9 +4376,9 @@ public class Serifier {
 	   		 
 	   		if( val <= end ) {
 	   			if( italic ) {
-	   				osw.write( "><i>" + seq.name + "</i>\n" );
+	   				osw.write( "><i>" + seq.getName() + "</i>\n" );
 	   			} else {
-	   				osw.write( ">" + seq.name + "\n" );
+	   				osw.write( ">" + seq.getName() + "\n" );
 	   			}
 	   		}
 	   		

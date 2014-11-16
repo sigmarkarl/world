@@ -66,9 +66,16 @@ public class Annotation implements Comparable<Object> {
 		return teg;
 	}
 	
-	public Sequence		alignedsequence;
+	private Sequence		alignedsequence;
 	public Sequence getAlignedSequence() {
 		return alignedsequence;
+	}
+	
+	public void setAlignedSequence( Sequence alseq ) {
+		if( seq != null ) System.err.println( "set aligned seq " + seq.getName() + "  " + alseq.length() );
+		else System.err.println( "seq null" );
+		
+		this.alignedsequence = alseq;
 	}
 	
 	public StringBuilder getProteinSubsequence( int u, int e ) {
