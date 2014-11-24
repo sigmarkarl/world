@@ -1,6 +1,8 @@
 package org.simmi.shared;
 
 import java.awt.Color;
+import java.io.IOException;
+import java.io.Writer;
 import java.nio.IntBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -8,6 +10,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class Sequence implements Comparable<Sequence> {
 	/*public static int						max = 0;
@@ -383,6 +387,31 @@ public class Sequence implements Comparable<Sequence> {
 			annset.remove( i-1 );
 	}
 	
+	public void writeSequence( Writer fw ) throws IOException {
+		fw.write(">"+getName()+"\n");
+		for( int k = 0; k < sb.length(); k+=70 ) {
+			int m = Math.min(sb.length(), k+70);
+			String substr = sb.substring(k, m);
+			//(seq.sb.length() == k+70 ? "")
+			fw.write( substr+"\n" );
+		}
+	}
+	
+	public void writeSplitSequence( Writer fw ) throws IOException {
+		int total = 0;
+		while( total < sb.length() ) {
+			fw.write(">"+getName()+"_"+total+"\n");
+			int end = Math.min(total+1020,sb.length());
+			for( int k = total; k < end; k+=70 ) {
+				int m = Math.min(end, k+70);
+				String substr = sb.substring(k, m);
+				//(seq.sb.length() == k+70 ? "")
+				fw.write( substr+"\n" );
+			}
+			total += 1020;
+		}
+	}
+	
 	public void injectAfter( Annotation cur, Annotation tv ) {
 		int i = annset.indexOf( cur );
 		if( i != -1 ) {
@@ -480,15 +509,112 @@ public class Sequence implements Comparable<Sequence> {
 		}
 	}
 	
+	public static int parseSpec( String lname ) {
+		int i = lname.indexOf("contig");
+		if( i == -1 ) {
+			i = lname.indexOf("scaffold");
+		}
+		if( i == -1 ) {
+			i = lname.indexOf("RAST");
+			if( i >= 0 ) i += 5;
+		}
+		if( i == -1 && lname.length() > 5 && (lname.startsWith("J") || lname.startsWith("A")) && lname.charAt(4) == '0' ) i = 5;
+		if( i == -1 ) {
+			i = lname.indexOf("uid");
+		}
+		
+		/*int i = lname.indexOf("contig");
+		if( i == -1 ) {
+			i = lname.indexOf("scaffold");
+		}
+		if( i == -1 ) {
+			i = lname.indexOf("RAST")+5;
+		}
+		if( i == -1 && lname.length() > 5 && lname.startsWith("J") && lname.charAt(4) == '0' ) i = 5;*/
+		
+		return i;
+	}
+	
+	public static String nameFix( String selspec, boolean isthermus ) {
+		String ret = selspec;
+		if( isthermus ) {
+			if( selspec.contains("Rhodothermus_") ) {
+				selspec = selspec.replace("Rhodothermus_", "R.");
+				int i = selspec.indexOf("_uid");
+				if( i != -1 ) {
+					ret = selspec.substring(0,i);
+				} else {
+					i = selspec.indexOf('_');
+					if( i != -1 ) {
+						i = selspec.indexOf('_', i+1);
+						if( i != -1 ) {
+							i = selspec.indexOf('_', i+1);
+							if( i != -1 ) {
+								i = selspec.lastIndexOf('_', i+1);
+								if( i != -1 ) ret = selspec.substring(0, i);
+							}
+						}
+					}
+				}
+			} else if( selspec.contains("hermus") ) {			
+				int i = selspec.indexOf("_uid");
+				if( i != -1 ) {
+					ret = selspec.substring(0,i);
+				} else if(selspec.contains("DSM")) {
+					int k = selspec.indexOf("DSM");
+					k = selspec.indexOf('_', k+4);
+					if( k == -1 ) k = selspec.length();
+					ret = selspec.substring(0,k);
+				} else {
+					
+					if( selspec.equals("Thermus_4884") ) ret = "Thermus_aquaticus_4884";
+					else if( selspec.equals("Thermus_2121") ) ret = "Thermus_scotoductus_2121";
+					
+					i = selspec.indexOf('_');
+					if( i != -1 ) {
+						i = selspec.indexOf('_', i+1);
+						if( i != -1 ) {
+							i = selspec.indexOf('_', i+1);
+							if( i != -1 ) {
+								i = selspec.lastIndexOf('_', i+1);
+								if( i != -1 ) ret = selspec.substring(0, i);
+							}
+						}
+					}
+				}
+			} else if( (selspec.charAt(0) == 'J' || selspec.charAt(0) == 'A') && (selspec.length() == 4 || selspec.charAt(4) == '0') ) {
+				if( selspec.startsWith("JQNC") ) ret = "Thermus_caliditerrae";
+				if( selspec.startsWith("JQMV") ) ret = "Thermus_sp._YIM_77409";
+				if( selspec.startsWith("JQLK") ) ret = "Thermus_tengchongensis";
+				if( selspec.startsWith("JQLJ") ) ret = "Thermus_scotoductus_KI2";
+				
+				if( selspec.startsWith("AUIW") ) ret = "Thermus_antranikianii_DSM_12462";
+				if( selspec.startsWith("ATXJ") ) ret = "Thermus_islandicus_DSM_21543";
+				if( selspec.startsWith("ATNI") ) ret = "Thermus_sp._NMX2";
+				if( selspec.startsWith("ARLD") ) ret = "Thermus_scotoductus_DSM_8553";
+				if( selspec.startsWith("AQOS") ) ret = "Thermus_thermophilus_ATCC_33923";
+				
+			} else if( selspec.contains("GenBank") || selspec.contains("MAT") ) {
+				
+			} else {
+				if( selspec.contains("islandicus") ) ret = "Thermus_islandicus_3838";
+				
+				Matcher m = Pattern.compile("\\d").matcher(selspec); 
+				int firstDigitLocation = m.find() ? m.start() : 0;
+				if( firstDigitLocation == 0 ) ret = "Thermus_" + selspec;
+				else ret = "Thermus_" + selspec.substring(0,firstDigitLocation) + "_" + selspec.substring(firstDigitLocation);
+			}
+			return ret.replace("Thermus_", "T.");
+		}
+		return ret;
+	}
+	
 	public static String getSpec( String name ) {
 		String spec = "";
 		int i = specCheck( name );
 		
 		if( i == -1 ) {
-			i = name.indexOf("contig");
-			if( i == -1 ) {
-				i = name.indexOf("scaffold");
-			}
+			i = parseSpec( name );
 			if( i == -1 ) {
 				i = name.lastIndexOf('_')+1;
 				//System.err.println( name );
@@ -1440,6 +1566,40 @@ public class Sequence implements Comparable<Sequence> {
 		}*/
 		
 		return ret;
+	}
+	
+	public int getSubstringOffset( int start, int end, int ori ) {
+		if( ori == -1 ) {
+			return Math.min(0,end-sb.length());
+		} else return Math.min(0,start);
+	}
+	
+	public String getPaddedSubstring( int ostart, int oend, int ori ) {
+		//if( start < sb.length() && end <= sb.length() ) {
+		if( ori == -1 ) {
+			StringBuilder subsb = new StringBuilder();
+			int start = Math.max(0, ostart);
+			int end = Math.min(sb.length(), oend);
+			for( int i = end-1; i >= start; i-- ) {
+				char c = sb.charAt(i);
+				char cc = rc.containsKey(c) ? rc.get( c ) : c;
+				subsb.append( cc );
+			}
+			while( oend > Math.max(sb.length(),ostart) ) {
+				subsb.insert(0, 'N');
+				oend--;
+			}
+			return subsb.toString();
+		} else {
+			StringBuilder sb2 = new StringBuilder();
+			while( ostart < Math.min(0,oend) ) {
+				sb2.append('N');
+				ostart++;
+			}
+			sb2.append( sb.substring(ostart, Math.min(oend,sb.length())) );
+			return sb2.toString();
+			//if( start < sb.length() ) return sb.substring( Math.max(0,start), Math.min(sb.length(),end) );
+		}
 	}
 	
 	public String getSubstring( int start, int end, int ori ) {

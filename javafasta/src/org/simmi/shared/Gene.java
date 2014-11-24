@@ -15,6 +15,9 @@ public class Gene {
 		}*/
 		
 		this.name = name;
+		if( origin == null || origin.length() < 4 ) {
+			System.err.println();
+		}
 		this.species = origin;
 		this.gg = gg;
 		this.refid = id;
@@ -152,15 +155,7 @@ public class Gene {
 	public String parseSpecies( String lname ) {
 		int i = lname.lastIndexOf('[');
 		if( i == -1 ) {
-			i = lname.indexOf("contig");
-			if( i == -1 ) {
-				i = lname.indexOf("scaffold");
-			}
-			if( i == -1 && lname.length() > 5 && (lname.startsWith("J") || lname.startsWith("A")) && lname.charAt(4) == '0' ) i = 5;
-			
-			if( i == -1 ) {
-				i = lname.indexOf("uid");
-			}
+			i = Sequence.parseSpec( lname );
 			
 			if( i == -1 ) {
 				return null;
@@ -212,6 +207,9 @@ public class Gene {
 				}
 			}*/
 			
+			if( origin == null || origin.length() < 4 ) {
+				System.err.println();
+			}
 			return origin;
 		}
 	}
@@ -219,8 +217,19 @@ public class Gene {
 	public String getSpecies() {
 		if( species == null ) {
 			species = parseSpecies( tegeval.name );
+			if( species == null || species.length() < 4 ) {	
+				System.err.println();
+			}
 			if( species == null ) {
+				if( tegeval.seq == null ) {
+					System.err.println( tegeval.name );
+				}
+				
 				species = tegeval.seq.getSpec();
+				
+				if( species == null || species.length() < 4 ) {	
+					System.err.println();
+				}
 			}
 			/*if( species.length() == 2 ) {
 				System.err.println();
@@ -229,6 +238,9 @@ public class Gene {
 			if( tegeval.teg == null ) {
 				tegeval.teg = species;
 			}
+		}
+		if( species == null || species.length() < 4 ) {	
+			System.err.println();
 		}
 		return species;
 	}

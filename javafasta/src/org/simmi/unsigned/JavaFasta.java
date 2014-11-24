@@ -2834,8 +2834,8 @@ public class JavaFasta extends JApplet {
 	static JFrame		fxframe = new JFrame();
 	static JFXPanel		fxp = new JFXPanel();
 	static Scene 		scene;
-	int[]		currentRowSelection;
-	Point		p;
+	int[]				currentRowSelection;
+	Point				p;
 	public void initGui( final Container cnt ) {
 		final String lof = "com.sun.java.swing.plaf.nimbus.NimbusLookAndFeel";
 		try {
@@ -3507,6 +3507,134 @@ public class JavaFasta extends JApplet {
 				table.tableChanged( new TableModelEvent( table.getModel() ) );
 			}
 		});
+		popup.add( new AbstractAction("Align MAFFT") {
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+				 final List<Sequence> seqlist = new ArrayList<Sequence>();
+		    	 int[] rr = table.getSelectedRows();
+		    	 for( int r : rr ) {
+		    		 int i = table.convertRowIndexToModel( r );
+		    		 Sequence seq = serifier.lseq.get(i);
+		    		 seqlist.add( seq );
+		    	 }
+		    	 final Path tmpdir = Paths.get( System.getProperty("user.home") );
+		    	 try {
+					//BufferedWriter fw = Files.newBufferedWriter( tmpdir.resolve( "tmp.fasta" ) ); //new FileWriter( new File( tmpdir, "tmp.fasta" ) );
+					//serifier.writeFasta( seqlist, fw, null );
+			    	//fw.close();
+			    	
+		    		Path mafftp = tmpdir.resolve("mafftfile.fasta");
+		    		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		    		OutputStreamWriter osw = new OutputStreamWriter(baos);
+		    		serifier.writeFasta( seqlist, osw, null );
+		    		osw.close();
+		    		Files.write(mafftp, baos.toByteArray());
+		    		
+			    	ProcessBuilder pb = new ProcessBuilder("/usr/local/bin/mafft","--thread","4",mafftp.getFileName().toString()); //, "-in", "tmp.fasta", "-out", "tmpout.fasta");
+			    	//ProcessBuilder pb = new ProcessBuilder("/usr/local/bin/mafft","--thread","4","--localpair",mafftp.getFileName().toString()); //, "-in", "tmp.fasta", "-out", "tmpout.fasta");
+			    	
+			    	pb.directory( tmpdir.toFile() );
+			    	//pb.redirectErrorStream(true);
+			    	final Process p = pb.start();
+			    	
+			    	Thread t = new Thread() {
+			    		public void run() {
+			    			InputStream is = p.getErrorStream();
+			    			try {
+			    				ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			    				int r = is.read();
+								while( r != -1 ) {
+									baos.write(r);
+									r = is.read();
+								}
+								is.close();
+								baos.close();
+								
+								System.err.println( "error " + baos.toString() );
+								
+							} catch (IOException e) {
+								e.printStackTrace();
+							}
+			    		}
+			    	};
+			    	t.start();
+			    	
+			    	t = new Thread() {
+			    		public void run() {
+			    			try {
+				    			serifier.lseq.removeAll( seqlist );
+				    			
+			    				InputStream is = p.getInputStream();
+			    				BufferedReader br = new BufferedReader( new InputStreamReader(is) );
+			    				importReader( br );
+			    				br.close();
+			    				is.close();
+			    				
+			    				for( Sequence seq : seqlist ) {
+			    					if( seq.annset != null ) for( Annotation a : seq.annset ) {
+			    						for( Sequence nseq : serifier.lseq ) {
+			    							if( nseq.getName().equals(seq.getName()) ) {
+			    								nseq.addAnnotation(a);
+			    							}
+			    						}
+			    					}
+			    				}
+			    				
+			    				for( Sequence seq : serifier.lseq ) {
+			    					if( seq.annset != null ) {
+			    						for( Annotation a : seq.annset ) {
+			    							int cnt = 0;
+			    							
+			    							int newstart = 0;
+			    							int newstop = 0;
+			    							for( int i = 0; i < seq.length(); i++ ) {
+			    								char c = seq.charAt(i);
+			    								if( c != '-' ) {
+			    									if( cnt == a.start ) newstart = i;
+			    									else if( cnt == a.stop ) {
+			    										newstop = i;
+			    										break;
+			    									}
+			    									cnt++;
+			    								}
+			    							}
+			    							a.start = newstart;
+			    							a.stop = newstop;
+			    						}
+			    					} else {
+			    						System.err.println("empt");
+			    					}
+			    				}
+				    			
+			    				/*ByteArrayOutputStream	baos = new ByteArrayOutputStream();
+				    			int r = is.read();
+						    	while( r != -1 ) {
+						    		baos.write( r );
+						    		r = is.read();
+						    	}
+						    	//System.out.println( baos.toString() );*/
+						    	
+						    	
+						    	 
+						    	
+						    	/*BufferedReader br = Files.newBufferedReader( tmpdir.resolve("tmpout.fasta") ); //new FileReader( new File( tmpdir, "tmpout.fasta" ) );
+						    	//BufferedReader	br = new BufferedReader( fr );
+						    	importReader( br );
+						    	br.close();
+						    	//fr.close();*/
+						    	 
+						    	updateView();
+				    		} catch (IOException e) {
+								e.printStackTrace();
+							}
+			    		}
+			    	};
+			    	t.start();
+		    	 } catch (IOException e) {
+					e.printStackTrace();
+				 }
+			}
+		});
 		popup.add( new AbstractAction("Align") {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
@@ -3611,7 +3739,8 @@ public class JavaFasta extends JApplet {
 						    	br.close();
 						    	//fr.close();*/
 						    	 
-						    	table.tableChanged( new TableModelEvent( table.getModel() ) );
+						    	//table.tableChanged( new TableModelEvent( table.getModel() ) );
+			    				updateView();
 				    		} catch (IOException e) {
 								e.printStackTrace();
 							}
@@ -4117,33 +4246,48 @@ public class JavaFasta extends JApplet {
 					maxseql = Math.max( seq.length(), maxseql );
 				}
 				final int maxseqlen = Math.max(1, maxseql);
-				
+				final int fasti = 25;
+				int offset = 200;
 				JComponent c = new JComponent() {
 					public void paintComponent( Graphics g ) {
 						Graphics2D g2 = (Graphics2D)g;
+						g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+						
 						g2.setColor( Color.white );
 						g2.fillRect(0, 0, this.getWidth(), this.getHeight());
 						g2.setColor( Color.darkGray );
 						int y = 0;
+						
+						g2.setFont( g2.getFont().deriveFont(8.0f) );
 						for( Sequence seq : serifier.lseq ) {
+							String spec = seq.getName(); //Sequence.nameFix(seq.getName(), true);
+							
+							g2.setColor( Color.darkGray );
+							g2.drawString(spec.substring(0,Math.min(30, spec.length())), 1, y*fasti+10);
+							
 							for( int i = 0; i < maxseqlen; i++ ) {
 								char c = seq.charAt(i);
 								if( c != '-' && c != ' ' ) {
-									Object inanno = null;
+									Annotation inanno = null;
 									if( seq.annset != null ) for( Annotation a : seq.annset ) {
 										if( i >= a.start && i <= a.stop ) {
-											inanno = (Color)a.color;
+											inanno = a;
 											break;
 										}
 									}
 									
-									int drawi = (i*1000)/maxseqlen;
-									if( inanno != null && inanno instanceof Color ) {
-										g2.setColor( (Color)inanno );
-										g2.drawLine(drawi, y*20+5, drawi, y*20+15);
+									int drawi = offset+(i*1000)/maxseqlen;
+									if( inanno != null && inanno.color != null && inanno.color instanceof Color ) {
+										g2.setColor( (Color)inanno.color );
+										g2.drawLine(drawi, y*fasti+5, drawi, y*fasti+15);
 									} else {
 										g2.setColor( Color.darkGray );
-										g2.drawLine(drawi, y*20+9, drawi, y*20+11);
+										g2.drawLine(drawi, y*fasti+9, drawi, y*fasti+11);
+									}
+									
+									if( inanno != null && i == inanno.start ) {
+										g2.setColor( Color.darkGray );
+										g2.drawString(inanno.name.substring(0,Math.min(10, inanno.name.length())), drawi, y*fasti+22);
 									}
 								}
 							}
@@ -4152,7 +4296,7 @@ public class JavaFasta extends JApplet {
 					}
 				};
 				int w = 1000; //serifier.lseq.get(0).length();
-				int h = 20*serifier.lseq.size();
+				int h = fasti*serifier.lseq.size();
 				Dimension dim = new Dimension(w, h);
 				c.setPreferredSize(dim);
 				c.setSize( dim );
@@ -4613,7 +4757,11 @@ public class JavaFasta extends JApplet {
 						Annotation a = alist.get(i);
 						Annotation na = alist.get(i+1);
 						
-						Sequence nseq = new Sequence( a.seq.getName()+"-CRISPR-"+a.start, serifier.mseq );
+						String type = "";
+						if( a.getName().contains("-") ) type = "-"+a.getName().substring(0,4);
+						else if( na.getName().contains("-") ) type = "-"+na.getName().substring(0,4);
+						
+						Sequence nseq = new Sequence( a.seq.getName()+"-CRISPR-"+a.start+type, serifier.mseq );
 						
 						if( a.stop+1 > na.start-1 ) {
 							System.err.println();
@@ -6581,6 +6729,72 @@ public class JavaFasta extends JApplet {
 				}
 			}
 		});
+		apopup.add( new AbstractAction("CRISPR types") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				Map<String,Integer> hcell = new HashMap<String,Integer>();
+				hcell.put("Csh2", 1);
+				hcell.put("Csm2", 2);
+				hcell.put("Cse2", 3);
+				hcell.put("Csd2", 4);
+				hcell.put("Cmr3", 5);
+				
+				for( Sequence seq : serifier.lseq ) {
+					List<Annotation> lann = seq.getAnnotations();
+					if( lann != null ) {
+						String found = null;
+						int fidx = -1;
+						
+						for( int k = 0; k < lann.size(); k++ ) {
+							Annotation a = lann.get(k);
+							
+							for( String type : hcell.keySet() ) {
+								if( a.getName().contains(type) ) {
+									found = type;
+									fidx = k;
+								}
+							}
+							
+							String type = a.getType();
+							if( found != null && type != null && type.contains("mummer") ) {
+								if( !a.getName().contains("-") ) {
+									a.setName( found+"-"+a.getName() );
+								}
+							}
+							
+							if( k > fidx+100 ) {
+								found = null;
+							}
+						}
+						
+						found = null;
+						fidx = -1;
+						
+						for( int k = lann.size()-1; k >= 0; k-- ) {
+							Annotation a = lann.get(k);
+							
+							for( String type : hcell.keySet() ) {
+								if( a.getName().contains(type) ) {
+									found = type;
+									fidx = k;
+								}
+							}
+							
+							String type = a.getType();
+							if( found != null && type != null && type.contains("mummer") ) {
+								if( !a.getName().contains("-") ) {
+									a.setName( found+"-"+a.getName() );
+								}
+							}
+							
+							if( k < fidx-100 ) {
+								found = null;
+							}
+						}
+					}
+				}
+			}
+		});
 		apopup.add( new AbstractAction("Retain CRISPR") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -6739,13 +6953,16 @@ public class JavaFasta extends JApplet {
 					Collections.sort(lann);
 					
 					String spec = Sequence.getSpec( seq );
+					//spec = Sequence.nameFix(spec, true);
 					//System.err.println( "truff " + seq + " " + lann.size() );
 					
 					specset.add( spec );
 					
 					for( int i = 0; i < lann.size(); i++ ) {
 						Annotation ann = lann.get(i);
-						String annname = ann.name.toUpperCase();
+						String annname = ann.name;
+						int idx = annname.indexOf('-');
+						if( idx != -1 ) annname = annname.substring(idx+1).toUpperCase();
 						
 						int storecount = 0;
 						String similar = null;
@@ -7003,7 +7220,9 @@ public class JavaFasta extends JApplet {
 					rw = sh.createRow(i++);
 					nullrow.add( rw );
 					hrow.put(spec,rw);
-					rw.createCell(k).setCellValue(spec);
+					
+					String nspec = Sequence.nameFix(spec, true);
+					rw.createCell(k).setCellValue(nspec);
 				}
 				
 				i++;
@@ -7014,7 +7233,8 @@ public class JavaFasta extends JApplet {
 				rw.createCell(k++).setCellValue("sum");
 				System.err.print("\tsum");
 				for( String spec : specset ) {
-					rw.createCell(k++).setCellValue(spec);
+					String nspec = Sequence.nameFix(spec, true);
+					rw.createCell(k++).setCellValue(nspec);
 					System.err.print( "\t" + spec );
 				}
 				System.err.println();
@@ -7079,7 +7299,8 @@ public class JavaFasta extends JApplet {
 				k = 2;
 				for( String spec : specset ) {
 					int u = 0;
-					hd.createCell(k).setCellValue(spec);
+					String nspec = Sequence.nameFix(spec, true);
+					hd.createCell(k).setCellValue(nspec);
 					for( Sequence seq : serifier.lseq ) {
 						if( seq.getName().contains(spec) && mann.containsKey(seq.getName()) ) {
 							List<Annotation> repeats = mann.get(seq.getName());
@@ -7224,12 +7445,12 @@ public class JavaFasta extends JApplet {
 										//int v = name.indexOf('(');
 										//if( v == -1 ) v = name.length();
 										String newname = name; //.substring(0,v);
-										newname = newname.replace("CRISPR-associated", "");
+										/*newname = newname.replace("CRISPR-associated", "");
 										newname = newname.replace("CRISPR", "");
 										newname = newname.replace("protein", "");
 										newname = newname.replace("family", "");
 										newname = newname.replace("helicase", "");
-										newname = newname.replace(",", "");
+										newname = newname.replace(",", "");*/
 										newname = newname.trim();
 										
 										String yes = null;

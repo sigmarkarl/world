@@ -38,8 +38,6 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.zip.GZIPInputStream;
 
-import sun.nio.cs.ext.GBK;
-
 public class Serifier {
 	public Serifier() {
 		super();
@@ -1174,13 +1172,7 @@ public class Serifier {
 	}
 	
 	public void writeSequence( Sequence seq, BufferedWriter fw ) throws IOException {
-		fw.write(">"+seq.getName()+"\n");
-		for( int k = 0; k < seq.sb.length(); k+=70 ) {
-			int m = Math.min(seq.sb.length(), k+70);
-			String substr = seq.sb.substring(k, m);
-			//(seq.sb.length() == k+70 ? "")
-			fw.write( substr+"\n" );
-		}
+		seq.writeSequence( fw );
 	}
 	
 	public List<Set<String>> makeBlastCluster( final Path osf, final Path blastfile, int clustermap, float id, float len, Map<String,String> idspec, List<Set<String>> total, Map<String,Gene> refmap ) throws IOException {
@@ -2190,7 +2182,15 @@ public class Serifier {
 			int i = 0;
 			while( i < seq.sb.length() ) {
 				char c = seq.sb.charAt(i);
-				if( c == 'N' || c == 'n' ) seq.sb.deleteCharAt(i);
+				if( c == 'N' || c == 'n' ) {
+					seq.sb.deleteCharAt(i);
+					for( Annotation a : seq.getAnnotations() ) {
+						if( a.start >= i ) {
+							a.start--;
+							a.stop--;
+						} else if( a.stop >= i ) a.stop--;
+					}
+				}
 				else i++;
 			}
 		}
@@ -2974,9 +2974,14 @@ public class Serifier {
 		
 		i = arglist.indexOf("-strip");
 		if( i >= 0 ) {
+			int index = 0;
+			if( i+1 < args.length && !args[i+1].startsWith("-") ) {
+				index = Integer.parseInt(args[i+1]);
+			}
+			
 			appendSequenceInJavaFasta(this.sequences.get(0), null, true);
 			for( Sequence seq : this.lseq ) {
-				seq.setName( seq.getName().split("[\t _]+")[0] );
+				seq.setName( seq.getName().split("[\t _]+")[index] );
 			}
 			FileWriter fw = new FileWriter( outf );
 			this.writeFasta(this.lseq, fw, null);

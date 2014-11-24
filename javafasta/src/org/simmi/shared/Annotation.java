@@ -170,6 +170,14 @@ public class Annotation implements Comparable<Object> {
 		dbref.add( val );
 	}
 	
+	public int getSubstringOffset( int u, int e ) {
+		return seq.getSubstringOffset(start+u, start+e, ori);
+	}
+	
+	public String getPaddedSubstring( int u, int e ) {
+		return seq.getPaddedSubstring(start+u, start+e, ori);
+	}
+	
 	public String getSubstring( int u, int e ) {
 		return seq.getSubstring(start+u, start+e, ori);
 	}
@@ -195,12 +203,20 @@ public class Annotation implements Comparable<Object> {
 		return name;
 	}
 	
+	public void setName( String name ) {
+		this.name = name;
+	}
+	
 	public String getType() {
 		return type;
 	}
 	
 	public Sequence getContig() {
 		return seq;
+	}
+	
+	public void setContig( Sequence contig ) {
+		this.seq = contig;
 	}
 	
 	public Annotation getNext() {

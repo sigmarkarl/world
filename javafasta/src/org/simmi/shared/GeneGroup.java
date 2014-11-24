@@ -286,6 +286,27 @@ public class GeneGroup {
 			}
 		}
 		
+		String genename = ret;
+		if( genename.contains("CRISPR") ) {
+			int k = genename.indexOf('(');
+			if( k == -1 ) k = genename.length();
+			genename = genename.substring(0,k);
+			genename = genename.replace("CRISPR-associated","");
+			genename = genename.replace("CRISPR","");
+			genename = genename.replace("helicase","");
+			genename = genename.replace("endonuclease","");
+			genename = genename.replace("Cas3-HD","");
+			genename = genename.replace("/","");
+			genename = genename.replace(",","");
+			genename = genename.replace("type I-E","");
+			genename = genename.replace("ECOLI-associated","");
+			genename = genename.replace("family","");
+			genename = genename.replace("protein","");
+			genename = genename.replace("RAMP","");
+			genename = genename.trim();
+			ret = genename;
+		}
+		
 		/*if( ret == null || ret.length() == 0 ) {
 			System.err.println();
 			
@@ -448,12 +469,6 @@ public class GeneGroup {
 			genes.add( gene );
 			
 			String specstr = gene.getSpecies();
-			
-			if( specstr == null ) {
-				
-				System.err.println();
-				
-			}
 			
 			Teginfo tigenes;
 			if( species.containsKey( specstr ) ) {
