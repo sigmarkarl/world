@@ -268,11 +268,6 @@ public class Gene {
 	public Tegeval tegeval;
 	private String aac;
 	public int index;
-	public String	designation;
-	
-	public boolean isPhage() {
-		return designation != null && designation.contains("phage");
-	}
 
 	GeneGroup	gg;
 	// Set<String> group;

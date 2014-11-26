@@ -283,16 +283,10 @@ public class Serifier {
 	}
 	
 	public void writeGenebank( Path genbankOut, boolean gbk, boolean translations, Sequences s, Map<String,List<Annotation>> mapan ) throws IOException {
-		int count = 0;
-		for( Sequence sbld : lseq ) {
-			//Sequence sbld = lseq.get(key);
-			count += sbld.length();
-		}
-		count += (lseq.size()-1)*addon.length();
-		
 		if( gbk ) {
 			BufferedWriter	fw = Files.newBufferedWriter(genbankOut);
 			for( Sequence sbld : lseq ) {
+				int count = sbld.length();
 				String key = sbld.getName();
 				int ival = s.getName().indexOf('.');
 				String spec = s.getName().substring(0, ival == -1 ? s.getName().length() : ival );
@@ -308,9 +302,9 @@ public class Serifier {
 				fw.write( keyw+"\n" );
 				fw.write( feat+"\n" );
 				
-				count = 1;
+				//count = 1;
 				//Sequence sbld = mseq.get(key);
-				fw.write( "     fasta_record    "+count+".."+(count+sbld.length())+"\n" );
+				fw.write( "     fasta_record    "+1+".."+(sbld.length())+"\n" );
 				fw.write( "                     /name=\""+key+"\"\n" );
 				
 				if( mapan.containsKey(key) ) {
@@ -322,7 +316,7 @@ public class Serifier {
 							Annotation annn = lann.get(i);
 							
 							if( annn.name != null && !annn.name.contains("No hits") ) {
-								String locstr = ((sbld.length()-annn.stop+1)+count)+".."+((sbld.length()-annn.start+1)+count);
+								String locstr = ((sbld.length()-annn.stop+1))+".."+((sbld.length()-annn.start+1));
 								
 								fw.write( "     "+annn.type );
 								int len = annn.type.length();
@@ -362,7 +356,7 @@ public class Serifier {
 					} else {
 						for( Annotation annn : lann ) {
 							if( annn.name != null && !annn.name.contains("No hits") ) {
-								String locstr = (annn.start-1+count)+".."+(annn.stop-1+count);
+								String locstr = (annn.start-1)+".."+(annn.stop-1);
 								
 								fw.write( "     "+annn.type );
 								int len = annn.type.length();
@@ -400,8 +394,8 @@ public class Serifier {
 					}
 				}
 				
-				count += sbld.length();
-				count += addon.length();
+				//count = sbld.length();
+				//count += addon.length();
 
 				fw.write( "ORIGIN" );
 				count = 1;
@@ -419,6 +413,13 @@ public class Serifier {
 			}
 			fw.close();
 		} else {
+			int count = 0;
+			for( Sequence sbld : lseq ) {
+				//Sequence sbld = lseq.get(key);
+				count += sbld.length();
+			}
+			count += (lseq.size()-1)*addon.length();
+			
 			BufferedWriter	fw = Files.newBufferedWriter(genbankOut);
 			String loc = "LOCUS       "+s.getName()+"                "+count+" bp    dna     linear   UNK";
 			String def = "DEFINITION  [organism=Unknown] [strain=Unknown] [gcode=11] [date=6-26-2012]";

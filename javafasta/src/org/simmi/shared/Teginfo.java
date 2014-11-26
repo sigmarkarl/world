@@ -18,7 +18,7 @@ public class Teginfo implements Teg {
 
 	public String toString() {
 		String ret = best.toString();
-		String design = best.getGene().designation;
+		String design = best.designation;
 		if( design != null ) ret += " " + design;
 		for (Tegeval tv : tset) {
 			if (tv != best) {

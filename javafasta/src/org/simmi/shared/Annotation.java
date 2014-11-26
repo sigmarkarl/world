@@ -27,6 +27,11 @@ public class Annotation implements Comparable<Object> {
 	public int				num;
 	public boolean			backgap = false;
 	public boolean			frontgap = false;
+	public String	designation;
+	
+	public boolean isPhage() {
+		return designation != null && designation.contains("phage");
+	}
 	
 	public boolean isSelected() {
 		return selected;

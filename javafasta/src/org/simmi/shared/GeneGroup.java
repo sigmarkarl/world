@@ -206,7 +206,7 @@ public class GeneGroup {
 	
 	public boolean isInAnyPhage() {
 		for( Gene g : genes ) {
-			if( g.isPhage() ) return true;
+			if( g.tegeval.isPhage() ) return true;
 		}
 		
 		return false;
