@@ -2831,6 +2831,65 @@ public class JavaFasta extends JApplet {
 		}
 	}
 	
+	public void drawPhys( Graphics2D g2, int fasti, int maxseqlen, int offset, int w, int h) {
+		g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+		
+		g2.setColor( Color.white );
+		g2.fillRect(0, 0, w, h);
+		g2.setColor( Color.darkGray );
+		int y = 0;
+		
+		g2.setFont( g2.getFont().deriveFont(9.0f) );
+		for( Sequence seq : serifier.lseq ) {
+			String spec = seq.getName(); //Sequence.nameFix(seq.getName(), true);
+			
+			g2.setColor( Color.darkGray );
+			String nspec = spec.substring(0,Math.min(30, spec.length()));
+			int strw = g2.getFontMetrics().stringWidth(nspec);
+			g2.drawString(nspec, 175-strw, y*fasti+15);
+			
+			for( int i = 0; i < maxseqlen; i++ ) {
+				char c = seq.charAt(i);
+				if( c != '-' && c != ' ' ) {
+					Annotation inanno = null;
+					if( seq.annset != null ) for( Annotation a : seq.annset ) {
+						if( i >= a.start && i <= a.stop ) {
+							inanno = a;
+							break;
+						}
+					}
+					
+					int drawi = offset+(i*1100)/maxseqlen;
+					if( inanno != null && inanno.color != null && inanno.color instanceof Color ) {
+						g2.setColor( (Color)inanno.color );
+						//if( inanno.ori == 1 ) g2.drawLine(drawi, y*fasti+5, drawi+1, y*fasti+15);
+						//else g2.drawLine(drawi+1, y*fasti+5, drawi, y*fasti+15);
+						g2.drawLine(drawi, y*fasti+5, drawi, y*fasti+15);
+					} else {
+						g2.setColor( Color.darkGray );
+						g2.drawLine(drawi, y*fasti+9, drawi, y*fasti+11);
+					}
+					
+					if( inanno != null && i == inanno.start && inanno.type == null ) {
+						g2.setColor( Color.darkGray );
+						
+						int val = inanno.name.length();
+						int bil = (inanno.stop*1100)/maxseqlen - (inanno.start*1100)/maxseqlen;
+						String str = inanno.name.substring(0,Math.min(val, inanno.name.length()));
+						strw = g2.getFontMetrics().stringWidth(str);
+						while( strw > bil ) {
+							val--;
+							str = inanno.name.substring(0,Math.min(val, inanno.name.length()));
+							strw = g2.getFontMetrics().stringWidth(str);
+						}
+						g2.drawString(str, drawi, y*fasti+25);
+					}
+				}
+			}
+			y++;
+		}
+	}
+	
 	static JFrame		fxframe = new JFrame();
 	static JFXPanel		fxp = new JFXPanel();
 	static Scene 		scene;
@@ -3530,8 +3589,8 @@ public class JavaFasta extends JApplet {
 		    		osw.close();
 		    		Files.write(mafftp, baos.toByteArray());
 		    		
-			    	ProcessBuilder pb = new ProcessBuilder("/usr/local/bin/mafft","--thread","4",mafftp.getFileName().toString()); //, "-in", "tmp.fasta", "-out", "tmpout.fasta");
-			    	//ProcessBuilder pb = new ProcessBuilder("/usr/local/bin/mafft","--thread","4","--localpair",mafftp.getFileName().toString()); //, "-in", "tmp.fasta", "-out", "tmpout.fasta");
+			    	//ProcessBuilder pb = new ProcessBuilder("/usr/local/bin/mafft","--thread","4",mafftp.getFileName().toString()); //, "-in", "tmp.fasta", "-out", "tmpout.fasta");
+			    	ProcessBuilder pb = new ProcessBuilder("/usr/local/bin/mafft","--thread","32","--localpair",mafftp.getFileName().toString()); //, "-in", "tmp.fasta", "-out", "tmpout.fasta");
 			    	
 			    	pb.directory( tmpdir.toFile() );
 			    	//pb.redirectErrorStream(true);
@@ -4247,61 +4306,40 @@ public class JavaFasta extends JApplet {
 				}
 				final int maxseqlen = Math.max(1, maxseql);
 				final int fasti = 25;
-				int offset = 200;
+				final int offset = 180;
 				JComponent c = new JComponent() {
 					public void paintComponent( Graphics g ) {
 						Graphics2D g2 = (Graphics2D)g;
-						g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
-						
-						g2.setColor( Color.white );
-						g2.fillRect(0, 0, this.getWidth(), this.getHeight());
-						g2.setColor( Color.darkGray );
-						int y = 0;
-						
-						g2.setFont( g2.getFont().deriveFont(8.0f) );
-						for( Sequence seq : serifier.lseq ) {
-							String spec = seq.getName(); //Sequence.nameFix(seq.getName(), true);
-							
-							g2.setColor( Color.darkGray );
-							g2.drawString(spec.substring(0,Math.min(30, spec.length())), 1, y*fasti+10);
-							
-							for( int i = 0; i < maxseqlen; i++ ) {
-								char c = seq.charAt(i);
-								if( c != '-' && c != ' ' ) {
-									Annotation inanno = null;
-									if( seq.annset != null ) for( Annotation a : seq.annset ) {
-										if( i >= a.start && i <= a.stop ) {
-											inanno = a;
-											break;
-										}
-									}
-									
-									int drawi = offset+(i*1000)/maxseqlen;
-									if( inanno != null && inanno.color != null && inanno.color instanceof Color ) {
-										g2.setColor( (Color)inanno.color );
-										g2.drawLine(drawi, y*fasti+5, drawi, y*fasti+15);
-									} else {
-										g2.setColor( Color.darkGray );
-										g2.drawLine(drawi, y*fasti+9, drawi, y*fasti+11);
-									}
-									
-									if( inanno != null && i == inanno.start ) {
-										g2.setColor( Color.darkGray );
-										g2.drawString(inanno.name.substring(0,Math.min(10, inanno.name.length())), drawi, y*fasti+22);
-									}
-								}
-							}
-							y++;
-						}
+						drawPhys( g2, fasti, maxseqlen, offset, this.getWidth(), this.getHeight() );
 					}
 				};
-				int w = 1000; //serifier.lseq.get(0).length();
+				int w = 1280; //serifier.lseq.get(0).length();
 				int h = fasti*serifier.lseq.size();
 				Dimension dim = new Dimension(w, h);
 				c.setPreferredSize(dim);
 				c.setSize( dim );
 				JScrollPane pane = new JScrollPane( c );
 				frame.add( pane );
+				
+				JPopupMenu popup = new JPopupMenu();
+				popup.add( new AbstractAction("Save img") {
+
+					@Override
+					public void actionPerformed(ActionEvent e) {
+						int w = 1280;
+						int h = fasti*serifier.lseq.size()+10;
+						BufferedImage	bimg = new BufferedImage(w,h,BufferedImage.TYPE_INT_RGB);
+						Graphics2D g2 = bimg.createGraphics();
+						drawPhys( g2, fasti, maxseqlen, offset, w, h );
+						g2.dispose();
+						try {
+							ImageIO.write(bimg, "png", new File("/home/sigmar/mynd.png"));
+						} catch (IOException e1) {
+							e1.printStackTrace();
+						}
+					}
+				});
+				c.setComponentPopupMenu( popup );
 				
 				frame.setVisible(true);
 			}
@@ -4326,7 +4364,7 @@ public class JavaFasta extends JApplet {
 				for( String spec : mseq.keySet() ) {
 					List<Sequence> lseq = mseq.get(spec);
 					
-					String pname = "/Users/sigmar/in."+spec+".fasta";
+					String pname = "/home/sigmar/in."+spec+".fasta";
 					Path p = Paths.get(pname);
 					
 					try {
@@ -4343,7 +4381,7 @@ public class JavaFasta extends JApplet {
 					}*/
 					
 					NativeRun nrun = new NativeRun();
-					List<String> commandsList = new ArrayList<String>( Arrays.asList( new String[] {"/usr/local/Cellar/mummer/3.23/libexec/mummer", "-maxmatch", "-n", "-l", "25", pname, pname} ) );
+					List<String> commandsList = new ArrayList<String>( Arrays.asList( new String[] {"mummer", "-maxmatch", "-n", "-l", "25", pname, pname} ) );
 					
 					final ByteArrayOutputStream baos = new ByteArrayOutputStream();
 					//Path pout = Paths.get("/Users/sigmar/pout.mummer");
