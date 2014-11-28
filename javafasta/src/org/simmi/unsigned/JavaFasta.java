@@ -2859,12 +2859,33 @@ public class JavaFasta extends JApplet {
 						}
 					}
 					
+					Map<String,Integer> countmap = new HashMap<String,Integer>();
+					for( Sequence sseq : serifier.lseq ) {
+						if( sseq.annset != null ) for( Annotation a : sseq.annset ) {
+							if( i >= a.start && i <= a.stop ) {
+								if( countmap.containsKey(a.group) ) {
+									countmap.put(a.group, countmap.get(a.group)+1);
+								} else {
+									countmap.put(a.group, 1);
+								}
+								break;
+							}
+						}
+					}
+					
 					int drawi = offset+(i*1100)/maxseqlen;
 					if( inanno != null && inanno.color != null && inanno.color instanceof Color ) {
 						g2.setColor( (Color)inanno.color );
 						//if( inanno.ori == 1 ) g2.drawLine(drawi, y*fasti+5, drawi+1, y*fasti+15);
 						//else g2.drawLine(drawi+1, y*fasti+5, drawi, y*fasti+15);
-						g2.drawLine(drawi, y*fasti+5, drawi, y*fasti+15);
+						
+						Integer count = countmap.get( inanno.group );
+						if( count != null && count > serifier.lseq.size()/2 ) {
+							g2.drawLine(drawi, y*fasti+4, drawi, y*fasti+16);
+						} else {
+							g2.drawLine(drawi, y*fasti+7, drawi, y*fasti+13);
+						}
+						//g2.drawLine(drawi, y*fasti+5, drawi, y*fasti+15);
 					} else {
 						g2.setColor( Color.darkGray );
 						g2.drawLine(drawi, y*fasti+9, drawi, y*fasti+11);

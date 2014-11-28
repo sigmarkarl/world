@@ -191,11 +191,6 @@ public class Annotation implements Comparable<Object> {
 		return seq.getSubstring(start, stop, ori);
 	}
 	
-	public String	designation;
-	public boolean isPhage() {
-		return designation != null && designation.contains("phage");
-	}
-	
 	public Annotation( Sequence seq, int start, int stop, int ori, String name ) {
 		this.seq = seq;
 		this.name = name;
