@@ -2960,12 +2960,15 @@ public class Serifier {
 		
 		i = arglist.indexOf("-cut");
 		if( i >= 0 ) {
-			int cutval = Integer.parseInt(args[i+1]);
+			int cutstart = Integer.parseInt(args[i+1]);
+			int cutval = Integer.parseInt(args[i+2]);
 			
 			for( Sequences seqs : this.sequences ) {
 				appendSequenceInJavaFasta( seqs, null, true);
 			}
-			writeFasta( lseq, new FileWriter( outf ), new Rectangle(0,0,cutval,0) );
+			FileWriter w = new FileWriter( outf );
+			writeFasta( lseq, w, new Rectangle(cutstart,0,cutval,0) );
+			w.close();
 			/*FileWriter fw = new FileWriter(outf);
 			FileReader fr = new FileReader( inf );
 			trimFasta( new BufferedReader(fr), fw, makeFset(args[i+1]), false, false );
@@ -2989,7 +2992,7 @@ public class Serifier {
 			fw.close();
 		}
 		
-		i = arglist.indexOf("-trim");
+		i = arglist.indexOf("-filter");
 		if( i >= 0 ) {
 			String add = "";
 			/*if( i+2 < args.length && !args[i+2].startsWith("-") ) {
@@ -3002,7 +3005,7 @@ public class Serifier {
 			fw.close();
 		}
 		
-		i = arglist.indexOf("-ntrim");
+		i = arglist.indexOf("-nfilter");
 		if( i >= 0 ) {
 			String add = "";
 			if( i+2 < args.length && !args[i+2].startsWith("-") ) {
@@ -3015,7 +3018,7 @@ public class Serifier {
 			fw.close();
 		}
 		
-		i = arglist.indexOf("-ntrime");
+		i = arglist.indexOf("-nfiltere");
 		if( i >= 0 ) {
 			System.err.println("doing ntrime");
 			FileWriter fw = new FileWriter( outf );
@@ -4367,31 +4370,66 @@ public class Serifier {
 	}
 	
 	public void writeFasta( List<? extends Sequence> seqlist, Writer osw, Rectangle selectedRect ) throws IOException {
-		writeFasta(seqlist, osw, selectedRect, false);
+		writeFasta(seqlist, osw, selectedRect, null, false);
+	}
+	
+	public void writeFasta( List<? extends Sequence> seqlist, Writer osw, Rectangle selectedRect, Set<Integer> filterset ) throws IOException {
+		writeFasta(seqlist, osw, selectedRect, filterset, false);
 	}
 	
 	public void writeFasta( List<? extends Sequence> seqlist, Writer osw, Rectangle selectedRect, boolean italic ) throws IOException {
-		for( Sequence seq : seqlist ) {
-			int val = 0;
-	   		int end = seq.length();
-	   		 
-	   		if( selectedRect != null && selectedRect.width > 0 ) {
-	   			 val = Math.max( val, selectedRect.x-seq.getStart() );
-	   			 end = Math.min( end, selectedRect.x+selectedRect.width-seq.getStart() );
-	   		}
-	   		 
-	   		if( val <= end ) {
-	   			if( italic ) {
-	   				osw.write( "><i>" + seq.getName() + "</i>\n" );
-	   			} else {
-	   				osw.write( ">" + seq.getName() + "\n" );
-	   			}
-	   		}
-	   		
-	   		while( val < end ) {
-	   			 osw.write( seq.sb.substring(val, Math.min( end, val+70 )) + "\n" );
-	   			 val += 70;
-	   		}
+		writeFasta( seqlist, osw, selectedRect, null, italic );
+	}
+	
+	public void writeFasta( List<? extends Sequence> seqlist, Writer osw, Rectangle selectedRect, Set<Integer> filterset, boolean italic ) throws IOException {
+		if( filterset != null && filterset.size() > 0 ) {
+			for( int i : filterset ) {
+				Sequence seq = seqlist.get(i);
+				
+				int val = 0;
+		   		int end = seq.length();
+		   		 
+		   		if( selectedRect != null && selectedRect.width > 0 ) {
+		   			 val = Math.max( val, selectedRect.x-seq.getStart() );
+		   			 end = Math.min( end, selectedRect.x+selectedRect.width-seq.getStart() );
+		   		}
+		   		 
+		   		if( val <= end ) {
+		   			if( italic ) {
+		   				osw.write( "><i>" + seq.getName() + "</i>\n" );
+		   			} else {
+		   				osw.write( ">" + seq.getName() + "\n" );
+		   			}
+		   		}
+		   		
+		   		while( val < end ) {
+		   			 osw.write( seq.sb.substring(val, Math.min( end, val+70 )) + "\n" );
+		   			 val += 70;
+		   		}
+			}
+		} else {
+			for( Sequence seq : seqlist ) {
+				int val = 0;
+		   		int end = seq.length();
+		   		 
+		   		if( selectedRect != null && selectedRect.width > 0 ) {
+		   			 val = Math.max( val, (selectedRect.x+min)-seq.getStart() );
+		   			 end = Math.min( end, (selectedRect.x+min)+selectedRect.width-seq.getStart() );
+		   		}
+		   		 
+		   		if( val <= end ) {
+		   			if( italic ) {
+		   				osw.write( "><i>" + seq.getName() + "</i>\n" );
+		   			} else {
+		   				osw.write( ">" + seq.getName() + "\n" );
+		   			}
+		   		}
+		   		
+		   		while( val < end ) {
+		   			 osw.write( seq.sb.substring(val, Math.min( end, val+70 )) + "\n" );
+		   			 val += 70;
+		   		}
+			}
 		}
 	}
 	

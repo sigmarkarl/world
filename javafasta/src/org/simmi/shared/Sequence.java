@@ -29,7 +29,7 @@ public class Sequence implements Comparable<Sequence> {
 	public static ArrayList<Annotation>	lann = new ArrayList<Annotation>();
 	public static Map<String,Annotation>	mann = new HashMap<String,Annotation>();*/
 	
-	public static Map<Character, Color> 		aacolor = new HashMap<Character, Color>();
+	public static Map<Character, Color> aacolor = new HashMap<Character, Color>();
 	static Map<Character, Character> 	sidechainpolarity = new HashMap<Character, Character>();
 	static Map<Character, Integer> 		sidechaincharge = new HashMap<Character, Integer>();
 	static Map<Character, Double> 		hydropathyindex = new HashMap<Character, Double>();
@@ -449,7 +449,7 @@ public class Sequence implements Comparable<Sequence> {
 	
 	public Sequence				consensus;
 	private String 				name;
-	//public String				group;
+	public String				group;
 	public String				id;
 	public StringBuilder	 	sb;
 	public IntBuffer			ib = null;
@@ -556,19 +556,31 @@ public class Sequence implements Comparable<Sequence> {
 						}
 					}
 				}
-			} else if( selspec.contains("hermus") ) {			
+			} else if( selspec.contains("Marinithermus_") ) {
+				ret = "Marinithermus_hydrothermalis_T1";
+			} else if( selspec.contains("hermus") ) {	
 				int i = selspec.indexOf("_uid");
 				if( i != -1 ) {
 					ret = selspec.substring(0,i);
 				} else if(selspec.contains("DSM")) {
-					int k = selspec.indexOf("DSM");
-					k = selspec.indexOf('_', k+4);
-					if( k == -1 ) k = selspec.length();
-					ret = selspec.substring(0,k);
+					if(selspec.contains("oshimai")) {
+						ret = "Thermus_oshimai_SPS-17";
+					}/* else if(selspec.contains("")) {
+					
+					}*/ else {
+						int k = selspec.indexOf("DSM");
+						k = selspec.indexOf('_', k+4);
+						if( k == -1 ) k = selspec.length();
+						ret = selspec.substring(0,k);
+					}
+				} else if(selspec.contains("ATCC")) {
+					if(selspec.contains("igniterrae")) {
+						ret = "Thermus_igniterrae_RF-4";
+					}
 				} else {
 					
-					if( selspec.equals("Thermus_4884") ) ret = "Thermus_aquaticus_4884";
-					else if( selspec.equals("Thermus_2121") ) ret = "Thermus_scotoductus_2121";
+					if( selspec.equals("Thermus_4884") ) ret = "Thermus_sp._HR13";
+					else if( selspec.equals("Thermus_2121") ) ret = "Thermus_scotoductus_MAT_2121";
 					
 					i = selspec.indexOf('_');
 					if( i != -1 ) {
@@ -583,26 +595,43 @@ public class Sequence implements Comparable<Sequence> {
 					}
 				}
 			} else if( (selspec.charAt(0) == 'J' || selspec.charAt(0) == 'A') && (selspec.length() == 4 || selspec.charAt(4) == '0') ) {
-				if( selspec.startsWith("JQNC") ) ret = "Thermus_caliditerrae";
+				if( selspec.startsWith("JQNC") ) ret = "Thermus_caliditerrae_YIM_77777";
 				if( selspec.startsWith("JQMV") ) ret = "Thermus_sp._YIM_77409";
-				if( selspec.startsWith("JQLK") ) ret = "Thermus_tengchongensis";
+				if( selspec.startsWith("JQLK") ) ret = "Thermus_tengchongensis_YIM_77401";
 				if( selspec.startsWith("JQLJ") ) ret = "Thermus_scotoductus_KI2";
 				
-				if( selspec.startsWith("AUIW") ) ret = "Thermus_antranikianii_DSM_12462";
-				if( selspec.startsWith("ATXJ") ) ret = "Thermus_islandicus_DSM_21543";
-				if( selspec.startsWith("ATNI") ) ret = "Thermus_sp._NMX2";
-				if( selspec.startsWith("ARLD") ) ret = "Thermus_scotoductus_DSM_8553";
-				if( selspec.startsWith("AQOS") ) ret = "Thermus_thermophilus_ATCC_33923";
+				if( selspec.startsWith("AUIW") ) ret = "Thermus_antranikianii_HN3-7";
+				if( selspec.startsWith("ATXJ") ) ret = "Thermus_islandicus_PRI_3838";
+				if( selspec.startsWith("ATNI") ) ret = "Thermus_scotoductus_NMX2_A1";
+				if( selspec.startsWith("ARLD") ) ret = "Thermus_scotoductus_SE-1";
+				if( selspec.startsWith("AQOS") ) ret = "Thermus_thermophilus_AT-62";
 				
 			} else if( selspec.contains("GenBank") || selspec.contains("MAT") ) {
 				
 			} else {
-				if( selspec.contains("islandicus") ) ret = "Thermus_islandicus_3838";
+				if( selspec.contains("islandicus") ) ret = "Thermus_islandicus_PRI_3838";
+				else if( selspec.contains("filiformis") ) ret = "Thermus_filiformis_Wai33_A1";
+				else if( selspec.contains("kawarayensis") ) ret = "Thermus_kawarayensis_KW11";
+				else if( selspec.contains("brockianus1003") ) ret = "Thermus_brockianus_YS38";
+				else if( selspec.contains("scotoductus252") ) ret = "Thermus_scotoductus_252";
+				else if( selspec.contains("scotoductus4063") ) ret = "Thermus_scotoductus_SA-01";
+				else if( selspec.contains("aquaticus4844") ) ret = "Thermus_sp._HR13";
 				
-				Matcher m = Pattern.compile("\\d").matcher(selspec); 
-				int firstDigitLocation = m.find() ? m.start() : 0;
-				if( firstDigitLocation == 0 ) ret = "Thermus_" + selspec;
-				else ret = "Thermus_" + selspec.substring(0,firstDigitLocation) + "_" + selspec.substring(firstDigitLocation);
+				else {
+					int i = 0;
+					while( i < selspec.length() && (selspec.charAt(i) < '0' || selspec.charAt(i) > '9') ) {
+						i++;
+					}
+					if( i != selspec.length() ) selspec = selspec.substring(0,i)+"_MAT"+selspec.substring(i);
+					else {
+						System.err.println("doni "+selspec);
+					}
+					
+					Matcher m = Pattern.compile("\\d").matcher(selspec); 
+					int firstDigitLocation = m.find() ? m.start() : 0;
+					if( firstDigitLocation == 0 ) ret = "Thermus_" + selspec;
+					else ret = "Thermus_" + selspec.substring(0,firstDigitLocation) + "_" + selspec.substring(firstDigitLocation);
+				}
 			}
 			return ret.replace("Thermus_", "T.");
 		}
@@ -1115,7 +1144,7 @@ public class Sequence implements Comparable<Sequence> {
 	}
 	
 	public String getGroup() {
-		return id;
+		return group;
 	}
 	
 	public String getId() {
@@ -1160,6 +1189,14 @@ public class Sequence implements Comparable<Sequence> {
 			//if( millind == -1 ) millind = name.length();
 			//String val = name.substring( 0, millind ).trim();
 			mseq.put( name, this );
+		}
+	}
+	
+	public Sequence( Sequence seq, boolean rev ) {
+		this();
+		sb.append( seq.sb );
+		if( rev ) {
+			this.reverseComplement();
 		}
 	}
 	
@@ -1210,11 +1247,11 @@ public class Sequence implements Comparable<Sequence> {
 	}
 	
 	public void setName( String name ) {
-		if( name.length() == 2 ) {
-			System.err.println();
-		}
-		
 		this.name = name;
+	}
+	
+	public void setGroup( String name ) {
+		this.group = name;
 	}
 	
 	public boolean equals( Object obj ) {			
@@ -1614,7 +1651,11 @@ public class Sequence implements Comparable<Sequence> {
 				subsb.append( cc );
 			}
 			return subsb.toString();
-		} else if( start < sb.length() ) return sb.substring( Math.max(0,start), Math.min(sb.length(),end) );
+		} else if( start < sb.length() ) {
+			int u = Math.max(0,start);
+			int e = Math.min(sb.length(),end);
+			return sb.substring( u, e );
+		}
 		//}
 		return "";
 	}
