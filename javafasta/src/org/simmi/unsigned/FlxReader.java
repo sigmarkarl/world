@@ -16,7 +16,6 @@ import org.simmi.shared.Sequence;
 import org.simmi.shared.Serifier;
 
 public class FlxReader {
-	
 	public static String join( String[] jj ) {
 		String ret = null;
 		for( String j : jj ) {
@@ -124,9 +123,9 @@ public class FlxReader {
 	
 	public static Map<String,Map<String,String>>	mm = new HashMap<String,Map<String,String>>();
 	
-	public static String home = "/home/sigmar/";
-	public static String type = "brockianus338_v30_minoverlap";
-	public static String add = "/assembly/";
+	public static String home = "/Users/sigmar/thermus_close/";
+	public static String type = "islandicus3838_30";
+	public static String add = "/";//"/assembly/";
 	public static void main(String[] args) {
 		try {
 			Map<String,Sequence>	mseq = new HashMap<String,Sequence>();
