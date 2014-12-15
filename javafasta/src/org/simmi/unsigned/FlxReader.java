@@ -25,6 +25,43 @@ public class FlxReader {
 		return ret;
 	}
 	
+	public static String tengioff( Map<String,String> mog, int recurcount ) {
+		String nstuff = "";
+		if( mog != null && recurcount < 5 ) {
+			for( String m : mog.keySet() ) {
+				String q1 = mog.get(m);
+				
+				int li = m.lastIndexOf('_');
+				String c3 = m.substring(0,li);
+				if( m.substring( li ).equals("_5'") ) {
+					Map<String,String> ss = mm.get(c3+"_3'");
+					if( ss != null ) {
+						String st = tengioff( ss, recurcount+1 );
+						String[] split = st.split( "[ ]+" );
+						for( String s : split ) {
+							if( nstuff.length() == 0 ) nstuff += "("+q1+")"+m+s;
+							else nstuff += "  ("+q1+")"+m+s;
+						}
+					}
+				} else {
+					Map<String,String> ss = mm.get(c3+"_5'");
+					if( ss != null ) {
+						String st = tengioff( ss, recurcount+1 );
+						String[] split = st.split( "[ ]+" );
+						for( String s : split ) {
+							if( nstuff.length() == 0 ) nstuff += "("+q1+")"+m+s;
+							else nstuff += "  ("+q1+")"+m+s;
+						}
+						/*if( nstuff.length() == 0 ) nstuff += "("+q1+")"+m;
+						else nstuff += " ("+q1+")"+m;
+						if( st.length() > 0 ) nstuff += "(  "+st+"  )";*/
+					}
+				}
+			}
+		}
+		return nstuff;
+	}
+	
 	public static String tengi( Map<String,String> mog, String c2, int recurcount ) {
 		String nstuff = "";
 		if( recurcount < 5 ) {
@@ -120,6 +157,10 @@ public class FlxReader {
 					}
 					//System.out.println( join(split) );
 	 */
+	
+	public static String contigName( String sub ) {
+		return sub.length() == 1 ? "contig0000"+sub : sub.length() == 2 ? "contig000"+sub : sub.length() == 3 ? "contig00"+sub : "contig0"+sub;
+	}
 	
 	public static Map<String,Map<String,String>>	mm = new HashMap<String,Map<String,String>>();
 	
@@ -232,7 +273,7 @@ public class FlxReader {
 						String c1 = lastW[5].substring(i);
 						
 						i = lastW[0].indexOf('0');
-						String sctg = "sctg_"+lastW[0].substring(i+1)+"_000"+next++;
+						String sctg = "sctg_"+lastW[0].substring(i+1)+(next >= 10 ? "_00" : "_000")+next++;
 						Sequence sctgseq = mseq.get(sctg);
 						cseq.append( sctgseq.sb );
 						
@@ -302,7 +343,7 @@ public class FlxReader {
 							int n = nsplit.indexOf('_',f+1);
 							while( n != -1 ) {
 								String sub = nsplit.substring(f+1, n);
-								String ctgname = sub.length() == 1 ? "contig0000"+sub : sub.length() == 2 ? "contig000"+sub : "contig00"+sub;
+								String ctgname = contigName( sub );
 								seq = mseq.get(ctgname);
 								touch.add( ctgname );
 								if( seq != null ) {
@@ -322,7 +363,21 @@ public class FlxReader {
 							}
 						} else {
 							cseq.append("NNN");
+							i = lastW[5].indexOf('0');
+							while( lastW[5].charAt(++i) == '0' ) ;
+							String c0 = lastW[5].substring(i);
+							Map<String,String> mog = mm.get(c0+"_3'");
+							nstuff = tengioff( mog, 0 );
+							System.out.println( "<---" + nstuff );
+							
 							System.out.println( join(lastN) );
+							
+							i = split[5].indexOf('0');
+							while( split[5].charAt(++i) == '0' ) ;
+							c0 = split[5].substring(i);
+							mog = mm.get(c0+"_5'");
+							nstuff = tengioff( mog, 0 );
+							System.out.println( "--->" + nstuff );
 							//seq = mseq.get(lastW[1]);
 							//if( seq != null ) serifier.addSequence( seq );
 						}
@@ -332,7 +387,7 @@ public class FlxReader {
 						String c1 = lastW[5].substring(i);
 						
 						i = lastW[0].indexOf('0');
-						String sctg = "sctg_"+lastW[0].substring(i+1)+"_000"+next++;
+						String sctg = "sctg_"+lastW[0].substring(i+1)+(next >= 10 ? "_00" : "_000")+next++;
 						Sequence sctgseq = mseq.get(sctg);
 						cseq.append( sctgseq.sb );
 						
@@ -383,7 +438,7 @@ public class FlxReader {
 							int n = nsplit.indexOf('_',f+1);
 							while( n != -1 ) {
 								String sub = nsplit.substring(f+1, n);
-								String ctgname = sub.length() == 1 ? "contig0000"+sub : sub.length() == 2 ? "contig000"+sub : "contig00"+sub;
+								String ctgname = contigName( sub );
 								seq = mseq.get(ctgname);
 								touch.add( ctgname );
 								if( seq != null ) {
@@ -415,6 +470,14 @@ public class FlxReader {
 						cseq.writeSequence(fw);
 						cseq = new Sequence("plasmid"+plasm++,null);
 					}
+					
+					int i = split[5].indexOf('0');
+					while( split[5].charAt(++i) == '0' ) ;
+					String c0 = split[5].substring(i);
+					Map<String,String> mog = mm.get(c0+"_5'");
+					String nstuff = tengioff( mog, 0 );
+					
+					System.out.println( "---" + nstuff );
 					
 					firstofnew = split;
 				}
@@ -457,7 +520,7 @@ public class FlxReader {
 					int n = nsplit.indexOf('_',f+1);
 					if( n != -1 ) {
 						String sub = nsplit.substring(f+1, n);
-						String ctgname = sub.length() == 1 ? "contig0000"+sub : sub.length() == 2 ? "contig000"+sub : "contig00"+sub;
+						String ctgname = contigName( sub );
 						seq = mseq.get(ctgname);
 						touch.add( ctgname );
 						if( seq != null ) {
