@@ -28,7 +28,7 @@ public class FlxReader {
 	
 	public static String tengioff( Map<String,String> mog, int recurcount ) {
 		String nstuff = "";
-		if( mog != null && recurcount < 5 ) {
+		if( mog != null && recurcount < 3 ) {
 			for( String m : mog.keySet() ) {
 				String q1 = mog.get(m);
 				
@@ -65,7 +65,7 @@ public class FlxReader {
 	
 	public static String tengi( Map<String,String> mog, String c2, int recurcount ) {
 		String nstuff = "";
-		if( recurcount < 5 ) {
+		if( recurcount < 10 ) {
 			for( String m : mog.keySet() ) {
 				String q1 = mog.get(m);
 				
