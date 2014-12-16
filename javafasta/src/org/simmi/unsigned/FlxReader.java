@@ -27,34 +27,36 @@ public class FlxReader {
 	
 	public static String tengioff( Map<String,String> mog, int recurcount ) {
 		String nstuff = "";
-		if( mog != null && recurcount < 5 ) {
+		if( mog != null && recurcount < 10 ) {
 			for( String m : mog.keySet() ) {
-				String q1 = mog.get(m);
-				
-				int li = m.lastIndexOf('_');
-				String c3 = m.substring(0,li);
-				if( m.substring( li ).equals("_5'") ) {
-					Map<String,String> ss = mm.get(c3+"_3'");
-					if( ss != null ) {
-						String st = tengioff( ss, recurcount+1 );
-						String[] split = st.split( "[ ]+" );
-						for( String s : split ) {
-							if( nstuff.length() == 0 ) nstuff += "("+q1+")"+m+s;
-							else nstuff += "  ("+q1+")"+m+s;
+				if( !nstuff.contains(m) ) {
+					String q1 = mog.get(m);
+					
+					int li = m.lastIndexOf('_');
+					String c3 = m.substring(0,li);
+					if( m.substring( li ).equals("_5'") ) {
+						Map<String,String> ss = mm.get(c3+"_3'");
+						if( ss != null ) {
+							String st = tengioff( ss, recurcount+1 );
+							String[] split = st.split( "[ ]+" );
+							for( String s : split ) {
+								if( nstuff.length() == 0 ) nstuff += "("+q1+")"+m+s;
+								else nstuff += "  ("+q1+")"+m+s;
+							}
 						}
-					}
-				} else {
-					Map<String,String> ss = mm.get(c3+"_5'");
-					if( ss != null ) {
-						String st = tengioff( ss, recurcount+1 );
-						String[] split = st.split( "[ ]+" );
-						for( String s : split ) {
-							if( nstuff.length() == 0 ) nstuff += "("+q1+")"+m+s;
-							else nstuff += "  ("+q1+")"+m+s;
+					} else {
+						Map<String,String> ss = mm.get(c3+"_5'");
+						if( ss != null ) {
+							String st = tengioff( ss, recurcount+1 );
+							String[] split = st.split( "[ ]+" );
+							for( String s : split ) {
+								if( nstuff.length() == 0 ) nstuff += "("+q1+")"+m+s;
+								else nstuff += "  ("+q1+")"+m+s;
+							}
+							/*if( nstuff.length() == 0 ) nstuff += "("+q1+")"+m;
+							else nstuff += " ("+q1+")"+m;
+							if( st.length() > 0 ) nstuff += "(  "+st+"  )";*/
 						}
-						/*if( nstuff.length() == 0 ) nstuff += "("+q1+")"+m;
-						else nstuff += " ("+q1+")"+m;
-						if( st.length() > 0 ) nstuff += "(  "+st+"  )";*/
 					}
 				}
 			}
@@ -64,46 +66,63 @@ public class FlxReader {
 	
 	public static String tengi( Map<String,String> mog, String c2, int recurcount ) {
 		String nstuff = "";
-		if( recurcount < 5 ) {
+		if( recurcount < 20 ) {
 			for( String m : mog.keySet() ) {
-				String q1 = mog.get(m);
-				
-				int li = m.lastIndexOf('_');
-				String c3 = m.substring(0,li);
-				if( m.substring( li ).equals("_5'") ) {
-					Map<String,String> ss = mm.get(c3+"_3'");
-					if( ss != null ) {
-						if( ss.containsKey(c2+"_5'") ) {
-							String q2 = ss.get(c2+"_5'");
-							
-							if( nstuff.length() == 0 ) nstuff += "("+q1+")"+m+"("+q2+")";
-							else nstuff += " ("+q1+")"+m+"("+q2+")";
-							//break;
-						} else {
-							String st = tengi( ss, c2, recurcount+1 );
-							if( st.length() > 0 ) {
-								//String q2 = ss.get(c2+"_5'");
-								if( nstuff.length() == 0 ) nstuff += "("+q1+")"+m;
-								else nstuff += " ("+q1+")"+m;
-								nstuff += st;
+				if( !nstuff.contains(m) ) {
+					String q1 = mog.get(m);
+					
+					int li = m.lastIndexOf('_');
+					String c3 = m.substring(0,li);
+					if( m.substring( li ).equals("_5'") ) {
+						Map<String,String> ss = mm.get(c3+"_3'");
+						if( ss != null ) {
+							if( ss.containsKey(c2+"_5'") ) {
+								String q2 = ss.get(c2+"_5'");
+								
+								if( nstuff.length() == 0 ) nstuff += "("+q1+")"+m+"("+q2+")";
+								else nstuff += " ("+q1+")"+m+"("+q2+")";
+								//break;
+							} else {
+								String st = tengi( ss, c2, recurcount+1 );
+								if( st.length() > 0 ) {
+									
+									String[] split = st.split( "[ ]+" );
+									for( String s : split ) {
+										if( nstuff.length() == 0 ) nstuff += "("+q1+")"+m+s;
+										else nstuff += "  ("+q1+")"+m+s;
+									}
+									
+									//String q2 = ss.get(c2+"_5'");
+									/*if( nstuff.length() == 0 ) nstuff += "("+q1+")"+m;
+									else nstuff += " ("+q1+")"+m;
+									nstuff += st;*/
+								}
 							}
 						}
-					}
-				} else {
-					Map<String,String> ss = mm.get(c3+"_5'");
-					if( ss != null ) {
-						if( ss.containsKey(c2+"_5'") ) {
-							String q2 = ss.get(c2+"_5'");
-							
-							if( nstuff.length() == 0 ) nstuff += "("+q1+")"+m+"("+q2+")";
-							else nstuff += " ("+q1+")"+m+"("+q2+")";
-							//break;
-						} else {
-							String st = tengi( ss, c2, recurcount+1 );
-							if( st.length() > 0 ) {
-								if( nstuff.length() == 0 ) nstuff += "("+q1+")"+m;
-								else nstuff += " ("+q1+")"+m;
-								nstuff += st;
+					} else {
+						Map<String,String> ss = mm.get(c3+"_5'");
+						if( ss != null ) {
+							if( ss.containsKey(c2+"_5'") ) {
+								String q2 = ss.get(c2+"_5'");
+								
+								if( nstuff.length() == 0 ) nstuff += "("+q1+")"+m+"("+q2+")";
+								else nstuff += " ("+q1+")"+m+"("+q2+")";
+								//break;
+							} else {
+								String st = tengi( ss, c2, recurcount+1 );
+								if( st.length() > 0 ) {
+									String[] split = st.split( "[ ]+" );
+									for( String s : split ) {
+										if( nstuff.length() == 0 ) nstuff += "("+q1+")"+m+s;
+										else {
+											nstuff += "  ("+q1+")"+m+s;
+										}
+									}
+									
+									/*if( nstuff.length() == 0 ) nstuff += "("+q1+")"+m;
+									else nstuff += " ("+q1+")"+m;
+									nstuff += st;*/
+								}
 							}
 						}
 					}
@@ -165,7 +184,7 @@ public class FlxReader {
 	public static Map<String,Map<String,String>>	mm = new HashMap<String,Map<String,String>>();
 	
 	public static String home = "/Users/sigmar/thermus_close/";
-	public static String type = "islandicus3838_30";
+	public static String type = "brockianus338_v30";
 	public static String add = "/";//"/assembly/";
 	public static void main(String[] args) {
 		try {
@@ -313,11 +332,11 @@ public class FlxReader {
 						}
 						
 						if( nstuff != null && nstuff.length() > 0 ) {
-							String[] nssplit = nstuff.split(" ");
-							int maxmin = 1000;
+							String[] nssplit = nstuff.split("[ ]+");
 							int m = 0;
 							String store = "";
 							for( String ns : nssplit ) {
+								int maxmin = 1000;
 								int l = ns.indexOf('(');
 								while( l != -1 ) {
 									int k = ns.indexOf(')',l+1);
@@ -329,7 +348,7 @@ public class FlxReader {
 									l = ns.indexOf('(',k+1);
 								}
 								
-								if( maxmin > m ) {
+								if( maxmin > m || (maxmin == m && ns.length() < store.length()) ) {
 									store = ns;
 									m = maxmin;
 								}
@@ -337,7 +356,7 @@ public class FlxReader {
 							nstuff = store;
 							
 							System.out.println( nstuff );
-							String[] sp = nstuff.split(" ");
+							String[] sp = nstuff.split("[ ]+");
 							String nsplit = sp[sp.length-1];
 							int f = nsplit.indexOf(')');
 							int n = nsplit.indexOf('_',f+1);
@@ -408,7 +427,7 @@ public class FlxReader {
 						}
 						
 						if( nstuff != null && nstuff.length() > 0 ) {
-							String[] nssplit = nstuff.split(" ");
+							String[] nssplit = nstuff.split("[ ]+");
 							int m = 0;
 							String store = "";
 							for( String ns : nssplit ) {
@@ -432,7 +451,7 @@ public class FlxReader {
 							nstuff = store;
 							
 							System.out.println( nstuff );
-							String[] sp = nstuff.split(" ");
+							String[] sp = nstuff.split("[ ]+");
 							String nsplit = sp[sp.length-1];
 							int f = nsplit.indexOf(')');
 							int n = nsplit.indexOf('_',f+1);
@@ -514,7 +533,7 @@ public class FlxReader {
 				
 				if( nstuff != null && nstuff.length() > 0 ) {
 					System.out.println( nstuff );
-					String[] sp = nstuff.split(" ");
+					String[] sp = nstuff.split("[ ]+");
 					String nsplit = sp[sp.length-1];
 					int f = nsplit.indexOf(')');
 					int n = nsplit.indexOf('_',f+1);
