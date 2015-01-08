@@ -10,6 +10,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -152,7 +153,7 @@ public class Serifier {
 			baos.close();
 
 			ret = baos.toString();
-			System.err.println( ret );
+			//System.err.println( ret );
 			/*Node n = treeutil.parseTreeRecursive( tree, false );
 			treeutil.setLoc( 0 );
 			n.nodeCalcMap( nmap );*/
@@ -2497,9 +2498,24 @@ public class Serifier {
 			while( ++i < args.length ) {
 				String next = args[i];
 				if( !next.startsWith("-") ) {
-					inf = new File( next );
-					Sequences seqs = new Sequences( "", inf.getName(), "nucl", inf.toPath(), 0 );
-					addSequences( seqs );
+					if( next.contains("*") ) {
+						String tec = next.replace("*", "");
+						File cdir = new File(".");
+						File[] fst = cdir.listFiles( new FilenameFilter() {	
+							@Override
+							public boolean accept(File dir, String name) {
+								return name.contains(tec);
+							}
+						});
+						if( fst != null ) for( File f : fst ) {
+							Sequences seqs = new Sequences( "", f.getName(), "nucl", f.toPath(), 0 );
+							addSequences( seqs );
+						}
+					} else {
+						inf = new File( next );
+						Sequences seqs = new Sequences( "", inf.getName(), "nucl", inf.toPath(), 0 );
+						addSequences( seqs );
+					}
 				} else break;
 			}
 		}
@@ -4144,21 +4160,25 @@ public class Serifier {
 		
 		try {
 			Map<String,String>	ftagmap = new HashMap<String,String>();
-			
+			String del = null;
 			if( mappingfile != null ) {
 				File ff = new File( mappingfile );
-				FileReader	fr = new FileReader( ff );
-				BufferedReader	br2 = new BufferedReader( fr );
-				String nline = br2.readLine();
-				while( nline != null ) {
-					String[] split = nline.split("\t");
-					
-					ftagmap.put( split[0], split[1] );
-					
-					nline = br2.readLine();
+				if( ff.exists() ) {
+					FileReader	fr = new FileReader( ff );
+					BufferedReader	br2 = new BufferedReader( fr );
+					String nline = br2.readLine();
+					while( nline != null ) {
+						String[] split = nline.split("\t");
+						
+						ftagmap.put( split[0], split[1] );
+						
+						nline = br2.readLine();
+					}
+					br2.close();
+					fr.close();
+				} else {
+					del = mappingfile;
 				}
-				br2.close();
-				fr.close();
 			}
 			
 			//FileWriter fw = new FileWriter( f );
@@ -4171,17 +4191,26 @@ public class Serifier {
 				//if( joinname == null ) joinname = s.getName();
 				//else joinname += "_"+s.getName();
 				
+				int cnt = 0;
 				BufferedReader br = Files.newBufferedReader(s.getPath(), Charset.defaultCharset());
 				String line = br.readLine();
 				while( line != null ) {
 					if( line.startsWith(">") ) {
 						if( mappingfile != null ) {							
-							fw.write( line+"\n" );
-							line = br.readLine();
+							//fw.write( line+"\n" );
+							//line = br.readLine();
 							if( ftagmap.containsKey(s.getName()) ) fw.write( ftagmap.get(s.getName())+line+"\n" );
-							else fw.write( "simmi"+line+"\n" );
+							else {
+								String sname = s.getName();
+								int i = sname.indexOf(mappingfile);
+								String first = i == -1 ? sname : sname.substring(0,i);
+								/*fw.write( first+"_"+line+"\n" );*/
+								
+								if( includeFileName ) line = line.replace( ">", ">"+first.replace(".fna", "").replace(".fasta", "")+"_"+(++cnt)+" " );
+								fw.write( line+"\n" );
+							}
 						} else if( simple ) {
-							if( includeFileName ) line = line.replace( ">", ">"+s.getName().replace(".fna", "")+"_" );
+							if( includeFileName ) line = line.replace( ">", ">"+s.getName().replace(".fna", "").replace(".fasta", "")+"_" );
 							fw.write( line+"\n" );
 						} else {
 							int pe = line.indexOf('%');
