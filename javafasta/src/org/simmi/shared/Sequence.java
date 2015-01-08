@@ -456,7 +456,7 @@ public class Sequence implements Comparable<Sequence> {
 	public IntBuffer			rib = null;
 	public int					offset = 0;
 	private int					revcomp = 0;
-	int							gcp = -1;
+	float						gcp = -1;
 	int							alignedlength = -1;
 	int							unalignedlength = -1;
 	int							substart = -1;
@@ -1350,7 +1350,7 @@ public class Sequence implements Comparable<Sequence> {
 		int count = 0;
 		for( int i = 0; i < sb.length(); i++ ) {
 			char c = sb.charAt(i);
-			if( c != '.' && c != '-' && c != ' ' ) {
+			if( c != '.' && c != '-' && c != ' ' && c != '*' ) {
 				if( substart == -1 ) substart = i;
 				substop = i;
 				count++;
@@ -1450,7 +1450,7 @@ public class Sequence implements Comparable<Sequence> {
 		return ret;
 	}
 	
-	public int getGCP() {
+	public float getGCP() {
 		if( gcp == -1 && sb.length() > 0 ) {
 			gcp = 0;
 			int count = 0;
@@ -1463,7 +1463,7 @@ public class Sequence implements Comparable<Sequence> {
 					count++;
 				}
 			}
-			gcp = count > 0 ? 100*gcp/count : 0;
+			gcp = count > 0 ? 100.0f*gcp/count : 0;
 		}
 		return gcp;
 	}

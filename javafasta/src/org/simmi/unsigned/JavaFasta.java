@@ -951,13 +951,21 @@ public class JavaFasta extends JApplet {
 				serifier.mseq.put( s.getName(), s );
 				s.setStart(0);
 			} else if( line.startsWith("Query ") ) {
+				int first = line.indexOf(' ');
+				while( line.charAt(++first) == ' ' );
+				while( line.charAt(++first) != ' ' );
+				
 				int last = line.lastIndexOf(' ');
-				String qseq = line.substring(12, last ).trim();
+				String qseq = line.substring(first, last).trim();
 				String[] qsplit = line.split("[ ]+");
 				line = br.readLine();
 				line = br.readLine();
+				
+				first = line.indexOf(' ');
+				while( line.charAt(++first) == ' ' );
+				while( line.charAt(++first) != ' ' );
 				last = line.lastIndexOf(' ');
-				String sseq = line.substring(12, last ).trim();
+				String sseq = line.substring(first, last).trim();
 				String[] ssplit = line.split("[ ]+");
 				
 				int qstart = Integer.parseInt(qsplit[1]);
@@ -965,6 +973,9 @@ public class JavaFasta extends JApplet {
 				int sstart = Integer.parseInt(ssplit[1]);
 				int sstop = Integer.parseInt( ssplit[ ssplit.length-1 ] );
 				
+				if( qseq.length() != sseq.length() ) {
+					System.err.println();
+				}
 				if( sstop > sstart ) {
 					int k = 0;
 					for( int i = 0; i < sseq.length(); i++ ) {
@@ -973,7 +984,8 @@ public class JavaFasta extends JApplet {
 							while( s.sb.length() < k+sstart ) {
 								s.sb.append('-');
 							}
-							s.sb.setCharAt(k+sstart-1, qseq.charAt(i));
+							char c = qseq.charAt(i);
+							s.sb.setCharAt(k+sstart-1, c);
 							k++;
 						}
 					}
@@ -985,7 +997,8 @@ public class JavaFasta extends JApplet {
 							while( s.sb.length() < sstart-k ) {
 								s.sb.append('-');
 							}
-							s.sb.setCharAt(sstart-k-1, Sequence.rc.get(qseq.charAt(i)) );
+							char c = qseq.charAt(i);
+							s.sb.setCharAt(sstart-k-1, Sequence.rc.get(c) );
 							k++;
 						}
 					}
@@ -1046,6 +1059,9 @@ public class JavaFasta extends JApplet {
 			} else if( line.startsWith("RD") ) {
 				String[] split = line.split("[ ]+");
 				String name = split[1];
+				if( name.contains("GX9TPFH03FQ93B") ) {
+					System.err.println();
+				}
 				s = serifier.mseq.get( name );
 			}  else if( line.startsWith("QA") ) {
 				s = null;
@@ -3143,7 +3159,7 @@ public class JavaFasta extends JApplet {
 				else if( columnIndex == 3 ) return Integer.class;
 				else if( columnIndex == 4 ) return Integer.class;
 				else if( columnIndex == 5 ) return Integer.class;
-				else if( columnIndex == 6 ) return Integer.class;
+				else if( columnIndex == 6 ) return Float.class;
 				else if( columnIndex == 7 ) return String.class;
 				return null;
 			}
@@ -5327,6 +5343,30 @@ public class JavaFasta extends JApplet {
 				c.scrollRectToVisible( rect );
 			}
 		});
+		name.add( new AbstractAction("Goto sequence") {
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+				JTextField tf = new JTextField();
+				JOptionPane.showMessageDialog(cnt, tf);
+				//int r = table.getSelectedRow();
+				//int i = table.convertRowIndexToModel( r );
+				int i = 0;
+				for( Sequence s : serifier.lseq ) {
+					if( s.getName().contains(tf.getText()) ) {
+						int r = table.convertRowIndexToView(i);
+						table.setRowSelectionInterval(r, r);
+						
+						Rectangle rect = c.getVisibleRect();
+						rect.y = r*table.getRowHeight();
+						rect.x = (-serifier.getMin()+s.getStart())*10;
+						c.scrollRectToVisible( rect );
+						break;
+					}
+					i++;
+				}
+			}
+		});
+		
 		name.add( new AbstractAction("Find duplicates") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
