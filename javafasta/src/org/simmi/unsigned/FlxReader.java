@@ -67,15 +67,19 @@ public class FlxReader {
 		return nstuff;
 	}
 	
-	public static String tengi( Map<String,String> mog, String c2, int recurcount ) {
+	public static String tengi( Map<String,String> mog, String c2, int recurcount, int lenthres ) {
 		String nstuff = "";
-		if( recurcount < 3 ) {
+		if( recurcount < 5 ) {
 			for( String m : mog.keySet() ) {
 				//if( !nstuff.contains(m) ) {
-					String q1 = mog.get(m);
-					
-					int li = m.lastIndexOf('_');
-					String c3 = m.substring(0,li);
+				String q1 = mog.get(m);
+				
+				int li = m.lastIndexOf('_');
+				String c3 = m.substring(0,li);
+			
+				String ctgname = contigName( c3 );
+				Sequence seq = mseq.get(ctgname);
+				if( seq.length() < lenthres ) {
 					if( m.substring( li ).equals("_5'") ) {
 						Map<String,String> ss = mm.get(c3+"_3'");
 						if( ss != null ) {
@@ -86,7 +90,7 @@ public class FlxReader {
 								else nstuff += " ("+q1+")"+m+"("+q2+")";
 								//break;
 							} else {
-								String st = tengi( ss, c2, recurcount+1 );
+								String st = tengi( ss, c2, recurcount+1, lenthres );
 								if( st.length() > 0 ) {
 									String[] split = st.split( "[ ]+" );
 									for( String s : split ) {
@@ -125,7 +129,7 @@ public class FlxReader {
 								}
 								//break;
 							} else {
-								String st = tengi( ss, c2, recurcount+1 );
+								String st = tengi( ss, c2, recurcount+1, lenthres );
 								if( st.length() > 0 ) {
 									String[] split = st.split( "[ ]+" );
 									for( String s : split ) {
@@ -154,7 +158,7 @@ public class FlxReader {
 							}
 						}
 					}
-				//}
+				}
 			}
 		}
 		return nstuff;
@@ -276,7 +280,7 @@ public class FlxReader {
 		
 		if( mm.containsKey(c1+"_3'") ) {
 			Map<String,String> mog = mm.get(c1+"_3'");
-			nstuff = tengi( mog, c2, 0 );
+			nstuff = tengi( mog, c2, 0, 10000 );
 			if( mog.containsKey(c2+"_5'") ) {
 				String q = mog.get(c2+"_5'");
 				if( nstuff.length() == 0 ) nstuff = "directconnect("+q+")";
@@ -328,6 +332,10 @@ public class FlxReader {
 					nseq.group = lastN != null ? lastN[0] : null;
 					serifier.addSequence( nseq );
 					
+					if( nseq.length() > 10000 ) {
+						System.err.println( cseq.length() );
+						System.err.println( cseq.length() );
+					}
 					cseq.append( nseq.sb );
 				} else {
 					System.err.println("errrrror");

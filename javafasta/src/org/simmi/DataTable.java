@@ -27,7 +27,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -3946,7 +3945,7 @@ public class DataTable extends JApplet implements ClipboardOwner {
 		return ret;
 	}
 	
-	public static Map<Object,Object> assigntax( Path rp, BufferedWriter bw, Map<String,String> taxmap, Map<String,Mapping> mapping, String cat, int groups, Map<String,Integer> taxcount, double[][] dd, String[][] names, Map<String,Map<String,Integer>> countmap ) throws IOException {
+	public static Map<Object,Object> assigntax( Path rp, BufferedWriter bw, Map<String,String> taxmap, Map<String,Mapping> mapping, String cat, int groups, Map<String,Integer> taxcount, double[][] dd, String[][] names, Map<String,Map<String,Integer>> countmap, boolean blast ) throws IOException {
 		Map<Object,Object> biom = new HashMap<Object,Object>();
 		
 		Map<String,Integer>	cntm = new HashMap<String,Integer>();
@@ -4116,156 +4115,188 @@ public class DataTable extends JApplet implements ClipboardOwner {
 		
 		BufferedReader br = Files.newBufferedReader(rp);
 		String line = br.readLine();
-		String current = null;
-		String currid = null;
-		String currteg = null;
-		sidx = 0;
-		while (line != null) {
-			String trim = line.trim();
-			if (trim.startsWith("Query=")) {
-				String[] split = trim.substring(7).trim().split("[ ]+");
-				current = split[0];
-				
-				String sample = current.substring(0,current.indexOf('_'));
-				
-				/*if( sample.equals("813.hrafntinnusker.jardvegur") ) {
-					System.err.println();
-				}*/
-				
-				String sval = "";
-				if( groups == -1 ) {
-					sample = sample.substring( sample.lastIndexOf('.') );
-				} if( groups == -2 ) {
-					sample = sample.substring( sample.indexOf('.'), sample.lastIndexOf('.') );
-				} if( groups == -3 ) {
-					if( mapping.containsKey(sample) ) {
-						Mapping m = mapping.get(sample);
-						sval = m.mapping.get(cat);
-					}
-					sample = sample.substring( 0, sample.lastIndexOf('.') ) + "_" + sval;
-				} else if( mapping != null && cat != null ) {
-					if( mapping.containsKey(sample) ) {
-						Mapping m = mapping.get(sample);
-						try {
-							double val = Double.parseDouble( m.mapping.get(cat) );
-							
-							if( groups == 2 ) {
-								if( val <= selectedval ) {
-									sample = cat+"_"+min+"_"+selectedval;
+		if( blast ) {
+			String current = null;
+			String currid = null;
+			String currteg = null;
+			sidx = 0;
+			while (line != null) {
+				String trim = line.trim();
+				if (trim.startsWith("Query=")) {
+					String[] split = trim.substring(7).trim().split("[ ]+");
+					current = split[0];
+					
+					String sample = current.substring(0,current.indexOf('_'));
+					
+					/*if( sample.equals("813.hrafntinnusker.jardvegur") ) {
+						System.err.println();
+					}*/
+					
+					String sval = "";
+					if( groups == -1 ) {
+						sample = sample.substring( sample.lastIndexOf('.') );
+					} if( groups == -2 ) {
+						sample = sample.substring( sample.indexOf('.'), sample.lastIndexOf('.') );
+					} if( groups == -3 ) {
+						if( mapping.containsKey(sample) ) {
+							Mapping m = mapping.get(sample);
+							sval = m.mapping.get(cat);
+						}
+						sample = sample.substring( 0, sample.lastIndexOf('.') ) + "_" + sval;
+					} else if( mapping != null && cat != null ) {
+						if( mapping.containsKey(sample) ) {
+							Mapping m = mapping.get(sample);
+							try {
+								double val = Double.parseDouble( m.mapping.get(cat) );
+								
+								if( groups == 2 ) {
+									if( val <= selectedval ) {
+										sample = cat+"_"+min+"_"+selectedval;
+									} else {
+										sample = cat+"_"+selectedval+"_"+max;
+									}
 								} else {
-									sample = cat+"_"+selectedval+"_"+max;
+									int k = (int)( (val-min) * groups / bil );
+									
+									if( k == groups ) k = groups-1;
+									
+									double start = min+Math.floor(100.0*k*del)/100.0;
+									double stop = min+Math.floor(100.0*(k+1)*del)/100.0;
+									
+									String startstr = Double.toString(start);
+									String stopstr = Double.toString(stop);
+									
+									int si = startstr.indexOf('.');
+									if( si == -1 ) si = startstr.length();
+									else si = Math.min( startstr.length(), si+3 );
+									
+									int sti = stopstr.indexOf('.');
+									if( sti == -1 ) sti = stopstr.length();
+									else sti = Math.min( stopstr.length(), sti+3 );
+									
+									sample = cat+"_"+startstr.substring(0,si)+"_"+stopstr.substring(0,sti);
+									
+									//sample = cat+"_"+start+"_"+stop;
 								}
-							} else {
-								int k = (int)( (val-min) * groups / bil );
-								
-								if( k == groups ) k = groups-1;
-								
-								double start = min+Math.floor(100.0*k*del)/100.0;
-								double stop = min+Math.floor(100.0*(k+1)*del)/100.0;
-								
-								String startstr = Double.toString(start);
-								String stopstr = Double.toString(stop);
-								
-								int si = startstr.indexOf('.');
-								if( si == -1 ) si = startstr.length();
-								else si = Math.min( startstr.length(), si+3 );
-								
-								int sti = stopstr.indexOf('.');
-								if( sti == -1 ) sti = stopstr.length();
-								else sti = Math.min( stopstr.length(), sti+3 );
-								
-								sample = cat+"_"+startstr.substring(0,si)+"_"+stopstr.substring(0,sti);
-								
-								//sample = cat+"_"+start+"_"+stop;
+							} catch( Exception e ) {
+								sample = cat+"_unknown";
 							}
-						} catch( Exception e ) {
-							sample = cat+"_unknown";
 						}
 					}
+					
+					//if( !sample.contains("jardvl") && !sample.contains("nknown") ) {
+						if( !maps.containsKey(sample) ) {
+							sidx = maps.size();
+							maps.put(sample, sidx);
+							//System.err.println("    " + sample);
+							ls.add( sample );
+						} else sidx = maps.get(sample);
+					//}
+				} else if (line.startsWith("> ")) {
+					String teg = line.substring(2);
+					int k = teg.indexOf(' ');
+					if( k == -1 ) {
+						k = teg.length();
+					}
+					currid = teg.substring(0,k);
+					if( taxmap != null ) teg = taxmap.get(currid);
+					//if( taxmap != null ) teg = taxmap.get(currid);
+					//else teg = teg.substring(k+1);
+						
+					if( teg != null && taxcount.isEmpty() || taxcount.containsKey(currid) ) {
+						if( !mapt.containsKey(currid) ) {
+							tidx = mapt.size();
+							mapt.put(currid, tidx);
+							lt.add( currid );
+							//li.add( currid );
+						} else tidx = mapt.get( currid );
+						
+						/*line = br.readLine();
+						while (!line.startsWith("Length=")) {
+							teg += line;
+							line = br.readLine();
+						}
+						currteg = teg.replace(' ', '_');
+						
+						String[] count = currteg.split(";");
+						if( count.length < 7 ) {
+							String last = count[ count.length-1 ];
+							for( int u = count.length; u < 7; u++ ) {
+								currteg += ";"+last;
+							}
+						}*/
+						
+						String key = tidx + "," + sidx;
+						if( cntm.containsKey(key) ) cntm.put(key, cntm.get(key)+1);
+						else cntm.put(key, 1);
+					}
+					
+					/*} else {
+						currid = teg;
+						int y = teg.lastIndexOf('_');
+						if( y != -1 ) teg = teg.substring(0,y);
+						currteg = "Bacteria;Deinococcus-Thermus;Deinococci;Thermales;Thermaceae;Thermus;" + teg.replace("T.", "Thermus_");
+					}*/
+				} else if (line.contains("No hits")) {
+					String teg = "No hit";
+					currid = teg;
+					//if( taxmap != null ) teg = taxmap.get(currid);
+						
+					if( teg != null && taxcount.isEmpty() || taxcount.containsKey(currid) ) {
+						if( !mapt.containsKey(currid) ) {
+							tidx = mapt.size();
+							mapt.put(currid, tidx);
+							lt.add( currid );
+							//li.add( currid );
+						} else tidx = mapt.get( currid );
+						
+						String key = tidx + "," + sidx;
+						if( cntm.containsKey(key) ) cntm.put(key, cntm.get(key)+1);
+						else cntm.put(key, 1);
+					}
+				} else if (trim.contains("Expect =")) {
+					int k = trim.indexOf("Expect =");
+					String evalstr = trim.substring( k+9 ).trim();
+					//double evalue = Double.parseDouble( evalstr );
+					
+					bw.write( current + "\t" + currteg + "\t" + evalstr + "\t" + currid + "\n" );
 				}
-				
-				//if( !sample.contains("jardvl") && !sample.contains("nknown") ) {
+	
+				line = br.readLine();
+			}
+			br.close();
+			bw.close();
+		} else {
+			line = br.readLine();
+			while( line != null ) {
+				String[] split = line.split("[ \t]+");
+				if( split.length > 5 ) {
+					int count = Integer.parseInt( split[3] );
+					String sample = split[4];
+					String tax = split[5];
+					
 					if( !maps.containsKey(sample) ) {
 						sidx = maps.size();
 						maps.put(sample, sidx);
-						//System.err.println("    " + sample);
 						ls.add( sample );
 					} else sidx = maps.get(sample);
-				//}
-			} else if (line.startsWith("> ")) {
-				String teg = line.substring(2);
-				int k = teg.indexOf(' ');
-				if( k == -1 ) {
-					k = teg.length();
-				}
-				currid = teg.substring(0,k);
-				if( taxmap != null ) teg = taxmap.get(currid);
-				//if( taxmap != null ) teg = taxmap.get(currid);
-				//else teg = teg.substring(k+1);
 					
-				if( teg != null && taxcount.isEmpty() || taxcount.containsKey(currid) ) {
-					if( !mapt.containsKey(currid) ) {
+					if( !mapt.containsKey(tax) ) {
 						tidx = mapt.size();
-						mapt.put(currid, tidx);
-						lt.add( currid );
+						mapt.put(tax, tidx);
+						lt.add( tax );
 						//li.add( currid );
-					} else tidx = mapt.get( currid );
-					
-					/*line = br.readLine();
-					while (!line.startsWith("Length=")) {
-						teg += line;
-						line = br.readLine();
-					}
-					currteg = teg.replace(' ', '_');
-					
-					String[] count = currteg.split(";");
-					if( count.length < 7 ) {
-						String last = count[ count.length-1 ];
-						for( int u = count.length; u < 7; u++ ) {
-							currteg += ";"+last;
-						}
-					}*/
+					} else tidx = mapt.get( tax );
 					
 					String key = tidx + "," + sidx;
-					if( cntm.containsKey(key) ) cntm.put(key, cntm.get(key)+1);
-					else cntm.put(key, 1);
+					if( cntm.containsKey(key) ) cntm.put(key, cntm.get(key)+count);
+					else cntm.put(key, count);
 				}
 				
-				/*} else {
-					currid = teg;
-					int y = teg.lastIndexOf('_');
-					if( y != -1 ) teg = teg.substring(0,y);
-					currteg = "Bacteria;Deinococcus-Thermus;Deinococci;Thermales;Thermaceae;Thermus;" + teg.replace("T.", "Thermus_");
-				}*/
-			} else if (line.contains("No hits")) {
-				String teg = "No hit";
-				currid = teg;
-				//if( taxmap != null ) teg = taxmap.get(currid);
-					
-				if( teg != null && taxcount.isEmpty() || taxcount.containsKey(currid) ) {
-					if( !mapt.containsKey(currid) ) {
-						tidx = mapt.size();
-						mapt.put(currid, tidx);
-						lt.add( currid );
-						//li.add( currid );
-					} else tidx = mapt.get( currid );
-					
-					String key = tidx + "," + sidx;
-					if( cntm.containsKey(key) ) cntm.put(key, cntm.get(key)+1);
-					else cntm.put(key, 1);
-				}
-			} else if (trim.contains("Expect =")) {
-				int k = trim.indexOf("Expect =");
-				String evalstr = trim.substring( k+9 ).trim();
-				//double evalue = Double.parseDouble( evalstr );
-				
-				bw.write( current + "\t" + currteg + "\t" + evalstr + "\t" + currid + "\n" );
+				line = br.readLine();
 			}
-
-			line = br.readLine();
+			br.close();
 		}
-		br.close();
-		bw.close();
 		
 		//System.err.println( uu + " uo " + oo + "  " + maps.size() );
 		
@@ -5047,6 +5078,46 @@ public class DataTable extends JApplet implements ClipboardOwner {
 	}
 	
 	public static void main(String[] args) {
+		try {
+			final Map<String,Map<String,Integer>> countmap = new LinkedHashMap<String,Map<String,Integer>>();
+			
+			Path rp = Paths.get("/Users/sigmar/lett.csv");
+			
+			/*Set<String> dein = new HashSet<String>();
+			for( String key : taxcount.keySet() ) {
+				String tax = taxmap.get(key);
+				int cnt = taxcount.get(key);
+				//if( tax != null && (tax.contains( "Deinococcus") || tax.contains("Aquificae") || tax.contains("Chloroflex") || tax.contains("Cyanobacteria") ) && cnt > 100 ) {
+				//if( tax != null && (tax.contains("Deinococcus")) ) {
+					dein.add( key );
+				//}
+			}
+			taxcount.keySet().retainAll( dein );*/
+			
+			final String[][] names = new String[2][];
+			double[][] dd = new double[2][];
+			
+			//Map<Object,Object> biom = assigntax( rp, bw, taxmap, mapping, "pHT", 4, taxcount, dd, names, countmap );
+			//Map<Object,Object> biom = assigntax( rp, bw, taxmap, mapping, "pHT", -3, taxcount, dd, names, countmap );
+			Map<Object,Object> biom = assigntax( rp, null, null, null, null, 0, null, dd, names, countmap, false );
+			
+			/*Workbook wb = new XSSFWorkbook();
+			for( String key : countmap.keySet() ) {
+				Map<String,Integer> cnt = countmap.get( key );
+				
+				Sheet sheet = wb.createSheet(key);
+				printSummary( "/Users/sigmar/SILVA119/"+key+".txt", cnt, taxmap, sheet );
+			}
+			wb.write( new FileOutputStream("/Users/sigmar/SILVA119/tax_report2.xlsx") );*/
+			
+			Path biomp = Paths.get("/Users/sigmar/tmp/seqs.biom");
+			saveBiomTableNashorn(biom, biomp);
+		} catch( Exception e ) {
+			e.printStackTrace();
+		}
+		
+		return;
+		
 		/*Path dir = Paths.get( "/Users/sigmar" );
 		Path p = dir.resolve("silva119_tmp.tax");
 		Path r = dir.resolve("silva119.tax");
@@ -5141,7 +5212,7 @@ public class DataTable extends JApplet implements ClipboardOwner {
 			e.printStackTrace();
 		}*/
 		
-		try {
+		/*try {
 			Path p = new File("/Users/sigmar/otu_table.biom").toPath();
 			ByteArrayOutputStream baos = new ByteArrayOutputStream();
 			Files.copy(p, baos);
@@ -5180,7 +5251,7 @@ public class DataTable extends JApplet implements ClipboardOwner {
 				String ostr = os.toString();
 				String mstr = mobj.get(os).toString();
 				System.err.println( ostr + ":" + mstr.substring(0, Math.min(mstr.length(),1000)) );
-			}*/
+			}*
 			//printMap( mobj );
 			
 			p = Paths.get("/Users/sigmar/SILVA119/m_mapping_pra.txt");
@@ -5333,7 +5404,7 @@ public class DataTable extends JApplet implements ClipboardOwner {
                 	 frame2.setVisible( true );
                      //geneset.initFXChart( fxpanel, names, b0, b1 );
                  }
-            });*/
+            });*
 			
 			Path biomp = Paths.get("/Users/sigmar/seqs.biom");
 			saveBiomTableNashorn(biom, biomp);

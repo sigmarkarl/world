@@ -515,6 +515,12 @@ public class Sequence implements Comparable<Sequence> {
 			i = lname.indexOf("scaffold");
 		}
 		if( i == -1 ) {
+			i = lname.indexOf("chromosome");
+		}
+		if( i == -1 ) {
+			i = lname.indexOf("plasmid");
+		}
+		if( i == -1 ) {
 			i = lname.indexOf("RAST");
 			if( i >= 0 ) i += 5;
 		}

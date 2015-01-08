@@ -64,8 +64,8 @@ public class GBK2AminoFasta {
 			Set<String>	xref = new TreeSet<String>();
 			//int contignum = 0;
 			Sequence	strbuf = new Sequence();
-			lseq.add( strbuf );
 			while( line!= null ) {
+				lseq.add( strbuf );
 				while( line != null ) {
 					String trimline = line.trim();
 					
@@ -97,6 +97,7 @@ public class GBK2AminoFasta {
 								anno.start--;
 								anno.stop--;
 							}*/
+							System.err.println( strbuf.getName() + " mumu " + anno.name );
 							strbuf.addAnnotation( anno );
 						}
 						anno = null;
@@ -203,7 +204,8 @@ public class GBK2AminoFasta {
 						xref.add( ec );
 					} else if( trimline.startsWith("/product") ) {
 						if( anno != null ) {
-							if( trimline.length() > 10 ) {								
+							if( trimline.length() > 10 ) {
+								//System.err.println("badlfjalkdjalksdj");
 								int i = trimline.indexOf('"', 10);
 								while( i == -1 ) {
 									int k = filetext.indexOf("\n", ind+1);
@@ -314,11 +316,13 @@ public class GBK2AminoFasta {
 				//allout.write( ">" + spec + (contignum > 0 ? "_contig"+contignum+"\n" : "\n") );
 				
 				if( allout != null ) {
-					if( locus.contains(spec) ) allout.write( ">" + locus + "\n" );
-					else allout.write( ">" + spec + "_" + locus + "\n" );
-					for( int i = 0; i < strbuf.length(); i+=70 ) {
+					//if( locus.contains(spec) ) allout.write( ">" + locus + "\n" );
+					//else allout.write( ">" + spec + "_" + locus + "\n" );
+					strbuf.setName( (locus.contains(spec) ? "" : spec + "_") + locus);
+					strbuf.writeSequence( allout );
+					/*for( int i = 0; i < strbuf.length(); i+=70 ) {
 						allout.write( strbuf.getSubstring( i, Math.min( strbuf.length(), i+70 ), 1 ) + "\n" );
-					}
+					}*/
 				}
 				
 				strbuf = new Sequence();
@@ -358,6 +362,7 @@ public class GBK2AminoFasta {
 								String rep = replace + ao.spec.substring( ao.spec.indexOf('_') );
 								out.write( ">"+ao.id + " " + ao.name + " [" + rep + "]" + end );
 							} else {*/
+							System.err.println(strbuf.getName() + " lebbi " + ao.getName());
 							out.write( ">"+ao.id + " " + ao.name + " [" + ao.seq.getName() + "]" + end );
 							//}
 						}
