@@ -527,6 +527,7 @@ public class Sequence implements Comparable<Sequence> {
 		if( i == -1 && lname.length() > 5 && (lname.startsWith("J") || lname.startsWith("A")) && lname.charAt(4) == '0' ) i = 5;
 		if( i == -1 ) {
 			i = lname.indexOf("uid");
+			i = lname.indexOf('_', i)+1;
 		}
 		
 		/*int i = lname.indexOf("contig");
