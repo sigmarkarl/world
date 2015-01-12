@@ -280,9 +280,9 @@ public class GeneGroup {
 				}*/
 				
 				if( (
-						(jsome || ret.contains("contig") || ret.contains("scaffold") || ret.contains("uid")) && !ret.contains(":")
+						(jsome || ret.contains("plasmid") || ret.contains("chromosome") || ret.contains("contig") || ret.contains("scaffold") || ret.contains("uid")) && !ret.contains(":")
 					) || 
-					!(nsome || name.contains("contig") || name.contains("scaffold") || name.contains("uid") || name.contains("unnamed") || name.contains("hypot")) ) ret = name;
+					!(nsome || name.contains("plasmid") || name.contains("chromosome") || name.contains("contig") || name.contains("scaffold") || name.contains("uid") || name.contains("unnamed") || name.contains("hypot")) ) ret = name;
 			}
 		}
 		int k = ret.lastIndexOf('(');

@@ -527,7 +527,7 @@ public class Sequence implements Comparable<Sequence> {
 		if( i == -1 && lname.length() > 5 && (lname.startsWith("J") || lname.startsWith("A")) && lname.charAt(4) == '0' ) i = 5;
 		if( i == -1 ) {
 			i = lname.indexOf("uid");
-			i = lname.indexOf('_', i)+1;
+			if( i != -1 ) i = lname.indexOf('_', i)+1;
 		}
 		
 		/*int i = lname.indexOf("contig");
@@ -607,6 +607,9 @@ public class Sequence implements Comparable<Sequence> {
 				if( selspec.startsWith("JQLK") ) ret = "Thermus_tengchongensis_YIM_77401";
 				if( selspec.startsWith("JQLJ") ) ret = "Thermus_scotoductus_KI2";
 				
+				if( selspec.startsWith("JPSL") ) ret = "Thermus_filiformis_Wai33_A1";
+				if( selspec.startsWith("JTJB") ) ret = "Thermus_sp_29";
+				
 				if( selspec.startsWith("AUIW") ) ret = "Thermus_antranikianii_HN3-7";
 				if( selspec.startsWith("ATXJ") ) ret = "Thermus_islandicus_PRI_3838";
 				if( selspec.startsWith("ATNI") ) ret = "Thermus_scotoductus_NMX2_A1";
@@ -616,11 +619,11 @@ public class Sequence implements Comparable<Sequence> {
 			} else if( selspec.contains("GenBank") || selspec.contains("MAT") ) {
 				
 			} else {
-				if( selspec.contains("islandicus") ) ret = "Thermus_islandicus_PRI_3838";
-				else if( selspec.contains("filiformis") ) ret = "Thermus_filiformis_Wai33_A1";
+				if( selspec.contains("islandicus") ) ret = "Thermus_islandicus_MAT_3838";
+				else if( selspec.contains("filiformis") ) ret = "Thermus_filiformis_MAT_947";
 				else if( selspec.contains("kawarayensis") ) ret = "Thermus_kawarayensis_KW11";
 				else if( selspec.contains("brockianus1003") ) ret = "Thermus_brockianus_YS38";
-				else if( selspec.contains("scotoductus252") ) ret = "Thermus_scotoductus_252";
+				else if( selspec.contains("scotoductus252") ) ret = "Thermus_scotoductus_MAT_252";
 				else if( selspec.contains("scotoductus4063") ) ret = "Thermus_scotoductus_SA-01";
 				else if( selspec.contains("aquaticus4844") ) ret = "Thermus_sp._HR13";
 				

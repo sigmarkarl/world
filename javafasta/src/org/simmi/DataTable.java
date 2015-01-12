@@ -5077,11 +5077,10 @@ public class DataTable extends JApplet implements ClipboardOwner {
 		bwt.close();
 	}
 	
-	public static void main(String[] args) {
+	public static void stuff( Path in, Path out ) {
 		try {
 			final Map<String,Map<String,Integer>> countmap = new LinkedHashMap<String,Map<String,Integer>>();
-			
-			Path rp = Paths.get("/Users/sigmar/lett.csv");
+			Path rp = in;
 			
 			/*Set<String> dein = new HashSet<String>();
 			for( String key : taxcount.keySet() ) {
@@ -5110,13 +5109,15 @@ public class DataTable extends JApplet implements ClipboardOwner {
 			}
 			wb.write( new FileOutputStream("/Users/sigmar/SILVA119/tax_report2.xlsx") );*/
 			
-			Path biomp = Paths.get("/Users/sigmar/tmp/seqs.biom");
+			Path biomp = out;
 			saveBiomTableNashorn(biom, biomp);
 		} catch( Exception e ) {
 			e.printStackTrace();
 		}
-		
-		return;
+	}
+	
+	public static void main(String[] args) {
+		stuff( Paths.get("/Users/sigmar/lett.csv"), Paths.get("/Users/sigmar/tmp/seqs.biom") );
 		
 		/*Path dir = Paths.get( "/Users/sigmar" );
 		Path p = dir.resolve("silva119_tmp.tax");

@@ -39,6 +39,8 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.zip.GZIPInputStream;
 
+import org.simmi.DataTable;
+
 public class Serifier {
 	public Serifier() {
 		super();
@@ -3257,6 +3259,11 @@ public class Serifier {
 				appendSequenceInJavaFasta( seqs, null, val);
 			}
 			writeFasta( lseq, new FileWriter( outf ), null);*/
+		}
+		
+		i = arglist.indexOf("-biom");
+		if( i >= 0 ) {
+			DataTable.stuff(inf.toPath(), outf.toPath());
 		}
 		
 		i = arglist.indexOf("-join");
