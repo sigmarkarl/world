@@ -1669,7 +1669,7 @@ public class JavaFasta extends JApplet {
 		char c = ' ';
 		if( x >= s.getStart() && x < s.getEnd() ) {
 			int val = x-s.getStart();
-			if( val > 0 && val < s.length() ) c = s.sb.charAt( val );
+			if( val >= 0 && val < s.length() ) c = s.sb.charAt( val );
 		}
 		return c;
 	}

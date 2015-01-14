@@ -133,9 +133,17 @@ public class Serifier {
 			FileWriter fw = new FileWriter( new File(tmpdir, "tmp.fasta") );
 			writeFasta( tlseq, fw, null, true);
 			fw.close();
+			
+			boolean isnt = true;
+			for( Sequence seq : tlseq ) {
+				if( seq.isNucleotide() ) {
+					isnt = false;
+					break;
+				}
+			}
 
 			//ProcessBuilder pb = new ProcessBuilder("fasttree", "tmp.fasta");
-			ProcessBuilder pb = new ProcessBuilder("/usr/local/bin/FastTree");
+			ProcessBuilder pb = isnt ? new ProcessBuilder("/usr/local/bin/FastTree","-nt") : new ProcessBuilder("/usr/local/bin/FastTree");
 			pb.directory(tmpdir);
 			Process p = pb.start();
 			OutputStream os = p.getOutputStream();

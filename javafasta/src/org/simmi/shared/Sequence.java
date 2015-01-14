@@ -568,7 +568,13 @@ public class Sequence implements Comparable<Sequence> {
 			} else if( selspec.contains("hermus") ) {	
 				int i = selspec.indexOf("_uid");
 				if( i != -1 ) {
-					ret = selspec.substring(0,i);
+					if( selspec.contains("ATCC_700962") ) {
+						ret = "Thermus_igniterrae_RF-4";
+					} else if( selspec.contains("DSM_12092") ) {
+						ret = "Thermus_sps-17";
+					} else {
+						ret = selspec.substring(0,i);
+					}
 				} else if(selspec.contains("DSM")) {
 					if(selspec.contains("oshimai")) {
 						ret = "Thermus_oshimai_SPS-17";
@@ -585,7 +591,6 @@ public class Sequence implements Comparable<Sequence> {
 						ret = "Thermus_igniterrae_RF-4";
 					}
 				} else {
-					
 					if( selspec.equals("Thermus_4884") ) ret = "Thermus_sp._HR13";
 					else if( selspec.equals("Thermus_2121") ) ret = "Thermus_scotoductus_MAT_2121";
 					
@@ -620,12 +625,14 @@ public class Sequence implements Comparable<Sequence> {
 				
 			} else {
 				if( selspec.contains("islandicus") ) ret = "Thermus_islandicus_MAT_3838";
+				if( selspec.contains("eggertsoni") ) ret = "Thermus_eggertsoniae_MAT_2789";
 				else if( selspec.contains("filiformis") ) ret = "Thermus_filiformis_MAT_947";
 				else if( selspec.contains("kawarayensis") ) ret = "Thermus_kawarayensis_KW11";
+				else if( selspec.contains("arciformis") ) ret = "Thermus_arciformis_TH92";
 				else if( selspec.contains("brockianus1003") ) ret = "Thermus_brockianus_YS38";
 				else if( selspec.contains("scotoductus252") ) ret = "Thermus_scotoductus_MAT_252";
 				else if( selspec.contains("scotoductus4063") ) ret = "Thermus_scotoductus_SA-01";
-				else if( selspec.contains("aquaticus4844") ) ret = "Thermus_sp._HR13";
+				else if( selspec.contains("aquaticus4884") ) ret = "Thermus_sp._HR13";
 				
 				else {
 					int i = 0;
@@ -1380,6 +1387,16 @@ public class Sequence implements Comparable<Sequence> {
 	
 	public boolean isPlasmid() {
 		return plasmid;
+	}
+	
+	public boolean isNucleotide() {
+		for( int i = 0; i < sb.length(); i++ ) {
+			char c = sb.charAt(i);
+			if( !rc.containsKey(c) ) {
+				return false;
+			}
+		}
+		return true;
 	}
 	
 	public int getAlignedLength() {
