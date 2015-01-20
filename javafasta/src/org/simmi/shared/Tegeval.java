@@ -199,7 +199,7 @@ public class Tegeval extends Annotation implements Teg {
 	}*/
 
 	public String toString() {
-		return ori == -1 ? "-" + this.contloc : this.contloc;
+		return (ori == -1 ? "-" + this.contloc : this.contloc) + " " + this.getStart() + "-" + this.getEnd();
 	}
 	
 	public static boolean locsort = true;

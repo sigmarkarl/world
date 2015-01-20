@@ -1286,6 +1286,10 @@ public class Sequence implements Comparable<Sequence> {
 		return name;
 	}
 	
+	public void append( Sequence seq ) {
+		sb.append( seq.sb );
+	}
+	
 	public void append( CharSequence cs ) {
 		sb.append( cs );
 	}

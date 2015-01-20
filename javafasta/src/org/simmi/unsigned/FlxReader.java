@@ -30,7 +30,7 @@ public class FlxReader {
 	
 	public static String tengioff( Map<String,String> mog, int recurcount, int lenthres ) {
 		String nstuff = "";
-		if( mog != null && recurcount < 3 ) {
+		if( mog != null && recurcount < 5 ) {
 			for( String m : mog.keySet() ) {
 				if( !nstuff.contains(m) ) {
 					String q1 = mog.get(m);
@@ -240,7 +240,11 @@ public class FlxReader {
 		i = lastW[0].indexOf('0');
 		String sctg = "sctg_"+lastW[0].substring(i+1)+(next >= 10 ? "_00" : "_000")+nextIncr();
 		Sequence sctgseq = mseq.get(sctg);
-		System.out.println( "   outputing " + sctg + " " + sctgseq.length() );
+		if( sctgseq == null ) {
+			String ctg = "contig" + (c1.length() < 2 ? "0000" : c1.length() < 3 ? "000" : "00") + c1;
+			sctgseq = mseq.get(ctg);
+		}
+		//System.out.println( "   outputing " + sctg + " " + sctgseq.length() );
 		
 		if( sctgseq != null ) {
 			cseq.append( sctgseq.sb );
@@ -350,10 +354,9 @@ public class FlxReader {
 					Sequence nseq = new Sequence( seq, rev );
 					nseq.setName( ctgname+"_"+(rev?"rev":"frw"));
 					nseq.group = lastN != null ? lastN[0] : null;
-					serifier.addSequence( nseq );
+					//serifier.addSequence( nseq );
 					
 					if( nseq.length() > 10000 ) {
-						System.err.println( cseq.length() );
 						System.err.println( cseq.length() );
 					}
 					cseq.append( nseq.sb );
@@ -370,7 +373,7 @@ public class FlxReader {
 			while( lastW[5].charAt(++i) == '0' ) ;
 			String c0 = lastW[5].substring(i);
 			Map<String,String> mog = mm.get(c0+"_3'");
-			nstuff = tengioff( mog, 0, 10000 );
+			nstuff = tengioff( mog, 0, 10000000 );
 			System.out.println( "<---" + nstuff );
 			
 			System.out.println( join(lastN) );
@@ -380,7 +383,7 @@ public class FlxReader {
 				while( split[5].charAt(++i) == '0' ) ;
 				c0 = split[5].substring(i);
 				mog = mm.get(c0+"_5'");
-				nstuff = tengioff( mog, 0, 10000 );
+				nstuff = tengioff( mog, 0, 10000000 );
 				System.out.println( "--->" + nstuff );
 			}
 			//seq = mseq.get(lastW[1]);
@@ -504,21 +507,24 @@ public class FlxReader {
 			String line;
 			Sequence seq;
 			
-			fr = new FileReader(home+type+add+"454ScaffoldContigs.fna");
-			br = new BufferedReader( fr );
-			line = br.readLine();
-			seq = null;
-			while( line != null ) {
-				if( line.startsWith(">") ) {
-					String name = line.substring(1);
-					name = name.substring(0,name.indexOf(' '));
-					seq = new Sequence( name, mseq );
-				} else {
-					seq.append(line);
-				}
+			File f = new File(home+type+add+"454ScaffoldContigs.fna");
+			if( f.exists() ) {
+				fr = new FileReader(f);
+				br = new BufferedReader( fr );
 				line = br.readLine();
+				seq = null;
+				while( line != null ) {
+					if( line.startsWith(">") ) {
+						String name = line.substring(1);
+						name = name.substring(0,name.indexOf(' '));
+						seq = new Sequence( name, mseq );
+					} else {
+						seq.append(line);
+					}
+					line = br.readLine();
+				}
+				fr.close();
 			}
-			fr.close();
 			
 			fr = new FileReader(home+type+add+"454AllContigs.fna");
 			br = new BufferedReader( fr );
@@ -570,7 +576,7 @@ public class FlxReader {
 			FileWriter fw = new FileWriter( home + type + ".fna" );
 			Sequence cseq = new Sequence(type+"_chromosome", null);
 			
-			fr = new FileReader(home+type+add+"454ContigScaffolds.txt");
+			fr = new FileReader(home+type+add+"454Scaffolds.txt");//"454ContigScaffolds.txt");
 			br = new BufferedReader( fr );
 			
 			String[] lastW = null;
@@ -589,7 +595,7 @@ public class FlxReader {
 					while( lastW[5].charAt(++i) == '0' ) ;
 					String c0 = lastW[5].substring(i);
 					Map<String,String> mog = mm.get(c0+"_3'");
-					String nstuff = tengioff( mog, 0, 10000 );
+					String nstuff = tengioff( mog, 0, 10000000 );
 					
 					end =  "end---" + nstuff;
 				}
@@ -639,7 +645,7 @@ public class FlxReader {
 					while( split[5].charAt(++i) == '0' ) ;
 					String c0 = split[5].substring(i);
 					Map<String,String> mog = mm.get(c0+"_5'");
-					String nstuff = tengioff( mog, 0, 10000 );
+					String nstuff = tengioff( mog, 0, 10000000 );
 					
 					System.out.println( "beg---" + nstuff );
 					
@@ -725,12 +731,12 @@ public class FlxReader {
 			}
 			fw.close();
 			
-			/*for( String seqname : mseq.keySet() ) {
-				if( !touch.contains(seqname) ) {
+			for( String seqname : mseq.keySet() ) {
+				//if( !touch.contains(seqname) ) {
 					seq = mseq.get( seqname );
 					serifier.addSequence( seq );
-				}
-			}*/
+				//}
+			}
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		} catch (IOException e) {
@@ -744,8 +750,8 @@ public class FlxReader {
 	public static Serifier							serifier = new Serifier();
 	public static int 								next = 1;
 	
-	public static String home = "/Users/sigmar/smassembly/";
-	public static String type1 = "eggertsoni2789";
+	public static String home = "/Users/sigmar/";
+	public static String type1 = "brockass2";
 	public static String add = "/";
 	public static void main(String[] args) {
 		if( type1 == null ) {

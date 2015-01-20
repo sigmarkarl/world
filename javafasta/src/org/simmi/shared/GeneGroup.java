@@ -443,6 +443,20 @@ public class GeneGroup {
 		return null;
 	}
 	
+	public String getCommonSignalP() {
+		for( Gene g : genes ) {
+			if( g.signalp ) return "Y";
+		}
+		return null;
+	}
+	
+	public String getCommonTransM() {
+		for( Gene g : genes ) {
+			if( g.transm ) return "Y";
+		}
+		return null;
+	}
+	
 	public String getKeggid() {
 		String ret = null;
 		for( Gene g : genes ) {

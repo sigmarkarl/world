@@ -116,6 +116,14 @@ public class Gene {
 		return -1;
 	}
 	
+	public boolean getSignalP() {
+		return signalp;
+	}
+	
+	public boolean getTransM() {
+		return transm;
+	}
+	
 	public String getName() {
 		return name;
 	}
@@ -268,6 +276,8 @@ public class Gene {
 	public Tegeval tegeval;
 	private String aac;
 	public int index;
+	public boolean signalp = false;
+	public boolean transm = false;
 
 	GeneGroup	gg;
 	// Set<String> group;
