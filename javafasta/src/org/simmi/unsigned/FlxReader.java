@@ -1,17 +1,29 @@
 package org.simmi.unsigned;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.Reader;
+import java.io.StringReader;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 
 import javax.swing.JFrame;
 
@@ -78,9 +90,9 @@ public class FlxReader {
 		return nstuff;
 	}
 	
-	public static String tengi( Map<String,String> mog, String c2, int recurcount, int lenthres ) {
+	public static String tengi( Map<String,String> mog, String c2, String ori2, int recurcount, int lenthres ) {
 		String nstuff = "";
-		if( recurcount < 5 ) {
+		if( recurcount < 7 ) {
 			for( String m : mog.keySet() ) {
 				//if( !nstuff.contains(m) ) {
 				String q1 = mog.get(m);
@@ -94,14 +106,14 @@ public class FlxReader {
 					if( m.substring( li ).equals("_5'") ) {
 						Map<String,String> ss = mm.get(c3+"_3'");
 						if( ss != null ) {
-							if( ss.containsKey(c2+"_5'") ) {
-								String q2 = ss.get(c2+"_5'");
+							if( ss.containsKey(c2+ori2) ) {
+								String q2 = ss.get(c2+ori2);
 								
 								if( nstuff.length() == 0 ) nstuff += "("+q1+")"+m+"("+q2+")";
 								else nstuff += " ("+q1+")"+m+"("+q2+")";
 								//break;
 							} else {
-								String st = tengi( ss, c2, recurcount+1, lenthres );
+								String st = tengi( ss, c2, ori2, recurcount+1, lenthres );
 								if( st.length() > 0 ) {
 									String[] split = st.split( "[ ]+" );
 									for( String s : split ) {
@@ -131,8 +143,8 @@ public class FlxReader {
 					} else {
 						Map<String,String> ss = mm.get(c3+"_5'");
 						if( ss != null ) {
-							if( ss.containsKey(c2+"_5'") ) {
-								String q2 = ss.get(c2+"_5'");
+							if( ss.containsKey(c2+ori2) ) {
+								String q2 = ss.get(c2+ori2);
 								
 								if( nstuff.length() == 0 ) nstuff += "("+q1+")"+m+"("+q2+")";
 								else {
@@ -140,7 +152,7 @@ public class FlxReader {
 								}
 								//break;
 							} else {
-								String st = tengi( ss, c2, recurcount+1, lenthres );
+								String st = tengi( ss, c2, ori2, recurcount+1, lenthres );
 								if( st.length() > 0 ) {
 									String[] split = st.split( "[ ]+" );
 									for( String s : split ) {
@@ -232,10 +244,16 @@ public class FlxReader {
 		return next++;
 	}
 	
-	public static void nstuffOut( String[] lastN, String[] lastW, String[] split, Sequence cseq ) {
-		int i = lastW[5].indexOf('0');
-		while( lastW[5].charAt(++i) == '0' ) ;
-		String c1 = lastW[5].substring(i);
+	public static void nstuffOut( String[] lastN, String[] lastW, String[] split, Sequence cseq, boolean showunclosed ) {
+		String lastctg = lastW[5];
+		boolean lastrv = false;
+		if( lastctg.endsWith("r") ) {
+			lastctg = lastctg.substring(0,lastctg.length()-1);
+			lastrv = true;
+		}
+		int i = lastctg.indexOf('0');
+		while( lastctg.charAt(++i) == '0' ) ;
+		String c1 = lastctg.substring(i);
 		
 		i = lastW[0].indexOf('0');
 		String sctg = "sctg_"+lastW[0].substring(i+1)+(next >= 10 ? "_00" : "_000")+nextIncr();
@@ -252,9 +270,15 @@ public class FlxReader {
 			System.out.println( "   empty " );
 		}
 		
-		i = split[5].indexOf('0');
-		while( split[5].charAt(++i) == '0' ) ;
-		String c2 = split[5].substring(i);
+		String splitctg = split[5];
+		boolean splitrv = false;
+		if( splitctg.endsWith("r") ) {
+			splitctg = splitctg.substring(0,splitctg.length()-1);
+			splitrv = true;
+		}
+		i = splitctg.indexOf('0');
+		while( splitctg.charAt(++i) == '0' ) ;
+		String c2 = splitctg.substring(i);
 		
 		String nstuff = null;
 		/*if( mm.containsKey(c1+"_5'") ) {
@@ -302,7 +326,21 @@ public class FlxReader {
 		
 		String nstuff = null;*/
 		
-		if( mm.containsKey(c1+"_3'") ) {
+		String ori1 = lastrv ? "_5'" : "_3'";
+		String ori2 = splitrv ? "_3'" : "_5'";
+		
+		if( mm.containsKey(c1+ori1) ) {
+			Map<String,String> mog = mm.get(c1+ori1);
+			nstuff = tengi( mog, c2, ori2, 0, maxlen );
+			//System.err.println( c1 + ori1 + "   " + c2 + ori2 );
+			if( mog.containsKey(c2+ori2) ) {
+				String q = mog.get(c2+ori2);
+				if( nstuff.length() == 0 ) nstuff = "directconnect("+q+")";
+				else nstuff += " directconnect("+q+")";
+			}
+		}
+		
+		/*if( mm.containsKey(c1+"_3'") ) {
 			Map<String,String> mog = mm.get(c1+"_3'");
 			nstuff = tengi( mog, c2, 0, 10000 );
 			if( mog.containsKey(c2+"_5'") ) {
@@ -310,7 +348,7 @@ public class FlxReader {
 				if( nstuff.length() == 0 ) nstuff = "directconnect("+q+")";
 				else nstuff += " directconnect("+q+")";
 			}
-		}
+		}*/
 		
 		if( nstuff != null && nstuff.length() > 0 ) {
 			String[] nssplit = nstuff.split("[ ]+");
@@ -356,7 +394,7 @@ public class FlxReader {
 					nseq.group = lastN != null ? lastN[0] : null;
 					//serifier.addSequence( nseq );
 					
-					if( nseq.length() > 10000 ) {
+					if( nseq.length() > maxlen ) {
 						System.err.println( cseq.length() );
 					}
 					cseq.append( nseq.sb );
@@ -374,7 +412,7 @@ public class FlxReader {
 			String c0 = lastW[5].substring(i);
 			Map<String,String> mog = mm.get(c0+"_3'");
 			nstuff = tengioff( mog, 0, 10000000 );
-			System.out.println( "<---" + nstuff );
+			if( showunclosed ) System.out.println( "<---" + nstuff );
 			
 			System.out.println( join(lastN) );
 			
@@ -384,7 +422,7 @@ public class FlxReader {
 				c0 = split[5].substring(i);
 				mog = mm.get(c0+"_5'");
 				nstuff = tengioff( mog, 0, 10000000 );
-				System.out.println( "--->" + nstuff );
+				if( showunclosed ) System.out.println( "--->" + nstuff );
 			}
 			//seq = mseq.get(lastW[1]);
 			//if( seq != null ) serifier.addSequence( seq );
@@ -495,14 +533,14 @@ public class FlxReader {
 		}*/
 	}
 	
-	public static void start( String type ) {
+	public static void start( String type, boolean showunclosed ) {
 		touch.clear();
 		serifier.clearAll();
 		mm.clear();
 		mseq.clear();
 		
 		try {
-			FileReader fr;
+			Reader fr;
 			BufferedReader br;
 			String line;
 			Sequence seq;
@@ -526,7 +564,9 @@ public class FlxReader {
 				fr.close();
 			}
 			
-			fr = new FileReader(home+type+add+"454AllContigs.fna");
+			File file = new File(home+type+add+"454AllContigs.fna");
+			byte[] allcontigs = Files.readAllBytes(file.toPath());
+			fr = new InputStreamReader( new ByteArrayInputStream(allcontigs) );
 			br = new BufferedReader( fr );
 			line = br.readLine();
 			seq = null;
@@ -541,6 +581,171 @@ public class FlxReader {
 				line = br.readLine();
 			}
 			fr.close();
+			
+			String comp = "brockianus338";
+			Path p = Paths.get("/Users/sigmar/smassembly/"+comp+".fna");
+			byte[] bb = Files.readAllBytes(p);
+			
+			List<Sequence> lseq = Sequence.readFasta( new BufferedReader( new InputStreamReader(new ByteArrayInputStream(bb)) ), mseq);
+			
+			List<Sequence> preorder = new ArrayList<Sequence>();
+			ProcessBuilder pb = new ProcessBuilder("makeblastdb","-dbtype","nucl","-out",comp,"-title",comp);
+			
+			Process pr = pb.start();
+			
+			final InputStream is = pr.getInputStream();
+			Thread t = new Thread() {
+				public void run() {
+					try {
+						int b = is.read();
+						while( b != -1 ) {
+							System.err.write(b);
+							b = is.read();
+						}
+						System.err.println();
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+				}
+			};
+			t.start();
+			
+			final InputStream es = pr.getErrorStream();
+			t = new Thread() {
+				public void run() {
+					try {
+						int b = es.read();
+						while( b != -1 ) {
+							System.err.write(b);
+							b = es.read();
+						}
+						System.err.println();
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+				}
+			};
+			t.start();
+					
+			OutputStream o = pr.getOutputStream();
+			o.write(bb);
+			o.close();
+			
+			pb = new ProcessBuilder("blastn","-db",comp);
+			pr = pb.start();
+			final InputStream es2 = pr.getErrorStream();
+			t = new Thread() {
+				public void run() {
+					try {
+						int b = es2.read();
+						while( b != -1 ) {
+							System.err.write(b);
+							b = es2.read();
+						}
+						System.err.println();
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+				}
+			};
+			t.start();
+			
+			final OutputStream os = pr.getOutputStream();
+			t = new Thread() {
+				public void run() {
+					try {
+						os.write(allcontigs);
+						os.close();
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+				}
+			};
+			t.start();
+			
+			Map<String,Map<Integer,String>>	mtm = new HashMap<String,Map<Integer,String>>();
+			String 				current = null;
+			int					currentlen = 0;
+			Map<Integer,String>	tm = null;
+			boolean				rstrand = false;
+			
+			Path tmp = Paths.get("/Users/sigmar/"+comp+".blastout");
+			BufferedWriter bw = Files.newBufferedWriter(tmp, StandardOpenOption.CREATE);
+			final InputStream is2 = pr.getInputStream();
+			fr = new InputStreamReader( is2 );
+			br = new BufferedReader( fr );
+			line = br.readLine();
+			bw.write(line+"\n");
+			while( line != null ) {
+				//System.err.println( line );
+				if( line.startsWith("Query=") ) {
+					current = line.substring(7,18);
+					line = br.readLine();
+					bw.write(line+"\n");
+					line = br.readLine();
+					bw.write(line+"\n");
+					currentlen = Integer.parseInt(line.substring(7));
+					if( currentlen < maxlen ) current = null;
+				} else if( line.startsWith(">") ) {
+					if( current != null ) {
+						String u = line.substring(2,line.indexOf('(')-1);
+						if( mtm.containsKey(u) ) {
+							tm = mtm.get(u);
+						} else {
+							tm = new TreeMap<Integer,String>();
+							mtm.put(u, tm);
+						}
+					}
+				} else if( line.contains("Strand=") ) {
+					if( current != null && line.contains("Minus") ) rstrand = true;
+					if( current != null ) System.err.println( line + "  " + current );
+				} else if( line.startsWith("Query ") ) {
+					if( tm != null ) {
+						String[] split = line.split("[ ]+");
+						int start1 = Integer.parseInt(split[1]);
+						line = br.readLine();
+						bw.write(line+"\n");
+						line = br.readLine();
+						bw.write(line+"\n");
+						split = line.split("[ ]+");
+						int start2 = Integer.parseInt(split[1]);
+						
+						if( rstrand ) tm.put(start2-(currentlen-start1), current+"r");
+						else {
+							int val = start2-start1;
+							tm.put(val, current);
+						}
+						
+						tm = null;
+						current = null;
+						rstrand = false;
+					}
+				}
+				line = br.readLine();
+				bw.write(line+"\n");
+			}
+			bw.close();
+			
+			StringBuilder sb = new StringBuilder();
+			for( String k : mtm.keySet() ) {
+				System.err.println("for "+k);
+				tm = mtm.get(k);
+				boolean first = true;
+				for( int l : tm.keySet() ) {
+					String 		ctg = tm.get(l);
+					boolean		revc = ctg.endsWith("r");
+					seq = mseq.get( revc?ctg.substring(0,ctg.length()-1):ctg );
+					
+					seq.setStart(l);
+					if( revc ) seq.reverseComplement();
+					
+					if( !first ) sb.append(k+"\t0\t0\t0\tN\tscaffold\t0\t0\t0\n");
+					sb.append(k+"\t"+l+"\t0\t0\tW\t"+ctg+"\t1\t"+seq.length()+"\t0\n");
+					
+					System.err.println( "\t"+ctg );
+					first = false;
+				}
+			}
 			
 			fr = new FileReader(home+type+add+"454ContigGraph.txt");
 			br = new BufferedReader( fr );
@@ -576,7 +781,15 @@ public class FlxReader {
 			FileWriter fw = new FileWriter( home + type + ".fna" );
 			Sequence cseq = new Sequence(type+"_chromosome", null);
 			
-			fr = new FileReader(home+type+add+"454Scaffolds.txt");//"454ContigScaffolds.txt");
+			if( sb.length() > 0 ) {
+				fr = new StringReader( sb.toString() );
+			} else {
+				file = new File(home+type+add+"454ContigScaffolds.txt");
+				if( !file.exists() ) {
+					file = new File(home+type+add+"454Scaffolds.txt");
+				}
+				fr = new FileReader(file);//"454ContigScaffolds.txt");
+			}
 			br = new BufferedReader( fr );
 			
 			String[] lastW = null;
@@ -603,16 +816,20 @@ public class FlxReader {
 				if( split[4].equals("W") ) {
 					if( lastW != null ) {
 						System.out.println( join(lastW) );
-						seq = mseq.get(lastW[5]);
-						touch.add( lastW[5] );
+						String ctg = lastW[5];
+						if( ctg.endsWith("r") ) {
+							ctg = ctg.substring(0,ctg.length()-1);
+						}
+						seq = mseq.get(ctg);
+						touch.add( ctg );
 						seq.group = lastW[0];
 						// lubububu if( seq != null ) serifier.addSequence( seq );
 					}
 					//boolean newscaff = !lastW[0].equals(split[0]);
 					if( lastN != null ) {
-						nstuffOut( lastN, lastW, split, cseq );
+						nstuffOut( lastN, lastW, split, cseq, showunclosed );
 					} else if( lastW != null && !lastW[0].equals(split[0]) ) {
-						nstuffOut( lastN, lastW, firstofnew, cseq );
+						nstuffOut( lastN, lastW, firstofnew, cseq, showunclosed );
 						//next = 1;
 					}/* else {
 						int i = split[0].indexOf('0');
@@ -641,10 +858,16 @@ public class FlxReader {
 						cseq = new Sequence(type+"_plasmid"+plasm++,null);
 					}
 					
-					int i = split[5].indexOf('0');
-					while( split[5].charAt(++i) == '0' ) ;
-					String c0 = split[5].substring(i);
-					Map<String,String> mog = mm.get(c0+"_5'");
+					boolean reverse = false;
+					String ctg = split[5];
+					if( ctg.endsWith("r") ) {
+						ctg = ctg.substring(0,ctg.length()-1);
+						reverse = true;
+					}
+					int i = ctg.indexOf('0');
+					while( ctg.charAt(++i) == '0' ) ;
+					String c0 = ctg.substring(i);
+					Map<String,String> mog = reverse ? mm.get(c0+"_3") : mm.get(c0+"_5'");
 					String nstuff = tengioff( mog, 0, 10000000 );
 					
 					System.out.println( "beg---" + nstuff );
@@ -717,7 +940,7 @@ public class FlxReader {
 						// lubububu if( seq != null ) serifier.addSequence( seq );
 					}
 					//boolean newscaff = !lastW[0].equals(split[0]);
-					nstuffOut( lastN, lastW, firstofnew, cseq );
+					nstuffOut( lastN, lastW, firstofnew, cseq, showunclosed );
 					//next = 1;
 				}
 				//nstuffOut( lastN, lastW, firstofnew, cseq );
@@ -750,17 +973,23 @@ public class FlxReader {
 	public static Serifier							serifier = new Serifier();
 	public static int 								next = 1;
 	
-	public static String home = "/Users/sigmar/";
-	public static String type1 = "brockass2";
+	public static int maxlen = 5000;
+	
+	public static String home = "/Users/sigmar/smassembly/";
+	public static String type1 = "brockianus1003";
+	
+	//public static String home = "/Users/sigmar/";
+	//public static String type1 = "b1003ass";
+	
 	public static String add = "/";
 	public static void main(String[] args) {
 		if( type1 == null ) {
 			Path p = Paths.get( home );
 			for( File f : p.toFile().listFiles() ) {
-				if( f.isDirectory() ) start( f.getName() );
+				if( f.isDirectory() ) start( f.getName(), true );
 			}
 		} else {
-			start( type1 );
+			start( type1, false );
 			
 			JavaFasta	jf = new JavaFasta(serifier);
 			JFrame		frame = new JFrame();

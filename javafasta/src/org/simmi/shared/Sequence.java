@@ -1,6 +1,7 @@
 package org.simmi.shared;
 
 import java.awt.Color;
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.Writer;
 import java.nio.IntBuffer;
@@ -477,6 +478,21 @@ public class Sequence implements Comparable<Sequence> {
 			return annset.size();
 		}
 		return 0;
+	}
+	
+	public static List<Sequence> readFasta( BufferedReader br, Map<String,Sequence> mseq ) throws IOException {
+		List<Sequence> lseq = new ArrayList<Sequence>();
+		
+		Sequence seq = null;
+		String line = br.readLine();
+		while( line != null ) {
+			if( line.startsWith(">") ) {
+				seq = new Sequence(line.substring(1), mseq);
+			} else seq.append(line);
+			line = br.readLine();
+		}
+		
+		return lseq;
 	}
 	
 	public static int specCheck( String str ) {
