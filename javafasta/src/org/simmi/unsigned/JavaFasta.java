@@ -2870,7 +2870,7 @@ public class JavaFasta extends JApplet {
 			
 			for( int i = 0; i < maxseqlen; i++ ) {
 				char c = seq.charAt(i);
-				if( c != '-' && c != ' ' ) {
+				if( c != '-' && c != ' ' && c != 'N' ) {
 					Annotation inanno = null;
 					if( seq.annset != null ) for( Annotation a : seq.annset ) {
 						if( i >= a.start && i <= a.stop ) {
@@ -2897,14 +2897,16 @@ public class JavaFasta extends JApplet {
 						}
 					}
 					
+					boolean large = false;
+					
 					int drawi = offset+(i*1100)/maxseqlen;
 					if( inanno != null && inanno.color != null && inanno.color instanceof Color ) {
 						g2.setColor( (Color)inanno.color );
 						//if( inanno.ori == 1 ) g2.drawLine(drawi, y*fasti+5, drawi+1, y*fasti+15);
 						//else g2.drawLine(drawi+1, y*fasti+5, drawi, y*fasti+15);
-						
 						Integer count = countmap.get( inanno.group );
-						if( count != null && count > serifier.lseq.size()/2 ) {
+						large = count != null && count > serifier.lseq.size()/2;
+						if( large ) {
 							g2.drawLine(drawi, y*fasti+4, drawi, y*fasti+16);
 						} else {
 							g2.drawLine(drawi, y*fasti+7, drawi, y*fasti+13);
@@ -2923,7 +2925,7 @@ public class JavaFasta extends JApplet {
 						System.err.println();
 					}*/
 					
-					if( inanno != null && i == inanno.start && inanno.type == null ) {
+					if( inanno != null && i == inanno.start && inanno.type == null && (seq == serifier.lseq.get(serifier.lseq.size()-1) || !large) ) {
 						g2.setColor( Color.darkGray );
 						
 						/*if( inanno.name.contains("Cas5") ) {
@@ -3719,7 +3721,8 @@ public class JavaFasta extends JApplet {
 		    		osw.close();
 		    		Files.write(mafftp, baos.toByteArray());
 		    		
-			    	ProcessBuilder pb = new ProcessBuilder("/usr/local/bin/mafft","--localpair","--thread","4",mafftp.getFileName().toString()); //, "-in", "tmp.fasta", "-out", "tmpout.fasta");
+		    		//"--localpair"
+			    	ProcessBuilder pb = new ProcessBuilder("/usr/local/bin/mafft","--thread","4",mafftp.getFileName().toString()); //, "-in", "tmp.fasta", "-out", "tmpout.fasta");
 			    	//ProcessBuilder pb = new ProcessBuilder("/usr/local/bin/mafft","--thread","32","--localpair",mafftp.getFileName().toString()); //, "-in", "tmp.fasta", "-out", "tmpout.fasta");
 			    	
 			    	pb.directory( tmpdir.toFile() );
@@ -3748,18 +3751,17 @@ public class JavaFasta extends JApplet {
 			    	};
 			    	t.start();
 			    	
-			    	t = new Thread() {
+			    	/*t = new Thread() {
 			    		public void run() {
 			    			try {
-				    			serifier.lseq.removeAll( seqlist );
-				    			
-			    				InputStream is = p.getInputStream();
-			    				BufferedReader br = new BufferedReader( new InputStreamReader(is) );
-			    				importReader( br );
-			    				br.close();
-			    				is.close();
+			    				OutputStream os = p.getOutputStream();
+			    				OutputStreamWriter osw = new OutputStreamWriter( os );
+			    				serifier.writeFasta( seqlist, osw, getSelectedRect() );
+			    				osw.close();
+				    			os.close();
+				    			//serifier.lseq.removeAll( seqlist );
 			    				
-			    				for( Sequence seq : seqlist ) {
+			    				/*for( Sequence seq : seqlist ) {
 			    					if( seq.annset != null ) for( Annotation a : seq.annset ) {
 			    						for( Sequence nseq : serifier.lseq ) {
 			    							if( nseq.getName().equals(seq.getName()) ) {
@@ -3793,7 +3795,7 @@ public class JavaFasta extends JApplet {
 			    					} else {
 			    						System.err.println("empt");
 			    					}
-			    				}
+			    				}*/
 				    			
 			    				/*ByteArrayOutputStream	baos = new ByteArrayOutputStream();
 				    			int r = is.read();
@@ -3810,15 +3812,34 @@ public class JavaFasta extends JApplet {
 						    	//BufferedReader	br = new BufferedReader( fr );
 						    	importReader( br );
 						    	br.close();
-						    	//fr.close();*/
-						    	 
-						    	updateView();
+						    	//fr.close();*
 				    		} catch (IOException e) {
 								e.printStackTrace();
 							}
 			    		}
 			    	};
-			    	t.start();
+			    	t.start();*/
+			    	
+			    	InputStream is = p.getInputStream();
+    				BufferedReader br = new BufferedReader( new InputStreamReader(is) );
+    				
+    				Rectangle selr = getSelectedRect();
+    				int start = selr.x;
+    				int end = start+selr.width;
+    				
+    				List<Sequence> seql = serifier.readSequences( br );
+    				for( Sequence fs : serifier.lseq ) {
+    					for( Sequence ns : seql ) {
+    						if( fs.getName().equals(ns.getName()) ) {
+    							fs.replaceSelected( ns, start, end );
+    						}
+    					}
+    				}
+    				//importReader( br );
+    				br.close();
+    				is.close();
+    				
+    				updateView();
 		    	 } catch (IOException e) {
 					e.printStackTrace();
 				 }
@@ -3863,19 +3884,34 @@ public class JavaFasta extends JApplet {
 			    			try {
 			    				OutputStream os = p.getOutputStream();
 			    				OutputStreamWriter osw = new OutputStreamWriter( os );
-			    				serifier.writeFasta( seqlist, osw, null );
+			    				serifier.writeFasta( seqlist, osw, getSelectedRect() );
 			    				osw.close();
 				    			os.close();
 				    			
-				    			serifier.lseq.removeAll( seqlist );
+				    			//serifier.lseq.removeAll( seqlist );
 				    			
 			    				InputStream is = p.getInputStream();
 			    				BufferedReader br = new BufferedReader( new InputStreamReader(is) );
-			    				importReader( br );
+			    				
+			    				Rectangle selr = getSelectedRect();
+			    				int start = selr.x;
+			    				int end = start+selr.width;
+			    				
+			    				List<Sequence> seqlist = serifier.readSequences( br );
+			    				for( Sequence fs : serifier.lseq ) {
+			    					for( Sequence ns : seqlist ) {
+			    						if( fs.getName().equals(ns.getName()) ) {
+			    							fs.replaceSelected( ns, start, end );
+			    							
+			    						}
+			    					}
+			    				}
+			    				//importReader( br );
+			    				
 			    				br.close();
 			    				is.close();
 			    				
-			    				for( Sequence seq : seqlist ) {
+			    				/*for( Sequence seq : seqlist ) {
 			    					if( seq.annset != null ) for( Annotation a : seq.annset ) {
 			    						for( Sequence nseq : serifier.lseq ) {
 			    							if( nseq.getName().equals(seq.getName()) ) {
@@ -3883,9 +3919,9 @@ public class JavaFasta extends JApplet {
 			    							}
 			    						}
 			    					}
-			    				}
+			    				}*/
 			    				
-			    				for( Sequence seq : serifier.lseq ) {
+			    				/*for( Sequence seq : serifier.lseq ) {
 			    					if( seq.annset != null ) {
 			    						for( Annotation a : seq.annset ) {
 			    							int cnt = 0;
@@ -3909,7 +3945,7 @@ public class JavaFasta extends JApplet {
 			    					} else {
 			    						System.err.println("empt");
 			    					}
-			    				}
+			    				}*/
 				    			
 			    				/*ByteArrayOutputStream	baos = new ByteArrayOutputStream();
 				    			int r = is.read();
@@ -4503,7 +4539,7 @@ public class JavaFasta extends JApplet {
 						drawPhys( g2, fasti, maxseqlen, offset, this.getWidth(), this.getHeight() );
 					}
 				};
-				int w = 1280; //serifier.lseq.get(0).length();
+				int w = 1600; //serifier.lseq.get(0).length();
 				int h = fasti*serifier.lseq.size();
 				Dimension dim = new Dimension(w, h);
 				c.setPreferredSize(dim);

@@ -1130,6 +1130,10 @@ public class Sequence implements Comparable<Sequence> {
 		
 	}
 	
+	public void replaceSelected( Sequence seq, int start, int end ) {
+		this.sb.replace(start, end, seq.sb.toString());
+	}
+	
 	public void utReplace() {
 		int i1 = sb.indexOf("T");
 		int i2 = sb.indexOf("U");
@@ -1670,14 +1674,14 @@ public class Sequence implements Comparable<Sequence> {
 				subsb.append( cc );
 			}
 			while( oend > Math.max(sb.length(),ostart) ) {
-				subsb.insert(0, 'N');
+				subsb.insert(0, '-');
 				oend--;
 			}
 			return subsb.toString();
 		} else {
 			StringBuilder sb2 = new StringBuilder();
 			while( ostart < Math.min(0,oend) ) {
-				sb2.append('N');
+				sb2.append('-');
 				ostart++;
 			}
 			sb2.append( sb.substring(ostart, Math.min(oend,sb.length())) );

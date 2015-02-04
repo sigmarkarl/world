@@ -533,6 +533,169 @@ public class FlxReader {
 		}*/
 	}
 	
+	public static StringBuilder referenceAssembly( String comp, byte[] bb, byte[] allcontigs ) throws IOException {
+		List<Sequence> preorder = new ArrayList<Sequence>();
+		ProcessBuilder pb = new ProcessBuilder("makeblastdb","-dbtype","nucl","-out",comp,"-title",comp);
+		
+		Process pr = pb.start();
+		
+		final InputStream is = pr.getInputStream();
+		Thread t = new Thread() {
+			public void run() {
+				try {
+					int b = is.read();
+					while( b != -1 ) {
+						System.err.write(b);
+						b = is.read();
+					}
+					System.err.println();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		};
+		t.start();
+		
+		final InputStream es = pr.getErrorStream();
+		t = new Thread() {
+			public void run() {
+				try {
+					int b = es.read();
+					while( b != -1 ) {
+						System.err.write(b);
+						b = es.read();
+					}
+					System.err.println();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		};
+		t.start();
+				
+		OutputStream o = pr.getOutputStream();
+		o.write(bb);
+		o.close();
+		
+		pb = new ProcessBuilder("blastn","-db",comp);
+		pr = pb.start();
+		final InputStream es2 = pr.getErrorStream();
+		t = new Thread() {
+			public void run() {
+				try {
+					int b = es2.read();
+					while( b != -1 ) {
+						System.err.write(b);
+						b = es2.read();
+					}
+					System.err.println();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		};
+		t.start();
+		
+		final OutputStream os = pr.getOutputStream();
+		t = new Thread() {
+			public void run() {
+				try {
+					os.write(allcontigs);
+					os.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		};
+		t.start();
+		
+		Map<String,Map<Integer,String>>	mtm = new HashMap<String,Map<Integer,String>>();
+		String 				current = null;
+		int					currentlen = 0;
+		Map<Integer,String>	tm = null;
+		boolean				rstrand = false;
+		
+		Path tmp = Paths.get("/Users/sigmar/"+comp+".blastout");
+		BufferedWriter bw = Files.newBufferedWriter(tmp, StandardOpenOption.CREATE);
+		final InputStream is2 = pr.getInputStream();
+		Reader fr = new InputStreamReader( is2 );
+		BufferedReader br = new BufferedReader( fr );
+		String line = br.readLine();
+		bw.write(line+"\n");
+		while( line != null ) {
+			//System.err.println( line );
+			if( line.startsWith("Query=") ) {
+				current = line.substring(7,18);
+				line = br.readLine();
+				bw.write(line+"\n");
+				line = br.readLine();
+				bw.write(line+"\n");
+				currentlen = Integer.parseInt(line.substring(7));
+				if( currentlen < maxlen ) current = null;
+			} else if( line.startsWith(">") ) {
+				if( current != null ) {
+					String u = line.substring(2,line.indexOf('(')-1);
+					if( mtm.containsKey(u) ) {
+						tm = mtm.get(u);
+					} else {
+						tm = new TreeMap<Integer,String>();
+						mtm.put(u, tm);
+					}
+				}
+			} else if( line.contains("Strand=") ) {
+				if( current != null && line.contains("Minus") ) rstrand = true;
+				if( current != null ) System.err.println( line + "  " + current );
+			} else if( line.startsWith("Query ") ) {
+				if( tm != null ) {
+					String[] split = line.split("[ ]+");
+					int start1 = Integer.parseInt(split[1]);
+					line = br.readLine();
+					bw.write(line+"\n");
+					line = br.readLine();
+					bw.write(line+"\n");
+					split = line.split("[ ]+");
+					int start2 = Integer.parseInt(split[1]);
+					
+					if( rstrand ) tm.put(start2-(currentlen-start1), current+"r");
+					else {
+						int val = start2-start1;
+						tm.put(val, current);
+					}
+					
+					tm = null;
+					current = null;
+					rstrand = false;
+				}
+			}
+			line = br.readLine();
+			bw.write(line+"\n");
+		}
+		bw.close();
+		
+		StringBuilder sb = new StringBuilder();
+		for( String k : mtm.keySet() ) {
+			System.err.println("for "+k);
+			tm = mtm.get(k);
+			boolean first = true;
+			for( int l : tm.keySet() ) {
+				String 		ctg = tm.get(l);
+				boolean		revc = ctg.endsWith("r");
+				Sequence seq = mseq.get( revc?ctg.substring(0,ctg.length()-1):ctg );
+				
+				seq.setStart(l);
+				if( revc ) seq.reverseComplement();
+				
+				if( !first ) sb.append(k+"\t0\t0\t0\tN\tscaffold\t0\t0\t0\n");
+				sb.append(k+"\t"+l+"\t0\t0\tW\t"+ctg+"\t1\t"+seq.length()+"\t0\n");
+				
+				System.err.println( "\t"+ctg );
+				first = false;
+			}
+		}
+		
+		return sb;
+	}
+	
 	public static void start( String type, boolean showunclosed ) {
 		touch.clear();
 		serifier.clearAll();
@@ -586,166 +749,8 @@ public class FlxReader {
 			Path p = Paths.get("/Users/sigmar/smassembly/"+comp+".fna");
 			byte[] bb = Files.readAllBytes(p);
 			
-			List<Sequence> lseq = Sequence.readFasta( new BufferedReader( new InputStreamReader(new ByteArrayInputStream(bb)) ), mseq);
-			
-			List<Sequence> preorder = new ArrayList<Sequence>();
-			ProcessBuilder pb = new ProcessBuilder("makeblastdb","-dbtype","nucl","-out",comp,"-title",comp);
-			
-			Process pr = pb.start();
-			
-			final InputStream is = pr.getInputStream();
-			Thread t = new Thread() {
-				public void run() {
-					try {
-						int b = is.read();
-						while( b != -1 ) {
-							System.err.write(b);
-							b = is.read();
-						}
-						System.err.println();
-					} catch (IOException e) {
-						e.printStackTrace();
-					}
-				}
-			};
-			t.start();
-			
-			final InputStream es = pr.getErrorStream();
-			t = new Thread() {
-				public void run() {
-					try {
-						int b = es.read();
-						while( b != -1 ) {
-							System.err.write(b);
-							b = es.read();
-						}
-						System.err.println();
-					} catch (IOException e) {
-						e.printStackTrace();
-					}
-				}
-			};
-			t.start();
-					
-			OutputStream o = pr.getOutputStream();
-			o.write(bb);
-			o.close();
-			
-			pb = new ProcessBuilder("blastn","-db",comp);
-			pr = pb.start();
-			final InputStream es2 = pr.getErrorStream();
-			t = new Thread() {
-				public void run() {
-					try {
-						int b = es2.read();
-						while( b != -1 ) {
-							System.err.write(b);
-							b = es2.read();
-						}
-						System.err.println();
-					} catch (IOException e) {
-						e.printStackTrace();
-					}
-				}
-			};
-			t.start();
-			
-			final OutputStream os = pr.getOutputStream();
-			t = new Thread() {
-				public void run() {
-					try {
-						os.write(allcontigs);
-						os.close();
-					} catch (IOException e) {
-						e.printStackTrace();
-					}
-				}
-			};
-			t.start();
-			
-			Map<String,Map<Integer,String>>	mtm = new HashMap<String,Map<Integer,String>>();
-			String 				current = null;
-			int					currentlen = 0;
-			Map<Integer,String>	tm = null;
-			boolean				rstrand = false;
-			
-			Path tmp = Paths.get("/Users/sigmar/"+comp+".blastout");
-			BufferedWriter bw = Files.newBufferedWriter(tmp, StandardOpenOption.CREATE);
-			final InputStream is2 = pr.getInputStream();
-			fr = new InputStreamReader( is2 );
-			br = new BufferedReader( fr );
-			line = br.readLine();
-			bw.write(line+"\n");
-			while( line != null ) {
-				//System.err.println( line );
-				if( line.startsWith("Query=") ) {
-					current = line.substring(7,18);
-					line = br.readLine();
-					bw.write(line+"\n");
-					line = br.readLine();
-					bw.write(line+"\n");
-					currentlen = Integer.parseInt(line.substring(7));
-					if( currentlen < maxlen ) current = null;
-				} else if( line.startsWith(">") ) {
-					if( current != null ) {
-						String u = line.substring(2,line.indexOf('(')-1);
-						if( mtm.containsKey(u) ) {
-							tm = mtm.get(u);
-						} else {
-							tm = new TreeMap<Integer,String>();
-							mtm.put(u, tm);
-						}
-					}
-				} else if( line.contains("Strand=") ) {
-					if( current != null && line.contains("Minus") ) rstrand = true;
-					if( current != null ) System.err.println( line + "  " + current );
-				} else if( line.startsWith("Query ") ) {
-					if( tm != null ) {
-						String[] split = line.split("[ ]+");
-						int start1 = Integer.parseInt(split[1]);
-						line = br.readLine();
-						bw.write(line+"\n");
-						line = br.readLine();
-						bw.write(line+"\n");
-						split = line.split("[ ]+");
-						int start2 = Integer.parseInt(split[1]);
-						
-						if( rstrand ) tm.put(start2-(currentlen-start1), current+"r");
-						else {
-							int val = start2-start1;
-							tm.put(val, current);
-						}
-						
-						tm = null;
-						current = null;
-						rstrand = false;
-					}
-				}
-				line = br.readLine();
-				bw.write(line+"\n");
-			}
-			bw.close();
-			
-			StringBuilder sb = new StringBuilder();
-			for( String k : mtm.keySet() ) {
-				System.err.println("for "+k);
-				tm = mtm.get(k);
-				boolean first = true;
-				for( int l : tm.keySet() ) {
-					String 		ctg = tm.get(l);
-					boolean		revc = ctg.endsWith("r");
-					seq = mseq.get( revc?ctg.substring(0,ctg.length()-1):ctg );
-					
-					seq.setStart(l);
-					if( revc ) seq.reverseComplement();
-					
-					if( !first ) sb.append(k+"\t0\t0\t0\tN\tscaffold\t0\t0\t0\n");
-					sb.append(k+"\t"+l+"\t0\t0\tW\t"+ctg+"\t1\t"+seq.length()+"\t0\n");
-					
-					System.err.println( "\t"+ctg );
-					first = false;
-				}
-			}
+			//List<Sequence> lseq = Sequence.readFasta( new BufferedReader( new InputStreamReader(new ByteArrayInputStream(bb)) ), mseq);
+			StringBuilder sb = null; //referenceAssembly( comp, bb, allcontigs );
 			
 			fr = new FileReader(home+type+add+"454ContigGraph.txt");
 			br = new BufferedReader( fr );
@@ -781,7 +786,7 @@ public class FlxReader {
 			FileWriter fw = new FileWriter( home + type + ".fna" );
 			Sequence cseq = new Sequence(type+"_chromosome", null);
 			
-			if( sb.length() > 0 ) {
+			if( sb != null && sb.length() > 0 ) {
 				fr = new StringReader( sb.toString() );
 			} else {
 				file = new File(home+type+add+"454ContigScaffolds.txt");
@@ -976,7 +981,7 @@ public class FlxReader {
 	public static int maxlen = 5000;
 	
 	public static String home = "/Users/sigmar/smassembly/";
-	public static String type1 = "brockianus1003";
+	public static String type1 = "filiformis947";
 	
 	//public static String home = "/Users/sigmar/";
 	//public static String type1 = "b1003ass";
