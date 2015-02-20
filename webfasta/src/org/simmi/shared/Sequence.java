@@ -715,17 +715,17 @@ public class Sequence implements Comparable<Sequence> {
 		}
 	}
 	
-	public void setCharAt( int i, char c ) {
-		int ind = i-start;
+	public void setCharAt( double i, char c ) {
+		double ind = i-start;
 		if( ind >= 0 && ind < sb.length() ) {
-			sb.setCharAt( ind, c );
+			sb.setCharAt( (int)ind, c );
 		}
 	}
 	
-	public char charAt( int i ) {
-		int ind = i-start;
+	public char charAt( double i ) {
+		double ind = i-start;
 		if( ind >= 0 && ind < getLength() ) {
-			return sb.charAt( ind );
+			return sb.charAt( (int)ind );
 		}
 		
 		return ' ';

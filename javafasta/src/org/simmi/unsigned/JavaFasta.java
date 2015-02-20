@@ -1,11 +1,20 @@
 package org.simmi.unsigned;
 
+import htsjdk.samtools.SAMFileHeader;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.SAMSequenceRecord;
+import htsjdk.samtools.SamReader;
+import htsjdk.samtools.SamReaderFactory;
+import htsjdk.samtools.util.CloseableIterator;
+
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Container;
 import java.awt.Desktop;
 import java.awt.Dimension;
+import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.GridLayout;
@@ -658,7 +667,16 @@ public class JavaFasta extends JApplet {
 					
 					if( ip > 0 && ip <= seq.getAnnotations().size() ) {
 						Annotation a = seq.getAnnotations().get( ip-1 );
-						if( a.getCoordEnd() > w+serifier.getMin() ) return a.name;
+						if( a.getCoordEnd() > w+serifier.getMin() ) {
+							if( a.gene != null ) {
+								GeneGroup gg = a.gene.getGeneGroup();
+								if( gg != null ) {
+									return gg.getCommonName();
+								}
+								return a.gene.getName();
+							}
+							return a.name;
+						}
 					}
 				}
 			}
@@ -775,7 +793,8 @@ public class JavaFasta extends JApplet {
 									System.err.println( " " + serifier.getMin() + "  " + seq.offset );
 								}*/
 								for( int x = Math.max(seq.getStart()-serifier.getMin(), xmin); x < Math.min(seq.getEnd()-serifier.getMin(), xmax); x++ ) {
-									g.drawString( Character.toString( seq.charAt(x+serifier.getMin()) ), (int)(x*cw), y*rh+rh-2);
+									char ct = seq.getCharAt(x+serifier.getMin());
+									g.drawString( Character.toString( ct ), (int)(x*cw), y*rh+rh-2);
 								}
 							}
 						}
@@ -851,14 +870,57 @@ public class JavaFasta extends JApplet {
 					c.repaint();
 					//selectedRect.x--;
 				} else if( keycode == KeyEvent.VK_BACK_SPACE ) {
+					int start = this.selectedRect.x;
+					int end = this.selectedRect.x+this.selectedRect.width;
 					for( Sequence s : seq ) {
-						int start = Math.max(0, this.selectedRect.x-s.getStart() );
-						int end = Math.min( s.sb.length(), this.selectedRect.x+this.selectedRect.width-s.getStart() );
+						Set<Annotation> remset = new HashSet<Annotation>();
+						if( s.getAnnotations() != null ) for( Annotation a : s.getAnnotations() ) {
+							if( a.start < start ) {
+								if( a.stop > start ) {
+									a.stop = Math.max(start, a.stop-(end-start));
+								}
+							} else if( a.start < end ) {
+								if( a.stop <= end ) {
+									remset.add(a);
+								} else {
+									a.start = start;
+									a.stop -= (end-start);
+								}
+							} else {
+								a.start -= (end-start);
+								a.stop -= (end-start);
+							}
+						}
+						s.getAnnotations().removeAll( remset );
+					}
+					
+					for( Sequence s : seq ) {
+						start = Math.max(0, this.selectedRect.x-s.getStart() );
+						end = Math.min( s.sb.length(), this.selectedRect.x+this.selectedRect.width-s.getStart() );
 						
 						if( end > start ) {
 							s.sb.delete(start, end);
 							s.edited = true;
 						}
+						/*Set<Annotation> remset = new HashSet<Annotation>();
+						if( s.getAnnotations() != null ) for( Annotation a : s.getAnnotations() ) {
+							if( a.start < start ) {
+								if( a.stop > start ) {
+									a.stop = Math.max(start, a.stop-(end-start));
+								}
+							} else if( a.start < end ) {
+								if( a.stop <= end ) {
+									remset.add(a);
+								} else {
+									a.start = start;
+									a.stop -= (end-start);
+								}
+							} else {
+								a.start -= (end-start);
+								a.stop -= (end-start);
+							}
+						}
+						s.getAnnotations().removeAll( remset );*/
 					}
 					//selectedRect.width;
 					c.repaint();
@@ -1185,6 +1247,38 @@ public class JavaFasta extends JApplet {
 			byte[] bb = Files.readAllBytes( path );
 			StringBuilder sb = new StringBuilder( new String(bb) );
 			importGbkReader( name, sb );
+		} else if( name.endsWith(".bam") ) {
+			//SamReaderFactory.
+			final SamReader reader = SamReaderFactory.makeDefault().open( path.toFile() );
+			SAMFileHeader sh = reader.getFileHeader();
+			SAMSequenceDictionary ssd = sh.getSequenceDictionary();
+			for( SAMSequenceRecord samseq : ssd.getSequences() ) {
+				//String ass = samseq.getAssembly();
+				Sequence seq = new Sequence( samseq.getSequenceName(), serifier.mseq );
+				seq.setLength( samseq.getSequenceLength() );
+				//seq.append(ass);
+				serifier.lgseq.add( seq );
+				serifier.lseq.add( seq );
+				serifier.gseq.put( samseq.getSequenceName(), new ArrayList<Sequence>() );
+			}
+	        final CloseableIterator<SAMRecord> iterator = reader.iterator();
+	        while (iterator.hasNext()) {
+	        	try {
+		            final SAMRecord record = iterator.next();
+		            String refname = record.getReferenceName();
+		            Sequence consensus = serifier.mseq.get( refname );
+		            Sequence seq = new Sequence( record.getReadName(), serifier.mseq );
+		            seq.consensus = consensus;
+		            seq.append(record.getReadString());
+		            seq.setStart(record.getAlignmentStart());
+					serifier.lseq.add( seq );
+					serifier.gseq.get( refname ).add( seq );
+	        	} catch( Exception e ) {
+	        		
+	        	}
+	            //String str = record.getSAMString();
+	        }
+	        iterator.close();
 		} else importFile( name, Files.newInputStream(path) );
 	}
 	
@@ -2851,22 +2945,22 @@ public class JavaFasta extends JApplet {
 		}
 	}
 	
-	public void drawPhys( Graphics2D g2, int fasti, int maxseqlen, int offset, int w, int h) {
+	public void drawPhys( Graphics2D g2, List<Sequence> seqs, int fasti, int maxseqlen, int offset, int w, int h) {
 		g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
-		
+		//g2.setFont( g2.getFont().deriveFont(24.0f) );
 		g2.setColor( Color.white );
 		g2.fillRect(0, 0, w, h);
 		g2.setColor( Color.darkGray );
 		int y = 0;
 		
-		g2.setFont( g2.getFont().deriveFont(9.0f) );
-		for( Sequence seq : serifier.lseq ) {
+		g2.setFont( g2.getFont().deriveFont(18.0f) );
+		for( Sequence seq : seqs ) {
 			String spec = seq.getName(); //Sequence.nameFix(seq.getName(), true);
 			
 			g2.setColor( Color.darkGray );
 			String nspec = spec.substring(0,Math.min(30, spec.length()));
 			int strw = g2.getFontMetrics().stringWidth(nspec);
-			g2.drawString(nspec, 175-strw, y*fasti+15);
+			g2.drawString(nspec, 350-strw, y*fasti+30);
 			
 			for( int i = 0; i < maxseqlen; i++ ) {
 				char c = seq.charAt(i);
@@ -2884,7 +2978,7 @@ public class JavaFasta extends JApplet {
 					}
 					
 					Map<String,Integer> countmap = new HashMap<String,Integer>();
-					for( Sequence sseq : serifier.lseq ) {
+					for( Sequence sseq : seqs ) {
 						if( sseq.annset != null ) for( Annotation a : sseq.annset ) {
 							if( i >= a.start && i <= a.stop ) {
 								if( countmap.containsKey(a.group) ) {
@@ -2899,22 +2993,22 @@ public class JavaFasta extends JApplet {
 					
 					boolean large = false;
 					
-					int drawi = offset+(i*1100)/maxseqlen;
+					int drawi = offset+(i*2400)/maxseqlen;
 					if( inanno != null && inanno.color != null && inanno.color instanceof Color ) {
 						g2.setColor( (Color)inanno.color );
 						//if( inanno.ori == 1 ) g2.drawLine(drawi, y*fasti+5, drawi+1, y*fasti+15);
 						//else g2.drawLine(drawi+1, y*fasti+5, drawi, y*fasti+15);
 						Integer count = countmap.get( inanno.group );
-						large = count != null && count > serifier.lseq.size()/2;
+						large = count != null && count > seqs.size()/2;
 						if( large ) {
-							g2.drawLine(drawi, y*fasti+4, drawi, y*fasti+16);
+							g2.drawLine(drawi, y*fasti+8, drawi, y*fasti+32);
 						} else {
-							g2.drawLine(drawi, y*fasti+7, drawi, y*fasti+13);
+							g2.drawLine(drawi, y*fasti+14, drawi, y*fasti+26);
 						}
 						//g2.drawLine(drawi, y*fasti+5, drawi, y*fasti+15);
 					} else {
 						g2.setColor( Color.darkGray );
-						g2.drawLine(drawi, y*fasti+9, drawi, y*fasti+11);
+						g2.drawLine(drawi, y*fasti+18, drawi, y*fasti+22);
 					}
 					
 					/*if( inanno != null && inanno.name.contains("Cas4") ) {
@@ -2925,7 +3019,7 @@ public class JavaFasta extends JApplet {
 						System.err.println();
 					}*/
 					
-					if( inanno != null && i == inanno.start && inanno.type == null && (seq == serifier.lseq.get(serifier.lseq.size()-1) || !large) ) {
+					if( inanno != null && i == inanno.start && inanno.type == null ) { //&& (seq == serifier.lseq.get(serifier.lseq.size()-1) || !large) ) {
 						g2.setColor( Color.darkGray );
 						
 						/*if( inanno.name.contains("Cas5") ) {
@@ -2937,7 +3031,7 @@ public class JavaFasta extends JApplet {
 						}*/
 						
 						int val = inanno.name.length();
-						int bil = (inanno.stop*1100)/maxseqlen - (inanno.start*1100)/maxseqlen;
+						int bil = (inanno.stop*2400)/maxseqlen - (inanno.start*2400)/maxseqlen;
 						String str = inanno.name.substring(0,Math.min(val, inanno.name.length()));
 						strw = g2.getFontMetrics().stringWidth(str);
 						while( strw > bil ) {
@@ -2945,7 +3039,10 @@ public class JavaFasta extends JApplet {
 							str = inanno.name.substring(0,Math.min(val, inanno.name.length()));
 							strw = g2.getFontMetrics().stringWidth(str);
 						}
-						g2.drawString(str, drawi, y*fasti+25);
+						//if( str.contains("hypo") ) {
+						//	g2.drawString("hyp", drawi, y*fasti+50);
+						//} else 
+						g2.drawString(str, drawi, y*fasti+50);
 					}
 				}
 			}
@@ -2975,6 +3072,7 @@ public class JavaFasta extends JApplet {
 		JMenu file = new JMenu("File");
 		JMenu edit = new JMenu("Edit");
 		JMenu view = new JMenu("View");
+		JMenu anno = new JMenu("Annotation");
 		JMenu name = new JMenu("Name");
 		JMenu group = new JMenu("Groups");
 		JMenu phylogeny = new JMenu("Phylogeny");
@@ -3139,7 +3237,7 @@ public class JavaFasta extends JApplet {
 
 			@Override
 			public int getColumnCount() {
-				return 8;
+				return 9;
 			}
 
 			@Override
@@ -3148,11 +3246,12 @@ public class JavaFasta extends JApplet {
 				else if( columnIndex == 1 ) return "Group";
 				
 				else if( columnIndex == 2 ) return "Length";
-				else if( columnIndex == 3 ) return "Unaligned length";
-				else if( columnIndex == 4 ) return "Start";
-				else if( columnIndex == 5 ) return "RevComp";
-				else if( columnIndex == 6 ) return "GC%";
-				else if( columnIndex == 7 ) return "Sort";
+				else if( columnIndex == 3 ) return "#Anno";
+				else if( columnIndex == 4 ) return "Unaligned length";
+				else if( columnIndex == 5 ) return "Start";
+				else if( columnIndex == 6 ) return "RevComp";
+				else if( columnIndex == 7 ) return "GC%";
+				else if( columnIndex == 8 ) return "Sort";
 				return null;
 			}
 
@@ -3164,14 +3263,15 @@ public class JavaFasta extends JApplet {
 				else if( columnIndex == 3 ) return Integer.class;
 				else if( columnIndex == 4 ) return Integer.class;
 				else if( columnIndex == 5 ) return Integer.class;
-				else if( columnIndex == 6 ) return Float.class;
-				else if( columnIndex == 7 ) return String.class;
+				else if( columnIndex == 6 ) return Integer.class;
+				else if( columnIndex == 7 ) return Float.class;
+				else if( columnIndex == 8 ) return String.class;
 				return null;
 			}
 
 			@Override
 			public boolean isCellEditable(int rowIndex, int columnIndex) {
-				return columnIndex == 0 || columnIndex == 1 || columnIndex == 4;
+				return columnIndex == 0 || columnIndex == 1 || columnIndex == 5;
 			}
 
 			@Override
@@ -3180,12 +3280,13 @@ public class JavaFasta extends JApplet {
 					Sequence seq = serifier.lseq.get( rowIndex );
 					if( columnIndex == 0 ) return seq.getName();
 					else if( columnIndex == 1 ) return seq.getGroup();
-					else if( columnIndex == 2 ) return seq.getAlignedLength();
-					else if( columnIndex == 3 ) return seq.getUnalignedLength();
-					else if( columnIndex == 4 ) return seq.getRealStart();
-					else if( columnIndex == 5 ) return seq.getRevComp();
-					else if( columnIndex == 6 ) return seq.getGCP();
-					else if( columnIndex == 7 ) {
+					else if( columnIndex == 2 ) return seq.getAnnotations() != null ? seq.getAnnotations().size() : 0;
+					else if( columnIndex == 3 ) return seq.getAlignedLength();
+					else if( columnIndex == 4 ) return seq.getUnalignedLength();
+					else if( columnIndex == 5 ) return seq.getRealStart();
+					else if( columnIndex == 6 ) return seq.getRevComp();
+					else if( columnIndex == 7 ) return seq.getGCP();
+					else if( columnIndex == 8 ) {
 						int begin = c.selectedRect.x-seq.getStart();
 						int stop = begin+c.selectedRect.width;
 						
@@ -3213,7 +3314,7 @@ public class JavaFasta extends JApplet {
 				} else if( columnIndex == 1 ) {
 					Sequence seq = serifier.lseq.get( rowIndex );
 					seq.setGroup( aValue.toString() );
-				} else if( columnIndex == 4 ) {
+				} else if( columnIndex == 5 ) {
 					Sequence seq = serifier.lseq.get( rowIndex );
 					seq.setStart( (Integer)aValue );
 				}
@@ -3701,6 +3802,12 @@ public class JavaFasta extends JApplet {
 		popup.add( new AbstractAction("Align MAFFT") {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
+				JTextField host = new JTextField("localhost");
+				JOptionPane.showMessageDialog(null, host);
+				String userhome = System.getProperty("user.home");
+				String username = System.getProperty("user.name");
+				String hostname = host.getText();
+				
 				 final List<Sequence> seqlist = new ArrayList<Sequence>();
 		    	 int[] rr = table.getSelectedRows();
 		    	 for( int r : rr ) {
@@ -3708,21 +3815,30 @@ public class JavaFasta extends JApplet {
 		    		 Sequence seq = serifier.lseq.get(i);
 		    		 seqlist.add( seq );
 		    	 }
-		    	 final Path tmpdir = Paths.get( System.getProperty("user.home") );
+		    	 final Path tmpdir = Paths.get( userhome );
 		    	 try {
 					//BufferedWriter fw = Files.newBufferedWriter( tmpdir.resolve( "tmp.fasta" ) ); //new FileWriter( new File( tmpdir, "tmp.fasta" ) );
 					//serifier.writeFasta( seqlist, fw, null );
 			    	//fw.close();
-			    	
-		    		Path mafftp = tmpdir.resolve("mafftfile.fasta");
+			    	String filename = "mafftfile.fasta";
+		    		Path mafftp = tmpdir.resolve(filename);
 		    		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		    		OutputStreamWriter osw = new OutputStreamWriter(baos);
-		    		serifier.writeFasta( seqlist, osw, null );
+		    		serifier.writeFasta( seqlist, osw, getSelectedRect() );
 		    		osw.close();
 		    		Files.write(mafftp, baos.toByteArray());
 		    		
 		    		//"--localpair"
-			    	ProcessBuilder pb = new ProcessBuilder("/usr/local/bin/mafft","--thread","4",mafftp.getFileName().toString()); //, "-in", "tmp.fasta", "-out", "tmpout.fasta");
+			    	ProcessBuilder pb;
+			    	if( hostname.contains("localhost") ) pb = new ProcessBuilder("mafft","--thread","4",filename); //, "-in", "tmp.fasta", "-out", "tmpout.fasta");
+			    	else {
+			    		ProcessBuilder pbt = new ProcessBuilder("scp", "-q", filename, username+"@"+hostname+":~/"+filename);
+			    		pbt.directory( tmpdir.toFile() );
+						Process pc = pbt.start();
+						pc.waitFor();
+						
+			    		pb = new ProcessBuilder("ssh",username+"@"+hostname,"mafft","--thread","4",filename);
+			    	}
 			    	//ProcessBuilder pb = new ProcessBuilder("/usr/local/bin/mafft","--thread","32","--localpair",mafftp.getFileName().toString()); //, "-in", "tmp.fasta", "-out", "tmpout.fasta");
 			    	
 			    	pb.directory( tmpdir.toFile() );
@@ -3743,7 +3859,6 @@ public class JavaFasta extends JApplet {
 								baos.close();
 								
 								System.err.println( "error " + baos.toString() );
-								
 							} catch (IOException e) {
 								e.printStackTrace();
 							}
@@ -3804,10 +3919,6 @@ public class JavaFasta extends JApplet {
 						    		r = is.read();
 						    	}
 						    	//System.out.println( baos.toString() );*/
-						    	
-						    	
-						    	 
-						    	
 						    	/*BufferedReader br = Files.newBufferedReader( tmpdir.resolve("tmpout.fasta") ); //new FileReader( new File( tmpdir, "tmpout.fasta" ) );
 						    	//BufferedReader	br = new BufferedReader( fr );
 						    	importReader( br );
@@ -3824,25 +3935,106 @@ public class JavaFasta extends JApplet {
     				BufferedReader br = new BufferedReader( new InputStreamReader(is) );
     				
     				Rectangle selr = getSelectedRect();
-    				int start = selr.x;
-    				int end = start+selr.width;
-    				
-    				List<Sequence> seql = serifier.readSequences( br );
-    				for( Sequence fs : serifier.lseq ) {
-    					for( Sequence ns : seql ) {
-    						if( fs.getName().equals(ns.getName()) ) {
-    							fs.replaceSelected( ns, start, end );
-    						}
-    					}
+    				if( selr != null && selr.width > 0 ) {
+	    				int start = selr.x;
+	    				int end = start+selr.width;
+	    				
+	    				List<Sequence> seql = serifier.readSequences( br );
+	    				for( Sequence fs : seqlist ) {
+	    					for( Sequence ns : seql ) {
+	    						if( fs.getName().equals(ns.getName()) ) {
+	    							fs.replaceSelected( ns, start, end );
+	    						}
+	    					}
+	    				}
+	    				
+	    				int len = seql.get(0).length();
+	    				for( Sequence seq : seqlist ) {
+	    					if( seq.annset != null ) {
+	    						for( Annotation a : seq.annset ) {
+	    							if( a.stop > start && a.start < end ) {
+		    							int cnt = start;
+		    							
+		    							if( seq.getName().contains("teng") && a.name.contains("Cas6") ) {
+		    								System.err.println();
+		    							}
+		    							System.err.println(  seq.getName() + " bleh2 " + a.name );
+		    							
+		    							int bil = a.stop-a.start;
+		    							int newstart = a.start;
+		    							int newstop = a.stop;
+		    							for( int i = start; i < start+len; i++ ) {
+		    								char c = seq.charAt(i);
+		    								if( c != '-' ) {
+		    									if( cnt == a.start ) newstart = i;
+		    									else if( cnt == a.stop ) {
+		    										newstop = i;
+		    										break;
+		    									}
+		    									cnt++;
+		    								}
+		    							}
+		    							a.start = newstart;
+		    							a.stop = Math.max(newstop,a.start+bil);
+	    							} else if( a.start > end ) {
+	    								a.start += len-(end-start);
+	    								a.stop += len-(end-start);
+	    							}
+	    						}
+	    					} else {
+	    						System.err.println("empt");
+	    					}
+	    				}
+    				} else {
+    					serifier.lseq.removeAll( seqlist );
+    					importReader( br );
+    					
+    					for( Sequence seq : seqlist ) {
+	    					if( seq.annset != null ) for( Annotation a : seq.annset ) {
+	    						for( Sequence nseq : serifier.lseq ) {
+	    							if( nseq.getName().equals(seq.getName()) ) {
+	    								nseq.addAnnotation(a);
+	    							}
+	    						}
+	    					}
+	    				}
+    					
+    					for( Sequence seq : seqlist ) {
+	    					if( seq.annset != null ) {
+	    						for( Annotation a : seq.annset ) {
+	    							int cnt = 0;
+	    							
+	    							int newstart = 0;
+	    							int newstop = 0;
+	    							for( int i = 0; i < seq.length(); i++ ) {
+	    								char c = seq.charAt(i);
+	    								if( c != '-' ) {
+	    									if( cnt == a.start ) newstart = i;
+	    									else if( cnt == a.stop ) {
+	    										newstop = i;
+	    										break;
+	    									}
+	    									cnt++;
+	    								}
+	    							}
+	    							a.start = newstart;
+	    							a.stop = newstop;
+	    						}
+	    					} else {
+	    						System.err.println("empt");
+	    					}
+	    				}
     				}
-    				//importReader( br );
+    				
     				br.close();
     				is.close();
     				
     				updateView();
 		    	 } catch (IOException e) {
 					e.printStackTrace();
-				 }
+				 } catch (InterruptedException e) {
+					e.printStackTrace();
+				}
 			}
 		});
 		popup.add( new AbstractAction("Align") {
@@ -3888,25 +4080,27 @@ public class JavaFasta extends JApplet {
 			    				osw.close();
 				    			os.close();
 				    			
-				    			//serifier.lseq.removeAll( seqlist );
-				    			
 			    				InputStream is = p.getInputStream();
 			    				BufferedReader br = new BufferedReader( new InputStreamReader(is) );
 			    				
 			    				Rectangle selr = getSelectedRect();
-			    				int start = selr.x;
-			    				int end = start+selr.width;
-			    				
-			    				List<Sequence> seqlist = serifier.readSequences( br );
-			    				for( Sequence fs : serifier.lseq ) {
-			    					for( Sequence ns : seqlist ) {
-			    						if( fs.getName().equals(ns.getName()) ) {
-			    							fs.replaceSelected( ns, start, end );
-			    							
-			    						}
-			    					}
+			    				if( selr != null && selr.width > 0 ) {
+				    				int start = selr.x;
+				    				int end = start+selr.width;
+				    				
+				    				List<Sequence> seqlist = serifier.readSequences( br );
+				    				for( Sequence fs : serifier.lseq ) {
+				    					for( Sequence ns : seqlist ) {
+				    						if( fs.getName().equals(ns.getName()) ) {
+				    							fs.replaceSelected( ns, start, end );
+				    							
+				    						}
+				    					}
+				    				}
+			    				} else {
+			    					serifier.lseq.removeAll( seqlist );
+			    					importReader( br );
 			    				}
-			    				//importReader( br );
 			    				
 			    				br.close();
 			    				is.close();
@@ -4020,6 +4214,235 @@ public class JavaFasta extends JApplet {
 		});
 		//popup.addSeparator();
 		
+		edit.add( new AbstractAction("Merge same names") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				int[] rr = table.getSelectedRows();
+				//String name = "";
+				Map<String,Set<Sequence>>	remseqmap = new HashMap<String,Set<Sequence>>();
+				for( int r : rr ) {
+					int i = table.convertRowIndexToModel(r);
+					if( i >= 0 && i < serifier.lseq.size() ) {
+						Sequence seq = serifier.lseq.get(i);
+						
+						System.err.println("same name se " + seq.getStart() + " " + seq.getEnd() + "  " + seq.offset );
+						
+						String name = seq.getName();
+						Set<Sequence> remseq;
+						if( remseqmap.containsKey( name ) ) {
+							remseq = remseqmap.get( name );
+						} else {
+							remseq = new HashSet<Sequence>();
+							remseqmap.put(name, remseq);
+						}
+						remseq.add( seq );
+						/*if( name.length() == 0 ) name = seq.getName();
+						else {
+							int k = 0;
+							char c = name.getCharAt(k);
+							while( c == seq.getName().getCharAt(k) ) {
+								k++;
+								if( k == name.length() || k == seq.getName().length() ) break;
+								c = name.getCharAt(k);
+							}
+							name = name.substring(0,k);
+						}
+						remseq.add( seq );*/
+					}
+				}
+				
+				System.err.println( "lseq size " + serifier.lseq.size() );
+				for( String name : remseqmap.keySet() ) {
+					Set<Sequence> remseq = remseqmap.get( name );
+					Sequence newseq = new Sequence(name, serifier.mseq);
+					int start = Integer.MAX_VALUE;
+					int end = 0;
+					for( Sequence s : remseq ) {
+						if( s.getStart() < start ) start = s.getStart();
+						if( s.getEnd() > end ) end = s.getEnd();
+					}
+					
+					newseq.setStart( start );
+					Map<Character,Integer>	charset = new TreeMap<Character,Integer>();
+					Map<Character,Integer>	allcharset = new TreeMap<Character,Integer>();
+					
+					System.err.println( "now " + name + " " + start + " " + end );
+					for( int i = start; i < end; i++ ) {
+					//for( int i = 408; i < 410; i++ ) {
+						for( Sequence s : remseq ) {
+							char chr = getgetCharAt(i, s);
+							char cc = Character.toUpperCase(chr);
+							//if( c != '-' && c != ' ' ) 
+							int k = 0;
+							if( charset.containsKey(cc) ) {
+								k = charset.get(cc);
+							}
+							charset.put( cc, k+1 );
+						}
+						
+						for( Sequence s : serifier.lseq ) {
+							char c = getgetCharAt(i, s);
+							char cc = Character.toUpperCase(c);
+							//if( c != '-' && c != ' ' ) 
+							int k = 0;
+							if( allcharset.containsKey(cc) ) {
+								k = allcharset.get(cc);
+							}
+							allcharset.put( cc, k+1 );
+						}
+						
+						if( charset.size() == 0 ) newseq.sb.append('-');
+						else if( charset.size() == 1 ) newseq.sb.append( charset.keySet().iterator().next() );
+						else if( charset.size() > 1 ) {
+							char val = '-';
+							int max = 0;
+							for( char c : charset.keySet() ) {
+								if( c != '-' && c != ' ' ) {
+									int m = allcharset.get(c);
+									if( m > max ) {
+										max = m;
+										val = c;
+									}
+								}
+							}
+							if( val == ' ' ) newseq.sb.append('-');
+							else newseq.sb.append( val );
+							
+							/*	newseq.sb.append( charset.iterator().next() );
+							} else if( charset.size() == 3 ) {
+								newseq.sb.append( charset.iterator().next() );
+							} else newseq.sb.append( 'N' );*/
+						}
+						
+						charset.clear();
+						allcharset.clear();
+					}
+					
+					serifier.lseq.removeAll( remseq );
+					serifier.lseq.add( newseq );
+				}
+				
+				serifier.checkMaxMin();
+				c.updateCoords();
+				table.tableChanged( new TableModelEvent(table.getModel()) );
+				c.repaint();
+				overview.reval();
+				overview.repaint();
+			}
+		});
+		edit.add( new AbstractAction("Merge selected") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				int[] rr = table.getSelectedRows();
+				String name = "";
+				Set<Sequence>	remseq = new HashSet<Sequence>();
+				for( int r : rr ) {
+					int i = table.convertRowIndexToModel(r);
+					Sequence seq = serifier.lseq.get(i);
+					if( name.length() == 0 ) name = seq.getName();
+					else {
+						int k = 0;
+						char c = name.charAt(k);
+						while( c == seq.getName().charAt(k) ) {
+							k++;
+							if( k == name.length() || k == seq.getName().length() ) break;
+							c = name.charAt(k);
+						}
+						name = name.substring(0,k);
+					}
+					remseq.add( seq );
+				}
+				if( name.length() == 0 ) name = "newseq";
+				Sequence newseq = new Sequence(name, serifier.mseq);
+				int start = Integer.MAX_VALUE;
+				int end = 0;
+				for( Sequence s : remseq ) {
+					if( s.getStart() < start ) start = s.getStart();
+					if( s.getEnd() > end ) end = s.getEnd();
+				}
+				
+				newseq.setStart( start );
+				Map<Character,Integer>	charset = new TreeMap<Character,Integer>();
+				for( int i = start; i < end; i++ ) {
+					for( Sequence s : remseq ) {
+						char c = s.getCharAt(i);
+						char cc = Character.toUpperCase(c);
+						//if( c != '-' && c != ' ' ) 
+						int k = 0;
+						if( charset.containsKey(cc) ) {
+							k = charset.get(cc);
+						}
+						charset.put( cc, k+1 );
+					}
+					
+					if( charset.size() == 0 ) newseq.sb.append('-');
+					else if( charset.size() == 1 ) newseq.sb.append( charset.keySet().iterator().next() );
+					else if( charset.size() > 1 ) {
+						char val = '-';
+						int max = 0;
+						for( char c : charset.keySet() ) {
+							if( c != '-' && c != ' ' ) {
+								int m = charset.get(c);
+								if( m > max ) {
+									max = m;
+									val = c;
+								}
+							}
+						}
+						newseq.sb.append( val );
+						
+						/*	newseq.sb.append( charset.iterator().next() );
+						} else if( charset.size() == 3 ) {
+							newseq.sb.append( charset.iterator().next() );
+						} else newseq.sb.append( 'N' );*/
+					}
+					
+					charset.clear();
+				}
+				
+				serifier.lseq.removeAll( remseq );
+				serifier.lseq.add( newseq );
+				
+				table.tableChanged( new TableModelEvent(table.getModel()) );
+				c.repaint();
+				overview.reval();
+				overview.repaint();
+			}
+		});
+		edit.add( new AbstractAction("Concat/Join") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				int[] rr = table.getSelectedRows();
+				String gname = null;
+				Set<Sequence>	remseq = new LinkedHashSet<Sequence>();
+				for( int r : rr ) {
+					int i = table.convertRowIndexToModel(r);
+					Sequence seq = serifier.lseq.get(i);
+					if( gname == null ) gname = seq.getName();
+					if( seq.group != null ) gname = seq.group;
+					remseq.add( seq );
+				}
+				
+				Sequence newseq = new Sequence(gname, serifier.mseq);
+				for( Sequence s : remseq ) {
+					/*if( s.getAnnotations() != null ) for( Annotation a : s.getAnnotations() ) {
+						a.start += newseq.length();
+						a.stop += newseq.length();
+						newseq.addAnnotation(a);
+					}*/
+					newseq.append( s );
+				}
+				newseq.setStart( 0 );
+				
+				//serifier.lseq.removeAll( remseq );
+				serifier.lseq.add( newseq );
+				
+				updateView();
+				overview.reval();
+				overview.repaint();
+			}
+		});
+		edit.addSeparator();
 		edit.add( new AbstractAction("Collapse alignment to left") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -4117,6 +4540,45 @@ public class JavaFasta extends JApplet {
 				}
 			}
 		});
+		edit.add( new AbstractAction("Reverse complement") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				int[] rr = table.getSelectedRows();
+				for( int r : rr ) {
+					int k = table.convertRowIndexToModel( r );
+					Sequence seq = serifier.lseq.get( k );
+					System.err.println( seq.getName() );
+					/*StringBuilder	sb = seq.sb;
+					for( int i = 0; i < seq.length()/2; i++ ) {
+						char c = sb.getCharAt(i);
+						sb.setgetCharAt( i, sb.getCharAt(seq.length()-1-i) );
+						sb.setgetCharAt( seq.length()-1-i, c );
+					}*/
+					
+					Rectangle rc = getSelectedRect();
+					if( rc == null || rc.width == 0 ) {
+						seq.reverseComplement();
+						/*if( seq.getRevComp() == 1 ) {
+							seq.setName( seq.getName().substring(0, seq.getName().length()-8) );
+							seq.setRevComp( 0 );
+						} else if( seq.getRevComp() == 3 ) {
+							seq.setName( seq.getName().substring(0, seq.getName().length()-18)+"_compliment" );
+							seq.setRevComp( 2 );
+						} else if( seq.getRevComp() == 2 ) {
+							seq.setName( seq.getName().substring(0, seq.getName().length()-11)+"_reversecompliment" );
+							seq.setRevComp( 3 );
+						} else {
+							seq.setName( seq.getName()+"_reverse" );
+							seq.setRevComp( 1 );
+						}*/
+					} else {
+						seq.reverseComplement( rc.x, rc.x+rc.width );
+					}
+				}
+				c.repaint();
+				table.tableChanged( new TableModelEvent( table.getModel() ) );
+			}
+		});	
 		edit.add( new AbstractAction("Reverse") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -4156,8 +4618,7 @@ public class JavaFasta extends JApplet {
 				table.tableChanged( new TableModelEvent( table.getModel() ) );
 			}
 		});
-		
-		edit.add( new AbstractAction("Compliment") {
+		edit.add( new AbstractAction("Complement") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				int[] rr = table.getSelectedRows();
@@ -4526,22 +4987,40 @@ public class JavaFasta extends JApplet {
 				frame.setDefaultCloseOperation( JFrame.DISPOSE_ON_CLOSE );
 				frame.setSize(800, 400);
 				
+				int[] rr = table.getSelectedRows();
+				final List<Sequence> seqs;
+				if( rr == null || rr.length == 0 ) {
+					seqs = serifier.lseq;
+				} else {
+					seqs = new ArrayList<Sequence>();
+					for( int r : rr ) {
+						int i = table.convertRowIndexToModel(r);
+						seqs.add( serifier.lseq.get(i) );
+					}
+				}
+				
 				int maxseql = 0;
-				for( Sequence seq : serifier.lseq ) {
+				for( Sequence seq : seqs ) {
 					maxseql = Math.max( seq.length(), maxseql );
 				}
 				final int maxseqlen = Math.max(1, maxseql);
-				final int fasti = 25;
-				final int offset = 180;
+				final int fasti = 50;
+				final int offset = 360;
+				
+				int w = 3200; //serifier.lseq.get(0).length();
+				int h = fasti*seqs.size()+10;
+				
+				BufferedImage bimg = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
+				Graphics2D g2 = bimg.createGraphics();
+				drawPhys( g2, seqs, fasti, maxseqlen, offset, w, h );
+				
 				JComponent c = new JComponent() {
 					public void paintComponent( Graphics g ) {
 						Graphics2D g2 = (Graphics2D)g;
-						drawPhys( g2, fasti, maxseqlen, offset, this.getWidth(), this.getHeight() );
+						g2.drawImage(bimg, 0, 0, w/2, h/2, this);
 					}
 				};
-				int w = 1600; //serifier.lseq.get(0).length();
-				int h = fasti*serifier.lseq.size();
-				Dimension dim = new Dimension(w, h);
+				Dimension dim = new Dimension(w/2, h/2);
 				c.setPreferredSize(dim);
 				c.setSize( dim );
 				JScrollPane pane = new JScrollPane( c );
@@ -4552,14 +5031,14 @@ public class JavaFasta extends JApplet {
 
 					@Override
 					public void actionPerformed(ActionEvent e) {
-						int w = 1280;
-						int h = fasti*serifier.lseq.size()+10;
+						int w = 3000;
+						int h = (fasti*seqs.size()+10);
 						BufferedImage	bimg = new BufferedImage(w,h,BufferedImage.TYPE_INT_RGB);
 						Graphics2D g2 = bimg.createGraphics();
-						drawPhys( g2, fasti, maxseqlen, offset, w, h );
+						drawPhys( g2, seqs, fasti, maxseqlen, offset, w, h );
 						g2.dispose();
 						try {
-							ImageIO.write(bimg, "png", new File("/home/sigmar/mynd.png"));
+							ImageIO.write(bimg, "png", new File("/Users/sigmar/mynd.png"));
 						} catch (IOException e1) {
 							e1.printStackTrace();
 						}
@@ -4573,6 +5052,12 @@ public class JavaFasta extends JApplet {
 		view.add( new AbstractAction("Mummer") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
+				JTextField host = new JTextField("localhost");
+				JOptionPane.showMessageDialog(null, host);
+				String userhome = System.getProperty("user.home");
+				String username = System.getProperty("user.name");
+				String hostname = host.getText();
+				
 				Map<String,List<Sequence>> mseq = new HashMap<String,List<Sequence>>();
 				
 				for( Sequence seq : serifier.lseq ) {
@@ -4588,10 +5073,12 @@ public class JavaFasta extends JApplet {
 				}
 				
 				String home = System.getProperty("user.home");
+				Path tmpdir = Paths.get(home);
 				for( String spec : mseq.keySet() ) {
 					List<Sequence> lseq = mseq.get(spec);
 					
-					String pname = home+"/in."+spec+".fasta";
+					String filename = "in."+spec+".fasta";
+					String pname = home+"/"+filename;
 					Path p = Paths.get(pname);
 					
 					try {
@@ -4608,7 +5095,20 @@ public class JavaFasta extends JApplet {
 					}*/
 					
 					NativeRun nrun = new NativeRun();
-					List<String> commandsList = new ArrayList<String>( Arrays.asList( new String[] {"mummer", "-maxmatch", "-n", "-l", "25", pname, pname} ) );
+					List<String> commandsList;
+					if( hostname.equals("localhost") ) commandsList = new ArrayList<String>( Arrays.asList( new String[] {"mummer", "-maxmatch", "-n", "-l", "25", pname, pname} ) );
+					else {
+			    		ProcessBuilder pbt = new ProcessBuilder("scp", "-q", filename, username+"@"+hostname+":~/"+filename);
+			    		pbt.directory( tmpdir.toFile() );
+						try {
+							Process pc = pbt.start();
+							pc.waitFor();
+						} catch (IOException | InterruptedException e1) {
+							e1.printStackTrace();
+						}
+						
+						commandsList = new ArrayList<String>( Arrays.asList( new String[] {"ssh",username+"@"+hostname,"mummer","-maxmatch","-n","-l","25",filename,filename} ) );
+			    	}
 					
 					final ByteArrayOutputStream baos = new ByteArrayOutputStream();
 					//Path pout = Paths.get("/Users/sigmar/pout.mummer");
@@ -4674,6 +5174,88 @@ public class JavaFasta extends JApplet {
 					} catch (IOException e1) {
 						e1.printStackTrace();
 					}
+				}
+			}
+		});
+		view.add( new AbstractAction("Blast") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				JTextField host = new JTextField("localhost");
+				JOptionPane.showMessageDialog(null, host);
+				String userhome = System.getProperty("user.home");
+				String username = System.getProperty("user.name");
+				String hostname = host.getText();
+				
+				/*Map<String,List<Sequence>> mseq = new HashMap<String,List<Sequence>>();
+				
+				for( Sequence seq : serifier.lseq ) {
+					String spec = seq.getSpec();
+					List<Sequence> lseq;
+					if( mseq.containsKey(spec) ) {
+						lseq = mseq.get(spec);
+					} else {
+						lseq = new ArrayList<Sequence>();
+						mseq.put(spec, lseq);
+					}
+					lseq.add( seq );
+				}*/
+				
+				//Path tmpdir = Paths.get(userhome);
+				//for( String spec : mseq.keySet() ) {
+					//List<Sequence> lseq = mseq.get(spec);
+					
+					/*String filename = "in."+spec+".fasta";
+					String pname = userhome+"/"+filename;
+					Path p = Paths.get(pname);
+					
+					try {
+						BufferedWriter bw = Files.newBufferedWriter(p);
+						serifier.writeFasta(lseq, bw, null);
+						bw.close();
+					} catch (IOException e2) {
+						e2.printStackTrace();
+					}*/
+					
+				NativeRun nrun = new NativeRun();
+				List<String> commandsList;
+				if( hostname.equals("localhost") ) commandsList = new ArrayList<String>( Arrays.asList( new String[] {"blastp", "-num_threads", "4"} ) );
+				else {
+					commandsList = new ArrayList<String>( Arrays.asList( new String[] {"ssh",username+"@"+hostname,"blastp","-db","/data/nr","-num_threads","32"} ) );
+		    	}
+				
+				StringWriter sw = new StringWriter();
+				try {
+					serifier.writeFasta(serifier.lseq, sw, getSelectedRect());
+				} catch (IOException e2) {
+					e2.printStackTrace();
+				}
+				
+				final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+				//Path pout = Paths.get("/Users/sigmar/pout.mummer");
+				List<Object> cmds = new ArrayList<Object>();
+				cmds.add( new Object[] {sw.toString().getBytes(), baos, null} );
+				cmds.add( commandsList );
+				
+				Runnable run = new Runnable() {
+					@Override
+					public void run() {
+						String res = baos.toString();
+						
+						JTextArea ta = new JTextArea( res );
+						JScrollPane	sp = new JScrollPane( ta );
+						ta.setFont( new Font("monospaced", Font.PLAIN, 12) );
+						JFrame frame = new JFrame();
+						frame.setDefaultCloseOperation( JFrame.DISPOSE_ON_CLOSE );
+						frame.setSize(800, 600);
+						frame.add( sp );
+						frame.setVisible(true);
+					}
+				};
+				Object[] cont = new Object[] {null, null, null};
+				try {
+					nrun.runProcessBuilder("Blast", cmds, run, cont, false);
+				} catch (IOException e1) {
+					e1.printStackTrace();
 				}
 			}
 		});
@@ -4947,6 +5529,22 @@ public class JavaFasta extends JApplet {
 		});
 		view.add( cbmi2 );
 		
+		anno.add( new AbstractAction("Annotate selected") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				Rectangle selr = getSelectedRect();
+				for( int y = selr.y; y < selr.y+selr.height; y++ ) {
+					int i = table.convertColumnIndexToModel(y);
+					Sequence seq = serifier.lseq.get(i);
+					
+					Annotation a = new Annotation(seq,"unknown",Color.gray,selr.x,selr.x+selr.width,1,null);
+					serifier.lann.add( a );
+					Collections.sort( seq.getAnnotations() );
+				}
+				atable.tableChanged( new TableModelEvent( atable.getModel() ) );
+			}
+		});
+		
 		//popup.addSeparator();
 		file.add( new AbstractAction("Open") {
 			@Override
@@ -5034,6 +5632,7 @@ public class JavaFasta extends JApplet {
 				for( Sequence seq : mann.keySet() ) {
 					List<Annotation> alist = mann.get(seq);
 					Collections.sort( alist );
+					List<Annotation> spacerlist = new ArrayList<Annotation>();
 					for( int i = 0; i < alist.size()-1; i++ ) {
 						Annotation a = alist.get(i);
 						Annotation na = alist.get(i+1);
@@ -5042,15 +5641,27 @@ public class JavaFasta extends JApplet {
 						if( a.getName().contains("-") ) type = "-"+a.getName().substring(0,4);
 						else if( na.getName().contains("-") ) type = "-"+na.getName().substring(0,4);
 						
-						Sequence nseq = new Sequence( a.seq.getName()+"-CRISPR-"+a.start+type, serifier.mseq );
+						String newname = a.seq.getName()+"-CRISPR-"+a.start+type;
+						Sequence nseq = new Sequence( newname, serifier.mseq );
 						
 						if( a.stop+1 > na.start-1 ) {
 							System.err.println();
 						}
 						
-						nseq.append( a.seq.getSubstring(a.stop+1, na.start-1, 1) );
+						String subs = a.seq.getSubstring(a.stop+1, na.start-1, 1);
+						if( na.start - a.stop < 50 && na.start - a.stop > 19 ) {
+							Annotation newa = new Annotation(seq,newname,null,a.stop+1,na.start-1,0,serifier.mann);
+							newa.type = "spacer";
+							if( type.length() > 0 ) newa.type += type;
+							spacerlist.add( newa );
+							serifier.lann.add( newa );
+						}
+						
+						nseq.append( subs );
 						jf.serifier.addSequence(nseq);
 					}
+					//alist.addAll( spacerlist );
+					//Collections.sort( alist );
 				}
 				jf.updateView();
 				
@@ -5620,222 +6231,6 @@ public class JavaFasta extends JApplet {
 				updateIndexes();
 				table.tableChanged( new TableModelEvent( table.getModel() ) );
 				c.updateCoords();
-			}
-		});
-		name.add( new AbstractAction("Join same names") {
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				int[] rr = table.getSelectedRows();
-				//String name = "";
-				Map<String,Set<Sequence>>	remseqmap = new HashMap<String,Set<Sequence>>();
-				for( int r : rr ) {
-					int i = table.convertRowIndexToModel(r);
-					if( i >= 0 && i < serifier.lseq.size() ) {
-						Sequence seq = serifier.lseq.get(i);
-						String name = seq.getName();
-						Set<Sequence> remseq;
-						if( remseqmap.containsKey( name ) ) {
-							remseq = remseqmap.get( name );
-						} else {
-							remseq = new HashSet<Sequence>();
-							remseqmap.put(name, remseq);
-						}
-						remseq.add( seq );
-						/*if( name.length() == 0 ) name = seq.getName();
-						else {
-							int k = 0;
-							char c = name.getCharAt(k);
-							while( c == seq.getName().getCharAt(k) ) {
-								k++;
-								if( k == name.length() || k == seq.getName().length() ) break;
-								c = name.getCharAt(k);
-							}
-							name = name.substring(0,k);
-						}
-						remseq.add( seq );*/
-					}
-				}
-				
-				for( String name : remseqmap.keySet() ) {
-					Set<Sequence> remseq = remseqmap.get( name );
-					Sequence newseq = new Sequence(name, serifier.mseq);
-					int start = Integer.MAX_VALUE;
-					int end = 0;
-					for( Sequence s : remseq ) {
-						if( s.getStart() < start ) start = s.getStart();
-						if( s.getEnd() > end ) end = s.getEnd();
-					}
-					
-					newseq.setStart( start );
-					Map<Character,Integer>	charset = new TreeMap<Character,Integer>();
-					Map<Character,Integer>	allcharset = new TreeMap<Character,Integer>();
-					for( int i = start; i < end; i++ ) {
-					//for( int i = 408; i < 410; i++ ) {
-						for( Sequence s : remseq ) {
-							char chr = getgetCharAt(i, s);
-							char cc = Character.toUpperCase(chr);
-							//if( c != '-' && c != ' ' ) 
-							int k = 0;
-							if( charset.containsKey(cc) ) {
-								k = charset.get(cc);
-							}
-							charset.put( cc, k+1 );
-						}
-						
-						for( Sequence s : serifier.lseq ) {
-							char c = getgetCharAt(i, s);
-							char cc = Character.toUpperCase(c);
-							//if( c != '-' && c != ' ' ) 
-							int k = 0;
-							if( allcharset.containsKey(cc) ) {
-								k = allcharset.get(cc);
-							}
-							allcharset.put( cc, k+1 );
-						}
-						
-						if( charset.size() == 0 ) newseq.sb.append('-');
-						else if( charset.size() == 1 ) newseq.sb.append( charset.keySet().iterator().next() );
-						else if( charset.size() > 1 ) {
-							char val = '-';
-							int max = 0;
-							for( char c : charset.keySet() ) {
-								if( c != '-' && c != ' ' ) {
-									int m = allcharset.get(c);
-									if( m > max ) {
-										max = m;
-										val = c;
-									}
-								}
-							}
-							if( val == ' ' ) newseq.sb.append('-');
-							else newseq.sb.append( val );
-							
-							/*	newseq.sb.append( charset.iterator().next() );
-							} else if( charset.size() == 3 ) {
-								newseq.sb.append( charset.iterator().next() );
-							} else newseq.sb.append( 'N' );*/
-						}
-						
-						charset.clear();
-						allcharset.clear();
-					}
-					
-					serifier.lseq.removeAll( remseq );
-					serifier.lseq.add( newseq );
-				}
-				
-				serifier.checkMaxMin();
-				c.updateCoords();
-				table.tableChanged( new TableModelEvent(table.getModel()) );
-				c.repaint();
-				overview.reval();
-				overview.repaint();
-			}
-		});
-		name.add( new AbstractAction("Join selected") {
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				int[] rr = table.getSelectedRows();
-				String name = "";
-				Set<Sequence>	remseq = new HashSet<Sequence>();
-				for( int r : rr ) {
-					int i = table.convertRowIndexToModel(r);
-					Sequence seq = serifier.lseq.get(i);
-					if( name.length() == 0 ) name = seq.getName();
-					else {
-						int k = 0;
-						char c = name.charAt(k);
-						while( c == seq.getName().charAt(k) ) {
-							k++;
-							if( k == name.length() || k == seq.getName().length() ) break;
-							c = name.charAt(k);
-						}
-						name = name.substring(0,k);
-					}
-					remseq.add( seq );
-				}
-				if( name.length() == 0 ) name = "newseq";
-				Sequence newseq = new Sequence(name, serifier.mseq);
-				int start = Integer.MAX_VALUE;
-				int end = 0;
-				for( Sequence s : remseq ) {
-					if( s.getStart() < start ) start = s.getStart();
-					if( s.getEnd() > end ) end = s.getEnd();
-				}
-				
-				newseq.setStart( start );
-				Map<Character,Integer>	charset = new TreeMap<Character,Integer>();
-				for( int i = start; i < end; i++ ) {
-					for( Sequence s : remseq ) {
-						char c = s.getCharAt(i);
-						char cc = Character.toUpperCase(c);
-						//if( c != '-' && c != ' ' ) 
-						int k = 0;
-						if( charset.containsKey(cc) ) {
-							k = charset.get(cc);
-						}
-						charset.put( cc, k+1 );
-					}
-					
-					if( charset.size() == 0 ) newseq.sb.append('-');
-					else if( charset.size() == 1 ) newseq.sb.append( charset.keySet().iterator().next() );
-					else if( charset.size() > 1 ) {
-						char val = '-';
-						int max = 0;
-						for( char c : charset.keySet() ) {
-							if( c != '-' && c != ' ' ) {
-								int m = charset.get(c);
-								if( m > max ) {
-									max = m;
-									val = c;
-								}
-							}
-						}
-						newseq.sb.append( val );
-						
-						/*	newseq.sb.append( charset.iterator().next() );
-						} else if( charset.size() == 3 ) {
-							newseq.sb.append( charset.iterator().next() );
-						} else newseq.sb.append( 'N' );*/
-					}
-					
-					charset.clear();
-				}
-				
-				serifier.lseq.removeAll( remseq );
-				serifier.lseq.add( newseq );
-				
-				table.tableChanged( new TableModelEvent(table.getModel()) );
-				c.repaint();
-				overview.reval();
-				overview.repaint();
-			}
-		});
-		name.add( new AbstractAction("Concat") {
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				int[] rr = table.getSelectedRows();
-				String gname = "newseq";
-				Set<Sequence>	remseq = new LinkedHashSet<Sequence>();
-				for( int r : rr ) {
-					int i = table.convertRowIndexToModel(r);
-					Sequence seq = serifier.lseq.get(i);
-					gname = seq.group;
-					remseq.add( seq );
-				}
-				
-				Sequence newseq = new Sequence(gname, serifier.mseq);
-				for( Sequence s : remseq ) {
-					newseq.sb.append( s.sb );
-				}
-				newseq.setStart( 0 );
-				
-				//serifier.lseq.removeAll( remseq );
-				serifier.lseq.add( newseq );
-				
-				updateView();
-				overview.reval();
-				overview.repaint();
 			}
 		});
 		name.add( new AbstractAction("RenameSpec") {
@@ -6995,6 +7390,30 @@ public class JavaFasta extends JApplet {
 		
 		JPopupMenu	apopup = new JPopupMenu();
 		atable.setComponentPopupMenu( apopup );
+		apopup.add( new AbstractAction("Open as sequence") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				JFrame	frame = new JFrame();
+				frame.setDefaultCloseOperation( JFrame.DISPOSE_ON_CLOSE );
+				frame.setSize(800, 600);
+				JavaFasta	jf = new JavaFasta();
+				jf.initGui( frame );
+				
+				int[] rr = atable.getSelectedRows();
+				for( int r : rr ) {
+					int i = atable.convertRowIndexToModel(r);
+					Annotation ann = serifier.lann.get(i);
+					Sequence aseq = ann.createSequence();
+					jf.serifier.addSequence(aseq);
+					jf.serifier.mseq.put(aseq.getName(), aseq);
+				}
+			
+				jf.updateView();
+				
+				frame.setVisible( true );
+			}
+		});
+		apopup.addSeparator();
 		apopup.add( new AbstractAction("Delete") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -7030,6 +7449,109 @@ public class JavaFasta extends JApplet {
 				}
 				serifier.lann.removeAll( remannset );
 				atable.tableChanged( new TableModelEvent(atable.getModel() ) );
+			}
+		});
+		
+		apopup.add( new AbstractAction("Align offset") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				int max = 0;
+				int[] rr = atable.getSelectedRows();
+				Map<Sequence,Annotation> seqs = new HashMap<Sequence,Annotation>();
+				for( int r : rr ) {
+					int i = atable.convertRowIndexToModel(r);
+					Annotation a = serifier.lann.get(i);
+					seqs.put( a.seq, a );
+					max = Math.max(max, a.start);
+				}
+				
+				for( Sequence seq : seqs.keySet() ) {
+					Annotation sela = seqs.get(seq);
+					seq.setStart(max-sela.start);
+				}
+			}
+		});
+		apopup.add( new AbstractAction("Align selected start") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				int max = 0;
+				int[] rr = atable.getSelectedRows();
+				Map<Sequence,Annotation> seqs = new HashMap<Sequence,Annotation>();
+				for( int r : rr ) {
+					int i = atable.convertRowIndexToModel(r);
+					Annotation a = serifier.lann.get(i);
+					seqs.put( a.seq, a );
+					max = Math.max(max, a.start);
+				}
+				
+				for( Sequence seq : seqs.keySet() ) {
+					Annotation sela = seqs.get(seq);
+					List<Annotation> lann = seq.getAnnotations();
+					if( lann != null ) {
+						int hit = -1;
+						for( Annotation a : lann ) {
+							if( a == sela ) {
+								hit = max-a.start;
+								while( hit > 0 ) {
+									seq.sb.insert(0, '-');
+									//seq.sb.append('-')
+									hit--;
+								}
+								hit = max-a.start;
+								
+								break;
+							}
+						}
+						
+						for( Annotation a : lann ) {
+							if( hit != -1 ) {
+								a.start += hit;
+								a.stop += hit;
+							}
+						}
+					}
+				}
+			}
+		});
+		apopup.add( new AbstractAction("Align selected end") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				int max = 0;
+				int[] rr = atable.getSelectedRows();
+				Map<Sequence,Annotation> seqs = new HashMap<Sequence,Annotation>();
+				for( int r : rr ) {
+					int i = atable.convertRowIndexToModel(r);
+					Annotation a = serifier.lann.get(i);
+					seqs.put( a.seq, a );
+					max = Math.max(max, a.stop);
+				}
+				
+				for( Sequence seq : seqs.keySet() ) {
+					Annotation sela = seqs.get(seq);
+					List<Annotation> lann = seq.getAnnotations();
+					if( lann != null ) {
+						int hit = -1;
+						System.err.println( "mmu start" );
+						for( Annotation a : lann ) {
+							if( hit != -1 ) { 
+								System.err.println( "mmu " + a.start );
+								
+								a.start += hit;
+								a.stop += hit;
+							} else System.err.println( "mmux " + a.start );
+							
+							if( a == sela ) {
+								hit = max-a.stop;
+								while( hit > 0 ) {
+									seq.sb.insert(a.stop, '-');
+									//seq.sb.append('-')
+									hit--;
+								}
+								hit = max-a.stop;
+							}
+						}
+					}
+				}
 			}
 		});
 		apopup.addSeparator();
@@ -7780,7 +8302,7 @@ public class JavaFasta extends JApplet {
 											
 											count = 0;
 										}
-									} else if( name.contains("CRISPR") ) {
+									} else if( name.contains("CRISPR") || name.contains("Csh") || name.contains("Cse") || name.contains("Cmr") || name.contains("Crm") || name.contains("Cas") || name.contains("Csd") || name.contains("Csm") ) {
 										if( count > 0 ) {
 											if( u < lrow.size() ) rw = lrow.get(u);
 											else {
@@ -7823,6 +8345,7 @@ public class JavaFasta extends JApplet {
 										newname = newname.replace("helicase", "");
 										newname = newname.replace(",", "");*/
 										newname = newname.trim();
+										System.err.println( "blehname   " + newname );
 										
 										String yes = null;
 										for( String h : hcell.keySet() ) {
@@ -8196,22 +8719,24 @@ public class JavaFasta extends JApplet {
 			@Override
 			public Object getValueAt(int rowIndex, int columnIndex) {
 				Annotation ann = serifier.lann.get( rowIndex );
-				if( columnIndex == 0 ) {
-					if( ann instanceof Tegeval ) {
-						Tegeval tv = (Tegeval)ann;
-						GeneGroup gg = tv.getGene().getGeneGroup();
-						if( gg != null ) return gg.getCommonName();
+				if( ann != null ) {
+					if( columnIndex == 0 ) {
+						if( ann instanceof Tegeval ) {
+							Tegeval tv = (Tegeval)ann;
+							GeneGroup gg = tv.getGene().getGeneGroup();
+							if( gg != null ) return gg.getCommonName();
+						}
+						return ann.name;
 					}
-					return ann.name;
+					else if( columnIndex == 1 ) return ann.seq != null ? ann.seq.getName() : "";
+					else if( columnIndex == 2 ) return ann.type+"_"+ann.ori;
+					else if( columnIndex == 3 ) return ann.designation;
+					else if( columnIndex == 4 ) return ann.group;
+					else if( columnIndex == 5 ) return ann.start;
+					else if( columnIndex == 6 ) return ann.stop;
+					else if( columnIndex == 7 ) return ann.stop-ann.start;
 				}
-				else if( columnIndex == 1 ) return ann.seq != null ? ann.seq.getName() : "";
-				else if( columnIndex == 2 ) return ann.type+"_"+ann.ori;
-				else if( columnIndex == 3 ) return ann.designation;
-				else if( columnIndex == 4 ) return ann.group;
-				else if( columnIndex == 5 ) return ann.start;
-				else if( columnIndex == 6 ) return ann.stop;
-				else if( columnIndex == 7 ) return ann.stop-ann.start;
-				else return "";
+				return "";
 			}
 
 			@Override
@@ -8303,6 +8828,7 @@ public class JavaFasta extends JApplet {
 			mb.add( file );
 			mb.add( edit );
 			mb.add( view );
+			mb.add( anno );
 			mb.add( name );
 			mb.add( group );
 			mb.add( phylogeny );

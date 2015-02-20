@@ -13,6 +13,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.Reader;
 import java.io.StringReader;
+import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -266,6 +267,8 @@ public class FlxReader {
 		
 		if( sctgseq != null ) {
 			cseq.append( sctgseq.sb );
+			int len = Math.min(sctgseq.sb.length(),10);
+			//System.out.println("appending2 " + sctgseq.getName() + " " + len + " " + sctgseq.sb.substring(0, len) );
 		} else {
 			System.out.println( "   empty " );
 		}
@@ -398,6 +401,8 @@ public class FlxReader {
 						System.err.println( cseq.length() );
 					}
 					cseq.append( nseq.sb );
+					int len = Math.min(nseq.sb.length(),10);
+					//System.out.println("appending3 " + nseq.getName() + " " + len + " " + nseq.sb.substring(0, len) );
 				} else {
 					System.err.println("errrrror");
 				}
@@ -407,6 +412,7 @@ public class FlxReader {
 			}
 		} else if( lastN != null ) {
 			cseq.append("NNN");
+			//System.out.println( "appending NNN" );
 			i = lastW[5].indexOf('0');
 			while( lastW[5].charAt(++i) == '0' ) ;
 			String c0 = lastW[5].substring(i);
@@ -533,7 +539,7 @@ public class FlxReader {
 		}*/
 	}
 	
-	public static StringBuilder referenceAssembly( String comp, byte[] bb, byte[] allcontigs ) throws IOException {
+	public StringBuilder referenceAssembly( String home, String comp, String what, byte[] bb, byte[] allcontigs ) throws IOException {
 		List<Sequence> preorder = new ArrayList<Sequence>();
 		ProcessBuilder pb = new ProcessBuilder("makeblastdb","-dbtype","nucl","-out",comp,"-title",comp);
 		
@@ -615,13 +621,14 @@ public class FlxReader {
 		Map<Integer,String>	tm = null;
 		boolean				rstrand = false;
 		
-		Path tmp = Paths.get("/Users/sigmar/"+comp+".blastout");
+		Path tmp = Paths.get(home+comp+"_on_"+what+".blastout");
 		BufferedWriter bw = Files.newBufferedWriter(tmp, StandardOpenOption.CREATE);
 		final InputStream is2 = pr.getInputStream();
 		Reader fr = new InputStreamReader( is2 );
 		BufferedReader br = new BufferedReader( fr );
 		String line = br.readLine();
 		bw.write(line+"\n");
+		try {
 		while( line != null ) {
 			//System.err.println( line );
 			if( line.startsWith("Query=") ) {
@@ -634,7 +641,7 @@ public class FlxReader {
 				if( currentlen < maxlen ) current = null;
 			} else if( line.startsWith(">") ) {
 				if( current != null ) {
-					String u = line.substring(2,line.indexOf('(')-1);
+					String u = line.substring(2);//.substring(2,line.indexOf('(')-1);
 					if( mtm.containsKey(u) ) {
 						tm = mtm.get(u);
 					} else {
@@ -670,6 +677,10 @@ public class FlxReader {
 			line = br.readLine();
 			bw.write(line+"\n");
 		}
+		} catch( Exception e ) {
+			e.printStackTrace();
+			bw.close();
+		}
 		bw.close();
 		
 		StringBuilder sb = new StringBuilder();
@@ -696,7 +707,7 @@ public class FlxReader {
 		return sb;
 	}
 	
-	public static void start( String type, boolean showunclosed ) {
+	public void start( String home, String type, boolean showunclosed, Writer fw, String comp, byte[] bb ) {
 		touch.clear();
 		serifier.clearAll();
 		mm.clear();
@@ -745,12 +756,8 @@ public class FlxReader {
 			}
 			fr.close();
 			
-			String comp = "brockianus338";
-			Path p = Paths.get("/Users/sigmar/smassembly/"+comp+".fna");
-			byte[] bb = Files.readAllBytes(p);
-			
 			//List<Sequence> lseq = Sequence.readFasta( new BufferedReader( new InputStreamReader(new ByteArrayInputStream(bb)) ), mseq);
-			StringBuilder sb = null; //referenceAssembly( comp, bb, allcontigs );
+			StringBuilder sb = comp != null ? referenceAssembly( home, comp, type, bb, allcontigs ) : null;
 			
 			fr = new FileReader(home+type+add+"454ContigGraph.txt");
 			br = new BufferedReader( fr );
@@ -783,7 +790,6 @@ public class FlxReader {
 			br.close();
 			
 			int plasm = 1;
-			FileWriter fw = new FileWriter( home + type + ".fna" );
 			Sequence cseq = new Sequence(type+"_chromosome", null);
 			
 			if( sb != null && sb.length() > 0 ) {
@@ -855,7 +861,7 @@ public class FlxReader {
 					if( firstofnew != null && cseq.length() > 0 ) {
 						//System.out.println("writing " + cseq.getName());
 						
-						cseq.setName( cseq.getName() + " ("+cseq.length()+")" );
+						cseq.setName( cseq.getName() ); //+ " ("+cseq.length()+")" );
 						cseq.writeSequence(fw);
 						
 						System.out.println("out len " + cseq.length());
@@ -952,16 +958,17 @@ public class FlxReader {
 			}
 			
 			if( cseq.length() > 0 ) {
-				cseq.setName( cseq.getName() + " ("+cseq.length()+")" );
+				cseq.setName( cseq.getName() ); // + " ("+cseq.length()+")" );
 				cseq.writeSequence(fw);
 				System.out.println("out len " + cseq.length());
 				serifier.addSequence( cseq );
 			}
-			fw.close();
 			
 			for( String seqname : mseq.keySet() ) {
 				//if( !touch.contains(seqname) ) {
 					seq = mseq.get( seqname );
+					seq.setName( type+"_"+seqname );
+					if( comp != null && !touch.contains(seqname) && seqname.contains("contig") ) seq.writeSequence(fw);
 					serifier.addSequence( seq );
 				//}
 			}
@@ -980,29 +987,53 @@ public class FlxReader {
 	
 	public static int maxlen = 5000;
 	
-	public static String home = "/Users/sigmar/smassembly/";
-	public static String type1 = "filiformis947";
+	//public static String home = "/Users/sigmar/smassembly/";
+	//public static String type1 = "brockianus1003";
+	//public static String type1 = "filiformis947";
 	
 	//public static String home = "/Users/sigmar/";
 	//public static String type1 = "b1003ass";
 	
 	public static String add = "/";
 	public static void main(String[] args) {
-		if( type1 == null ) {
-			Path p = Paths.get( home );
-			for( File f : p.toFile().listFiles() ) {
-				if( f.isDirectory() ) start( f.getName(), true );
+		String type1 = null;
+		String home = null;
+		String comp = null;
+		byte[] bb = null;
+		if( args.length > 0 ) home = args[0];
+		if( args.length > 1 ) type1 = args[1];
+		if( args.length > 2 ) {
+			comp = args[2]; //"brockianus338";
+			Path p = Paths.get(home+comp+".fna");
+			try {
+				bb = Files.readAllBytes(p);
+			} catch (IOException e) {
+				e.printStackTrace();
 			}
-		} else {
-			start( type1, false );
+		}
+		
+		FlxReader flx = new FlxReader();
+		try {
+			if( type1 == null ) {
+				Path p = Paths.get( home );
+				for( File f : p.toFile().listFiles() ) {
+					FileWriter fw = new FileWriter( home + f.getName() + ".fna" );
+					if( f.isDirectory() ) flx.start( home, f.getName(), true, fw, comp, bb );
+				}
+			} else {
+				FileWriter fw = new FileWriter( home + type1 + ".fna" );
+				flx.start( home, type1, false, fw, comp, bb );
+				
+				JavaFasta	jf = new JavaFasta(serifier);
+				JFrame		frame = new JFrame();
+				frame.setDefaultCloseOperation( JFrame.EXIT_ON_CLOSE );
+				frame.setSize(800, 600);
+				jf.initGui(frame);
+				jf.updateView();
+				frame.setVisible( true );
+			}
+		} catch( Exception e ) {
 			
-			JavaFasta	jf = new JavaFasta(serifier);
-			JFrame		frame = new JFrame();
-			frame.setDefaultCloseOperation( JFrame.EXIT_ON_CLOSE );
-			frame.setSize(800, 600);
-			jf.initGui(frame);
-			jf.updateView();
-			frame.setVisible( true );
 		}
 	}
 }

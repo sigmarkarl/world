@@ -460,7 +460,21 @@ public class GeneGroup {
 	public String getKeggid() {
 		String ret = null;
 		for( Gene g : genes ) {
-			if( g.keggid != null ) ret = g.keggid;
+			if( g.keggid != null ) {
+				if( ret == null ) ret = g.keggid;
+				else ret += " " + g.keggid;
+			}
+		}
+		return ret;
+	}
+	
+	public String getKeggPathway() {
+		String ret = null;
+		for( Gene g : genes ) {
+			if( g.keggpathway != null ) {
+				if( ret == null ) ret = g.keggpathway;
+				else ret += " " + g.keggpathway;
+			}
 		}
 		return ret;
 	}
