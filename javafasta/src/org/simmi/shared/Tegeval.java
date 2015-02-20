@@ -25,9 +25,9 @@ public class Tegeval extends Annotation implements Teg {
 		Sequence alignedsequence = getAlignedSequence();
 		if( alignedsequence == null ) {
 			alignedsequence = new Sequence( name + " # " + start + " # " + stop + " # " + ori, null );
-			alignedsequence.append( a );
 			setAlignedSequence( alignedsequence );
 		}
+		alignedsequence.append( a );
 	}
 	
 	public void init( String contig, Sequence shortcontig, String locontig, int sta, int sto, int orient ) {

@@ -362,11 +362,11 @@ public class Sequence implements Comparable<Sequence> {
 	
 	public int getNumberOfSubContigs() {
 		int count = 0;
-		int i = sb.indexOf("NNNNN");
+		int i = sb.indexOf("NNN");
 		if( i != -1 ) count++;
 		
 		while( i != -1 ) {
-			int k = sb.indexOf("NNNNN", i+5);
+			int k = sb.indexOf("NNN", i+5);
 			if( k > i+100 ) {
 				count++;
 			}
@@ -1078,10 +1078,46 @@ public class Sequence implements Comparable<Sequence> {
 			sb.setCharAt( i, ncc );
 			sb.setCharAt( length()-1-i, cc );
 		}
+		
+		if( annset != null ) {
+			int i;
+			for( i = 0; i < annset.size()/2; i++ ) {
+				Annotation a = annset.get(i);
+				
+				a.start = length()-a.stop-1;
+				a.stop = length()-a.start-1;
+				a.ori *= -1;
+				a = annset.set(annset.size()-i-1, a);
+				
+				a.start = length()-a.stop-1;
+				a.stop = length()-a.start-1;
+				a.ori *= -1;
+				annset.set(i, a);
+			}
+			if( annset.size()%2 == 1 ) {
+				Annotation a = annset.get(annset.size()/2+1);
+				a.start = length()-a.stop-1;
+				a.stop = length()-a.start-1;
+				a.ori *= -1;
+			}
+		}
+	}
+	
+	public void reverseComplement( int start, int end ) {
+		for( int i = start; i < start+(end-start)/2; i++ ) {
+			char c = sb.charAt(i);
+			char cc = rc.containsKey( c ) ? rc.get(c) : c;
+			
+			char nc = sb.charAt(length()-1-i);
+			char ncc = rc.containsKey( nc ) ? rc.get(nc) : nc;
+			
+			sb.setCharAt( i, ncc );
+			sb.setCharAt( length()-1-i, cc );
+		}
 	}
 	
 	public void reverse( int start, int end ) {
-		System.err.println( sb.substring(start,end) + " " + getName() );
+		//System.err.println( sb.substring(start,end) + " " + getName() );
 		for( int i = start; i < start+(end-start)/2; i++ ) {
 			char c = sb.charAt(i);
 			int ri = end-1-i+start;
@@ -1307,6 +1343,9 @@ public class Sequence implements Comparable<Sequence> {
 	}
 	
 	public void append( Sequence seq ) {
+		if( seq.getAnnotations() != null ) for( Annotation a : seq.getAnnotations() ) {
+			this.addAnnotation( new Annotation( a, this.length() ) );
+		}
 		sb.append( seq.sb );
 	}
 	
@@ -1403,6 +1442,10 @@ public class Sequence implements Comparable<Sequence> {
 	
 	public int length() {
 		return sb.length();
+	}
+	
+	public void setLength( int len ) {
+		sb.setLength( len );
 	}
 	
 	public boolean isChromosome() {

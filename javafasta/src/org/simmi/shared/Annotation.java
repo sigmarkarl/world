@@ -1,6 +1,8 @@
 package org.simmi.shared;
 
 import java.awt.Color;
+import java.io.IOException;
+import java.io.Writer;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -45,6 +47,30 @@ public class Annotation implements Comparable<Object> {
 		
 	}
 	
+	public Annotation( Annotation a ) {
+		this( a, 0 );
+	}
+	
+	public Annotation( Annotation a, int offset ) {
+		start = a.start+offset;
+		stop = a.stop+offset;
+		ori = a.ori;
+		type = a.type;
+		name = a.name;
+		id = a.id;
+		group = a.group;
+		desc = new StringBuilder( a.desc );
+		gene = a.gene;
+		designation = a.designation;
+		teg = a.teg;
+		eval = a.eval;
+		num = a.num;
+		color = a.color;
+		dbref = new HashSet<String>( a.dbref );
+		gc = a.gc;
+		gcskew = a.gcskew;
+	}
+	
 	public Annotation( String type ) {
 		this.type = type;
 	}
@@ -77,10 +103,14 @@ public class Annotation implements Comparable<Object> {
 	}
 	
 	public void setAlignedSequence( Sequence alseq ) {
-		if( seq != null ) System.err.println( "set aligned seq " + seq.getName() + "  " + alseq.length() );
-		else System.err.println( "seq null" );
-		
+		//if( seq != null ) System.err.println( "set aligned seq " + seq.getName() + "  " + alseq.length() );
+		//else System.err.println( "seq null" );
 		this.alignedsequence = alseq;
+	}
+	
+	public void writeFasta( Writer w ) throws IOException {
+		w.write( ">"+name+"\n" );
+		w.write( getSequence()+"\n" );
 	}
 	
 	public StringBuilder getProteinSubsequence( int u, int e ) {
@@ -185,6 +215,13 @@ public class Annotation implements Comparable<Object> {
 	
 	public String getSubstring( int u, int e ) {
 		return seq.getSubstring(start+u, start+e, ori);
+	}
+	
+	public Sequence createSequence() {
+		String seqstr = getSequence();
+		Sequence seq = new Sequence(this.id, this.name,null);
+		seq.append(seqstr);
+		return seq;
 	}
 	
 	public String getSequence() {

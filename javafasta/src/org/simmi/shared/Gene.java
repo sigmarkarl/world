@@ -265,6 +265,7 @@ public class Gene {
 	public String genid;
 	public String uniid;
 	public String keggid;
+	public String keggpathway;
 	public String pdbid;
 	public String koid;
 	public String koname;

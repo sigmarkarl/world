@@ -18,5 +18,6 @@
 	<classpathentry kind="lib" path="javax.json-api-1.0.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="lib" path="ejml-0.24.jar"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/samtools"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
