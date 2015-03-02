@@ -2,7 +2,6 @@ package org.simmi.unsigned;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
-import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
@@ -19,6 +18,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -28,6 +28,7 @@ import java.util.TreeMap;
 
 import javax.swing.JFrame;
 
+import org.simmi.shared.Annotation;
 import org.simmi.shared.Sequence;
 import org.simmi.shared.Serifier;
 
@@ -53,6 +54,11 @@ public class FlxReader {
 					
 					String ctgname = contigName( c3 );
 					Sequence seq = mseq.get(ctgname);
+					
+					if( seq == null ) {
+						System.err.println();
+					}
+					
 					if( seq.length() < lenthres ) {
 						if( m.substring( li ).equals("_5'") ) {
 							Map<String,String> ss = mm.get(c3+"_3'");
@@ -266,7 +272,9 @@ public class FlxReader {
 		//System.out.println( "   outputing " + sctg + " " + sctgseq.length() );
 		
 		if( sctgseq != null ) {
+			Annotation a = new Annotation(cseq,sctgseq.getName(),null,cseq.length(),cseq.length()+sctgseq.length(),1,null);
 			cseq.append( sctgseq.sb );
+			cseq.addAnnotation(a);
 			int len = Math.min(sctgseq.sb.length(),10);
 			//System.out.println("appending2 " + sctgseq.getName() + " " + len + " " + sctgseq.sb.substring(0, len) );
 		} else {
@@ -400,7 +408,10 @@ public class FlxReader {
 					if( nseq.length() > maxlen ) {
 						System.err.println( cseq.length() );
 					}
+					Annotation a = new Annotation(cseq,nseq.getName(),null,cseq.length(),cseq.length()+nseq.length(),rev?-1:1,null);
 					cseq.append( nseq.sb );
+					cseq.addAnnotation(a);
+					
 					int len = Math.min(nseq.sb.length(),10);
 					//System.out.println("appending3 " + nseq.getName() + " " + len + " " + nseq.sb.substring(0, len) );
 				} else {
@@ -539,9 +550,9 @@ public class FlxReader {
 		}*/
 	}
 	
-	public StringBuilder referenceAssembly( String home, String comp, String what, byte[] bb, byte[] allcontigs ) throws IOException {
+	public StringBuilder referenceAssembly( String home, String comp, String what, List<Sequence> bb, List<Sequence> allcontigs ) throws IOException {
 		List<Sequence> preorder = new ArrayList<Sequence>();
-		ProcessBuilder pb = new ProcessBuilder("makeblastdb","-dbtype","nucl","-out",comp,"-title",comp);
+		ProcessBuilder pb = new ProcessBuilder("/usr/local/bin/makeblastdb","-dbtype","nucl","-out",comp,"-title",comp);
 		
 		Process pr = pb.start();
 		
@@ -580,10 +591,10 @@ public class FlxReader {
 		t.start();
 				
 		OutputStream o = pr.getOutputStream();
-		o.write(bb);
+		Sequence.writeFasta( o, bb );
 		o.close();
 		
-		pb = new ProcessBuilder("blastn","-db",comp);
+		pb = new ProcessBuilder("/usr/local/bin/blastn","-db",comp);
 		pr = pb.start();
 		final InputStream es2 = pr.getErrorStream();
 		t = new Thread() {
@@ -606,7 +617,7 @@ public class FlxReader {
 		t = new Thread() {
 			public void run() {
 				try {
-					os.write(allcontigs);
+					Sequence.writeFasta(os, allcontigs);
 					os.close();
 				} catch (IOException e) {
 					e.printStackTrace();
@@ -707,53 +718,232 @@ public class FlxReader {
 		return sb;
 	}
 	
-	public void start( String home, String type, boolean showunclosed, Writer fw, String comp, byte[] bb ) {
+	public Map<String,Map<String,String>> loadContigGraph( BufferedReader br ) throws IOException {
+		Map<String,Map<String,String>> mm = new HashMap<String,Map<String,String>>();
+		String line = br.readLine();
+		while( line != null ) {
+			String[] split = line.split("[\t ]+");
+			if( split[0].equals("C") ) {
+				String one = split[1]+"_"+split[2];
+				String two = split[3]+"_"+split[4];
+				
+				Map<String,String> l;
+				if( mm.containsKey(one) ) {
+					l = mm.get(one);
+				} else {
+					l = new HashMap<String,String>();
+					mm.put(one, l);
+				}
+				l.put( two, split[5] );
+				
+				if( mm.containsKey(two) ) {
+					l = mm.get(two);
+				} else {
+					l = new HashMap<String,String>();
+					mm.put(two, l);
+				}
+				l.put( one, split[5] );
+			}
+			line = br.readLine();
+		}
+		return mm;
+	}
+	
+	public void connectContigs( BufferedReader br, Sequence cseq, boolean showunclosed, Writer fw, String type ) throws IOException {
+		String[] lastW = null;
+		String[] lastN = null;
+		String[] firstofnew = null;
+		String[] split = null;
+		
+		int plasm = 1;
+		
+		String line = br.readLine();
+		while( line != null ) {
+			split = line.split("[\t ]+");
+			String scaff = split[0];
+			String end = null;
+			if( firstofnew != null && lastW != null && !scaff.equals(firstofnew[0]) ) {
+				//next = 1;
+				int i = lastW[5].indexOf('0');
+				while( lastW[5].charAt(++i) == '0' ) ;
+				String c0 = lastW[5].substring(i);
+				Map<String,String> mog = mm.get(c0+"_3'");
+				String nstuff = tengioff( mog, 0, 10000000 );
+				
+				end =  "end---" + nstuff;
+			}
+			
+			if( split[4].equals("W") ) {
+				if( lastW != null ) {
+					System.out.println( join(lastW) );
+					String ctg = lastW[5];
+					if( ctg.endsWith("r") ) {
+						ctg = ctg.substring(0,ctg.length()-1);
+					}
+					Sequence seq = mseq.get(ctg);
+					touch.add( ctg );
+					seq.group = lastW[0];
+					// lubububu if( seq != null ) serifier.addSequence( seq );
+				}
+				//boolean newscaff = !lastW[0].equals(split[0]);
+				if( lastN != null ) {
+					nstuffOut( lastN, lastW, split, cseq, showunclosed );
+				} else if( lastW != null && !lastW[0].equals(split[0]) ) {
+					nstuffOut( lastN, lastW, firstofnew, cseq, showunclosed );
+					//next = 1;
+				}/* else {
+					int i = split[0].indexOf('0');
+					String sctg = "sctg_"+split[0].substring(i+1)+(next >= 10 ? "_00" : "_000")+next++;
+					Sequence sctgseq = mseq.get(sctg);
+					if( sctgseq != null ) cseq.append( sctgseq.sb );
+				}*/
+				lastN = null;
+				lastW = split;
+			} else {
+				lastN = split;
+			}
+			
+			if( end != null ) System.out.println( end );
+			
+			if( firstofnew == null || !scaff.equals(firstofnew[0]) ) {
+				nextSet();
+				
+				if( firstofnew != null && cseq.length() > 0 ) {
+					Collections.sort(cseq.annset);
+					cseq.writeSequence(fw);
+					
+					System.out.println("out len " + cseq.length());
+					serifier.addSequence( cseq );
+					cseq = new Sequence(type+"_plasmid"+plasm++,null);
+				}
+				
+				boolean reverse = false;
+				String ctg = split[5];
+				if( ctg.endsWith("r") ) {
+					ctg = ctg.substring(0,ctg.length()-1);
+					reverse = true;
+				}
+				int i = ctg.indexOf('0');
+				while( ctg.charAt(++i) == '0' ) ;
+				String c0 = ctg.substring(i);
+				Map<String,String> mog = reverse ? mm.get(c0+"_3") : mm.get(c0+"_5'");
+				String nstuff = tengioff( mog, 0, 10000000 );
+				
+				System.out.println( "beg---" + nstuff );
+				
+				firstofnew = split;
+			}
+			
+			line = br.readLine();
+		}
+		
+		/*int i = lastW[0].indexOf('0');
+		String sctg = "sctg_"+lastW[0].substring(i+1)+(next >= 10 ? "_00" : "_000")+nextIncr();
+		Sequence sctgseq = mseq.get(sctg);
+		if( sctgseq != null ) {
+			cseq.append( sctgseq.sb );
+		} else {
+			System.err.println();
+		}*/
+		
+		System.err.println("lubbastop");
+		
+		if( firstofnew != null ) {
+			//nextSet();
+			
+			/*i = lastW[5].indexOf('0');
+			while( lastW[5].charAt(++i) == '0' ) ;
+			String c1 = lastW[5].substring(i);
+			
+			i = firstofnew[5].indexOf('0');
+			while( firstofnew[5].charAt(++i) == '0' ) ;
+			String c2 = firstofnew[5].substring(i);
+			
+			String nstuff = null;
+			if( mm.containsKey(c1+"_3'") ) {
+				Map<String,String> mog = mm.get(c1+"_3'");
+				nstuff = tengi( mog, c2, 0 );
+				if( mog.containsKey(c2+"_5'") ) {
+					String q = mog.get(c2+"_5'");
+					if( nstuff.length() == 0 ) nstuff = "directconnect("+q+")";
+					else nstuff += " directconnect("+q+")";
+				}
+			}*/
+			
+			/*if( nstuff != null && nstuff.length() > 0 ) {
+				System.out.println( nstuff );
+				String[] sp = nstuff.split("[ ]+");
+				String nsplit = sp[sp.length-1];
+				int f = nsplit.indexOf(')');
+				int n = nsplit.indexOf('_',f+1);
+				if( n != -1 ) {
+					String sub = nsplit.substring(f+1, n);
+					String ctgname = contigName( sub );
+					seq = mseq.get(ctgname);
+					touch.add( ctgname );
+					if( seq != null ) {
+						boolean rev = nsplit.charAt(n+1) == '3' ? true : false;
+						Sequence nseq = new Sequence( seq, rev );
+						nseq.setName( ctgname+"_"+(rev?"rev":"frw"));
+						nseq.group = lastN == null ? null : lastN[0];
+						serifier.addSequence( nseq );
+					}
+				}
+			}*/
+			
+			if( split[4].equals("W") ) {
+				if( lastW != null ) {
+					System.out.println( join(lastW) );
+					Sequence seq = mseq.get(lastW[5]);
+					touch.add( lastW[5] );
+					if( seq != null ) seq.group = lastW[0];
+					// lubububu if( seq != null ) serifier.addSequence( seq );
+				}
+				//boolean newscaff = !lastW[0].equals(split[0]);
+				nstuffOut( lastN, lastW, firstofnew, cseq, showunclosed );
+				//next = 1;
+			}
+			//nstuffOut( lastN, lastW, firstofnew, cseq );
+		}
+		
+		Collections.sort(cseq.annset);
+		if( cseq.length() > 0 ) {
+			cseq.writeSequence(fw);
+			System.out.println("out len " + cseq.length());
+			serifier.addSequence( cseq );
+		}
+	}
+	
+	public void start( String home, String type, boolean showunclosed, Writer fw, String comp, List<Sequence> bb ) {
+		serifier.clearAll();
+		
 		touch.clear();
 		serifier.clearAll();
 		mm.clear();
 		mseq.clear();
 		
 		try {
+			System.err.println("starting fuck");
 			Reader fr;
 			BufferedReader br;
-			String line;
 			Sequence seq;
 			
 			File f = new File(home+type+add+"454ScaffoldContigs.fna");
 			if( f.exists() ) {
 				fr = new FileReader(f);
 				br = new BufferedReader( fr );
-				line = br.readLine();
-				seq = null;
-				while( line != null ) {
-					if( line.startsWith(">") ) {
-						String name = line.substring(1);
-						name = name.substring(0,name.indexOf(' '));
-						seq = new Sequence( name, mseq );
-					} else {
-						seq.append(line);
-					}
-					line = br.readLine();
-				}
+				List<Sequence> lseq = Sequence.readFasta(br, mseq, true);
+				br.close();
 				fr.close();
 			}
 			
 			File file = new File(home+type+add+"454AllContigs.fna");
-			byte[] allcontigs = Files.readAllBytes(file.toPath());
-			fr = new InputStreamReader( new ByteArrayInputStream(allcontigs) );
+			//byte[] allcontigs = Files.readAllBytes(file.toPath());
+			fr = new FileReader(file); //new InputStreamReader( new ByteArrayInputStream(allcontigs) );
 			br = new BufferedReader( fr );
-			line = br.readLine();
-			seq = null;
-			while( line != null ) {
-				if( line.startsWith(">") ) {
-					String name = line.substring(1);
-					name = name.substring(0,name.indexOf(' '));
-					seq = new Sequence( name, mseq );
-				} else {
-					seq.append(line);
-				}
-				line = br.readLine();
-			}
+			
+			List<Sequence> allcontigs = Sequence.readFasta(br, mseq, true);
+			br.close();
 			fr.close();
 			
 			//List<Sequence> lseq = Sequence.readFasta( new BufferedReader( new InputStreamReader(new ByteArrayInputStream(bb)) ), mseq);
@@ -761,35 +951,9 @@ public class FlxReader {
 			
 			fr = new FileReader(home+type+add+"454ContigGraph.txt");
 			br = new BufferedReader( fr );
-			line = br.readLine();
-			while( line != null ) {
-				String[] split = line.split("[\t ]+");
-				if( split[0].equals("C") ) {
-					String one = split[1]+"_"+split[2];
-					String two = split[3]+"_"+split[4];
-					
-					Map<String,String> l;
-					if( mm.containsKey(one) ) {
-						l = mm.get(one);
-					} else {
-						l = new HashMap<String,String>();
-						mm.put(one, l);
-					}
-					l.put( two, split[5] );
-					
-					if( mm.containsKey(two) ) {
-						l = mm.get(two);
-					} else {
-						l = new HashMap<String,String>();
-						mm.put(two, l);
-					}
-					l.put( one, split[5] );
-				}
-				line = br.readLine();
-			}
+			mm = loadContigGraph( br );
 			br.close();
 			
-			int plasm = 1;
 			Sequence cseq = new Sequence(type+"_chromosome", null);
 			
 			if( sb != null && sb.length() > 0 ) {
@@ -802,167 +966,8 @@ public class FlxReader {
 				fr = new FileReader(file);//"454ContigScaffolds.txt");
 			}
 			br = new BufferedReader( fr );
-			
-			String[] lastW = null;
-			String[] lastN = null;
-			String[] firstofnew = null;
-			
-			String[] split = null;
-			line = br.readLine();
-			while( line != null ) {
-				split = line.split("[\t ]+");
-				String scaff = split[0];
-				String end = null;
-				if( firstofnew != null && lastW != null && !scaff.equals(firstofnew[0]) ) {
-					//next = 1;
-					int i = lastW[5].indexOf('0');
-					while( lastW[5].charAt(++i) == '0' ) ;
-					String c0 = lastW[5].substring(i);
-					Map<String,String> mog = mm.get(c0+"_3'");
-					String nstuff = tengioff( mog, 0, 10000000 );
-					
-					end =  "end---" + nstuff;
-				}
-				
-				if( split[4].equals("W") ) {
-					if( lastW != null ) {
-						System.out.println( join(lastW) );
-						String ctg = lastW[5];
-						if( ctg.endsWith("r") ) {
-							ctg = ctg.substring(0,ctg.length()-1);
-						}
-						seq = mseq.get(ctg);
-						touch.add( ctg );
-						seq.group = lastW[0];
-						// lubububu if( seq != null ) serifier.addSequence( seq );
-					}
-					//boolean newscaff = !lastW[0].equals(split[0]);
-					if( lastN != null ) {
-						nstuffOut( lastN, lastW, split, cseq, showunclosed );
-					} else if( lastW != null && !lastW[0].equals(split[0]) ) {
-						nstuffOut( lastN, lastW, firstofnew, cseq, showunclosed );
-						//next = 1;
-					}/* else {
-						int i = split[0].indexOf('0');
-						String sctg = "sctg_"+split[0].substring(i+1)+(next >= 10 ? "_00" : "_000")+next++;
-						Sequence sctgseq = mseq.get(sctg);
-						if( sctgseq != null ) cseq.append( sctgseq.sb );
-					}*/
-					lastN = null;
-					lastW = split;
-				} else {
-					lastN = split;
-				}
-				
-				if( end != null ) System.out.println( end );
-				
-				if( firstofnew == null || !scaff.equals(firstofnew[0]) ) {
-					nextSet();
-					if( firstofnew != null && cseq.length() > 0 ) {
-						//System.out.println("writing " + cseq.getName());
-						
-						cseq.setName( cseq.getName() ); //+ " ("+cseq.length()+")" );
-						cseq.writeSequence(fw);
-						
-						System.out.println("out len " + cseq.length());
-						serifier.addSequence( cseq );
-						cseq = new Sequence(type+"_plasmid"+plasm++,null);
-					}
-					
-					boolean reverse = false;
-					String ctg = split[5];
-					if( ctg.endsWith("r") ) {
-						ctg = ctg.substring(0,ctg.length()-1);
-						reverse = true;
-					}
-					int i = ctg.indexOf('0');
-					while( ctg.charAt(++i) == '0' ) ;
-					String c0 = ctg.substring(i);
-					Map<String,String> mog = reverse ? mm.get(c0+"_3") : mm.get(c0+"_5'");
-					String nstuff = tengioff( mog, 0, 10000000 );
-					
-					System.out.println( "beg---" + nstuff );
-					
-					firstofnew = split;
-				}
-				
-				line = br.readLine();
-			}
+			connectContigs( br, cseq, showunclosed, fw, type );
 			br.close();
-			
-			/*int i = lastW[0].indexOf('0');
-			String sctg = "sctg_"+lastW[0].substring(i+1)+(next >= 10 ? "_00" : "_000")+nextIncr();
-			Sequence sctgseq = mseq.get(sctg);
-			if( sctgseq != null ) {
-				cseq.append( sctgseq.sb );
-			} else {
-				System.err.println();
-			}*/
-			
-			if( firstofnew != null ) {
-				//nextSet();
-				
-				/*i = lastW[5].indexOf('0');
-				while( lastW[5].charAt(++i) == '0' ) ;
-				String c1 = lastW[5].substring(i);
-				
-				i = firstofnew[5].indexOf('0');
-				while( firstofnew[5].charAt(++i) == '0' ) ;
-				String c2 = firstofnew[5].substring(i);
-				
-				String nstuff = null;
-				if( mm.containsKey(c1+"_3'") ) {
-					Map<String,String> mog = mm.get(c1+"_3'");
-					nstuff = tengi( mog, c2, 0 );
-					if( mog.containsKey(c2+"_5'") ) {
-						String q = mog.get(c2+"_5'");
-						if( nstuff.length() == 0 ) nstuff = "directconnect("+q+")";
-						else nstuff += " directconnect("+q+")";
-					}
-				}*/
-				
-				/*if( nstuff != null && nstuff.length() > 0 ) {
-					System.out.println( nstuff );
-					String[] sp = nstuff.split("[ ]+");
-					String nsplit = sp[sp.length-1];
-					int f = nsplit.indexOf(')');
-					int n = nsplit.indexOf('_',f+1);
-					if( n != -1 ) {
-						String sub = nsplit.substring(f+1, n);
-						String ctgname = contigName( sub );
-						seq = mseq.get(ctgname);
-						touch.add( ctgname );
-						if( seq != null ) {
-							boolean rev = nsplit.charAt(n+1) == '3' ? true : false;
-							Sequence nseq = new Sequence( seq, rev );
-							nseq.setName( ctgname+"_"+(rev?"rev":"frw"));
-							nseq.group = lastN == null ? null : lastN[0];
-							serifier.addSequence( nseq );
-						}
-					}
-				}*/
-				
-				if( split[4].equals("W") ) {
-					if( lastW != null ) {
-						System.out.println( join(lastW) );
-						seq = mseq.get(lastW[5]);
-						touch.add( lastW[5] );
-						seq.group = lastW[0];
-						// lubububu if( seq != null ) serifier.addSequence( seq );
-					}
-					//boolean newscaff = !lastW[0].equals(split[0]);
-					nstuffOut( lastN, lastW, firstofnew, cseq, showunclosed );
-					//next = 1;
-				}
-				//nstuffOut( lastN, lastW, firstofnew, cseq );
-			}
-			
-			if( cseq.length() > 0 ) {
-				cseq.setName( cseq.getName() ); // + " ("+cseq.length()+")" );
-				cseq.writeSequence(fw);
-				System.out.println("out len " + cseq.length());
-				serifier.addSequence( cseq );
-			}
 			
 			for( String seqname : mseq.keySet() ) {
 				//if( !touch.contains(seqname) ) {
@@ -999,17 +1004,23 @@ public class FlxReader {
 		String type1 = null;
 		String home = null;
 		String comp = null;
-		byte[] bb = null;
+		//byte[] bb = null;
+		List<Sequence> bb = null;
 		if( args.length > 0 ) home = args[0];
 		if( args.length > 1 ) type1 = args[1];
 		if( args.length > 2 ) {
 			comp = args[2]; //"brockianus338";
 			Path p = Paths.get(home+comp+".fna");
 			try {
-				bb = Files.readAllBytes(p);
+				bb = Sequence.readFasta(p, mseq);
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
+			/*try {
+				bb = Files.readAllBytes(p);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}*/
 		}
 		
 		FlxReader flx = new FlxReader();

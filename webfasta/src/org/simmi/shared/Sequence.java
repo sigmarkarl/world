@@ -179,6 +179,10 @@ public class Sequence implements Comparable<Sequence> {
 	
 	static final Random r = new Random();
 	
+	public double length() {
+		return sb.length();
+	}
+	
 	public boolean isSelected() {
 		return selected;
 	}

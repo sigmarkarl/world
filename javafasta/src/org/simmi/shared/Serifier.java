@@ -1292,7 +1292,7 @@ public class Serifier {
 			if( clustermap%2 == 0 ) {
 				joinBlastSets( is, null, true, total, 0.0 );
 			} else {
-				joinBlastSetsThermus( is, Paths.get("/home/sigmar/check.txt"), true, total, id, len, refmap );
+				joinBlastSetsThermus( is, Paths.get("/Users/sigmar/check.txt"), true, total, id, len, refmap );
 			}
 			is.close();
 		}
@@ -2274,11 +2274,16 @@ public class Serifier {
 	
 	public void addSequence( Sequence seq ) {
 		lseq.add( seq );
+		if( seq.annset != null ) for( Annotation a : seq.annset ) {
+			addAnnotation(a);
+		}
 		if( seq.getEnd() > getMax() ) setMax( seq.getEnd() );
 	}
 	
 	public void clearAll() {
 		lseq.clear();
+		lgseq.clear();
+		gseq.clear();
 		lann.clear();
 		if( mseq != null ) mseq.clear();
 		setMax( 0 );
@@ -4429,16 +4434,17 @@ public class Serifier {
 		if( filterset != null && filterset.size() > 0 ) {
 			for( int i : filterset ) {
 				Sequence seq = seqlist.get(i);
-				
-				int val = 0;
-		   		int end = seq.length();
 		   		 
 		   		if( selectedRect != null && selectedRect.width > 0 ) {
-		   			 val = Math.max( val, selectedRect.x-seq.getStart() );
-		   			 end = Math.min( end, selectedRect.x+selectedRect.width-seq.getStart() );
+		   			 int val = selectedRect.x;
+		   			 int end = selectedRect.x+selectedRect.width;
+		   			 
+		   			seq.writeSequence(osw,val,end,italic);
+		   		} else {
+		   			seq.writeSequence(osw,italic);
 		   		}
 		   		 
-		   		if( val <= end ) {
+		   		/*if( val <= end ) {
 		   			if( italic ) {
 		   				osw.write( "><i>" + seq.getName() + "</i>\n" );
 		   			} else {
@@ -4449,10 +4455,16 @@ public class Serifier {
 		   		while( val < end ) {
 		   			 osw.write( seq.sb.substring(val, Math.min( end, val+70 )) + "\n" );
 		   			 val += 70;
-		   		}
+		   		}*/
 			}
 		} else {
-			for( Sequence seq : seqlist ) {
+	   		if( selectedRect != null && selectedRect.width > 0 ) {
+	   			Sequence.writeFasta(osw, lseq, selectedRect.x+min, selectedRect.x+min+selectedRect.width, italic);
+	   		} else {
+	   			Sequence.writeFasta(osw, lseq, italic);
+	   		}
+			
+			/*for( Sequence seq : seqlist ) {
 				int val = 0;
 		   		int end = seq.length();
 		   		 
@@ -4473,7 +4485,7 @@ public class Serifier {
 		   			 osw.write( seq.sb.substring(val, Math.min( end, val+70 )) + "\n" );
 		   			 val += 70;
 		   		}
-			}
+			}*/
 		}
 	}
 	

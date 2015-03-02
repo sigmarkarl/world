@@ -9,7 +9,6 @@ import com.google.gwt.typedarrays.client.Int8ArrayNative;
 import com.google.gwt.typedarrays.shared.ArrayBuffer;
 import com.google.gwt.typedarrays.shared.Int8Array;
 
-import elemental.client.Browser;
 import elemental.events.Event;
 import elemental.events.EventListener;
 import elemental.html.Blob;
@@ -103,5 +102,23 @@ public class VirtualSequence extends Sequence {
 		}
 		
 		return ' ';
+	}
+	
+	@Override
+	public int compareTo(Sequence o) {
+		if (Webfasta.sortcol > 1) {
+			int i;
+			if (webfasta.xsellen > 0) {
+				i = webfasta.xselloc;
+				while (charAt(i) == o.charAt(i) && i < webfasta.xselloc + webfasta.xsellen - 1) i++;
+			} else {
+				i = Webfasta.sortcol - 2;
+			}
+			return this.charAt(i) - o.charAt(i);
+		} else if (Webfasta.sortcol >= 0) {
+			return Webfasta.sortcol == 0 ? getName().compareTo(o.getName()) : getLength() - o.getLength();
+		} else {
+			return isSelected() ? (o.isSelected() ? 0 : -1) : (o.isSelected() ? 1 : 0);
+		}
 	}
 }

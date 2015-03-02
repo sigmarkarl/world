@@ -168,6 +168,17 @@ public class JavaFasta extends JApplet {
 	JSplitPane	overviewsplit;
 	
 	boolean		collapseView = false;
+	boolean		edited = false;
+	
+	Path		currentPath = null;
+	
+	public void setCurrentPath( Path cp ) {
+		currentPath = cp;
+	}
+	
+	public Path getCurrentPath() {
+		return currentPath;
+	}
 	
 	public static Map<String,Integer> getBlosumMap() {
 		Map<String,Integer> blosumap = new HashMap<String,Integer>();
@@ -283,6 +294,7 @@ public class JavaFasta extends JApplet {
 	}
 	
 	public boolean isEdited() {
+		if( edited ) return true;
 		for( Sequence s : serifier.lseq ) {
 			if( s.isEdited() ) return true;
 		}
@@ -1708,6 +1720,8 @@ public class JavaFasta extends JApplet {
 	}
 	
 	public void delete() {
+		edited = true;
+		
 		Set<Sequence>	delset = new HashSet<Sequence>();
 		Set<Annotation>	adelset = new HashSet<Annotation>();
 		int[] rr = table.getSelectedRows();
@@ -3280,8 +3294,8 @@ public class JavaFasta extends JApplet {
 					Sequence seq = serifier.lseq.get( rowIndex );
 					if( columnIndex == 0 ) return seq.getName();
 					else if( columnIndex == 1 ) return seq.getGroup();
-					else if( columnIndex == 2 ) return seq.getAnnotations() != null ? seq.getAnnotations().size() : 0;
-					else if( columnIndex == 3 ) return seq.getAlignedLength();
+					else if( columnIndex == 2 ) return seq.getAlignedLength();
+					else if( columnIndex == 3 ) return seq.getAnnotations() != null ? seq.getAnnotations().size() : 0;
 					else if( columnIndex == 4 ) return seq.getUnalignedLength();
 					else if( columnIndex == 5 ) return seq.getRealStart();
 					else if( columnIndex == 6 ) return seq.getRevComp();

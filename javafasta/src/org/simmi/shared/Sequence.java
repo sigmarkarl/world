@@ -3,8 +3,12 @@ package org.simmi.shared;
 import java.awt.Color;
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.nio.IntBuffer;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -388,14 +392,64 @@ public class Sequence implements Comparable<Sequence> {
 			annset.remove( i-1 );
 	}
 	
-	public void writeSequence( Writer fw ) throws IOException {
-		fw.write(">"+getName()+"\n");
-		for( int k = 0; k < sb.length(); k+=70 ) {
-			int m = Math.min(sb.length(), k+70);
+	public static void writeFasta( OutputStream os, List<Sequence> lseq ) throws IOException {
+		writeFasta(os, lseq, false);
+	}
+	
+	public static void writeFasta( OutputStream os, List<Sequence> lseq, boolean italic ) throws IOException {
+		OutputStreamWriter osw = new OutputStreamWriter(os);
+		writeFasta( osw, lseq, italic );
+		osw.close();
+	}
+	
+	public static void writeFasta( Writer osw, List<Sequence> lseq, boolean italic ) throws IOException {
+		for( Sequence seq : lseq ) {
+			seq.writeSequence(osw, italic);
+		}
+	}
+	
+	public static void writeFasta( Writer osw, List<Sequence> lseq, int start, int stop, boolean italic ) throws IOException {
+		for( Sequence seq : lseq ) {
+			seq.writeSequence(osw,start,stop,italic);
+		}
+	}
+	
+	public void writeSequence( Writer fw, int gap, boolean italic ) throws IOException {
+		if( italic ) fw.write("><i>"+getName()+"</i>\n");
+		else fw.write(">"+getName()+"\n");
+		for( int k = 0; k < sb.length(); k+=gap ) {
+			int m = Math.min(sb.length(), k+gap);
 			String substr = sb.substring(k, m);
 			//(seq.sb.length() == k+70 ? "")
 			fw.write( substr+"\n" );
 		}
+	}
+	
+	public void writeSequence( Writer fw, int gap, int start, int stop, boolean italic ) throws IOException {
+		int val = Math.max( 0, start-getStart() );
+		int end = Math.min( length(), stop-getStart() );
+		
+		if( end > val ) {
+			fw.write(">"+getName()+"\n");
+			for( int k = 0; k < sb.length(); k+=gap ) {
+				int m = Math.min(sb.length(), k+gap);
+				String substr = sb.substring(k, m);
+				//(seq.sb.length() == k+70 ? "")
+				fw.write( substr+"\n" );
+			}
+		}
+	}
+	
+	public void writeSequence( Writer fw, int start, int stop, boolean italic ) throws IOException {
+		writeSequence( fw, 70, start, stop, italic );
+	}
+	
+	public void writeSequence( Writer fw ) throws IOException {
+		writeSequence( fw, 70, false );
+	}
+	
+	public void writeSequence( Writer fw, boolean italic ) throws IOException {
+		writeSequence( fw, 70, italic );
 	}
 	
 	public void writeSplitSequence( Writer fw ) throws IOException {
@@ -480,14 +534,29 @@ public class Sequence implements Comparable<Sequence> {
 		return 0;
 	}
 	
+	public static List<Sequence> readFasta( Path p, Map<String,Sequence> mseq ) throws IOException {
+		BufferedReader br = Files.newBufferedReader(p);
+		List<Sequence> ret = readFasta(br, mseq);
+		br.close();
+		
+		return ret;
+	}
+	
 	public static List<Sequence> readFasta( BufferedReader br, Map<String,Sequence> mseq ) throws IOException {
+		return readFasta(br, mseq, false);
+	}
+	
+	public static List<Sequence> readFasta( BufferedReader br, Map<String,Sequence> mseq, boolean shrt ) throws IOException {
 		List<Sequence> lseq = new ArrayList<Sequence>();
 		
 		Sequence seq = null;
 		String line = br.readLine();
 		while( line != null ) {
 			if( line.startsWith(">") ) {
-				seq = new Sequence(line.substring(1), mseq);
+				String name = line.substring(1);
+				if( shrt ) name = name.substring(0,name.indexOf(' '));
+				seq = new Sequence(name, mseq);
+				lseq.add( seq );
 			} else seq.append(line);
 			line = br.readLine();
 		}
@@ -1350,6 +1419,7 @@ public class Sequence implements Comparable<Sequence> {
 	}
 	
 	public void append( CharSequence cs ) {
+		System.out.println("appending to " + this.getName());
 		sb.append( cs );
 	}
 	

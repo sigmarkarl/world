@@ -129,14 +129,6 @@ import org.simmi.shared.TreeUtil.Node;
 import org.simmi.shared.TreeUtil.NodeSet;
 import org.simmi.unsigned.JavaFasta;
 
-import com.google.gdata.client.ClientLoginAccountType;
-import com.google.gdata.client.GoogleService;
-import com.google.gdata.client.Service.GDataRequest;
-import com.google.gdata.client.Service.GDataRequest.RequestType;
-import com.google.gdata.util.AuthenticationException;
-import com.google.gdata.util.ContentType;
-import com.google.gdata.util.ServiceException;
-
 public class DataTable extends JApplet implements ClipboardOwner {
 	/**
 	 * 
@@ -569,7 +561,7 @@ public class DataTable extends JApplet implements ClipboardOwner {
     	}
     }
     
-    private static GoogleService service;
+    //private static GoogleService service;
 	private static final String SERVICE_URL = "https://www.google.com/fusiontables/api/query";
 	private static final String GEOCODE_SERVICE_URL = "http://maps.googleapis.com/maps/api/geocode";
 	private static final String oldtableid = "1QbELXQViIAszNyg_2NHOO9XcnN_kvaG1TLedqDc";
@@ -605,31 +597,32 @@ public class DataTable extends JApplet implements ClipboardOwner {
 		return getResultsText( url.openStream() );
 	}
 	
-	public static String run(String query, boolean isUsingEncId) throws IOException, ServiceException {
-		   String lowercaseQuery = query.toLowerCase();
-		   String encodedQuery = URLEncoder.encode(query, "UTF-8");
-		  
-		   GDataRequest request;
-		   // If the query is a select, describe, or show query, run a GET request.
-		   if (lowercaseQuery.startsWith("select") ||
-		       lowercaseQuery.startsWith("describe") ||
-		       lowercaseQuery.startsWith("show")) {
-		     URL url = new URL(SERVICE_URL + "?sql=" + encodedQuery + "&encid=" + isUsingEncId);
-		     request = service.getRequestFactory().getRequest(RequestType.QUERY, url,
-		         ContentType.TEXT_PLAIN);
-		   } else {
-		     // Otherwise, run a POST request.
-		     URL url = new URL(SERVICE_URL + "?encid=" + isUsingEncId);
-		     request = service.getRequestFactory().getRequest(RequestType.INSERT, url,
-		         new ContentType("application/x-www-form-urlencoded"));
-		     OutputStreamWriter writer = new OutputStreamWriter(request.getRequestStream());
-		     writer.append("sql=" + encodedQuery);
-		     writer.flush();
-		   }
+	public static String run(String query, boolean isUsingEncId) throws IOException { //, ServiceException {
+	   /*String lowercaseQuery = query.toLowerCase();
+	   String encodedQuery = URLEncoder.encode(query, "UTF-8");
+	  
+	   GDataRequest request;
+	   // If the query is a select, describe, or show query, run a GET request.
+	   if (lowercaseQuery.startsWith("select") ||
+	       lowercaseQuery.startsWith("describe") ||
+	       lowercaseQuery.startsWith("show")) {
+	     URL url = new URL(SERVICE_URL + "?sql=" + encodedQuery + "&encid=" + isUsingEncId);
+	     request = service.getRequestFactory().getRequest(RequestType.QUERY, url,
+	         ContentType.TEXT_PLAIN);
+	   } else {
+	     // Otherwise, run a POST request.
+	     URL url = new URL(SERVICE_URL + "?encid=" + isUsingEncId);
+	     request = service.getRequestFactory().getRequest(RequestType.INSERT, url,
+	         new ContentType("application/x-www-form-urlencoded"));
+	     OutputStreamWriter writer = new OutputStreamWriter(request.getRequestStream());
+	     writer.append("sql=" + encodedQuery);
+	     writer.flush();
+	   }
 
-		   request.execute();
+	   request.execute();
 
-		   return getResultsText(request);
+	   return getResultsText(request);*/
+		return null;
 	}
 	
 	private static String getResultsText( InputStream is ) throws IOException {
@@ -647,7 +640,7 @@ public class DataTable extends JApplet implements ClipboardOwner {
 		return sb.toString();
 	}
 	
-	private static String getResultsText(GDataRequest request) throws IOException {
+	/*private static String getResultsText(GDataRequest request) throws IOException {
 		InputStreamReader inputStreamReader = new InputStreamReader(request.getResponseStream());
 		BufferedReader bufferedStreamReader = new BufferedReader(inputStreamReader);
 		
@@ -660,7 +653,7 @@ public class DataTable extends JApplet implements ClipboardOwner {
 		}
 		
 		return sb.toString();
-	}
+	}*/
 	
 	public static void updateFilter(JTable table, RowFilter filter) {
 		DefaultRowSorter<TableModel, Integer> rowsorter = (DefaultRowSorter<TableModel, Integer>)table.getRowSorter();
@@ -1743,7 +1736,7 @@ public class DataTable extends JApplet implements ClipboardOwner {
 	}
 	
 	public void runSql( String sql ) {
-		if( sql != null ) {
+		/*if( sql != null ) {
 			sql = sql.replace("table", tableid);
 			try {
 				if( sql.startsWith("update") && sql.contains(" in ") ) {
@@ -1775,7 +1768,7 @@ public class DataTable extends JApplet implements ClipboardOwner {
 			} catch (ServiceException e1) {
 				e1.printStackTrace();
 			}
-		}
+		}*/
 	}
 	
 	JMenu	selectionMenu = new JMenu("Saved selections");
@@ -1934,9 +1927,9 @@ public class DataTable extends JApplet implements ClipboardOwner {
 		}
 	}
 	
-	public void insertGeocodes() throws IOException, AuthenticationException {
-		service = new GoogleService("fusiontables", "fusiontables.ApiExample");
-		service.setUserCredentials("sigmarkarl@gmail.com", "mul", ClientLoginAccountType.GOOGLE);
+	public void insertGeocodes() throws IOException { //, AuthenticationException {
+		//service = new GoogleService("fusiontables", "fusiontables.ApiExample");
+		//service.setUserCredentials("sigmarkarl@gmail.com", "mul", ClientLoginAccountType.GOOGLE);
 		
 		FileReader fr = new FileReader( "/home/sigmar/Downloads/Thermus_16S_aligned.csv" );
 		BufferedReader br = new BufferedReader( fr );
@@ -5606,7 +5599,7 @@ public class DataTable extends JApplet implements ClipboardOwner {
 		Map<String, StrId> tegmap = new HashMap<String, StrId>();
 		//Map<String,String>	rowidmap = new HashMap<String,String>();
 		
-		try {
+		/*try {
 			FileReader fr = new FileReader("/home/sigmar/thermus16S_all.blastout");
 			//FileReader fr = new FileReader("/home/sigmar/newthermus16S.blastout");
 			BufferedReader br = new BufferedReader(fr);
@@ -5680,7 +5673,7 @@ public class DataTable extends JApplet implements ClipboardOwner {
 			e.printStackTrace();
 		} catch (ServiceException e) {
 			e.printStackTrace();
-		}
+		}*/
 		
 		//System.err.println( tegmap.size() );
 	}
