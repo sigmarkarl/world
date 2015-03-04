@@ -550,14 +550,16 @@ public class FlxReader {
 		}*/
 	}
 	
-	public StringBuilder referenceAssembly( String home, String comp, String what, List<Sequence> bb, List<Sequence> allcontigs ) throws IOException {
+	public StringBuilder referenceAssembly( String home, String comp, String what, final List<Sequence> bb, final List<Sequence> allcontigs ) throws IOException, InterruptedException {
+		File userhome = new File(System.getProperty("user.home") );
+		
 		List<Sequence> preorder = new ArrayList<Sequence>();
 		ProcessBuilder pb = new ProcessBuilder("/usr/local/bin/makeblastdb","-dbtype","nucl","-out",comp,"-title",comp);
-		
+		pb.directory( userhome );
 		Process pr = pb.start();
 		
 		final InputStream is = pr.getInputStream();
-		Thread t = new Thread() {
+		Thread ti = new Thread() {
 			public void run() {
 				try {
 					int b = is.read();
@@ -571,10 +573,10 @@ public class FlxReader {
 				}
 			}
 		};
-		t.start();
+		ti.start();
 		
 		final InputStream es = pr.getErrorStream();
-		t = new Thread() {
+		Thread t = new Thread() {
 			public void run() {
 				try {
 					int b = es.read();
@@ -594,7 +596,12 @@ public class FlxReader {
 		Sequence.writeFasta( o, bb );
 		o.close();
 		
+		pr.waitFor();
+		
+		//pb.
+		
 		pb = new ProcessBuilder("/usr/local/bin/blastn","-db",comp);
+		pb.directory( userhome );
 		pr = pb.start();
 		final InputStream es2 = pr.getErrorStream();
 		t = new Thread() {
@@ -613,12 +620,12 @@ public class FlxReader {
 		};
 		t.start();
 		
-		final OutputStream os = pr.getOutputStream();
+		final OutputStream os5 = pr.getOutputStream();
 		t = new Thread() {
 			public void run() {
 				try {
-					Sequence.writeFasta(os, allcontigs);
-					os.close();
+					Sequence.writeFasta(os5, allcontigs);
+					//os.close();
 				} catch (IOException e) {
 					e.printStackTrace();
 				}
@@ -694,6 +701,8 @@ public class FlxReader {
 		}
 		bw.close();
 		
+		pr.waitFor();
+		
 		StringBuilder sb = new StringBuilder();
 		for( String k : mtm.keySet() ) {
 			System.err.println("for "+k);
@@ -714,6 +723,7 @@ public class FlxReader {
 				first = false;
 			}
 		}
+		System.err.println( "sb size " + sb.length() );
 		
 		return sb;
 	}
@@ -914,7 +924,7 @@ public class FlxReader {
 		}
 	}
 	
-	public void start( String home, String type, boolean showunclosed, Writer fw, String comp, List<Sequence> bb ) {
+	public void start( String home, String type, boolean showunclosed, Writer fw, String comp, List<Sequence> bb ) throws InterruptedException {
 		serifier.clearAll();
 		
 		touch.clear();
@@ -948,6 +958,7 @@ public class FlxReader {
 			
 			//List<Sequence> lseq = Sequence.readFasta( new BufferedReader( new InputStreamReader(new ByteArrayInputStream(bb)) ), mseq);
 			StringBuilder sb = comp != null ? referenceAssembly( home, comp, type, bb, allcontigs ) : null;
+			
 			
 			fr = new FileReader(home+type+add+"454ContigGraph.txt");
 			br = new BufferedReader( fr );

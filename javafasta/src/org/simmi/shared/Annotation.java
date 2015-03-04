@@ -197,7 +197,7 @@ public class Annotation implements Comparable<Object> {
 	}
 	
 	public StringBuilder getProteinSequence() {
-		return seq.getProteinSequence(start, stop, ori);
+		return seq == null ? null : seq.getProteinSequence(start, stop, ori);
 	}
 	
 	public void addDbRef( String val ) {

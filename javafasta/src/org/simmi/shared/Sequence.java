@@ -1419,7 +1419,6 @@ public class Sequence implements Comparable<Sequence> {
 	}
 	
 	public void append( CharSequence cs ) {
-		System.out.println("appending to " + this.getName());
 		sb.append( cs );
 	}
 	
