@@ -160,19 +160,40 @@ public class NativeRun {
 		
 		//System.err.println( "mumu " + lcmd );
 		
+		int k = lcmd.indexOf(";");
+		while( k != -1 ) {
+			
+			//runProcess(lcmd.subList(0, k), workingdir, input, output, ta);
+			//runProcess(lcmd.subList(k+1,lcmd.size()), workingdir, input, output, ta);
+		
+			
+			runProcess( lcmd.subList(0, k), workingdir, input, output, ta );
+			lcmd = lcmd.subList(k+1,lcmd.size());
+			
+			k = lcmd.indexOf(";");
+		}
+		runProcess(lcmd, workingdir, input, output, ta);
+
+		return blist;
+	}
+	
+	public void runProcess( List lcmd, Path workingdir, Object input, Object output, final JTextArea ta ) {
 		ProcessBuilder pb = new ProcessBuilder( lcmd );
 		pb.environment().putAll( System.getenv() );
 		pb.environment().put("PYTHONPATH", "/Users/sigmar/antiSMASH2/python/Lib/site-packages");
-		pb.environment().put("PATH", pb.environment().get("PATH")+":/Users/sigmar/antiSMASH2/exec");
+		//pb.environment().put("PATH", pb.environment().get("PATH")+";c:/cygwin64/bin");
+		pb.environment().put("PATH", "c:\\cygwin64\\bin");
 		//System.err.println( pb.environment() );
 		if( workingdir != null ) {
 			//System.err.println( "blblblbl " + workingdir.toFile() );
 			pb.directory( workingdir.toFile() );
 		}
+		
+		Process fp = null;
 		//pb.redirectErrorStream( true );
 		try {
 			final Process p = pb.start();
-			
+			fp = p;
 			if( input != null ) {
 				if( input instanceof Path ) {
 					final Path inp = (Path)input;
@@ -286,13 +307,17 @@ public class NativeRun {
 					e.printStackTrace();
 				}
 			}
-			
-			//p.
 		} catch (IOException e1) {
 			e1.printStackTrace();
 		}
 		
-		return blist;
+		if( fp != null ) {
+			try {
+				fp.waitFor();
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
 		
 		/*boolean blist = commands instanceof List;
 		List<String> lcmd = blist ? (List)commands : commandsList;
@@ -587,7 +612,13 @@ public class NativeRun {
 							outp = null;
 							wdir = null;
 							
+							//int k = commandsList.indexOf(";");
+							//if( k != -1 ) {
+							//	startProcess( where, commandsList.subList(0, k), workingdir, input, output, ta, false );
+							//	startProcess( where, commandsList.subList(k+1, commandsList.size()), workingdir, input, output, ta, false );
+							//} else {
 							boolean blist = startProcess( where, commandsList, workingdir, input, output, ta, false );
+							//}
 							
 							//if( !blist ) break;
 						}
@@ -659,6 +690,11 @@ public class NativeRun {
 		
 		//dialog.setVisible( false );
 		return "";
+	}
+	
+	public static String cygPath( String path ) {
+		if( path.contains(":") ) return "/cygdrive/"+path.substring(0, 1).toLowerCase()+path.substring(2, path.length()).replace('\\', '/');
+		return path;
 	}
 	
 	public static String fixPath( String path ) {

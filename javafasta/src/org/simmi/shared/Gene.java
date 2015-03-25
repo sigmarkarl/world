@@ -33,12 +33,14 @@ public class Gene {
 	}*/
 	
 	public void getFasta( Appendable w, boolean id ) throws IOException {
-		StringBuilder ps = tegeval.getProteinSequence();
-		if( id ) w.append(">" + this.getId() + "\n");
-		else w.append(">" + this.tegeval.name + "\n"); //this.getId() + " " + this.getName() + (this.idstr != null ? " (" + this.idstr + ") [" : " [") + this.tegeval.name + "]" +" # " + this.tegeval.start + " # " + this.tegeval.stop + " # " + this.tegeval.ori + " #" + "\n");
-		for (int i = 0; i < ps.length(); i += 70) {
+		Sequence ps = tegeval.getProteinSequence();
+		if( id ) ps.setName( this.getId() ); //w.append(">" + this.getId() + "\n");
+		else ps.setName( this.tegeval.name ); //w.append(">" + this.tegeval.name + "\n"); //this.getId() + " " + this.getName() + (this.idstr != null ? " (" + this.idstr + ") [" : " [") + this.tegeval.name + "]" +" # " + this.tegeval.start + " # " + this.tegeval.stop + " # " + this.tegeval.ori + " #" + "\n");
+		
+		ps.writeSequence(w);
+		/*for (int i = 0; i < ps.length(); i += 70) {
 			w.append( ps.substring(i, Math.min(i + 70, ps.length())) + "\n");
-		}
+		}*/
 	}
 	
 	public String getFasta( boolean id ) {
@@ -231,9 +233,9 @@ public class Gene {
 			if( species == null ) {
 				if( tegeval.seq == null ) {
 					System.err.println( tegeval.name );
+				} else {
+					species = tegeval.seq.getSpec();
 				}
-				
-				species = tegeval.seq.getSpec();
 				
 				if( species == null || species.length() < 4 ) {	
 					System.err.println();

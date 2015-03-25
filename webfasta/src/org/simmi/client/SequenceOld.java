@@ -25,7 +25,7 @@ class SequenceOld extends Sequence {
 		
 		this.webfasta = wf;
 
-		this.start = 0;
+		this.setStart( 0 );
 
 		byte[] bb = new byte[nameend - namestart];
 		for (int i = namestart; i < nameend; i++) {
@@ -35,13 +35,8 @@ class SequenceOld extends Sequence {
 	}
 
 	@Override
-	public int getStart() {
-		return start;
-	}
-
-	@Override
-	public int getEnd() {
-		return start + getLength();
+	public double getEnd() {
+		return getStart() + getLength();
 	}
 
 	/*
@@ -80,13 +75,13 @@ class SequenceOld extends Sequence {
 	}
 
 	@Override
-	public void delete(int dstart, int dstop) {
+	public void delete(double dstart, double dstop) {
 		int count = 0;
-		for (int i = seqstart + dstop - start; i < seqstop; i++) {
+		for (int i = (int)(seqstart + dstop - getStart()); i < seqstop; i++) {
 			int val = content.get(i);
 			// Browser.getWindow().getConsole().log(
 			// ""+(char)content.get(seqstart+dstop-start) );
-			content.set(seqstart + dstart - start + count, val);
+			content.set((int)(seqstart + dstart - getStart() + count), val);
 			count++;
 		}
 		seqstop -= dstop - dstart;
@@ -110,7 +105,7 @@ class SequenceOld extends Sequence {
 	}
 
 	@Override
-	public int getLength() {
+	public double getLength() {
 		return seqstop - seqstart;
 		// return seq.length();
 	}
@@ -159,9 +154,9 @@ class SequenceOld extends Sequence {
 	}
 	
 	public void removeGaps() {
-		int start = getLength();
-		int stop = getLength();
-		for( int i = getLength()-1; i >= 0; i-- ) {
+		double start = getLength();
+		double stop = getLength();
+		for( int i = (int)(getLength()-1); i >= 0; i-- ) {
 			char c = charAt(i);
 			if( c == '.' || c == '-' || c == ' ' || c == '*' ) start = i;
 			else {
@@ -173,9 +168,9 @@ class SequenceOld extends Sequence {
 	}
 	
 	public void removeAllGaps() {
-		int start = getLength();
-		int stop = getLength();
-		for( int i = getLength()-1; i >= 0; i-- ) {
+		double start = getLength();
+		double stop = getLength();
+		for( int i = (int)(getLength()-1); i >= 0; i-- ) {
 			char c = charAt(i);
 			if( c == '.' || c == '-' || c == ' ' || c == '*' ) start = i;
 			else {
@@ -201,7 +196,7 @@ class SequenceOld extends Sequence {
 			return this.charAt(i) - o.charAt(i);
 		} else if (Webfasta.sortcol >= 0) {
 			return Webfasta.sortcol == 0 ? getName().compareTo(o.getName())
-					: getLength() - o.getLength();
+					: Double.compare(getLength(), o.getLength());
 		} else {
 			return isSelected() ? (o.isSelected() ? 0 : -1) : (o
 					.isSelected() ? 1 : 0);

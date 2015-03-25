@@ -165,7 +165,7 @@ public class Sequence implements Comparable<Sequence> {
 	public String 				name;
 	public String				id;
 	public StringBuilder	 	sb;
-	public int					start = 0;
+	private double				start = 0;
 	public int					revcomp = 0;
 	int							gcp = -1;
 	int							alignedlength = -1;
@@ -217,7 +217,7 @@ public class Sequence implements Comparable<Sequence> {
 			seqlen += " ";
 		}
 		seqlen += erm;
-		int alen = lseq.get(0).getLength();
+		double alen = lseq.get(0).getLength();
 		seqlen += "   "+alen;
 		
 		out.append( seqlen+"\n" );
@@ -284,8 +284,8 @@ public class Sequence implements Comparable<Sequence> {
 	}
 	
 	public static double[] entropy( List<Sequence> lseq ) {
-		int total = lseq.get(0).getLength();
-		double[] ret = new double[total];
+		double total = lseq.get(0).getLength();
+		double[] ret = new double[(int)total];
 		Map<Character,Integer>	shanmap = new HashMap<Character,Integer>();
 		for( int x = 0; x < total; x++ ) {
 			shanmap.clear();
@@ -385,8 +385,8 @@ public class Sequence implements Comparable<Sequence> {
 					int count = 0;
 					double mism = 0;
 					
-					int start = Math.max( seq1.getRealStart(), seq2.getRealStart() );
-					int end = Math.min( seq1.getRealStop(), seq2.getRealStop() );
+					double start = Math.max( seq1.getRealStart(), seq2.getRealStart() );
+					double end = Math.min( seq1.getRealStop(), seq2.getRealStop() );
 					
 					if( ent != null ) {
 						/*if( start < 0 || end >= ent.length ) {
@@ -395,24 +395,24 @@ public class Sequence implements Comparable<Sequence> {
 						}*/
 						
 						if( bootstrap ) {
-							for( int k = start; k < end; k++ ) {
-								int ir = start + r.nextInt( end-start );
+							for( double k = start; k < end; k++ ) {
+								double ir = start + r.nextInt( (int)(end-start) );
 								char c1 = seq1.charAt( ir-seq1.getStart() );
 								char c2 = seq2.charAt( ir-seq2.getStart() );
 								
 								if( c1 != '.' && c1 != '-' && c1 != ' ' && c1 != '\n' &&  c2 != '.' && c2 != '-' && c2 != ' ' && c2 != '\n') {
-									if( c1 != c2 ) mism += 1.0/ent[ir];
+									if( c1 != c2 ) mism += 1.0/ent[(int)ir];
 									count++;
 								}
 							}
 						} else {
-							for( int k = start; k < end; k++ ) {
+							for( double k = start; k < end; k++ ) {
 								char c1 = seq1.charAt( k-seq1.getStart() );
 								char c2 = seq2.charAt( k-seq2.getStart() );
 								
 								if( c1 != '.' && c1 != '-' && c1 != ' ' && c1 != '\n' &&  c2 != '.' && c2 != '-' && c2 != ' ' && c2 != '\n') {
 									if( c1 != c2 ) {
-										mism += 1.0/ent[k];
+										mism += 1.0/ent[(int)k];
 										/*if( ent[k] == 0.0 ) {
 											System.err.println("ok");
 										}*/
@@ -423,8 +423,8 @@ public class Sequence implements Comparable<Sequence> {
 						}
 					} else {
 						if( bootstrap ) {
-							for( int k = start; k < end; k++ ) {
-								int ir = start + r.nextInt( end-start );
+							for( double k = start; k < end; k++ ) {
+								double ir = start + r.nextInt( (int)(end-start) );
 								char c1 = seq1.charAt( ir-seq1.getStart() );
 								char c2 = seq2.charAt( ir-seq2.getStart() );
 								
@@ -434,7 +434,7 @@ public class Sequence implements Comparable<Sequence> {
 								}
 							}
 						} else {
-							for( int k = start; k < end; k++ ) {
+							for( double k = start; k < end; k++ ) {
 								char c1 = seq1.charAt( k-seq1.getStart() );
 								char c2 = seq2.charAt( k-seq2.getStart() );
 								
@@ -460,8 +460,8 @@ public class Sequence implements Comparable<Sequence> {
 	public void reverse() {
 		for( int i = 0; i < getLength()/2; i++ ) {
 			char c = sb.charAt(i);
-			sb.setCharAt( i, sb.charAt(getLength()-1-i) );
-			sb.setCharAt( getLength()-1-i, c );
+			sb.setCharAt( i, sb.charAt((int)(getLength()-1-i)) );
+			sb.setCharAt( (int)(getLength()-1-i), c );
 		}
 	}
 	
@@ -598,11 +598,11 @@ public class Sequence implements Comparable<Sequence> {
 			this.type = type;
 		}
 		
-		public int getCoordStart() {
+		public double getCoordStart() {
 			return (seq != null ? seq.getStart() : 0)+start;
 		}
 		
-		public int getCoordEnd() {
+		public double getCoordEnd() {
 			return (seq != null ? seq.getStart() : 0)+stop;
 		}
 		
@@ -695,16 +695,16 @@ public class Sequence implements Comparable<Sequence> {
 	}
 	
 	public void deleteCharAt( int i ) {
-		int ind = i-start;
+		int ind = (int)(i-start);
 		if( ind >= 0 && ind < sb.length() ) {
 			sb.deleteCharAt(ind);
 			edited = true;
 		}
 	}
 	
-	public void delete( int dstart, int dstop ) {
-		int ind = dstart-start;
-		int end = dstop-start;
+	public void delete( double dstart, double dstop ) {
+		int ind = (int)(dstart-start);
+		int end = (int)(dstop-start);
 		if( ind >= 0 && end <= sb.length() ) {
 			sb.delete( ind, end );
 			edited = true;
@@ -712,7 +712,7 @@ public class Sequence implements Comparable<Sequence> {
 	}
 	
 	public void clearCharAt( int i ) {
-		int ind = i-start;
+		int ind = (int)(i-start);
 		if( ind >= 0 && ind < sb.length() ) {
 			sb.setCharAt(ind, '-');
 			edited = true;
@@ -720,14 +720,14 @@ public class Sequence implements Comparable<Sequence> {
 	}
 	
 	public void setCharAt( double i, char c ) {
-		double ind = i-start;
+		double ind = i;
 		if( ind >= 0 && ind < sb.length() ) {
 			sb.setCharAt( (int)ind, c );
 		}
 	}
 	
 	public char charAt( double i ) {
-		double ind = i-start;
+		double ind = i;
 		if( ind >= 0 && ind < getLength() ) {
 			return sb.charAt( (int)ind );
 		}
@@ -751,7 +751,7 @@ public class Sequence implements Comparable<Sequence> {
 		unalignedlength = substop-substart;
 	}
 	
-	public int getLength() {
+	public double getLength() {
 		return sb.length();
 	}
 	
@@ -769,11 +769,11 @@ public class Sequence implements Comparable<Sequence> {
 		return unalignedlength;
 	}
 	
-	public int getRealStart() {
+	public double getRealStart() {
 		return getStart() + substart;
 	}
 	
-	public int getRealStop() {
+	public double getRealStop() {
 		return getStart() + substop;
 	}
 	
@@ -791,7 +791,7 @@ public class Sequence implements Comparable<Sequence> {
 	};
 	
 	public static RunInt runbl = null;
-	public void setStart( int start ) {
+	public void setStart( double start ) {
 		this.start = start;
 		
 		if( runbl != null ) runbl.run( this ); //boundsCheck();
@@ -804,12 +804,12 @@ public class Sequence implements Comparable<Sequence> {
 		//boundsCheck();
 	}
 	
-	public int getStart() {
+	public double getStart() {
 		return start;
 	}
 	
-	public int getEnd() {
-		return start+sb.length();
+	public double getEnd() {
+		return start+(sb != null ? sb.length() : 0);
 	}
 	
 	public int getRevComp() {
@@ -836,7 +836,7 @@ public class Sequence implements Comparable<Sequence> {
 
 	@Override
 	public int compareTo(Sequence o) {
-		return start - o.start;
+		return Double.compare(start, o.start);
 	}
 	
 	public StringBuilder getProteinSequence( int start, int stop, int ori ) {

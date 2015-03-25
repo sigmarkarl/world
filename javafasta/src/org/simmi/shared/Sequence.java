@@ -414,6 +414,17 @@ public class Sequence implements Comparable<Sequence> {
 		}
 	}
 	
+	public void writeSequence( Appendable fw, int gap, boolean italic ) throws IOException {
+		if( italic ) fw.append("><i>"+getName()+"</i>\n");
+		else fw.append(">"+getName()+"\n");
+		for( int k = 0; k < sb.length(); k+=gap ) {
+			int m = Math.min(sb.length(), k+gap);
+			String substr = sb.substring(k, m);
+			//(seq.sb.length() == k+70 ? "")
+			fw.append( substr+"\n" );
+		}
+	}
+	
 	public void writeSequence( Writer fw, int gap, boolean italic ) throws IOException {
 		if( italic ) fw.write("><i>"+getName()+"</i>\n");
 		else fw.write(">"+getName()+"\n");
@@ -442,6 +453,10 @@ public class Sequence implements Comparable<Sequence> {
 	
 	public void writeSequence( Writer fw, int start, int stop, boolean italic ) throws IOException {
 		writeSequence( fw, 70, start, stop, italic );
+	}
+	
+	public void writeSequence( Appendable fw ) throws IOException {
+		writeSequence( fw, 70, false );
 	}
 	
 	public void writeSequence( Writer fw ) throws IOException {
@@ -1430,6 +1445,10 @@ public class Sequence implements Comparable<Sequence> {
 		sb.append( c );
 	}
 	
+	public void append( Character c ) {
+		sb.append( c );
+	}
+	
 	public void appendSubseq( Sequence subs, int start, int end ) {
 		//getSubstring(-3000, subs.getLength()+3000);
 	}
@@ -1719,8 +1738,9 @@ public class Sequence implements Comparable<Sequence> {
 		return annset.indexOf( at );
 	}
 	
-	public StringBuilder getProteinSequence( int start, int stop, int ori ) {
-		StringBuilder ret = new StringBuilder();
+	public Sequence getProteinSequence( int start, int stop, int ori ) {
+		Sequence ret = new Sequence();
+		ret.consensus = this;
 		
 		//if( stop > sb.length() ) {
 		//if( stop != end ) {
@@ -1743,7 +1763,7 @@ public class Sequence implements Comparable<Sequence> {
 					ret.append( "X" );
 				} else {
 					Character aa = amimap.get( revcom.get(aaa) );
-					if( aa != null ) ret.append( i != stop-3 ? aa : (aa.equals("V") || aa.equals("L") ? "M" : aa) );
+					if( aa != null ) ret.append( i != stop-3 ? aa : (aa.equals("V") || aa.equals("L") ? 'M' : aa) );
 					//else break;
 				}
 			}

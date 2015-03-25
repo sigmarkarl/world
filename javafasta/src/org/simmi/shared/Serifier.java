@@ -39,7 +39,11 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.zip.GZIPInputStream;
 
+import javax.swing.JOptionPane;
+import javax.swing.JTextField;
+
 import org.simmi.DataTable;
+import org.simmi.unsigned.NativeRun;
 
 public class Serifier {
 	public Serifier() {
@@ -126,25 +130,42 @@ public class Serifier {
 		return ret;
 	}
 	
-	public String getFastTree( List<Sequence> tlseq ) {
+	public String getFastTree( List<Sequence> tlseq, String user, boolean local ) {
 		String 				ret = "";
-		File 				tmpdir = new File( System.getProperty("user.home") );
+		Path				tmpdir = Paths.get( System.getProperty("user.home") );
+		Path				cygpath = tmpdir.resolve("genesetkey");
+		String				cygpathstr = NativeRun.cygPath(cygpath.toString());
+		
+		String hostname = "localhost";
+		if( !local ) {
+			JTextField host = new JTextField("localhost");
+			JOptionPane.showMessageDialog(null, host);
+			hostname = host.getText();
+		}
+		
 		try {
-			FileWriter fw = new FileWriter( new File(tmpdir, "tmp.fasta") );
-			writeFasta( tlseq, fw, null, true);
-			fw.close();
+			//FileWriter fw = new FileWriter( new File(tmpdir, "tmp.fasta") );
+			//writeFasta( tlseq, fw, null, true);
+			//fw.close();
 			
 			boolean isnt = true;
 			for( Sequence seq : tlseq ) {
-				if( seq.isNucleotide() ) {
+				if( !seq.isNucleotide() ) {
 					isnt = false;
 					break;
 				}
 			}
 
 			//ProcessBuilder pb = new ProcessBuilder("fasttree", "tmp.fasta");
-			ProcessBuilder pb = isnt ? new ProcessBuilder("/usr/local/bin/FastTree","-nt") : new ProcessBuilder("/usr/local/bin/FastTree");
-			pb.directory(tmpdir);
+			ProcessBuilder pb;
+			if( hostname.equals("localhost") ) pb = isnt ? new ProcessBuilder("FastTree","-nt") : new ProcessBuilder("FastTree");
+			else {
+				if( user.equals("geneset") ) {
+					pb = isnt ? new ProcessBuilder("ssh","-i",cygpathstr,"geneset@"+hostname,"FastTree","-nt") : new ProcessBuilder("ssh","-i",cygpathstr,"geneset@"+hostname,"FastTree");
+				} else pb = isnt ? new ProcessBuilder("ssh",hostname,"FastTree","-nt") : new ProcessBuilder("ssh",hostname,"FastTree");
+			}
+			
+			//pb.directory(tmpdir);
 			Process p = pb.start();
 			OutputStream os = p.getOutputStream();
 			Writer w = new OutputStreamWriter(os);
@@ -328,6 +349,7 @@ public class Serifier {
 							
 							if( annn.name != null && !annn.name.contains("No hits") ) {
 								String locstr = ((sbld.length()-annn.stop+1))+".."+((sbld.length()-annn.start+1));
+								String id = annn.id;
 								
 								fw.write( "     "+annn.type );
 								int len = annn.type.length();
@@ -340,7 +362,9 @@ public class Serifier {
 								
 								//if( !annn.isReverse() ) fw.write( "     gene            complement("+locstr+")\n" );
 								//else fw.write( "     "+annn.type+"            "+locstr+"\n" );
-								fw.write( "                     /locus_tag=\""+key+"_"+ac+"\"\n" );
+								
+								if( id == null ) fw.write( "                     /locus_tag=\""+key+"_"+ac+"\"\n" );
+								else fw.write( "                     /locus_tag=\""+id+"\"\n" );
 								
 								String addon = "";
 								if( annn.dbref != null ) for( String val : annn.dbref ) {
@@ -349,11 +373,11 @@ public class Serifier {
 								fw.write( "                     /product=\""+annn.name+addon+"\"\n" );
 								if( translations ) {
 									fw.write( "                     /translation=\"" );
-									StringBuilder aa = annn.getProteinSequence();
-									fw.write(aa.substring(0, Math.min(46, aa.length())) );
+									Sequence aa = annn.getProteinSequence();
+									fw.write(aa.sb.substring(0, Math.min(46, aa.length())) );
 									for (int k = 46; k < aa.length(); k += 60) {
 										fw.write("\n");
-										fw.write( "                     "+aa.substring(k, Math.min(k + 60, aa.length())) );
+										fw.write( "                     "+aa.sb.substring(k, Math.min(k + 60, aa.length())) );
 									}
 									fw.write( "\"\n" );
 								}
@@ -368,6 +392,7 @@ public class Serifier {
 						for( Annotation annn : lann ) {
 							if( annn.name != null && !annn.name.contains("No hits") ) {
 								String locstr = (annn.start-1)+".."+(annn.stop-1);
+								String id = annn.id;
 								
 								fw.write( "     "+annn.type );
 								int len = annn.type.length();
@@ -378,7 +403,8 @@ public class Serifier {
 								if( annn.isReverse() ) fw.write( "complement("+locstr+")\n" );
 								else fw.write( locstr+"\n" );
 								
-								fw.write( "                     /locus_tag=\""+key+"_"+ac+"\"\n" );
+								if( id == null ) fw.write( "                     /locus_tag=\""+key+"_"+ac+"\"\n" );
+								else fw.write( "                     /locus_tag=\""+id+"\"\n" );
 								
 								String addon = "";
 								if( annn.dbref != null ) for( String val : annn.dbref ) {
@@ -387,11 +413,11 @@ public class Serifier {
 								fw.write( "                     /product=\""+annn.name+addon+"\"\n" );
 								if( translations ) {
 									fw.write( "                     /translation=\"" );
-									StringBuilder aa = annn.getProteinSequence();
-									fw.write(aa.substring(0, Math.min(46, aa.length())) );
+									Sequence aa = annn.getProteinSequence();
+									fw.write(aa.sb.substring(0, Math.min(46, aa.length())) );
 									for (int k = 46; k < aa.length(); k += 60) {
 										fw.write("\n");
-										fw.write( "                     "+aa.substring(k, Math.min(k + 60, aa.length())) );
+										fw.write( "                     "+aa.sb.substring(k, Math.min(k + 60, aa.length())) );
 									}
 									fw.write( "\"\n" );
 								}
@@ -465,6 +491,7 @@ public class Serifier {
 						for( int i = lann.size()-1; i >= 0; i-- ) {
 							Annotation annn = lann.get(i);
 							String locstr = ((sbld.length()-annn.stop+1)+count)+".."+((sbld.length()-annn.start+1)+count);
+							String id = annn.id;
 							
 							fw.write( "     "+annn.type );
 							int len = annn.type.length();
@@ -476,7 +503,8 @@ public class Serifier {
 							else fw.write( locstr+"\n" );
 							//if( !annn.isReverse() ) fw.write( "     gene            complement("+locstr+")\n" );
 							//else fw.write( "     "+annn.type+"            "+locstr+"\n" );
-							fw.write( "                     /locus_tag=\""+key+"_"+ac+"\"\n" );
+							if( id == null ) fw.write( "                     /locus_tag=\""+key+"_"+ac+"\"\n" );
+							else fw.write( "                     /locus_tag=\""+id+"\"\n" );
 							
 							String addon = "";
 							if( annn.dbref != null ) for( String val : annn.dbref ) {
@@ -489,11 +517,11 @@ public class Serifier {
 							}
 							if( translations ) {
 								fw.write( "                     /translation=\"" );
-								StringBuilder aa = annn.getProteinSequence();
-								fw.write(aa.substring(0, Math.min(46, aa.length())) );
+								Sequence aa = annn.getProteinSequence();
+								fw.write(aa.sb.substring(0, Math.min(46, aa.length())) );
 								for (int k = 46; k < aa.length(); k += 60) {
 									fw.write("\n");
-									fw.write( "                     "+aa.substring(k, Math.min(k + 60, aa.length())) );
+									fw.write( "                     "+aa.sb.substring(k, Math.min(k + 60, aa.length())) );
 								}
 								fw.write( "\"\n" );
 							}
@@ -502,6 +530,7 @@ public class Serifier {
 					} else {
 						for( Annotation annn : lann ) {
 							String locstr = (annn.start-1+count)+".."+(annn.stop-1+count);
+							String id = annn.id;
 							
 							fw.write( "     "+annn.type );
 							int len = annn.type.length();
@@ -513,7 +542,8 @@ public class Serifier {
 							else fw.write( locstr+"\n" );
 							//if( annn.isReverse() ) fw.write( "     gene            complement("+locstr+")\n" );
 							//else fw.write( "     "+annn.type+"            "+locstr+"\n" );
-							fw.write( "                     /locus_tag=\""+key+"_"+ac+"\"\n" );
+							if( id == null ) fw.write( "                     /locus_tag=\""+key+"_"+ac+"\"\n" );
+							else fw.write( "                     /locus_tag=\""+id+"\"\n" );
 							
 							String addon = "";
 							if( annn.dbref != null ) for( String val : annn.dbref ) {
@@ -526,11 +556,11 @@ public class Serifier {
 							}
 							if( translations ) {
 								fw.write( "                     /translation=\"" );
-								StringBuilder aa = annn.getProteinSequence();
-								fw.write(aa.substring(0, Math.min(46, aa.length())) );
+								Sequence aa = annn.getProteinSequence();
+								fw.write(aa.sb.substring(0, Math.min(46, aa.length())) );
 								for (int k = 46; k < aa.length(); k += 60) {
 									fw.write("\n");
-									fw.write( "                     "+aa.substring(k, Math.min(k + 60, aa.length())) );
+									fw.write( "                     "+aa.sb.substring(k, Math.min(k + 60, aa.length())) );
 								}
 								fw.write( "\"\n" );
 							}
@@ -1288,11 +1318,12 @@ public class Serifier {
 	public void makeBlastCluster( final BufferedReader is, final BufferedWriter fos, int clustermap, float id, float len, Map<String,String> idspec, List<Set<String>> total, Map<String,Gene> refmap ) throws IOException {
 		//List<Set<String>>	total = new ArrayList<Set<String>>();
 		
+		Path userhome = Paths.get( System.getProperty("user.home") );
 		if( is != null ) {
 			if( clustermap%2 == 0 ) {
 				joinBlastSets( is, null, true, total, 0.0 );
 			} else {
-				joinBlastSetsThermus( is, Paths.get("/Users/sigmar/check.txt"), true, total, id, len, refmap );
+				joinBlastSetsThermus( is, userhome.resolve("check.txt"), true, total, id, len, refmap );
 			}
 			is.close();
 		}
@@ -2502,6 +2533,31 @@ public class Serifier {
 		return retlist;
 	}
 	
+	public void appendFilename( Sequences seqs, Path outp ) throws IOException {
+		String fname = seqs.getPath().getFileName().toString();
+		
+		//File of = new File( outf, fname );
+		int k = fname.lastIndexOf('.');
+		if( k == -1 ) k = fname.length();
+		fname = fname.substring(0, k);
+		
+		Writer fw = Files.newBufferedWriter(outp);
+		//FileWriter fw = new FileWriter( of );
+		
+		BufferedReader br = Files.newBufferedReader( seqs.getPath(), Charset.defaultCharset() );
+		String line = br.readLine();
+		while( line != null ) {
+			if( line.startsWith(">") ) {
+				if( line.startsWith(">NODE") ) fw.write( ">"+fname.substring(0, fname.length()-1)+line.substring(6, line.length())+"\n" );
+				else fw.write( ">"+fname+"_"+line.substring(1, line.length())+"\n" );
+			} else fw.write( line+"\n" );
+			
+			line = br.readLine();
+		}
+		br.close();
+		fw.close();
+	}
+	
 	public void parse( String[] args ) throws IOException, URISyntaxException {
 		List<String>	arglist = Arrays.asList(args);
 		//System.err.println( arglist );
@@ -3062,26 +3118,7 @@ public class Serifier {
 		i = arglist.indexOf("-appendfilename");
 		if( i >= 0 ) {
 			for( Sequences seqs : this.sequences ) {
-				String fname = seqs.getPath().getFileName().toString();
-				
-				File of = new File( outf, fname );
-				int k = fname.lastIndexOf('.');
-				if( k == -1 ) k = fname.length();
-				fname = fname.substring(0, k);
-				
-				FileWriter fw = new FileWriter( of );
-				
-				BufferedReader br = Files.newBufferedReader( seqs.getPath(), Charset.defaultCharset() );
-				String line = br.readLine();
-				while( line != null ) {
-					if( line.startsWith(">") ) {
-						fw.write( ">"+fname+"_"+line.substring(1, line.length())+"\n" );
-					} else fw.write( line+"\n" );
-					
-					line = br.readLine();
-				}
-				br.close();
-				fw.close();
+				appendFilename( seqs, outf.toPath() );
 			}
 			
 			/*Sequences ret = blastRename( this.sequences.get(0), args[i+1], outf, false );

@@ -113,7 +113,7 @@ public class Annotation implements Comparable<Object> {
 		w.write( getSequence()+"\n" );
 	}
 	
-	public StringBuilder getProteinSubsequence( int u, int e ) {
+	public Sequence getProteinSubsequence( int u, int e ) {
 		return seq.getProteinSequence( start+u, start+e, ori );
 	}
 	
@@ -196,7 +196,7 @@ public class Annotation implements Comparable<Object> {
 		return this.gene;
 	}
 	
-	public StringBuilder getProteinSequence() {
+	public Sequence getProteinSequence() {
 		return seq == null ? null : seq.getProteinSequence(start, stop, ori);
 	}
 	

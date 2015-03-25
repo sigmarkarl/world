@@ -18,7 +18,7 @@ public class VirtualSequence extends Sequence {
 	static final int 			segsize = 100000;
 	static Webfasta				webfasta;
 	
-	int 						seqlen = 0;
+	double 						seqlen = 0;
 	int							linelen = 0;
 	int							linebuf = 0;
 	double						seqoffset = 0;
@@ -26,19 +26,21 @@ public class VirtualSequence extends Sequence {
 	Blob						file;
 	boolean						loading = false;
 	
-	public VirtualSequence(String name, int seqlen, Blob file, double seqoffset, int linelen, int linebuf, Map<String, Sequence> mseq) {
+	public VirtualSequence(String name, double seqlen, double seqstart, Blob file, double seqoffset, int linelen, int linebuf, Map<String, Sequence> mseq) {
 		super(name, mseq);
 		this.file = file;
 		this.seqlen = seqlen;
+		this.setStart( seqstart );
 		this.seqoffset = seqoffset;
 		this.linelen = linelen;
 		this.linebuf = linebuf;
 		
-		int numsegments = seqlen/segsize+1;
+		double numsegments = seqlen/segsize+1;
 		while( segments.size() < numsegments ) segments.add( null );
 	}
 
-	public int getLength() {
+	@Override
+	public double getLength() {
 		return this.seqlen;
 	}
 	
@@ -51,53 +53,50 @@ public class VirtualSequence extends Sequence {
 	}-*/;
 	
 	@Override
-	public int getStart() {
-		return start;
-	}
-	
-	@Override
-	public int getEnd() {
-		return start+seqlen;
+	public double getEnd() {
+		return getStart()+seqlen;
 	}
 	
 	@Override
 	public char charAt( double i ) {
-		final int numseg = (int)(i/segsize);
-		
-		//Browser.getWindow().getConsole().log("lubb " + segments.size() + "  " + numseg);
-		if( numseg < segments.size() ) {
-			Int8Array strb = segments.get(numseg);
-			if( strb == null ) {
-				if( !loading ) {
-					loading = true;
-					//Browser.getWindow().getConsole().log("lubb " + strb.byteLength());
-					//strb = Int8ArrayNative.create(segsize);
-					double startseg = numseg*segsize;
-					double start = seqoffset+startseg;
-					if( startseg < seqlen ) {
-						Blob sliceblob = slice( file, start, start+Math.min( seqlen,segsize ) );
-						
-						final FileReader reader = newFileReader();
-						reader.setOnload( new EventListener() {
-							@Override
-							public void handleEvent(Event evt) {
-								ArrayBuffer res = (ArrayBuffer)reader.getResult();
-								Int8Array i8a = Int8ArrayNative.create(res);
-								//Browser.getWindow().getConsole().log("bsize "+i8a.length());
-								segments.set(numseg, i8a);
-								loading = false;
-								//webfasta.draw( webfasta.xstart, webfasta.ystart );
-							}
-						});
-						reader.readAsArrayBuffer(sliceblob);
+		if( i >= 0 ) {
+			final int numseg = (int)(i/segsize);
+			
+			//Browser.getWindow().getConsole().log("lubb " + segments.size() + "  " + numseg);
+			if( numseg < segments.size() ) {
+				Int8Array strb = segments.get(numseg);
+				if( strb == null ) {
+					if( !loading ) {
+						loading = true;
+						//Browser.getWindow().getConsole().log("lubb " + strb.byteLength());
+						//strb = Int8ArrayNative.create(segsize);
+						double startseg = numseg*segsize;
+						double start = seqoffset+startseg;
+						if( file != null && startseg < seqlen ) {
+							Blob sliceblob = slice( file, start, start+Math.min( seqlen,segsize ) );
+							
+							final FileReader reader = newFileReader();
+							reader.setOnload( new EventListener() {
+								@Override
+								public void handleEvent(Event evt) {
+									ArrayBuffer res = (ArrayBuffer)reader.getResult();
+									Int8Array i8a = Int8ArrayNative.create(res);
+									//Browser.getWindow().getConsole().log("bsize "+i8a.length());
+									segments.set(numseg, i8a);
+									loading = false;
+									//webfasta.draw( webfasta.xstart, webfasta.ystart );
+								}
+							});
+							reader.readAsArrayBuffer(sliceblob);
+						}
 					}
+				} else {
+					//Browser.getWindow().getConsole().log("bsize2 "+strb.length());
+					int idx = (int)(i-numseg*segsize);
+					if( idx >= 0 && idx < strb.length() ) 
+						return (char)strb.get(idx);
+					//else Browser.getWindow().getConsole().log("idx "+idx);
 				}
-			} else {
-				//Browser.getWindow().getConsole().log("bsize2 "+strb.length());
-				int idx = (int)(i-numseg*segsize);
-				if( idx >= 0 && idx < strb.length() ) 
-					return (char)strb.get(idx);
-				//else Browser.getWindow().getConsole().log("idx "+idx);
 			}
 		}
 		
@@ -116,7 +115,7 @@ public class VirtualSequence extends Sequence {
 			}
 			return this.charAt(i) - o.charAt(i);
 		} else if (Webfasta.sortcol >= 0) {
-			return Webfasta.sortcol == 0 ? getName().compareTo(o.getName()) : getLength() - o.getLength();
+			return Webfasta.sortcol == 0 ? getName().compareTo(o.getName()) : Double.compare(getLength(), o.getLength());
 		} else {
 			return isSelected() ? (o.isSelected() ? 0 : -1) : (o.isSelected() ? 1 : 0);
 		}

@@ -502,14 +502,16 @@ public class GeneGroup {
 			
 			String specstr = gene.getSpecies();
 			
-			Teginfo tigenes;
-			if( species.containsKey( specstr ) ) {
-				tigenes = species.get( specstr );
-			} else {
-				tigenes = new Teginfo();
-				species.put( specstr, tigenes );
+			if( specstr != null ) {
+				Teginfo tigenes;
+				if( species.containsKey( specstr ) ) {
+					tigenes = species.get( specstr );
+				} else {
+					tigenes = new Teginfo();
+					species.put( specstr, tigenes );
+				}
+				tigenes.add( gene.tegeval );
 			}
-			tigenes.add( gene.tegeval );
         }
 	}
 	

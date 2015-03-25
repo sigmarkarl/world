@@ -171,6 +171,7 @@ public class JavaFasta extends JApplet {
 	boolean		edited = false;
 	
 	Path		currentPath = null;
+	public static String		user;
 	
 	public void setCurrentPath( Path cp ) {
 		currentPath = cp;
@@ -5996,8 +5997,9 @@ public class JavaFasta extends JApplet {
 					succ = false;
 				}
 				
+				System.err.println( "nlsucc " + succ );
 				if( !succ ) {
-					String 				tree = serifier.getFastTree( seqlist );
+					String 				tree = serifier.getFastTree( seqlist, user, false );
 					System.err.println( tree );
 					if( cs.connections().size() > 0 ) {
 			    		cs.sendToAll( tree );

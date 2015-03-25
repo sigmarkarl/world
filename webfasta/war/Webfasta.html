@@ -33,7 +33,7 @@
 			window.chartIsReady = true;
 		}
 	</script>
-	<script src="muscle.js"></script>
+	<!-- script src="muscle.js"></script-->
     <script type="text/javascript" language="javascript" src="webfasta/webfasta.nocache.js"></script>
   </head>
 
@@ -53,11 +53,12 @@
        	width=0 height=0
        	src="simmi.nmf"
        	type="application/x-nacl" />
-    <embed name="muscle_module"
-       	id="muscle"
+    <embed name="samtools_module"
+       	id="samtools"
        	width=0 height=0
-       	src="muscle.nmf"
-       	type="application/x-nacl" />
+       	src="samtools.nmf"
+       	type="application/x-nacl"
+       	PS_STDIN="/dev/tty" PS_STDOUT="/dev/tty" PS_TTY_PREFIX="tty:" PS_EXIT_MESSAGE="exit"/>
     </div>
     
     <div id="main" style="float: left">
