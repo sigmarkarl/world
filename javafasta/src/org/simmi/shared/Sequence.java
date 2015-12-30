@@ -624,7 +624,7 @@ public class Sequence implements Comparable<Sequence> {
 			i = lname.indexOf("RAST");
 			if( i >= 0 ) i += 5;
 		}
-		if( i == -1 && lname.length() > 5 && (lname.startsWith("J") || lname.startsWith("A")) && lname.charAt(4) == '0' ) i = 5;
+		if( i == -1 && lname.length() > 5 && (lname.startsWith("J") || lname.startsWith("A") || lname.startsWith("L") || lname.startsWith("B")) && lname.charAt(4) == '0' ) i = 5;
 		if( i == -1 ) {
 			i = lname.indexOf("uid");
 			if( i != -1 ) i = lname.indexOf('_', i)+1;
@@ -706,7 +706,7 @@ public class Sequence implements Comparable<Sequence> {
 						}
 					}
 				}
-			} else if( (selspec.charAt(0) == 'J' || selspec.charAt(0) == 'A') && (selspec.length() == 4 || selspec.charAt(4) == '0') ) {
+			} else if( (selspec.charAt(0) == 'J' || selspec.charAt(0) == 'A' || selspec.charAt(0) == 'L' || selspec.charAt(0) == 'B') && (selspec.length() == 4 || selspec.charAt(4) == '0') ) {
 				if( selspec.startsWith("JQNC") ) ret = "Thermus_caliditerrae_YIM_77777";
 				if( selspec.startsWith("JQMV") ) ret = "Thermus_sp._YIM_77409";
 				if( selspec.startsWith("JQLK") ) ret = "Thermus_tengchongensis_YIM_77401";
@@ -720,7 +720,16 @@ public class Sequence implements Comparable<Sequence> {
 				if( selspec.startsWith("ATNI") ) ret = "Thermus_scotoductus_NMX2_A1";
 				if( selspec.startsWith("ARLD") ) ret = "Thermus_scotoductus_SE-1";
 				if( selspec.startsWith("AQOS") ) ret = "Thermus_thermophilus_AT-62";
+				if( selspec.startsWith("ARDI") ) ret = "Thermus_oshimai_DSM_12092";
+				if( selspec.startsWith("ABVK") ) ret = "Thermus_aquaticus_Y51MC23";
+				if( selspec.startsWith("AQWU") ) ret = "Thermus_igniterrae_ATCC_700962";
+				if( selspec.startsWith("AIJQ") ) ret = "Thermus_sp_RL";
 				
+				if( selspec.startsWith("LHCI") ) ret = "Thermus_aquaticus";
+				if( selspec.startsWith("LJJR") ) ret = "Thermus_scotoductus";
+				
+				if( selspec.startsWith("BBBL") ) ret = "Thermus_kawarayensis_JCM_12314";
+				if( selspec.startsWith("BBBN") ) ret = "Thermus_sp_JCM_17653";
 			} else if( selspec.contains("GenBank") || selspec.contains("MAT") ) {
 				
 			} else {
@@ -1769,7 +1778,10 @@ public class Sequence implements Comparable<Sequence> {
 			}
 		} else {
 			int end = start + 3*((stop-start)/3) - 1;
-			for( int i = start-1; i < end; i+=3 ) {
+			for( int i = start == 0 ? start+2 : start-1; i < end; i+=3 ) {
+				/*if( i < 0 || i+3 >= sb.length() ) {
+					System.err.println(  );
+				}*/
 				String aaa = sb.substring(i, i+3).toUpperCase();
 				if( aaa.contains("N") || aaa.contains("n") || aaa.contains("X") || aaa.contains("x") ) {
 					ret.append( "X" );

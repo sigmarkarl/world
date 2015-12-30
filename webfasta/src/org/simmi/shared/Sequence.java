@@ -6,6 +6,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
+import com.google.gwt.core.client.JavaScriptObject;
+
+import elemental.client.Browser;
+
 public class Sequence implements Comparable<Sequence> {
 	/*public static int						max = 0;
 	public static int						min = 0;
@@ -726,8 +730,16 @@ public class Sequence implements Comparable<Sequence> {
 		}
 	}
 	
+	public native boolean isDefined( StringBuilder jsobj ) /*-{
+		return typeof jsobj !== 'undefined';
+	}-*/;
+	
 	public char charAt( double i ) {
 		double ind = i;
+		
+		//Browser.getWindow().getConsole().log("loggi");
+		//boolean def = isDefined(sb);
+		//Browser.getWindow().getConsole().log( def );
 		if( ind >= 0 && ind < getLength() ) {
 			return sb.charAt( (int)ind );
 		}
@@ -752,7 +764,7 @@ public class Sequence implements Comparable<Sequence> {
 	}
 	
 	public double getLength() {
-		return sb.length();
+		return sb != null ? sb.length() : 0;
 	}
 	
 	public int getAlignedLength() {

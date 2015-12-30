@@ -12,7 +12,7 @@
     <!--                                                               -->
     <!-- Consider inlining CSS to reduce the number of requested files -->
     <!--                                                               -->
-    <link type="text/css" rel="stylesheet" href="Webfasta.css">
+    <link type="text/css" rel="stylesheet" href="https://webfasta.appspot.com/Webfasta.css">
 
     <!--                                           -->
     <!-- Any title is fine                         -->
@@ -24,6 +24,7 @@
     <!-- If you add any GWT meta tags, they must   -->
     <!-- be added before this line.                -->
     <!--                                           -->
+    <script src='https://platform.dnanexus.com/javascript/file-viewer-1.1.min.js'></script>
     <script type="text/javascript" src="https://www.google.com/jsapi"></script>
     <script>
     	window.chartIsReady = false;
@@ -34,7 +35,7 @@
 		}
 	</script>
 	<!-- script src="muscle.js"></script-->
-    <script type="text/javascript" language="javascript" src="webfasta/webfasta.nocache.js"></script>
+    <script type="text/javascript" language="javascript" src="https://webfasta.appspot.com/webfasta/webfasta.nocache.js"></script>
   </head>
 
   <!--                                           -->
@@ -44,11 +45,26 @@
   <!--                                           -->
   <body>
 
+	<script language="javascript">
+        // Fetch the options from DNAnexus
+         getOptions(function(options) {
+
+         window.files = [];
+         for (var i = 0; i < options.files.length; ++i) {
+         	window.files.push( options.files[i]["url"] );
+            //console.log( "file: " + JSON.stringify(options.files[i]) );
+         }
+       	 });
+      	
+      	//var viewerOptions = {}; // TODO: Build viewerOptions up from the options
+        //var viewer = new Viewer(viewerOptions, "viewer-placeholder");
+    </script>
+    
     <!-- OPTIONAL: include this if you want history support -->
     <iframe src="javascript:''" id="__gwt_historyFrame" tabIndex='-1' style="position:absolute;width:0;height:0;border:0"></iframe>
     
     <div id="listener" style="height:0px">
-    <embed name="nacl_module"
+    <!-- embed name="nacl_module"
        	id="fasttree"
        	width=0 height=0
        	src="simmi.nmf"
@@ -58,25 +74,21 @@
        	width=0 height=0
        	src="samtools.nmf"
        	type="application/x-nacl"
-       	PS_STDIN="/dev/tty" PS_STDOUT="/dev/tty" PS_TTY_PREFIX="tty:" PS_EXIT_MESSAGE="exit"/>
+       	PS_STDIN="/dev/tty" PS_STDOUT="/dev/tty" PS_TTY_PREFIX="tty:" PS_EXIT_MESSAGE="exit"/-->
     </div>
     
     <div id="main" style="float: left">
     </div>
     
-    <div id="ads" style="float: right">
-    <script type="text/javascript"><!--
-	google_ad_client = "ca-pub-7204381538404733";
-	/* Webfasta */
-	google_ad_slot = "6973990603";
-	google_ad_width = 160;
-	google_ad_height = 600;
-	//-->
+    <script async src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+	<!-- Webfasta -->
+	<ins class="adsbygoogle"
+	     style="display:inline-block;width:160px;height:600px"
+	     data-ad-client="ca-pub-7204381538404733"
+	     data-ad-slot="6973990603"></ins>
+	<script>
+	(adsbygoogle = window.adsbygoogle || []).push({});
 	</script>
-	<script type="text/javascript"
-	src="http://pagead2.googlesyndication.com/pagead/show_ads.js">
-	</script>
-	</div>
     
     <!--iframe src="https://docs.google.com/spreadsheet/embeddedform?formkey=dDVyLVNzUmFRUzZiRHBRTEJkWGRBb3c6MQ&ifq" width="760" height="843" frameborder="0" marginheight="0" marginwidth="0">Loading...</iframe-->
   </body>

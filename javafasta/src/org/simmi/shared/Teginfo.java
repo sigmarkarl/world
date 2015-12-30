@@ -20,10 +20,13 @@ public class Teginfo implements Teg {
 		String ret = best.toString();
 		String design = best.designation;
 		if( design != null ) ret += " " + design;
+		int i = 0;
 		for (Tegeval tv : tset) {
 			if (tv != best) {
 				ret += " " + tv.toString();
 			}
+			i++;
+			if( i > 10 ) break;
 		}
 		return ret;
 	}

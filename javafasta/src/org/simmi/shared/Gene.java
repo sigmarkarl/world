@@ -2,6 +2,7 @@ package org.simmi.shared;
 
 import java.io.IOException;
 import java.io.StringWriter;
+import java.io.Writer;
 import java.util.Set;
 
 import org.simmi.shared.Contig;
@@ -51,6 +52,11 @@ public class Gene {
 			e.printStackTrace();
 		}
 		return sb.toString();
+	}
+	
+	public void writeGeneIdFasta( Writer w ) throws IOException {
+		w.write( ">"+id+"\n" );
+		w.write( tegeval.getSequence()+"\n" );
 	}
 	
 	public Contig getContig() {

@@ -37,6 +37,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.stream.Stream;
 import java.util.zip.GZIPInputStream;
 
 import javax.swing.JOptionPane;
@@ -136,6 +137,8 @@ public class Serifier {
 		Path				cygpath = tmpdir.resolve("genesetkey");
 		String				cygpathstr = NativeRun.cygPath(cygpath.toString());
 		
+		String OS = System.getProperty("os.name").toLowerCase();
+		
 		String hostname = "localhost";
 		if( !local ) {
 			JTextField host = new JTextField("localhost");
@@ -156,9 +159,10 @@ public class Serifier {
 				}
 			}
 
+			String fastTree = OS.indexOf("mac") >= 0 ? "/usr/local/bin/FastTree" : "FastTree";
 			//ProcessBuilder pb = new ProcessBuilder("fasttree", "tmp.fasta");
 			ProcessBuilder pb;
-			if( hostname.equals("localhost") ) pb = isnt ? new ProcessBuilder("FastTree","-nt") : new ProcessBuilder("FastTree");
+			if( hostname.equals("localhost") ) pb = isnt ? new ProcessBuilder(fastTree,"-nt") : new ProcessBuilder(fastTree);
 			else {
 				if( user.equals("geneset") ) {
 					pb = isnt ? new ProcessBuilder("ssh","-i",cygpathstr,"geneset@"+hostname,"FastTree","-nt") : new ProcessBuilder("ssh","-i",cygpathstr,"geneset@"+hostname,"FastTree");
@@ -172,6 +176,12 @@ public class Serifier {
 			writeFasta(tlseq, w, null, true);
 			w.close();
 			os.close();
+			
+			ByteArrayOutputStream baoss = new ByteArrayOutputStream();
+			OutputStreamWriter ww = new OutputStreamWriter(baoss);
+			writeFasta(tlseq, ww, null, true);
+			System.err.println( baoss.toString() );
+			baoss.close();
 			
 			InputStream is = p.getInputStream();
 			ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -348,7 +358,7 @@ public class Serifier {
 							Annotation annn = lann.get(i);
 							
 							if( annn.name != null && !annn.name.contains("No hits") ) {
-								String locstr = ((sbld.length()-annn.stop+1))+".."+((sbld.length()-annn.start+1));
+								String locstr = ((sbld.length()-annn.stop))+".."+((sbld.length()-annn.start));
 								String id = annn.id;
 								
 								fw.write( "     "+annn.type );
@@ -391,7 +401,7 @@ public class Serifier {
 					} else {
 						for( Annotation annn : lann ) {
 							if( annn.name != null && !annn.name.contains("No hits") ) {
-								String locstr = (annn.start-1)+".."+(annn.stop-1);
+								String locstr = (annn.start)+".."+(annn.stop);
 								String id = annn.id;
 								
 								fw.write( "     "+annn.type );
@@ -490,7 +500,7 @@ public class Serifier {
 					if( sbld.getRevComp() == -1 ) {
 						for( int i = lann.size()-1; i >= 0; i-- ) {
 							Annotation annn = lann.get(i);
-							String locstr = ((sbld.length()-annn.stop+1)+count)+".."+((sbld.length()-annn.start+1)+count);
+							String locstr = ((sbld.length()-annn.stop)+count)+".."+((sbld.length()-annn.start)+count);
 							String id = annn.id;
 							
 							fw.write( "     "+annn.type );
@@ -1056,7 +1066,7 @@ public class Serifier {
 		int i = lname.indexOf("contig");
 		if( i == -1 ) i = lname.indexOf("scaffold");
 		if( i == -1 ) i = lname.lastIndexOf('_')+1;
-		if( i <= 0 && lname.length() > 5 && (lname.startsWith("J") || lname.startsWith("A")) && lname.charAt(4) == '0' ) i = 5;
+		if( i <= 0 && lname.length() > 5 && (lname.startsWith("J") || lname.startsWith("A") || lname.startsWith("L") || lname.startsWith("B")) && lname.charAt(4) == '0' ) i = 5;
 		return i;
 	}
 	
@@ -3518,6 +3528,29 @@ public class Serifier {
 			fw.close();
 		}
 		
+		i = arglist.indexOf("-mulli");
+		if( i >= 0 ) {
+			int count = -1;
+			if( args.length > i+1 && !args[i+1].startsWith("-") ) count = Integer.parseInt( args[i+1] );
+			//int count = Integer.parseInt( args[i+2] );
+			
+			//makeBlastCluster( /*inf,*/ outf.toPath(), Paths.get(blastfile), splnum );
+			for( Sequences seqs : this.sequences ) {
+				appendSequenceInJavaFasta(seqs, null, true);
+				//seqs.setNSeq( countSequences( inf ) );
+				//List<Sequences> retlseqs = splitit( splnum, seqs, outf == null ? new File(".") : outf );
+				/*for( Sequences nseqs : retlseqs ) {
+					appendSequenceInJavaFasta( nseqs, null, true);
+					File noutf = new File( nseqs.getPath() );
+					writeFasta( lseq, new FileWriter( noutf ), null );
+				}*/
+			}
+			if( count != -1 ) this.lseq = this.lseq.subList(0, count);
+			FileWriter fw = new FileWriter( outf );
+			this.writeFasta(this.lseq, fw, null);
+			fw.close();
+		}
+		
 		i = arglist.indexOf("-tail");
 		if( i >= 0 ) {
 			int count = Integer.parseInt( args[i+1] );
@@ -4608,6 +4641,29 @@ public class Serifier {
 	
 	public static void main(String[] args) {
 		Serifier s = new Serifier();
+		
+		
+		try {
+			FileWriter fw = new FileWriter("ref.fasta");
+			File f = new File(".");
+			Files.walk(f.toPath()).filter( fl -> fl.getFileName().toString().endsWith(".txt") ).forEach( fl -> {
+				try {
+					byte[] bb = Files.readAllBytes( fl );
+					String str = new String( bb );
+					StringBuilder sb = new StringBuilder();
+					sb.append( str );
+					String fname = fl.getFileName().toString();
+					Sequence seq = new Sequence(fname.substring(0,fname.indexOf('.')),sb,null);
+					seq.writeSequence( fw );
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			});
+			fw.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
 		
 		/*try {
 			Map<String,String>	map = new HashMap<String,String>();

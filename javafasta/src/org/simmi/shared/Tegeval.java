@@ -58,7 +58,7 @@ public class Tegeval extends Annotation implements Teg {
 	}
 	
 	public String getCommonName() {
-		return gene.getGeneGroup().getCommonName();
+		return gene.getGeneGroup().getName();
 	}
 	
 	public String getCommonFunction() {

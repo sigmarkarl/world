@@ -92,6 +92,7 @@ import elemental.events.MessageEvent;
 import elemental.html.Blob;
 import elemental.html.Console;
 import elemental.html.FileReader;
+import elemental.html.Worker;
 
 /**
  * Entry point classes define <code>onModuleLoad()</code>.
@@ -542,7 +543,7 @@ public class Webfasta implements EntryPoint {
 		// Browser.getWindow().getConsole().log( ystartLocal );
 		
 		if (val != null) {
-			Browser.getWindow().getConsole().log("drawing stuff");
+			//Browser.getWindow().getConsole().log("drawing stuff");
 			
 			context.setFillStyle("#222222");
 
@@ -554,24 +555,6 @@ public class Webfasta implements EntryPoint {
 
 			int ax = (int)Math.abs(xstartLocal - prevx);
 			int ay = (int)Math.abs(ystartLocal - prevy);
-			
-			//Sequence selseq = null;
-			for( Sequence seq : consensusmap.keySet() ) {
-				//Sequence seq = consensusmap.get( seq );
-				Browser.getWindow().getConsole().log("about to subbb ");
-				
-				if( (xstartLocal+cw)/basewidth > seq.getStart() && (xstartLocal)/basewidth < seq.getEnd() ) {
-					//selseq = seq;
-					
-					elemental.dom.Element e = Browser.getDocument().getElementById("samtools");
-					
-					String message = seq.getName()+":"+(int)Math.max(0,((xstartLocal-cw)/basewidth-seq.getStart()))+"-"+(int)Math.min(seq.getEnd(),(xstartLocal+2*cw)/basewidth-seq.getStart());
-					Browser.getWindow().getConsole().log("about to " + message);
-					postMessage(e, message);
-					
-					break;
-				}
-			}
 
 			if (false && ay < ch / 2 && ax < cw / 2) {
 				int h = ch - ay;
@@ -637,7 +620,7 @@ public class Webfasta implements EntryPoint {
 				context.fillRect((x - xstartLocal), columnHeight - val-5, 1, val);
 			}
 			for (double x = xstartLocal; x < xstartLocal + cw; x += 200) {
-				context.fillText("" + (int)(x / basewidth), (x - xstartLocal), unitheight - 10);
+				context.fillText("" + Math.floor((x / (double)basewidth)), (x - xstartLocal), unitheight - 10);
 			}
 
 			context.setFillStyle("#FFFFFF");
@@ -715,7 +698,7 @@ public class Webfasta implements EntryPoint {
 		}*/
 		for( int i = 0; i < val.size(); i++ ) {
 			Sequence seq = val.get(i);
-			ocontext.fillRect(ocw*(seq.getStart())/max, (double)(i*och)/(double)val.size(), ocw*(seq.getLength())/max, Math.max( 1, och/val.size() ));
+			ocontext.fillRect(ocw*(seq.getStart())/max, (double)(i*och)/(double)val.size(), Math.max( 1, ocw*(seq.getLength())/max ), Math.max( 1, och/val.size() ));
 		}
 		
 		//ocontext.stro
@@ -759,6 +742,29 @@ public class Webfasta implements EntryPoint {
 			// yy+2.0*baseheight-3.0-ystartLocal );
 			tcontext.fillText(seq.getLength() + "", tcw - 120.0, yy + 2.0 * unitheight - 3.0 - ystartLocal);
 		}
+		
+		tcontext.save();
+		tcontext.beginPath();
+		tcontext.rect(0.0, 0.0, tcw - 90.0, tch);
+		tcontext.closePath();
+		tcontext.clip();
+		for (int y = ys; y < ye; y += unitheight) {
+			int i = y / unitheight;
+			int yy = i * unitheight;
+			Sequence seq = val.get(i);
+			if (seq.isSelected()) {
+				tcontext.setFillStyle("#0011AA");
+				tcontext.fillRect(0.0, yy + 1.0 * unitheight - ystartLocal + 2.0, tcw, unitheight);
+				tcontext.setFillStyle("#ffffff");
+			} else {
+				tcontext.setFillStyle("#111111");
+			}
+			// tcontext.fillText( seq.getName(), 3.0,
+			// yy+2.0*baseheight-3.0-ystartLocal );
+			tcontext.fillText(seq.getStart() + "", tcw - 240.0, yy + 2.0 * unitheight - 3.0 - ystartLocal);
+		}
+		tcontext.restore();
+		
 		tcontext.save();
 		tcontext.beginPath();
 		tcontext.rect(0.0, 0.0, tcw - 90.0, tch);
@@ -810,6 +816,7 @@ public class Webfasta implements EntryPoint {
 		tcontext.fillText("Name", 3.0, columnHeight - 10.0);
 		// tcontext.fillText("Type", tcw-100, 20.0-5.0);
 		tcontext.fillText("Length", tcw - 120.0, columnHeight - 10.0);
+		tcontext.fillText("Start", tcw - 240.0, columnHeight - 10.0);
 	}
 
 	public void drawSection(double xstartLocal, double ystartLocal, int xloc, int yloc, int canvasWidth, int canvasHeight) {
@@ -1185,6 +1192,10 @@ public class Webfasta implements EntryPoint {
 		e.postMessage("");
 	};*/
 	
+	public native void postWorkerMessage(Worker worker, String msg) /*-{
+		worker.postMessage( msg );
+	}-*/;
+	
 	public native void postMessage(elemental.dom.Element e, String tree) /*-{
 		e.postMessage(tree);
 	}-*/;
@@ -1312,6 +1323,99 @@ public class Webfasta implements EntryPoint {
         chart.draw(data, options);
 	}-*/;
 	
+	/**
+	 * @param str
+	 */
+	public void parseSam( String str ) {
+		if( str.equals("hello sim") ) {
+			VirtualSequence.samloading = false;
+			Browser.getWindow().getConsole().log( "done!!" );
+			return;
+		} else if( str.equals("done mounting") ) {
+			postWorkerMessage( semtoolsworker, "blob:" );
+			return;
+		}
+		VirtualSequence.webfasta = Webfasta.this;
+		
+		Browser.getWindow().getConsole().log( "eeeeeeerm "+str );
+		
+		boolean redraw = false;
+		double offset = 0;
+		String[] split = str.split("\n");
+		for( String substr : split ) {
+			if( substr.startsWith("@SQ") ) {
+				String[] subsplit = substr.split("[\t ]+");
+				String seqname = subsplit[1];
+				
+				//Browser.getWindow().getConsole().log( seqname + " sqlen" );
+				
+				if( seqname != null && seqname.length() > 3 ) {
+					seqname = seqname.substring(3);
+					int seqlen = Integer.parseInt(subsplit[2].substring(3));
+					
+					//Browser.getWindow().getConsole().log( seqname + "  " + seqlen );
+					
+					int linelen = 0;//Integer.parseInt(subsplit[3]);
+					int linebuf = 0;//Integer.parseInt(subsplit[4]);
+					Sequence seq = new VirtualSequence(seqname, seqlen, offset, null, offset, linelen, linebuf, null, true);
+					seqmap.put( seqname, seq );
+					consensusmap.put( seq, new ArrayList<Sequence>() );
+					
+					val.add(seq);
+					if (offset+seqlen > max)
+						max = offset+seqlen;
+					
+					offset += seqlen;
+				}
+			} else if( substr.startsWith("@PG") ) {
+				redraw = true;
+			}
+		}
+		
+		if( redraw ) draw(xstart, ystart);
+		else {
+			String sub = str.substring(4);
+			String[] splitsub = sub.split("\n");
+			
+			for( String seqstr : splitsub ) {
+				String[] seqsplit = seqstr.split("[\t ]+");
+				if( seqsplit.length > 9 ) {
+					String seqid = seqsplit[0];
+					if( !seqmap.containsKey( seqid ) ) {
+						String contigname = seqsplit[2];
+						Sequence contig = seqmap.get( contigname );
+						
+						if( contig != null ) {
+							if( contig instanceof VirtualSequence ) {
+								((VirtualSequence)contig).setLoading( false );
+							}
+							
+							boolean snubb = false;
+							int seqind = 0;
+							for( Sequence seq : val ) {
+								if( snubb && consensusmap.containsKey(seq) ) break;
+								
+								if( contigname.equals(seq.getName()) ) {
+									snubb = true;
+								}
+								seqind++;
+							}
+							
+							StringBuilder sb = new StringBuilder( seqsplit[9] );
+							//Browser.getWindow().getConsole().log( "ljomi "+sb );
+							
+							Sequence seq = new Sequence(seqid, sb, seqmap);
+							seq.setStart( contig.getStart() + Integer.parseInt(seqsplit[3]) );
+							val.add( seqind, seq );
+						} else {
+							Browser.getWindow().getConsole().log("uff " + contigname);
+						}
+					}
+				}
+			}
+		}
+	}
+	
 	public void handleMessage() {
 		elemental.dom.Element e = Browser.getDocument().getElementById("listener");
 		e.addEventListener("message", new EventListener() {
@@ -1327,75 +1431,7 @@ public class Webfasta implements EntryPoint {
 				} else if( type.equals("string") ) {
 					String str = (String)me.getData();
 					if( str.startsWith("tty:") ) {
-						VirtualSequence.webfasta = Webfasta.this;
-						
-						Browser.getWindow().getConsole().log( str );
-						
-						boolean redraw = false;
-						double offset = 0;
-						String[] split = str.split("\n");
-						for( String substr : split ) {
-							if( substr.startsWith("@SQ") ) {
-								redraw = true;
-								
-								String[] subsplit = substr.split("[\t ]+");
-								String seqname = subsplit[1];
-								
-								Browser.getWindow().getConsole().log( seqname + " sqlen" );
-								
-								if( seqname != null && seqname.length() > 3 ) {
-									seqname = seqname.substring(3);
-									int seqlen = Integer.parseInt(subsplit[2].substring(3));
-									
-									Browser.getWindow().getConsole().log( seqname + "  " + seqlen );
-									
-									int linelen = 0;//Integer.parseInt(subsplit[3]);
-									int linebuf = 0;//Integer.parseInt(subsplit[4]);
-									Sequence seq = new VirtualSequence(seqname, seqlen, offset, null, offset, linelen, linebuf, null);
-									seqmap.put( seqname, seq );
-									consensusmap.put( seq, new ArrayList<Sequence>() );
-									
-									val.add(seq);
-									if (offset+seqlen > max)
-										max = offset+seqlen;
-									
-									offset += seqlen;
-								}
-							}
-						}
-						
-						if( redraw ) draw(xstart, ystart);
-						else {
-							String sub = str.substring(4);
-							String[] splitsub = sub.split("\n");
-							
-							if( splitsub.length == 1 ) {
-								Browser.getWindow().getConsole().log( "kalli litli " + sub );
-							} else
-							for( String seqstr : splitsub ) {
-								String[] seqsplit = seqstr.split("[\t ]+");
-								String seqid = seqsplit[0];
-								if( !seqmap.containsKey( seqid ) ) {
-									String contigname = seqsplit[2];
-									Sequence contig = seqmap.get( contigname );
-									
-									int seqind = 0;
-									for( Sequence seq : val ) {
-										if( contigname.equals(seq.getName()) ) {
-											break;
-										}
-										seqind++;
-									}
-									
-									StringBuilder sb = new StringBuilder( seqsplit[9] );
-									//Browser.getWindow().getConsole().log( "ljomi "+sb );
-									
-									Sequence seq = new Sequence(seqid, sb, seqmap);
-									seq.setStart( contig.getStart() + Integer.parseInt(seqsplit[3]) );
-									val.add( seqind+1, seq );
-								}
-							}
-						}
+						parseSam( str.substring(4) );
 					}
 					//treestr = (String) me.getData();
 					//Browser.getWindow().getConsole().log( "jelp " + treestr );
@@ -1459,6 +1495,12 @@ public class Webfasta implements EntryPoint {
 		return new FileReader();
 	}-*/;
 	
+	public native void moduleRun( String str, String bloburl, String baiurl ) /*-{
+		//$wnd.FS.createLazyFile('/', 'simmi.bam', bloburl, true, false);
+		//$wnd.FS.createLazyFile('/', 'simmi.bai', baiurl, true, false);
+		//var res = $wnd.Module.ccall( 'simmi', 'number', ['string'], [str] );
+	}-*/;
+	
 	public void bamRead( Blob bam ) {
 		String bamurl = "";
 		try {
@@ -1469,9 +1511,14 @@ public class Webfasta implements EntryPoint {
 		
 		if( bamurl.length() > 0 ) {
 			Browser.getWindow().getConsole().log( bamurl );
-			elemental.dom.Element e = Browser.getDocument().getElementById("samtools");
+			//elemental.dom.Element e = Browser.getDocument().getElementById("samtools");
 			
-			postMessage( e, bamurl );
+			String totalurl = bamurl;
+			postWorkerMessage( semtoolsworker, totalurl );
+			postWorkerMessage( semtoolsworker, "blob:" );
+			
+			//postMessage( e, bamurl );
+			
 			//postMessage( e, bamurl.substring(5) );
 			//postMessage( e, bamurl.replace("%3A", ":") );
 			//postMessage( e, bamurl.substring(bamurl.lastIndexOf('/')+1) );
@@ -1546,7 +1593,7 @@ public class Webfasta implements EntryPoint {
 					int linelen = Integer.parseInt(subsplit[3]);
 					int linebuf = Integer.parseInt(subsplit[4]);
 					double seqstart = 0;
-					Sequence seq = new VirtualSequence(seqname, seqlen, seqstart, file, seqoffset, linelen, linebuf, null);
+					Sequence seq = new VirtualSequence(seqname, seqlen, seqstart, file, seqoffset, linelen, linebuf, null, false);
 					val.add(seq);
 					if (seqlen > max)
 						max = seqlen;
@@ -1573,25 +1620,35 @@ public class Webfasta implements EntryPoint {
 		}
 		
 		if( bamurl.length() > 0 && baiurl.length() > 0 ) {
-			elemental.dom.Element e = Browser.getDocument().getElementById("samtools");
+			//elemental.dom.Element e = Browser.getDocument().getElementById("samtools");
 			
 			String totalurl = baiurl+" "+bamurl;
-			Browser.getWindow().getConsole().log( "totalurl " + totalurl );
-			postMessage( e, totalurl );
+			//Browser.getWindow().getConsole().log( "totalurl " + totalurl );
+			//postMessage( e, totalurl );
+			
+			//String bamurl
+			//postWorkerMessage( semtoolsworker, bamurl );
+			//postWorkerMessage( semtoolsworker, baiurl );
+			//Browser.getWindow().getConsole().log( "hey " );
+			//moduleRun( "contig00001:10-1000", bamurl, baiurl );
+			Browser.getWindow().getConsole().log( "say " );
+			postWorkerMessage( semtoolsworker, totalurl );
+			//Browser.getWindow().getConsole().log( "totalurl " );
+			postWorkerMessage( semtoolsworker, "blob:" );
+			//postWorkerMessage( semtoolsworker, "contig00001:10-1000" );
 		}
 		
-		Blob slicebob = slice( bam, 520000000, 520000502 );
+		//Blob slicebob = slice( bam, 520000000, 520000502 );
 		
-		final FileReader reader = newFileReader();
+		/*final FileReader reader = newFileReader();
 		reader.setOnload( new EventListener() {
 			@Override
 			public void handleEvent(Event evt) {
 				ArrayBuffer res = (ArrayBuffer)reader.getResult();
 				Browser.getWindow().getConsole().log("bb size "+res.byteLength());
-				
 			}
 		});
-		reader.readAsArrayBuffer( slicebob );
+		reader.readAsArrayBuffer( slicebob );*/
 	}
 
 	/*
@@ -1606,14 +1663,56 @@ public class Webfasta implements EntryPoint {
 	public native void setMultipleFiles( Element finput ) /*-{	
 		finput.multiple = true;
 	}-*/;
+	
+	public native void loadWorker( String workerurl) /*-{
+		var ths = this;
+		var worker; //= new Worker('http://xyz/FSWorker.js');
+		var xhr = new XMLHttpRequest();
+		xhr.open("GET", workerurl);
+		xhr.responseType = 'blob';
+		xhr.onload = function(e) {
+		    var blob = this.response;
+		    worker = new Worker(window.URL.createObjectURL(blob));
+		    worker.onmessage = function(e) {
+				ths.@org.simmi.client.Webfasta::parseSam(Ljava/lang/String;)( e.data );
+			};
+		    ths.@org.simmi.client.Webfasta::semtoolsworker = worker;
+		    if( $wnd.files ) {
+				//var totalurl = "http://127.0.0.1:8888/454Contigs.bam http://127.0.0.1:8888/454Contigs.bam.bai";
+				var totalurl = $wnd.files[0].indexOf('.bai') == -1 ? $wnd.files[0] + " " + $wnd.files[1] : $wnd.files[1] + " " + $wnd.files[0];
+				worker.postMessage( totalurl );
+			}
+		};
+		xhr.send(null);
+	}-*/;
+	
+	public native Worker newWorker( String workername ) /*-{
+		var ths = this;
+		var w = new Worker(workername);
+		w.onmessage = function(e) {
+			ths.@org.simmi.client.Webfasta::parseSam(Ljava/lang/String;)( e.data );
+		};
+		return w;
+	}-*/;
 
 	Sequence dullseq = null;
 
 	elemental.html.Window myPopup = null;
 	String treestr = null;
+	public Worker semtoolsworker;
+	
+	public native String getTotalUrl() /*-{	
+		if( $wnd.files ) {
+			return $wnd.files[0] + " " + $wnd.files[1];
+		}
+		return null;
+	}-*/;
 
 	public void onModuleLoad() {
 		handleMessage();
+		loadWorker( "https://webfasta.appspot.com/c.out.js" );
+		//loadWorker( "c.out.js" );
+		//semtoolsworker = newWorker( "https://webfasta.appspot.com/a.out.js" );
 
 		elemental.html.Window wnd = Browser.getWindow();
 		wnd.addEventListener("message", new EventListener() {
@@ -3001,7 +3100,7 @@ public class Webfasta implements EntryPoint {
 				if (mousedown) { // event.getNativeButton() ==
 									// NativeEvent.BUTTON_LEFT ) {
 					//int w = (int)((overview.getOffsetWidth() * canvas.getOffsetWidth()) / (max * basewidth));
-					int val = (int)((event.getX() * max) / overview.getOffsetWidth());
+					double val = Math.floor( (event.getX() * max) / (double)overview.getOffsetWidth() );
 					xstart = basewidth*Math.max(0, Math.min(val, max));
 					draw(xstart, ystart);
 				}

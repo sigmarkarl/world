@@ -9,13 +9,14 @@ import com.google.gwt.typedarrays.client.Int8ArrayNative;
 import com.google.gwt.typedarrays.shared.ArrayBuffer;
 import com.google.gwt.typedarrays.shared.Int8Array;
 
+import elemental.client.Browser;
 import elemental.events.Event;
 import elemental.events.EventListener;
 import elemental.html.Blob;
 import elemental.html.FileReader;
 
 public class VirtualSequence extends Sequence {
-	static final int 			segsize = 100000;
+	static final int 			segsize = 10000;
 	static Webfasta				webfasta;
 	
 	double 						seqlen = 0;
@@ -23,10 +24,14 @@ public class VirtualSequence extends Sequence {
 	int							linebuf = 0;
 	double						seqoffset = 0;
 	ArrayList<Int8Array>	 	segments = new ArrayList<Int8Array>();
-	Blob						file;
-	boolean						loading = false;
+	ArrayList<Boolean>			segmentloaded = new ArrayList<Boolean>();
+	private Blob				file;
+	private boolean				loading = false;
+	boolean						bamcons = false;
 	
-	public VirtualSequence(String name, double seqlen, double seqstart, Blob file, double seqoffset, int linelen, int linebuf, Map<String, Sequence> mseq) {
+	public static boolean samloading = false;
+	
+	public VirtualSequence(String name, double seqlen, double seqstart, Blob file, double seqoffset, int linelen, int linebuf, Map<String, Sequence> mseq, boolean bamcons) {
 		super(name, mseq);
 		this.file = file;
 		this.seqlen = seqlen;
@@ -35,8 +40,15 @@ public class VirtualSequence extends Sequence {
 		this.linelen = linelen;
 		this.linebuf = linebuf;
 		
+		this.bamcons = bamcons;
+		
 		double numsegments = seqlen/segsize+1;
 		while( segments.size() < numsegments ) segments.add( null );
+		while( segmentloaded.size() < numsegments ) segmentloaded.add( false );
+	}
+	
+	public void setLoading( boolean ld ) {
+		loading = ld;
 	}
 
 	@Override
@@ -59,6 +71,7 @@ public class VirtualSequence extends Sequence {
 	
 	@Override
 	public char charAt( double i ) {
+		//Browser.getWindow().getConsole().log("arg");
 		if( i >= 0 ) {
 			final int numseg = (int)(i/segsize);
 			
@@ -66,15 +79,16 @@ public class VirtualSequence extends Sequence {
 			if( numseg < segments.size() ) {
 				Int8Array strb = segments.get(numseg);
 				if( strb == null ) {
+					//Browser.getWindow().getConsole().log("koki " + file + "  " + loading);
 					if( !loading ) {
-						loading = true;
 						//Browser.getWindow().getConsole().log("lubb " + strb.byteLength());
 						//strb = Int8ArrayNative.create(segsize);
 						double startseg = numseg*segsize;
 						double start = seqoffset+startseg;
+						
 						if( file != null && startseg < seqlen ) {
+							loading = true;
 							Blob sliceblob = slice( file, start, start+Math.min( seqlen,segsize ) );
-							
 							final FileReader reader = newFileReader();
 							reader.setOnload( new EventListener() {
 								@Override
@@ -92,10 +106,48 @@ public class VirtualSequence extends Sequence {
 					}
 				} else {
 					//Browser.getWindow().getConsole().log("bsize2 "+strb.length());
+					
 					int idx = (int)(i-numseg*segsize);
 					if( idx >= 0 && idx < strb.length() ) 
 						return (char)strb.get(idx);
+					
 					//else Browser.getWindow().getConsole().log("idx "+idx);
+				}
+				
+				boolean bb = segmentloaded.get(numseg);
+				if( !bb && !samloading ) {
+					//Browser.getWindow().getConsole().log("saell " + loading);
+					//if( prevx != xstartLocal ) {
+						//Sequence selseq = null;
+						//for( Sequence seq : consensusmap.keySet() ) {
+							//Sequence seq = consensusmap.get( seq );
+							//if( (xstartLocal+cw)/basewidth > seq.getStart() && (xstartLocal)/basewidth < seq.getEnd() ) {
+								//selseq = seq;
+					
+					//if( !loading ) {
+						//Browser.getWindow().getConsole().log("saell2");
+						
+					//loading = true;
+					elemental.dom.Element e = Browser.getDocument().getElementById("samtools");
+					
+					double startseg = numseg*segsize;
+					double start = startseg;
+					
+					String message = getName()+":"+start+"-"+(start+Math.min( seqlen,segsize ));
+					
+					Browser.getWindow().getConsole().log("about to " + numseg + "  " + getName() + "  " + bb + "  " + message);
+					//(int)Math.max(0,((xstartLocal-5*cw)/basewidth-seq.getStart()))+"-"+(int)Math.min(seq.getEnd(),(xstartLocal+5*cw)/basewidth-seq.getStart());
+					
+					
+					segmentloaded.set(numseg, true);
+					//webfasta.postMessage(e, message);
+					samloading = true;
+					webfasta.postWorkerMessage( webfasta.semtoolsworker, message );
+					//}
+					
+							//}
+						//}
+					//}
 				}
 			}
 		}

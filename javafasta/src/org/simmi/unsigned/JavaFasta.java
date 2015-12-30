@@ -1,13 +1,5 @@
 package org.simmi.unsigned;
 
-import htsjdk.samtools.SAMFileHeader;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SAMSequenceDictionary;
-import htsjdk.samtools.SAMSequenceRecord;
-import htsjdk.samtools.SamReader;
-import htsjdk.samtools.SamReaderFactory;
-import htsjdk.samtools.util.CloseableIterator;
-
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
@@ -76,13 +68,6 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
-import javafx.application.Platform;
-import javafx.embed.swing.JFXPanel;
-import javafx.scene.Scene;
-import javafx.scene.chart.LineChart;
-import javafx.scene.chart.NumberAxis;
-import javafx.scene.chart.XYChart;
-
 import javax.imageio.ImageIO;
 import javax.jnlp.ClipboardService;
 import javax.jnlp.FileContents;
@@ -132,8 +117,6 @@ import javax.swing.event.TableModelListener;
 import javax.swing.table.TableModel;
 import javax.swing.table.TableRowSorter;
 
-import netscape.javascript.JSObject;
-
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.IndexedColors;
@@ -150,6 +133,21 @@ import org.simmi.shared.Tegeval;
 import org.simmi.shared.TreeUtil;
 
 import flobb.ChatServer;
+import htsjdk.samtools.SAMFileHeader;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SAMRecordIterator;
+import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.SAMSequenceRecord;
+import htsjdk.samtools.SamReader;
+import htsjdk.samtools.SamReaderFactory;
+import htsjdk.samtools.ValidationStringency;
+import javafx.application.Platform;
+import javafx.embed.swing.JFXPanel;
+import javafx.scene.Scene;
+import javafx.scene.chart.LineChart;
+import javafx.scene.chart.NumberAxis;
+import javafx.scene.chart.XYChart;
+import netscape.javascript.JSObject;
 
 public class JavaFasta extends JApplet {
 
@@ -158,6 +156,7 @@ public class JavaFasta extends JApplet {
 	 */
 	private static final long serialVersionUID = 1L;
 	JApplet	parentApplet = JavaFasta.this;
+	Container	currentCnt;
 	Serifier	serifier = null;
 	
 	ClipboardService clipboardService;
@@ -684,7 +683,7 @@ public class JavaFasta extends JApplet {
 							if( a.gene != null ) {
 								GeneGroup gg = a.gene.getGeneGroup();
 								if( gg != null ) {
-									return gg.getCommonName();
+									return gg.getName();
 								}
 								return a.gene.getName();
 							}
@@ -1261,37 +1260,50 @@ public class JavaFasta extends JApplet {
 			StringBuilder sb = new StringBuilder( new String(bb) );
 			importGbkReader( name, sb );
 		} else if( name.endsWith(".bam") ) {
-			//SamReaderFactory.
-			final SamReader reader = SamReaderFactory.makeDefault().open( path.toFile() );
+			SamReaderFactory.setDefaultValidationStringency( ValidationStringency.SILENT );
+			SamReaderFactory srf = SamReaderFactory.makeDefault();
+			final SamReader reader = srf.open( path.toFile() );
+			
+			boolean bb = JOptionPane.showConfirmDialog( currentCnt, "Include header?", "Read header", JOptionPane.YES_NO_OPTION ) == JOptionPane.YES_OPTION;
+			
 			SAMFileHeader sh = reader.getFileHeader();
 			SAMSequenceDictionary ssd = sh.getSequenceDictionary();
 			for( SAMSequenceRecord samseq : ssd.getSequences() ) {
 				//String ass = samseq.getAssembly();
-				Sequence seq = new Sequence( samseq.getSequenceName(), serifier.mseq );
-				seq.setLength( samseq.getSequenceLength() );
-				//seq.append(ass);
-				serifier.lgseq.add( seq );
-				serifier.lseq.add( seq );
-				serifier.gseq.put( samseq.getSequenceName(), new ArrayList<Sequence>() );
-			}
-	        final CloseableIterator<SAMRecord> iterator = reader.iterator();
-	        while (iterator.hasNext()) {
-	        	try {
-		            final SAMRecord record = iterator.next();
-		            String refname = record.getReferenceName();
-		            Sequence consensus = serifier.mseq.get( refname );
-		            Sequence seq = new Sequence( record.getReadName(), serifier.mseq );
-		            seq.consensus = consensus;
-		            seq.append(record.getReadString());
-		            seq.setStart(record.getAlignmentStart());
+				
+				String chr = samseq.getSequenceName();
+				System.err.println( "cc " + chr );
+				final SAMRecordIterator iterator = reader.queryAlignmentStart(chr, 1);
+				try {
+			        while (iterator.hasNext()) {
+			            final SAMRecord record = iterator.next();
+			            System.err.println("about to insert " + record + " " + chr);
+			            String refname = record.getReferenceName();
+			            Sequence consensus = serifier.mseq.get( refname );
+			            Sequence seq = new Sequence( record.getReadName(), serifier.mseq );
+			            seq.consensus = consensus;
+			            seq.append(record.getReadString());
+			            //seq.setStart(record.getAlignmentStart());
+						serifier.lseq.add( seq );
+						List<Sequence> glst = serifier.gseq.get( refname );
+						if( glst != null ) glst.add( seq );
+			            //String str = record.getSAMString();
+			        }
+				} catch( Exception e ) {
+					e.printStackTrace();
+				} finally {
+					try { iterator.close(); } catch( Exception e ) {};
+				}
+				
+				if( bb ) {
+					Sequence seq = new Sequence( samseq.getSequenceName(), serifier.mseq );
+					seq.setLength( samseq.getSequenceLength() );
+					//seq.append(ass);
+					serifier.lgseq.add( seq );
 					serifier.lseq.add( seq );
-					serifier.gseq.get( refname ).add( seq );
-	        	} catch( Exception e ) {
-	        		
-	        	}
-	            //String str = record.getSAMString();
-	        }
-	        iterator.close();
+					serifier.gseq.put( samseq.getSequenceName(), new ArrayList<Sequence>() );
+				}
+			}
 		} else importFile( name, Files.newInputStream(path) );
 	}
 	
@@ -3071,6 +3083,8 @@ public class JavaFasta extends JApplet {
 	int[]				currentRowSelection;
 	Point				p;
 	public void initGui( final Container cnt ) {
+		currentCnt = cnt;
+		
 		final String lof = "com.sun.java.swing.plaf.nimbus.NimbusLookAndFeel";
 		try {
 			UIManager.setLookAndFeel(lof);
@@ -3845,7 +3859,7 @@ public class JavaFasta extends JApplet {
 		    		
 		    		//"--localpair"
 			    	ProcessBuilder pb;
-			    	if( hostname.contains("localhost") ) pb = new ProcessBuilder("mafft","--thread","4",filename); //, "-in", "tmp.fasta", "-out", "tmpout.fasta");
+			    	if( hostname.contains("localhost") ) pb = new ProcessBuilder("/usr/local/bin/mafft","--thread","4",filename); //, "-in", "tmp.fasta", "-out", "tmpout.fasta");
 			    	else {
 			    		ProcessBuilder pbt = new ProcessBuilder("scp", "-q", filename, username+"@"+hostname+":~/"+filename);
 			    		pbt.directory( tmpdir.toFile() );
@@ -4068,7 +4082,7 @@ public class JavaFasta extends JApplet {
 					//serifier.writeFasta( seqlist, fw, null );
 			    	//fw.close();
 			    	
-			    	ProcessBuilder pb = new ProcessBuilder("muscle"); //, "-in", "tmp.fasta", "-out", "tmpout.fasta");
+			    	ProcessBuilder pb = new ProcessBuilder("/usr/local/bin/muscle"); //, "-in", "tmp.fasta", "-out", "tmpout.fasta");
 			    	pb.directory( tmpdir.toFile() );
 			    	//pb.redirectErrorStream(true);
 			    	final Process p = pb.start();
@@ -5109,7 +5123,6 @@ public class JavaFasta extends JApplet {
 						e2.printStackTrace();
 					}*/
 					
-					NativeRun nrun = new NativeRun();
 					List<String> commandsList;
 					if( hostname.equals("localhost") ) commandsList = new ArrayList<String>( Arrays.asList( new String[] {"mummer", "-maxmatch", "-n", "-l", "25", pname, pname} ) );
 					else {
@@ -5183,9 +5196,10 @@ public class JavaFasta extends JApplet {
 							atable.tableChanged( new TableModelEvent( atable.getModel() ) );
 						}
 					};
+					NativeRun nrun = new NativeRun( run );
 					Object[] cont = new Object[] {null, null, null};
 					try {
-						nrun.runProcessBuilder("Mummer", cmds, run, cont, false);
+						nrun.runProcessBuilder("Mummer", cmds, cont, false, run, false);
 					} catch (IOException e1) {
 						e1.printStackTrace();
 					}
@@ -5231,7 +5245,6 @@ public class JavaFasta extends JApplet {
 						e2.printStackTrace();
 					}*/
 					
-				NativeRun nrun = new NativeRun();
 				List<String> commandsList;
 				if( hostname.equals("localhost") ) commandsList = new ArrayList<String>( Arrays.asList( new String[] {"blastp", "-num_threads", "4"} ) );
 				else {
@@ -5266,9 +5279,10 @@ public class JavaFasta extends JApplet {
 						frame.setVisible(true);
 					}
 				};
+				NativeRun nrun = new NativeRun( run );
 				Object[] cont = new Object[] {null, null, null};
 				try {
-					nrun.runProcessBuilder("Blast", cmds, run, cont, false);
+					nrun.runProcessBuilder("Blast", cmds, cont, false, run, false);
 				} catch (IOException e1) {
 					e1.printStackTrace();
 				}
@@ -6001,10 +6015,10 @@ public class JavaFasta extends JApplet {
 				if( !succ ) {
 					String 				tree = serifier.getFastTree( seqlist, user, false );
 					System.err.println( tree );
-					if( cs.connections().size() > 0 ) {
+					if( cs != null && cs.connections() != null && cs.connections().size() > 0 ) {
 			    		cs.sendToAll( tree );
 			    	} else if( Desktop.isDesktopSupported() ) {
-			    		cs.message = tree;
+			    		if( cs != null ) cs.message = tree;
 			    		//String uristr = "http://webconnectron.appspot.com/Treedraw.html?tree="+URLEncoder.encode( tree, "UTF-8" );
 			    		String uristr = "http://webconnectron.appspot.com/Treedraw.html?ws=127.0.0.1:8887";
 						try {
@@ -8244,7 +8258,7 @@ public class JavaFasta extends JApplet {
 									if( ann instanceof Tegeval ) {
 										Tegeval tv = (Tegeval)ann;
 										GeneGroup gg = tv.getGene().getGeneGroup();
-										if( gg != null ) name = gg.getCommonName();
+										if( gg != null ) name = gg.getName();
 									}
 									int m = name.indexOf('(');
 									if( m == -1 ) m = name.length();
@@ -8740,7 +8754,7 @@ public class JavaFasta extends JApplet {
 						if( ann instanceof Tegeval ) {
 							Tegeval tv = (Tegeval)ann;
 							GeneGroup gg = tv.getGene().getGeneGroup();
-							if( gg != null ) return gg.getCommonName();
+							if( gg != null ) return gg.getName();
 						}
 						return ann.name;
 					}

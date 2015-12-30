@@ -417,9 +417,9 @@ public class SmithWater {
 
 				//junk[len] = 0;
 
-				if ( o+len > MAXFSALEN ) {
+				/*if ( o+len > MAXFSALEN ) {
 					System.out.printf( "Error. %s Length > %i\n", neb.name, MAXFSALEN );
-				}
+				}*/
 
 				for ( i=0; i<len; i++ )
 					seq[i+o] = line.charAt(i);//junk[i];

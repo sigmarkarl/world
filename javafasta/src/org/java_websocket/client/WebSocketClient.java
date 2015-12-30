@@ -49,7 +49,7 @@ public abstract class WebSocketClient extends WebSocketAdapter implements Runnab
 
 	private WebSocketImpl conn = null;
 	/**
-	 * The SocketChannel instance this channel uses.
+	 * The SocketChannel instance this 	channel uses.
 	 */
 	private SocketChannel channel = null;
 

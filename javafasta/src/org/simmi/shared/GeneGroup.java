@@ -68,6 +68,10 @@ public class GeneGroup {
 		return seltv;
 	}
 	
+	public Teginfo getTes( String spec ) {
+		return species.get( spec );
+	}
+	
 	public List<Tegeval> getTegevals( Set<String> sortspecies ) {
 		List<Tegeval>	ltv = new ArrayList<Tegeval>();
 		
@@ -159,8 +163,8 @@ public class GeneGroup {
 					//Function f = funcmap.get( go );
 					
 					if( allowedFunctions == null || allowedFunctions.contains(f) ) {
-						String name = f.go; //getName().replace('/', '-').replace(",", "");
-						if( withinfo && f.name != null ) name += "-"+f.name.replace(",", "");
+						String name = f.getGo(); //getName().replace('/', '-').replace(",", "");
+						if( withinfo && f.getName() != null ) name += "-"+f.getName().replace(",", "");
 							
 						//System.err.println( g.getName() + "  " + go );
 						if( ret.length() == 0 ) ret = name;
@@ -230,7 +234,7 @@ public class GeneGroup {
 		return ret;
 	}
 	
-	public String getCommonOrigin() {
+	public String getOrigin() {
 		String ret = null;
 		for( Gene g : genes ) {
 			String name = g.getSpecies();
@@ -257,8 +261,8 @@ public class GeneGroup {
 			String id = g.getId();
 			if( ret == null ) ret = id;
 			else {
-				boolean jsome = (ret.startsWith("J") || ret.startsWith("A")) && ret.charAt(4) == '0';
-				boolean isome = (id.startsWith("J") || id.startsWith("A")) && id.charAt(4) == '0';
+				boolean jsome = (ret.startsWith("J") || ret.startsWith("A") || ret.startsWith("L") || ret.startsWith("B")) && ret.charAt(4) == '0';
+				boolean isome = (id.startsWith("J") || id.startsWith("A") || id.startsWith("L") || id.startsWith("B")) && id.charAt(4) == '0';
 				if( ((jsome || ret.contains("contig") || ret.contains("scaffold") || ret.contains("uid")) && !ret.contains(":")) || 
 						!(isome || id.contains("contig") || id.contains("scaffold") || id.contains("uid") || id.contains("unnamed") || id.contains("hypot")) ) ret = id;
 			}
@@ -266,18 +270,14 @@ public class GeneGroup {
 		return ret;
 	}
 	
-	public String getCommonName() {
-		String ret = null;
+	public String getName() {
+		String ret = "";
 		for( Gene g : genes ) {
 			String name = g.getName();
-			if( ret == null ) ret = name;
+			if( ret.length() == 0 ) ret = name;
 			else {
-				boolean jsome = (ret.startsWith("J") || ret.startsWith("A")) && ret.charAt(4) == '0';
-				boolean nsome = (name.startsWith("J") || name.startsWith("A")) && name.charAt(4) == '0';
-				
-				/*if( jsome || nsome ) {
-					System.err.println();
-				}*/
+				boolean jsome = (ret.startsWith("J") || ret.startsWith("A") || ret.startsWith("L") || ret.startsWith("B")) && (ret.length() > 4 && ret.charAt(4) == '0');
+				boolean nsome = (name.startsWith("J") || name.startsWith("A") || name.startsWith("L") || name.startsWith("B")) && (name.length() > 4 && name.charAt(4) == '0');
 				
 				if( (
 						(jsome || ret.contains("plasmid") || ret.contains("chromosome") || ret.contains("contig") || ret.contains("scaffold") || ret.contains("uid")) && !ret.contains(":")
@@ -324,7 +324,7 @@ public class GeneGroup {
 		return ret;
 	}
 	
-	public Cog getCommonCog( Map<String,Cog> cogmap ) {
+	public Cog getCog( Map<String,Cog> cogmap ) {
 		for( Gene g : genes ) {
 			if( cogmap.containsKey( g.id ) ) return cogmap.get( g.id );
 		}
@@ -334,21 +334,25 @@ public class GeneGroup {
 		return null;
 	}
 	
+	public int getPresentin() {
+		return getSpecies().size();
+	}
+	
 	public String getCommonCazy( Map<String,String> cazymap ) {
 		for( Gene g : genes ) {
-			if( cazymap.containsKey( g.refid ) ) return cazymap.get( g.refid );
+			if( cazymap.containsKey( g.id ) ) return cazymap.get( g.id );
 		}
 		return null;
 	}
 	
-	public String getCommonKO() {
+	public String getKo() {
 		for( Gene g : genes ) {
 			if( g.koid != null && g.koid.length() > 0 ) return g.koid;
 		}
 		return null;
 	}
 	
-	public String getCommonRefId() {
+	public String getRefid() {
 		String ret = null;
 		for( Gene g : genes ) {
 			if( ret == null || (g.refid != null && g.refid.length() > 0 && !g.refid.contains("scaffold") && !g.refid.contains("contig")) ) ret = g.refid;
@@ -360,7 +364,7 @@ public class GeneGroup {
 		return ret;
 	}
 	
-	public String getCommonUnId() {
+	public String getUnid() {
 		String ret = null;
 		for( Gene g : genes ) {
 			if( ret == null || (g.uniid != null && g.uniid.length() > 0) ) ret = g.uniid;
@@ -368,7 +372,7 @@ public class GeneGroup {
 		return ret;
 	}
 	
-	public String getCommonSymbol() {
+	public String getSymbol() {
 		Set<String> s = new HashSet<String>();
 		for( Gene g : genes ) {
 			if( g.symbol != null ) s.add( g.symbol );
@@ -394,7 +398,7 @@ public class GeneGroup {
 		}
 	}
 	
-	public String getCommonKSymbol() {
+	public String getKSymbol() {
 		Set<String> s = new HashSet<String>();
 		for( Gene g : genes ) {
 			//if( g.koname != null && g.koname.length() > 0 && g.koname.length() < 7 ) {
@@ -425,9 +429,9 @@ public class GeneGroup {
 	}
 	
 	public String getCommonKOName( Map<String,String> ko2name ) {
-		String ret = ko2name != null ? ko2name.get( this.getCommonKO() ) : null;
+		String ret = ko2name != null ? ko2name.get( this.getKo() ) : null;
 		if( ret == null ) {
-			String symbol = this.getCommonSymbol();
+			String symbol = this.getSymbol();
 			if( symbol != null ) {
 				//if( symbol.length() <= 5 ) 
 				ret = symbol;
@@ -436,7 +440,7 @@ public class GeneGroup {
 		return ret;
 	}
 	
-	public String getCommonEc() {
+	public String getEc() {
 		for( Gene g : genes ) {
 			if( g.ecid != null && g.ecid.length() > 0 ) return g.ecid;
 		}
