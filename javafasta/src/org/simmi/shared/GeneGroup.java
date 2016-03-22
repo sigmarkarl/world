@@ -16,7 +16,13 @@ public class GeneGroup {
 	public int                	 	groupIndex = -10;
 	int                 			groupCount = -1;
 	public int						index;
+	Map<Set<String>, ShareNum> 		specset;
 	//int			groupGeneCount;
+	Map<String,Cog>					cogmap;
+	
+	public void setSpecSet( Map<Set<String>,ShareNum> specset ) {
+		this.specset = specset;
+	}
 	
 	public boolean containsDirty() {
 		for( Gene g : genes ) {
@@ -73,7 +79,7 @@ public class GeneGroup {
 	}
 	
 	public List<Tegeval> getTegevals( Set<String> sortspecies ) {
-		List<Tegeval>	ltv = new ArrayList<Tegeval>();
+		List<Tegeval>	ltv = new ArrayList();
 		
 		for( String sp : sortspecies )
 		/*for( Gene g : genes ) {
@@ -92,7 +98,7 @@ public class GeneGroup {
 	}
 	
 	public List<Tegeval> getTegevals( String specs ) {
-		List<Tegeval>	ltv = new ArrayList<Tegeval>();
+		List<Tegeval>	ltv = new ArrayList();
 		
 		Teginfo genes = species.get( specs );
 		if( genes != null ) for( Tegeval tv : genes.tset ) {
@@ -103,7 +109,7 @@ public class GeneGroup {
 	}
 	
 	public List<Tegeval> getTegevals() {
-		List<Tegeval>	ltv = new ArrayList<Tegeval>();
+		List<Tegeval>	ltv = new ArrayList();
 		
 		for( Gene g : genes ) {
 			ltv.add( g.tegeval );
@@ -142,7 +148,7 @@ public class GeneGroup {
 	}
 	
 	public Set<Function> getFunctions() {
-		Set<Function>	funcset = new HashSet<Function>();
+		Set<Function>	funcset = new HashSet();
 		for( Gene g : genes ) {
 			if( g.funcentries != null && g.funcentries.size() > 0 ) {
 				for( Function f : g.funcentries ) {
@@ -334,6 +340,26 @@ public class GeneGroup {
 		return null;
 	}
 	
+	public String getCogname() {
+		Cog cog = getCog( cogmap );
+		return cog != null ? cog.name : null;
+	}
+	
+	public String getCog() {
+		Cog cog = getCog( cogmap );
+		return cog != null ? cog.id : null;
+	}
+	
+	public String getCoganno() {
+		Cog cog = getCog( cogmap );
+		return cog != null ? cog.annotation : null;
+	}
+	
+	public String getCogsymbol() {
+		Cog cog = getCog( cogmap );
+		return cog != null ? cog.genesymbol : null;
+	}
+	
 	public int getPresentin() {
 		return getSpecies().size();
 	}
@@ -398,7 +424,7 @@ public class GeneGroup {
 		}
 	}
 	
-	public String getKSymbol() {
+	public String getKsymbol() {
 		Set<String> s = new HashSet<String>();
 		for( Gene g : genes ) {
 			//if( g.koname != null && g.koname.length() > 0 && g.koname.length() < 7 ) {
@@ -428,7 +454,7 @@ public class GeneGroup {
 		}
 	}
 	
-	public String getCommonKOName( Map<String,String> ko2name ) {
+	public String getKoname( Map<String,String> ko2name ) {
 		String ret = ko2name != null ? ko2name.get( this.getKo() ) : null;
 		if( ret == null ) {
 			String symbol = this.getSymbol();
@@ -527,11 +553,17 @@ public class GeneGroup {
 		this.species.addAll( species );
 	}*/
 	
-	public GeneGroup( int i ) {
+	public GeneGroup( int i, Map<Set<String>,ShareNum> specset, Map<String,Cog> cogmap ) {
 		this.groupIndex = i;
+		this.specset = specset;
+		this.cogmap = cogmap;
 	}
 	
-	public int getGroupCoverage() {
+	public int getGroupIndex() {
+		return this.groupIndex;
+	}
+	
+	public Integer getGroupCoverage() {
 		return this.species.size();
 	}
 	
@@ -548,5 +580,9 @@ public class GeneGroup {
 	
 	public int getGroupGeneCount() {
 		return this.genes.size();//this.groupGeneCount;
+	}
+	
+	public ShareNum getSharingNumber() {
+		return specset.get( getSpecies() );
 	}
 };

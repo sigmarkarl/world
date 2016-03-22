@@ -585,6 +585,9 @@ public class Sequence implements Comparable<Sequence> {
 			i = str.indexOf("NMX");
 		}
 		if( i == -1 ) {
+			i = str.indexOf("RAST");
+		}
+		if( i == -1 ) {
 			i = str.indexOf("33923_K677DRAFT");
 		}
 		if( i == -1 ) {
@@ -708,7 +711,7 @@ public class Sequence implements Comparable<Sequence> {
 				}
 			} else if( (selspec.charAt(0) == 'J' || selspec.charAt(0) == 'A' || selspec.charAt(0) == 'L' || selspec.charAt(0) == 'B') && (selspec.length() == 4 || selspec.charAt(4) == '0') ) {
 				if( selspec.startsWith("JQNC") ) ret = "Thermus_caliditerrae_YIM_77777";
-				if( selspec.startsWith("JQMV") ) ret = "Thermus_sp._YIM_77409";
+				if( selspec.startsWith("JQMV") ) ret = "Thermus_amyloliquefaciens_YIM_77409";
 				if( selspec.startsWith("JQLK") ) ret = "Thermus_tengchongensis_YIM_77401";
 				if( selspec.startsWith("JQLJ") ) ret = "Thermus_scotoductus_KI2";
 				
@@ -723,7 +726,7 @@ public class Sequence implements Comparable<Sequence> {
 				if( selspec.startsWith("ARDI") ) ret = "Thermus_oshimai_DSM_12092";
 				if( selspec.startsWith("ABVK") ) ret = "Thermus_aquaticus_Y51MC23";
 				if( selspec.startsWith("AQWU") ) ret = "Thermus_igniterrae_ATCC_700962";
-				if( selspec.startsWith("AIJQ") ) ret = "Thermus_sp_RL";
+				if( selspec.startsWith("AIJQ") ) ret = "Thermus_parvatiensis";
 				
 				if( selspec.startsWith("LHCI") ) ret = "Thermus_aquaticus";
 				if( selspec.startsWith("LJJR") ) ret = "Thermus_scotoductus";

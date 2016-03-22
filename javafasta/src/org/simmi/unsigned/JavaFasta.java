@@ -67,6 +67,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import javax.imageio.ImageIO;
 import javax.jnlp.ClipboardService;
@@ -1251,8 +1253,35 @@ public class JavaFasta extends JApplet {
     	}
 	}
 	
+	String pos = "";
 	public void importFile( String name, Path path ) throws IOException {
-		if( name.endsWith(".psi") ) {
+		if( name.endsWith(".gor") ) {
+			Stream<String> lstream = Files.newBufferedReader(path).lines();
+			lstream.skip(1).forEach( line -> {
+				String[] split = line.split("\t");
+				String pn = split[split.length-1];
+				if( !serifier.mseq.containsKey(pn) ) {
+					Sequence seq = new Sequence(pn, serifier.mseq);
+					serifier.addSequence(seq);
+				}
+			});
+			lstream = Files.newBufferedReader(path).lines();
+			lstream.skip(1).forEach( line -> {
+				String[] split = line.split("\t");
+				if( !pos.equals(split[1]) ) {
+					pos = split[1];
+					char ref = split[2].charAt(0);
+					for( Sequence seq : serifier.mseq.values() ) {
+						seq.append(ref);
+					}
+				}
+				String pn = split[split.length-1];
+				if( serifier.mseq.containsKey(pn) ) {
+					Sequence seq = serifier.mseq.get(pn);
+					seq.setCharAt( seq.length()-1, split[3].charAt(0) );
+				}
+			});
+		} else if( name.endsWith(".psi") ) {
 			List<String> lines = Files.readAllLines(path);
 			importPsiReader( lines );
 		} else if( name.endsWith(".gbk") || name.endsWith(".gb") ) {
@@ -6020,7 +6049,7 @@ public class JavaFasta extends JApplet {
 			    	} else if( Desktop.isDesktopSupported() ) {
 			    		if( cs != null ) cs.message = tree;
 			    		//String uristr = "http://webconnectron.appspot.com/Treedraw.html?tree="+URLEncoder.encode( tree, "UTF-8" );
-			    		String uristr = "http://webconnectron.appspot.com/Treedraw.html?ws=127.0.0.1:8887";
+			    		String uristr = "http://webconnectron.appspot.com/Treedraw.html?ws=127.0.0.1:"+cs.getPort();
 						try {
 							Desktop.getDesktop().browse( new URI(uristr) );
 						} catch (IOException | URISyntaxException e1) {
@@ -6446,6 +6475,54 @@ public class JavaFasta extends JApplet {
 					//int i = name.indexOf(' ');
 					//name = name.substring(0,i+1) + name.substring(i+1).replace(' ', '_') + ";";
 					seq.setName( name.replace(' ', '_') );
+				}
+				updateView();
+			}
+		});
+		name.add( new AbstractAction("Underscore paranthesis") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				for( Sequence seq : serifier.lseq ) {
+					String name = seq.getName();
+					//int i = name.indexOf(' ');
+					//name = name.substring(0,i+1) + name.substring(i+1).replace(' ', '_') + ";";
+					seq.setName( name.replace('(', '_').replace(')', '_') );
+				}
+				updateView();
+			}
+		});
+		name.add( new AbstractAction("Underscore brackets") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				for( Sequence seq : serifier.lseq ) {
+					String name = seq.getName();
+					//int i = name.indexOf(' ');
+					//name = name.substring(0,i+1) + name.substring(i+1).replace(' ', '_') + ";";
+					seq.setName( name.replace('[', '_').replace(']', '_') );
+				}
+				updateView();
+			}
+		});
+		name.add( new AbstractAction("Underscore comma") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				for( Sequence seq : serifier.lseq ) {
+					String name = seq.getName();
+					//int i = name.indexOf(' ');
+					//name = name.substring(0,i+1) + name.substring(i+1).replace(' ', '_') + ";";
+					seq.setName( name.replace(',', '_') );
+				}
+				updateView();
+			}
+		});
+		name.add( new AbstractAction("Underscore :") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				for( Sequence seq : serifier.lseq ) {
+					String name = seq.getName();
+					//int i = name.indexOf(' ');
+					//name = name.substring(0,i+1) + name.substring(i+1).replace(' ', '_') + ";";
+					seq.setName( name.replace(':', '_') );
 				}
 				updateView();
 			}

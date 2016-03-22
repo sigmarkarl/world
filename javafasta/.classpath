@@ -18,6 +18,6 @@
 	<classpathentry kind="lib" path="/poi/poi-3.11/lib/junit-4.11.jar"/>
 	<classpathentry kind="lib" path="/poi/poi-3.11/lib/log4j-1.2.17.jar"/>
 	<classpathentry kind="lib" path="/poi/poi-3.11/ooxml-lib/xmlbeans-2.6.0.jar"/>
-	<classpathentry kind="lib" path="/Library/Java/JavaVirtualMachines/jdk1.8.0_66.jdk/Contents/Home/jre/lib/javaws.jar"/>
+	<classpathentry kind="lib" path="/Library/Java/JavaVirtualMachines/jdk1.8.0_72.jdk/Contents/Home/jre/lib/javaws.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

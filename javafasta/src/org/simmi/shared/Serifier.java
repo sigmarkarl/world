@@ -183,6 +183,25 @@ public class Serifier {
 			System.err.println( baoss.toString() );
 			baoss.close();
 			
+			InputStream err = p.getErrorStream();
+			Thread t = new Thread() {
+				public void run() {
+					ByteArrayOutputStream baos = new ByteArrayOutputStream();
+					try {
+						int r = err.read();
+						while( r != -1 ) {
+							baos.write(r);
+							r = err.read();
+						}
+						baos.close();
+						System.err.println( baos.toString() );
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+				}
+			};
+			t.start();
+			
 			InputStream is = p.getInputStream();
 			ByteArrayOutputStream baos = new ByteArrayOutputStream();
 			byte[] bb = new byte[1024];
