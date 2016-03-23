@@ -504,169 +504,113 @@ public class NativeRun {
 	Object inp = null;
 	Object outp = null;
 	Path wdir = null;
-	public String runProcessBuilder( String title, @SuppressWarnings("rawtypes") final List commandsList, final Object[] cont, boolean paralell, Runnable trun, boolean headless ) throws IOException {
-		//System.err.println( pb.toString() );
-		//pb.directory( dir );
-		
-		final JDialog		dialog;
-		final JProgressBar	pbar;
-		final JTextArea		ta;
-		if( !headless ) {
-			dialog = new JDialog();
-			dialog.setTitle( title );
-			dialog.setDefaultCloseOperation( JDialog.DISPOSE_ON_CLOSE );
-			dialog.setSize(400, 300);
-			
-			JComponent comp = new JComponent() {};
-			comp.setLayout( new BorderLayout() );
-			
-			ta = new JTextArea();
-			for( Object commands : commandsList ) {
-				if( commands instanceof List ) {
-					for( Object cmd : (List)commands ) {
-						ta.append(cmd+" ");
+	public void runProcessBuilder( String title, @SuppressWarnings("rawtypes") final List commandsList, final Object[] cont, boolean paralell, Runnable trun, boolean headless ) throws IOException {
+		SwingUtilities.invokeLater( new Runnable() {
+			public void run() {
+				final JDialog		dialog;
+				final JProgressBar	pbar;
+				final JTextArea		ta;
+				if( !headless ) {
+					dialog = new JDialog();
+					dialog.setTitle( title );
+					dialog.setDefaultCloseOperation( JDialog.DISPOSE_ON_CLOSE );
+					dialog.setSize(400, 300);
+					
+					JComponent comp = new JComponent() {};
+					comp.setLayout( new BorderLayout() );
+					
+					ta = new JTextArea();
+					for( Object commands : commandsList ) {
+						if( commands instanceof List ) {
+							for( Object cmd : (List)commands ) {
+								ta.append(cmd+" ");
+							}
+							ta.append("\n");
+						} else {
+							ta.append(commands+" ");
+						}
 					}
 					ta.append("\n");
+				
+					ta.setEditable( false );
+					final JScrollPane	sp = new JScrollPane( ta );
+					pbar = new JProgressBar();
+					
+					dialog.add( comp );
+					comp.add( pbar, BorderLayout.NORTH );
+					comp.add( sp, BorderLayout.CENTER );
+					pbar.setIndeterminate( true );
 				} else {
-					ta.append(commands+" ");
+					dialog = null;
+					pbar = null;
+					ta = null;
 				}
-			}
-			ta.append("\n");
-		
-			ta.setEditable( false );
-			final JScrollPane	sp = new JScrollPane( ta );
-			pbar = new JProgressBar();
-			
-			dialog.add( comp );
-			comp.add( pbar, BorderLayout.NORTH );
-			comp.add( sp, BorderLayout.CENTER );
-			pbar.setIndeterminate( true );
-		} else {
-			dialog = null;
-			pbar = null;
-			ta = null;
-		}
-		
-		System.err.println( "about to run" );
-		for( Object commands : commandsList ) {
-			if( commands instanceof List ) {
-				for( Object c : (List)commands ) {
-					System.err.print( c+" " );
+				
+				System.err.println( "about to run" );
+				for( Object commands : commandsList ) {
+					if( commands instanceof List ) {
+						for( Object c : (List)commands ) {
+							System.err.print( c+" " );
+						}
+						System.err.println();
+					} else {
+						System.err.print( commands+" " );
+					}
 				}
 				System.err.println();
-			} else {
-				System.err.print( commands+" " );
-			}
-		}
-		System.err.println();
-		
-		if( paralell ) {
-			//where = 0;
-			final int ncpu = Runtime.getRuntime().availableProcessors();
-			
-			final ExecutorService es = Executors.newFixedThreadPool( ncpu );
-			//int usedCpus = 0;
+				
+				if( paralell ) {
+					//where = 0;
+					final int ncpu = Runtime.getRuntime().availableProcessors();
+					
+					final ExecutorService es = Executors.newFixedThreadPool( ncpu );
+					//int usedCpus = 0;
 
-			if( !headless ) {
-				dialog.addWindowListener( new WindowListener() {
-					@Override
-					public void windowOpened(WindowEvent e) {}
-					
-					@Override
-					public void windowIconified(WindowEvent e) {}
-					
-					@Override
-					public void windowDeiconified(WindowEvent e) {}
-					
-					@Override
-					public void windowDeactivated(WindowEvent e) {}
-					
-					@Override
-					public void windowClosing(WindowEvent e) {}
-					
-					@Override
-					public void windowClosed(WindowEvent e) {
-						es.shutdownNow();
-						
-						if( pbar.isEnabled() ) {
-							String result = ta != null ? ta.getText().trim() : "";
-							if( trun != null ) {
-								cont[0] = null;
-								cont[1] = result;
-								cont[2] = new Date( System.currentTimeMillis() ).toString();
-								trun.run();
+					if( !headless ) {
+						dialog.addWindowListener( new WindowListener() {
+							@Override
+							public void windowOpened(WindowEvent e) {}
+							
+							@Override
+							public void windowIconified(WindowEvent e) {}
+							
+							@Override
+							public void windowDeiconified(WindowEvent e) {}
+							
+							@Override
+							public void windowDeactivated(WindowEvent e) {}
+							
+							@Override
+							public void windowClosing(WindowEvent e) {}
+							
+							@Override
+							public void windowClosed(WindowEvent e) {
+								es.shutdownNow();
+								
+								if( pbar.isEnabled() ) {
+									String result = ta != null ? ta.getText().trim() : "";
+									if( trun != null ) {
+										cont[0] = null;
+										cont[1] = result;
+										cont[2] = new Date( System.currentTimeMillis() ).toString();
+										trun.run();
+									}
+									
+									if( !headless ) {
+										pbar.setIndeterminate( false );
+										pbar.setEnabled( false );
+									}
+								}
 							}
 							
-							if( !headless ) {
-								pbar.setIndeterminate( false );
-								pbar.setEnabled( false );
-							}
-						}
+							@Override
+							public void windowActivated(WindowEvent e) {}
+						});
+						dialog.setVisible( true );
 					}
 					
-					@Override
-					public void windowActivated(WindowEvent e) {}
-				});
-				dialog.setVisible( true );
-			}
-			
-			for( final Object commands : commandsList ) {
-				//final Object commands = commandsList.get( where );
-				if( commands instanceof Path[] ) {
-					Path[] pp = (Path[])commands;
-					inp = pp[0];
-					outp = pp[1];
-					wdir = pp[2];
-				} else if( commands instanceof Object[] ) {
-					Object[] pp = (Object[])commands;
-					inp = pp[0];
-					outp = pp[1];
-					wdir = (Path)pp[2];
-				} else {
-					ttotal++;
-					
-					final Object input = inp;
-					final Object output = outp;
-					final Path workingdir = wdir;
-					
-					inp = null;
-					outp = null;
-					wdir = null;
-				
-					final Runnable runnable = new Runnable() {
-						@Override
-						public void run() {
-							startProcess( commands, commandsList, workingdir, input, output, ta, true );
-							
-							if( ++tcount == ttotal ) {
-								String result = ta != null ? ta.getText().trim() : "";
-								if( trun != null ) {
-									cont[0] = null;
-									cont[1] = result;
-									cont[2] = new Date( System.currentTimeMillis() ).toString();
-									trun.run();
-								}
-								
-								if( !headless ) {
-									pbar.setIndeterminate( false );
-									pbar.setEnabled( false );
-								}
-							}
-						}
-					};
-					es.execute( runnable );
-				}
-			}
-			es.shutdown();
-			//es.
-		} else {
-			Runnable runnable = new Runnable() {
-				boolean interupted = false;
-				
-				@Override
-				public void run() {
-					where = 0;
-					for( Object commands : commandsList ) {
+					for( final Object commands : commandsList ) {
+						//final Object commands = commandsList.get( where );
 						if( commands instanceof Path[] ) {
 							Path[] pp = (Path[])commands;
 							inp = pp[0];
@@ -678,6 +622,8 @@ public class NativeRun {
 							outp = pp[1];
 							wdir = (Path)pp[2];
 						} else {
+							ttotal++;
+							
 							final Object input = inp;
 							final Object output = outp;
 							final Path workingdir = wdir;
@@ -685,90 +631,142 @@ public class NativeRun {
 							inp = null;
 							outp = null;
 							wdir = null;
-							
-							//int k = commandsList.indexOf(";");
-							//if( k != -1 ) {
-							//	startProcess( where, commandsList.subList(0, k), workingdir, input, output, ta, false );
-							//	startProcess( where, commandsList.subList(k+1, commandsList.size()), workingdir, input, output, ta, false );
-							//} else {
-							boolean blist = startProcess( where, commandsList, workingdir, input, output, ta, false );
-							//}
-							
-							//if( !blist ) break;
+						
+							final Runnable runnable = new Runnable() {
+								@Override
+								public void run() {
+									startProcess( commands, commandsList, workingdir, input, output, ta, true );
+									
+									if( ++tcount == ttotal ) {
+										String result = ta != null ? ta.getText().trim() : "";
+										if( trun != null ) {
+											cont[0] = null;
+											cont[1] = result;
+											cont[2] = new Date( System.currentTimeMillis() ).toString();
+											trun.run();
+										}
+										
+										if( !headless ) {
+											pbar.setIndeterminate( false );
+											pbar.setEnabled( false );
+										}
+									}
+								}
+							};
+							es.execute( runnable );
 						}
-						where++;
 					}
-					//dialog.setVisible( true );
-					
-					/*System.err.println("hereok");
-					
-					is = p.getErrorStream();
-					br = new BufferedReader( new InputStreamReader(is) );
-					
-					line = br.readLine();
-					while( line != null ) {
-						String str = line + "\n";
-						ta.append( str );
+					es.shutdown();
+					//es.
+				} else {
+					Runnable runnable = new Runnable() {
+						boolean interupted = false;
 						
-						System.err.println("hereerm " + line);
-						
-						line = br.readLine();
-					}
-					br.close();
-					is.close();
-					
-					System.err.println("here");*/
-					
-					System.err.println("run "+trun);
-					String result = ta != null ? ta.getText().trim() : "";
-					if( trun != null ) {
-						cont[0] = interupted ? null : "";
-						cont[1] = result;
-						cont[2] = new Date( System.currentTimeMillis() ).toString();
-						trun.run();
-					}
+						@Override
+						public void run() {
+							where = 0;
+							for( Object commands : commandsList ) {
+								if( commands instanceof Path[] ) {
+									Path[] pp = (Path[])commands;
+									inp = pp[0];
+									outp = pp[1];
+									wdir = pp[2];
+								} else if( commands instanceof Object[] ) {
+									Object[] pp = (Object[])commands;
+									inp = pp[0];
+									outp = pp[1];
+									wdir = (Path)pp[2];
+								} else {
+									final Object input = inp;
+									final Object output = outp;
+									final Path workingdir = wdir;
+									
+									inp = null;
+									outp = null;
+									wdir = null;
+									
+									//int k = commandsList.indexOf(";");
+									//if( k != -1 ) {
+									//	startProcess( where, commandsList.subList(0, k), workingdir, input, output, ta, false );
+									//	startProcess( where, commandsList.subList(k+1, commandsList.size()), workingdir, input, output, ta, false );
+									//} else {
+									boolean blist = startProcess( where, commandsList, workingdir, input, output, ta, false );
+									//}
+									
+									//if( !blist ) break;
+								}
+								where++;
+							}
+							//dialog.setVisible( true );
+							
+							/*System.err.println("hereok");
+							
+							is = p.getErrorStream();
+							br = new BufferedReader( new InputStreamReader(is) );
+							
+							line = br.readLine();
+							while( line != null ) {
+								String str = line + "\n";
+								ta.append( str );
+								
+								System.err.println("hereerm " + line);
+								
+								line = br.readLine();
+							}
+							br.close();
+							is.close();
+							
+							System.err.println("here");*/
+							
+							System.err.println("run "+trun);
+							String result = ta != null ? ta.getText().trim() : "";
+							if( trun != null ) {
+								cont[0] = interupted ? null : "";
+								cont[1] = result;
+								cont[2] = new Date( System.currentTimeMillis() ).toString();
+								trun.run();
+							}
+							
+							if( !headless ) {
+								pbar.setIndeterminate( false );
+								pbar.setEnabled( false );
+							}
+						}
+					};
+					final Thread trd = new Thread( runnable );
 					
 					if( !headless ) {
-						pbar.setIndeterminate( false );
-						pbar.setEnabled( false );
+						dialog.addWindowListener( new WindowListener() {	
+							@Override
+							public void windowOpened(WindowEvent e) {}
+							
+							@Override
+							public void windowIconified(WindowEvent e) {}
+							
+							@Override
+							public void windowDeiconified(WindowEvent e) {}
+							
+							@Override
+							public void windowDeactivated(WindowEvent e) {}
+							
+							@Override
+							public void windowClosing(WindowEvent e) {}
+							
+							@Override
+							public void windowClosed(WindowEvent e) {
+								trd.interrupt();
+							}
+							
+							@Override
+							public void windowActivated(WindowEvent e) {}
+						});
+						dialog.setVisible( true );
 					}
+					
+					trd.start();
 				}
-			};
-			final Thread trd = new Thread( runnable );
-			
-			if( !headless ) {
-				dialog.addWindowListener( new WindowListener() {	
-					@Override
-					public void windowOpened(WindowEvent e) {}
-					
-					@Override
-					public void windowIconified(WindowEvent e) {}
-					
-					@Override
-					public void windowDeiconified(WindowEvent e) {}
-					
-					@Override
-					public void windowDeactivated(WindowEvent e) {}
-					
-					@Override
-					public void windowClosing(WindowEvent e) {}
-					
-					@Override
-					public void windowClosed(WindowEvent e) {
-						trd.interrupt();
-					}
-					
-					@Override
-					public void windowActivated(WindowEvent e) {}
-				});
-				dialog.setVisible( true );
 			}
-			
-			trd.start();
-		}
-		
-		//dialog.setVisible( false );
-		return "";
+		});
 	}
 	
 	public static String cygPath( String path ) {
