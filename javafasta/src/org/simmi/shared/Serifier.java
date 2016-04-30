@@ -37,7 +37,6 @@ import java.util.Random;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
-import java.util.stream.Stream;
 import java.util.zip.GZIPInputStream;
 
 import javax.swing.JOptionPane;
@@ -45,6 +44,9 @@ import javax.swing.JTextField;
 
 import org.simmi.DataTable;
 import org.simmi.unsigned.NativeRun;
+
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 
 public class Serifier {
 	public Serifier() {
@@ -56,8 +58,8 @@ public class Serifier {
 		this.lseq = lseq;
 	}
 	
-	List<Sequences>		sequences = new ArrayList<Sequences>();
-	public void setSequencesList( List<Sequences> sequences ) {
+	ObservableList<Sequences>		sequences = FXCollections.observableArrayList();
+	public void setSequencesList( ObservableList<Sequences> sequences ) {
 		this.sequences = sequences;
 	}
 	
@@ -905,7 +907,7 @@ public class Serifier {
 		return seqmap;
 	}
 	
-	public List<Sequences> getSequencesList() {
+	public ObservableList<Sequences> getSequencesList() {
 		return sequences;
 	}
 	

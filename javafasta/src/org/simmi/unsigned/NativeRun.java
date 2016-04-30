@@ -2,7 +2,6 @@ package org.simmi.unsigned;
 
 import java.awt.BorderLayout;
 import java.awt.Container;
-import java.awt.Window;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
 import java.io.BufferedReader;
@@ -21,9 +20,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.Date;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.zip.GZIPOutputStream;
@@ -35,8 +32,11 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.SwingUtilities;
 
+import javafx.scene.layout.Pane;
+
 public class NativeRun {
 	public Runnable 			run;
+	public Pane					pane;
 	public Container			cnt = null;
 	
 	public NativeRun() {}
@@ -802,7 +802,7 @@ public class NativeRun {
 		final Path f = homedir.resolve( split[split.length-1] );
 		if( !Files.exists(f) ) {
 			final JDialog dialog;
-			Window window = SwingUtilities.windowForComponent(cnt);
+			java.awt.Window window = SwingUtilities.windowForComponent(null);//cnt);
 			if( window != null ) dialog = new JDialog( window );
 			else dialog = new JDialog();
 			final JProgressBar	pbar = new JProgressBar();
