@@ -67,7 +67,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import javax.imageio.ImageIO;
@@ -108,8 +107,6 @@ import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 import javax.swing.border.Border;
 import javax.swing.border.EmptyBorder;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import javax.swing.event.RowSorterEvent;
@@ -144,11 +141,17 @@ import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.ValidationStringency;
 import javafx.application.Platform;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
+import javafx.concurrent.Worker.State;
 import javafx.embed.swing.JFXPanel;
 import javafx.scene.Scene;
 import javafx.scene.chart.LineChart;
 import javafx.scene.chart.NumberAxis;
 import javafx.scene.chart.XYChart;
+import javafx.scene.web.WebEngine;
+import javafx.scene.web.WebView;
+import javafx.stage.Stage;
 import netscape.javascript.JSObject;
 
 public class JavaFasta extends JApplet {
@@ -6046,8 +6049,8 @@ public class JavaFasta extends JApplet {
 					System.err.println( tree );
 					if( cs != null && cs.connections() != null && cs.connections().size() > 0 ) {
 			    		cs.sendToAll( tree );
-			    	} else if( Desktop.isDesktopSupported() ) {
-			    		if( cs != null ) cs.message = tree;
+			    	} else if( Desktop.isDesktopSupported() && cs != null ) {
+			    		cs.message = tree;
 			    		//String uristr = "http://webconnectron.appspot.com/Treedraw.html?tree="+URLEncoder.encode( tree, "UTF-8" );
 			    		String uristr = "http://webconnectron.appspot.com/Treedraw.html?ws=127.0.0.1:"+cs.getPort();
 						try {
@@ -6055,6 +6058,27 @@ public class JavaFasta extends JApplet {
 						} catch (IOException | URISyntaxException e1) {
 							e1.printStackTrace();
 						}
+			    	} else {
+			    		Platform.runLater( new Runnable() {
+							public void run() {
+								WebView webview = new WebView();
+								WebEngine webengine = webview.getEngine();
+								webengine.setUserAgent("AppleWebKit/537.44");
+								webengine.load("http://webconnectron.appspot.com/Treedraw.html");
+								
+								webengine.getLoadWorker().stateProperty().addListener(new ChangeListener<State>() {
+						            @Override
+						            public void changed(ObservableValue<? extends State> observable, State oldValue, State newValue) {
+						            	webview.getEngine().executeScript("if (!document.getElementById('FirebugLite')){E = document['createElement' + 'NS'] && document.documentElement.namespaceURI;E = E ? document['createElement' + 'NS'](E, 'script') : document['createElement']('script');E['setAttribute']('id', 'FirebugLite');E['setAttribute']('src', 'https://getfirebug.com/' + 'firebug-lite.js' + '#startOpened');E['setAttribute']('FirebugLite', '4');(document['getElementsByTagName']('head')[0] || document['getElementsByTagName']('body')[0]).appendChild(E);E = new Image;E['setAttribute']('src', 'https://getfirebug.com/' + '#startOpened');}");
+						            }
+						        });
+							
+								Stage stage = new Stage();
+								stage.setScene( new Scene(webview) );
+								stage.show();
+								//region.getStyleClass()
+							}
+						});
 			    	}
 				}
 			}
@@ -6690,12 +6714,12 @@ public class JavaFasta extends JApplet {
 				final JCheckBox	cb = new JCheckBox("Filter blocks");
 				final JSpinner 	sp = new JSpinner( new SpinnerNumberModel(10, 2, 100, 1) );
 				sp.setEnabled( false );
-				cb.addChangeListener( new ChangeListener() {
+				/*okokcb.addChangeListener( new ChangeListener() {
 					@Override
 					public void stateChanged(ChangeEvent e) {
 						sp.setEnabled( cb.isSelected() );
 					}
-				});
+				});*/
 				Object[] message = new Object[] { cb, sp };
 				JOptionPane.showMessageDialog(parentApplet, message);
 				if( cb.isSelected() ) {

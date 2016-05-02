@@ -11,14 +11,18 @@ import java.util.Set;
 import java.util.TreeMap;
 
 public class GeneGroup {
-	public Set<Gene>           		genes = new HashSet<Gene>();
-	public Map<String, Teginfo>  	species = new TreeMap<String, Teginfo>();
+	public Set<Gene>           		genes = new HashSet<>();
+	public Map<String, Teginfo>  	species = new TreeMap<>();
 	public int                	 	groupIndex = -10;
 	int                 			groupCount = -1;
 	public int						index;
 	Map<Set<String>, ShareNum> 		specset;
 	//int			groupGeneCount;
 	Map<String,Cog>					cogmap;
+
+	public String toString() {
+		return this.getName() + " " + genes.size() + "  " + this.getMaxLength();
+	}
 	
 	public void setSpecSet( Map<Set<String>,ShareNum> specset ) {
 		this.specset = specset;
@@ -557,6 +561,10 @@ public class GeneGroup {
 		this.groupIndex = i;
 		this.specset = specset;
 		this.cogmap = cogmap;
+	}
+
+	public GeneGroup() {
+		this( -1, null, null );
 	}
 	
 	public int getGroupIndex() {
