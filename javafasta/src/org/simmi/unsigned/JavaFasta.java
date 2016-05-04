@@ -184,9 +184,13 @@ public class JavaFasta extends JApplet {
 	public Path getCurrentPath() {
 		return currentPath;
 	}
-	
+
 	public static Map<String,Integer> getBlosumMap() {
-		Map<String,Integer> blosumap = new HashMap<String,Integer>();
+		return getBlosumMap( true );
+	}
+	
+	public static Map<String,Integer> getBlosumMap( boolean includeDash ) {
+		Map<String,Integer> blosumap = new HashMap<>();
 		InputStream is = JavaFasta.class.getResourceAsStream("BLOSUM62");
 		InputStreamReader 	ir = new InputStreamReader( is );
 		BufferedReader		br = new BufferedReader( ir );
@@ -202,7 +206,7 @@ public class JavaFasta extends JApplet {
 						abet = split;
 						abet[abet.length-1] = "-";
 					} else {
-						if( chr == '*' ) chr = '-';
+						if( includeDash && chr == '*' ) chr = '-';
 						int k = 0;
 						for( String a : abet ) {
 							blosumap.put( chr+a, Integer.parseInt(split[++k]) );

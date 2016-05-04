@@ -4,13 +4,12 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class Teginfo implements Teg {
-	String tegund;
 	public Set<Tegeval> tset;
 	public Tegeval best;
 
 	public void add(Tegeval tv) {
 		if (tset == null)
-			tset = new HashSet<Tegeval>();
+			tset = new HashSet<>();
 		tset.add(tv);
 		if (best == null || tv.eval < best.eval)
 			best = tv;

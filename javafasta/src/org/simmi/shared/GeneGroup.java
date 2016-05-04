@@ -3,12 +3,7 @@ package org.simmi.shared;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.io.Writer;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
+import java.util.*;
 
 public class GeneGroup {
 	public Set<Gene>           		genes = new HashSet<>();
@@ -26,6 +21,10 @@ public class GeneGroup {
 	
 	public void setSpecSet( Map<Set<String>,ShareNum> specset ) {
 		this.specset = specset;
+	}
+
+	public Map<Set<String>,ShareNum> getSpecSet() {
+		return specset;
 	}
 	
 	public boolean containsDirty() {
@@ -166,7 +165,7 @@ public class GeneGroup {
 	
 	public String getCommonGO( boolean breakb, boolean withinfo, Set<Function> allowedFunctions ) {
 		String ret = "";
-		Set<String> already = new HashSet<String>();
+		Set<String> already = new HashSet<>();
 		for( Gene g : genes ) {
 			if( g.funcentries != null && g.funcentries.size() > 0 ) {
 				for( Function f : g.funcentries ) {
@@ -528,25 +527,36 @@ public class GeneGroup {
     public Teginfo getGenes( String spec ) {
         return species.get( spec );
     }
-	
+
+	public void addGenes(Collection<Gene> genes) {
+		genes.stream().forEach( this::addGene );
+	}
+
 	public void addGene( Gene gene ) {
 		if( gene.getGeneGroup() != this ) gene.setGeneGroup( this );
 		else {
-			genes.add( gene );
-			
-			String specstr = gene.getSpecies();
-			
-			if( specstr != null ) {
-				Teginfo tigenes;
-				if( species.containsKey( specstr ) ) {
-					tigenes = species.get( specstr );
-				} else {
-					tigenes = new Teginfo();
-					species.put( specstr, tigenes );
+			if( genes.add( gene ) ) {
+				String specstr = gene.getSpecies();
+				if (specstr != null) {
+					Teginfo tigenes;
+					if (species.containsKey(specstr)) {
+						tigenes = species.get(specstr);
+					} else {
+						tigenes = new Teginfo();
+						species.put(specstr, tigenes);
+					}
+					tigenes.add(gene.tegeval);
 				}
-				tigenes.add( gene.tegeval );
 			}
         }
+	}
+
+	public void setCogMap( Map<String,Cog> cogmap ) {
+		this.cogmap = cogmap;
+	}
+
+	public Map<String,Cog> getCogMap() {
+		return cogmap;
 	}
 	
 	/*public void addSpecies( String species ) {
