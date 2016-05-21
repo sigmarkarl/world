@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class GeneGroup {
 	public Set<Gene>           		genes = new HashSet<>();
@@ -13,7 +14,9 @@ public class GeneGroup {
 	public int						index;
 	Map<Set<String>, ShareNum> 		specset;
 	//int			groupGeneCount;
+	Map<String,String> 				ko2name;
 	Map<String,Cog>					cogmap;
+	Map<String,String>				biosystemsmap;
 
 	public String toString() {
 		return this.getName() + " " + genes.size() + "  " + this.getMaxLength();
@@ -382,27 +385,19 @@ public class GeneGroup {
 	}
 	
 	public String getRefid() {
-		String ret = null;
-		for( Gene g : genes ) {
-			if( ret == null || (g.refid != null && g.refid.length() > 0 && !g.refid.contains("scaffold") && !g.refid.contains("contig")) ) ret = g.refid;
-			
-			if( this.getIndex() == 4049 ) {
-				System.err.println( g.refid + "  " + g.getSpecies() );
-			}
-		}
-		return ret;
+		return genes.stream().map(g->g.refid).filter(refid->refid != null && refid.length() > 0 && !refid.contains("scaffold") && !refid.contains("contig")).collect(Collectors.joining(","));
 	}
 	
 	public String getUnid() {
-		String ret = null;
-		for( Gene g : genes ) {
-			if( ret == null || (g.uniid != null && g.uniid.length() > 0) ) ret = g.uniid;
-		}
-		return ret;
+		return genes.stream().map(g->g.uniid).filter(p->p!=null&&p.length()>0).collect(Collectors.joining(","));
+	}
+
+	public String getGenid() {
+		return genes.stream().map(g->g.genid).filter(p->p!=null&&p.length()>0).collect(Collectors.joining(","));
 	}
 	
 	public String getSymbol() {
-		Set<String> s = new HashSet<String>();
+		Set<String> s = new HashSet<>();
 		for( Gene g : genes ) {
 			if( g.symbol != null ) s.add( g.symbol );
 		}
@@ -428,7 +423,7 @@ public class GeneGroup {
 	}
 	
 	public String getKsymbol() {
-		Set<String> s = new HashSet<String>();
+		Set<String> s = new HashSet<>();
 		for( Gene g : genes ) {
 			//if( g.koname != null && g.koname.length() > 0 && g.koname.length() < 7 ) {
 					//if( sel == null || (g.koname != null && g.koname.length() > 0 && g.koname.length() < 7 && (sel.length() >= 7 || g.koname.length() > sel.length())) ) {
@@ -457,16 +452,14 @@ public class GeneGroup {
 		}
 	}
 	
-	public String getKoname( Map<String,String> ko2name ) {
-		String ret = ko2name != null ? ko2name.get( this.getKo() ) : null;
-		if( ret == null ) {
-			String symbol = this.getSymbol();
-			if( symbol != null ) {
-				//if( symbol.length() <= 5 ) 
-				ret = symbol;
+	public String getKoname() {
+		String ko = this.getKo();
+		if( ko != null ) {
+			if( ko2name != null && ko2name.containsKey( ko ) ) {
+				return ko2name.get(ko);
 			}
 		}
-		return ret;
+		return this.getSymbol();
 	}
 	
 	public String getEc() {
@@ -509,6 +502,7 @@ public class GeneGroup {
 				else ret += " " + g.keggpathway;
 			}
 		}
+		if( ret == null && biosystemsmap != null ) return genes.stream().filter( g -> g.genid != null && biosystemsmap.containsKey(g.genid) ).map( g -> biosystemsmap.get(g.genid) ).collect(Collectors.joining(","));
 		return ret;
 	}
 	
@@ -558,6 +552,14 @@ public class GeneGroup {
 	public Map<String,Cog> getCogMap() {
 		return cogmap;
 	}
+
+	public void setKonameMap( Map<String,String> konamemap ) {
+		this.ko2name = konamemap;
+	}
+
+	public Map<String,String> getKonameMap() {
+		return this.ko2name;
+	}
 	
 	/*public void addSpecies( String species ) {
 		this.species.add( species );
@@ -567,14 +569,15 @@ public class GeneGroup {
 		this.species.addAll( species );
 	}*/
 	
-	public GeneGroup( int i, Map<Set<String>,ShareNum> specset, Map<String,Cog> cogmap ) {
+	public GeneGroup( int i, Map<Set<String>,ShareNum> specset, Map<String,Cog> cogmap, Map<String,String> konamemap ) {
 		this.groupIndex = i;
 		this.specset = specset;
 		this.cogmap = cogmap;
+		this.ko2name = konamemap;
 	}
 
 	public GeneGroup() {
-		this( -1, null, null );
+		this( -1, null, null, null );
 	}
 	
 	public int getGroupIndex() {

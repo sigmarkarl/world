@@ -1237,7 +1237,6 @@ public class Serifier {
 	}
 	
 	private void writeClusters( BufferedWriter fos, List<Set<String>> cluster ) throws IOException {
-		//OutputStreamWriter	fos = new OutputStreamWriter( os );
 		for( Set<String> set : cluster ) {
 			fos.write( set.toString()+"\n" );
 		}
@@ -1249,7 +1248,6 @@ public class Serifier {
 	}
 	
 	public List<Set<String>> makeBlastCluster( final Path osf, final Path blastfile, int clustermap, float id, float len, Map<String,String> idspec, List<Set<String>> total, Map<String,Gene> refmap ) throws IOException {
-		//InputStream fis = new FileInputStream( blastfile );
 		BufferedReader is = null;
 		if( blastfile != null ) {
 			if( blastfile.getFileName().toString().endsWith(".gz") ) {
@@ -1270,68 +1268,22 @@ public class Serifier {
 			
 			fos = Files.newBufferedWriter( osf.resolve( "clusters.txt" ), StandardOpenOption.CREATE );
 		} else fos = Files.newBufferedWriter( osf );
-		
-		/*for( String str : mseq.keySet() ) {
-			if( str.contains("scotoductus1572_scaffold00003_4 ") ) {
-				System.err.println();
-			}
-		}*/
-		
-		//List<Set<String>> total = new ArrayList<Set<String>>();
+
 		makeBlastCluster( is, fos, clustermap, id, len, idspec, total, refmap );
 		if( is != null ) is.close();
-		
-		//scotoductus1572_scaffold00003_4 # 2808 # 3941 # -1 # ID=3_4;partial=00;start_type=GTG;rbs_motif=None;rbs_spacer=None;gc_cont=0.959
-		//scotoductus1572_scaffold00003_4 # 2808 # 3941 # -1 #ID=3_4;partial=00;start_type=GTG;rbs_motif=None;rbs_spacer=None;gc_cont=0.959
-		
+
 		boolean writeFiles = false;
 		if( writeFiles ) {
-			System.err.println( total.size() );
 			for( Set<String>	strset : total ) {
 				String name = null;
 				boolean pseudoname = true;
 				for( String str : strset ) {
-					/*if( name == null ) {
-						int si = str.indexOf(' ');
-						if( si == -1 ) si = str.length();
-						name = str.substring(0, si);
-						
-						break;
-					}*/
 					name = str;
-					
-					/*int i = str.indexOf('[');
-					if( i != -1 ) {
-						if( pseudoname || !str.contains("hypot") ) {
-							//int si = str.indexOf(' ');
-							name = str.substring(0, i-1).replace(' ', '_').replace('/', '_');
-							
-							pseudoname = false;
-						}
-					}*/
 				}
 				
-				Path of = osf.resolve(name+".aa"); //new File( osf, name+".fna" );
-				
-				/*if( name.startsWith("YP_007881477.1") ) {
-					System.err.println();
-				}*/
-				
-				BufferedWriter fw = Files.newBufferedWriter(of); //new FileWriter( of );
+				Path of = osf.resolve(name+".aa");
+				BufferedWriter fw = Files.newBufferedWriter(of);
 				for( String str : strset ) {
-					/*if( str.startsWith("YP_007881477.1") ) {
-						for( String erm : mseq.keySet() ) {
-							if( erm.startsWith("YP_007881477.1") ) {
-								System.err.println( str );
-								System.err.println( erm );
-								System.err.println();
-							}
-						}
-					}*/
-					
-					//int millind = str.indexOf('#');
-					//if( millind == -1 ) millind = str.length();
-					//String shortname = str.substring( 0, millind ).trim();
 					Sequence seq = mseq.get( str );
 					if( seq != null ) {
 						writeSequence( seq, fw );
@@ -1347,8 +1299,6 @@ public class Serifier {
 	}
 	
 	public void makeBlastCluster( final BufferedReader is, final BufferedWriter fos, int clustermap, float id, float len, Map<String,String> idspec, List<Set<String>> total, Map<String,Gene> refmap ) throws IOException {
-		//List<Set<String>>	total = new ArrayList<Set<String>>();
-		
 		Path userhome = Paths.get( System.getProperty("user.home") );
 		if( is != null ) {
 			if( clustermap%2 == 0 ) {
@@ -1361,37 +1311,23 @@ public class Serifier {
 		
 		if( fos != null ) {
 			if( clustermap/2 == 0 ) {
-				Set<String>	species = new TreeSet<String>();
+				Set<String>	species = new TreeSet<>();
 				Map<Set<String>,Set<Map<String,Set<String>>>>	clusterMap = initClusterNew( total, species, null ); //idspec
 			
 				System.err.println( total.size() );
 				for( Set<String> keyset : clusterMap.keySet() ) {
 					System.err.println( keyset.size() );
 				}
-				/*Set<String> curset = null;
-				int max = 0;
-				for( Set<String> set : clusterMap.keySet() ) {
-					if( set.size() > max ) {
-						curset = set;
-						max = set.size();
-					}
-				}
-				System.err.println( max );
-				System.err.println( curset );*/
-				//if( writeSimplifiedCluster != null ) 
 				writeSimplifiedCluster( fos, clusterMap );
-				//writeBlastAnalysis( clusterMap, species );
 			} else {
 				writeClusters( fos, total );
 			}
 		}
-		
-		//return total;
 	}
 	
 	private void joinSets( Set<String> all, List<Set<String>> total ) {		
 		Set<String> cont = null;
-		Set<Set<String>>	rem = new HashSet<Set<String>>();
+		Set<Set<String>>	rem = new HashSet<>();
 		
 		for( Set<String>	check : total ) {			
 			for( String aval : all ) {
