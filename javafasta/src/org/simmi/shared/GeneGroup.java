@@ -16,7 +16,7 @@ public class GeneGroup {
 	//int			groupGeneCount;
 	Map<String,String> 				ko2name;
 	Map<String,Cog>					cogmap;
-	Map<String,String>				biosystemsmap;
+	Map<String,Set<String>>				biosystemsmap;
 
 	public String toString() {
 		return this.getName() + " " + genes.size() + "  " + this.getMaxLength();
@@ -502,7 +502,7 @@ public class GeneGroup {
 				else ret += " " + g.keggpathway;
 			}
 		}
-		if( ret == null && biosystemsmap != null ) return genes.stream().filter( g -> g.genid != null && biosystemsmap.containsKey(g.genid) ).map( g -> biosystemsmap.get(g.genid) ).collect(Collectors.joining(","));
+		if( ret == null && biosystemsmap != null ) return genes.stream().filter( g -> g.genid != null && biosystemsmap.containsKey(g.genid) ).flatMap( g -> biosystemsmap.get(g.genid).stream() ).collect(Collectors.joining(";"));
 		return ret;
 	}
 	
@@ -560,6 +560,14 @@ public class GeneGroup {
 	public Map<String,String> getKonameMap() {
 		return this.ko2name;
 	}
+
+	public void setBiosystemsmap( Map<String,Set<String>> biosystems ) {
+		this.biosystemsmap = biosystems;
+	}
+
+	public Map<String,Set<String>> getBiosystemsmap() {
+		return this.biosystemsmap;
+	}
 	
 	/*public void addSpecies( String species ) {
 		this.species.add( species );
@@ -569,15 +577,16 @@ public class GeneGroup {
 		this.species.addAll( species );
 	}*/
 	
-	public GeneGroup( int i, Map<Set<String>,ShareNum> specset, Map<String,Cog> cogmap, Map<String,String> konamemap ) {
+	public GeneGroup( int i, Map<Set<String>,ShareNum> specset, Map<String,Cog> cogmap, Map<String,String> konamemap, Map<String,Set<String>> biosystemsmap ) {
 		this.groupIndex = i;
 		this.specset = specset;
 		this.cogmap = cogmap;
 		this.ko2name = konamemap;
+		this.biosystemsmap = biosystemsmap;
 	}
 
 	public GeneGroup() {
-		this( -1, null, null, null );
+		this( -1, null, null, null, null );
 	}
 	
 	public int getGroupIndex() {
