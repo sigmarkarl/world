@@ -19,6 +19,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -167,25 +168,18 @@ public class NativeRun {
 		//Object commands = commandsList.get( w );
 		boolean blist = commands instanceof List;
 		List<String> lcmd = (List)(blist ? commands : commandsList.get((Integer)commands));
-		/*for( String s : lcmd ) {
-			System.err.println( s );
-		}*/
-		
-		//System.err.println( "mumu " + lcmd );
 		
 		int k = lcmd.indexOf(";");
-		while( k != -1 ) {
-			
+		while( k != -1 ) {	
 			//runProcess(lcmd.subList(0, k), workingdir, input, output, ta);
 			//runProcess(lcmd.subList(k+1,lcmd.size()), workingdir, input, output, ta);
 		
-			
 			runProcess( lcmd.subList(0, k), workingdir, input, output, ta );
 			lcmd = lcmd.subList(k+1,lcmd.size());
 			
 			k = lcmd.indexOf(";");
 		}
-		runProcess(lcmd, workingdir, input, output, ta);
+		if( lcmd.size() > 0 ) runProcess(lcmd, workingdir, input, output, ta);
 
 		return blist;
 	}
@@ -204,7 +198,6 @@ public class NativeRun {
 		//pb.environment().put("PATH", "c:\\cygwin64\\bin");
 		//System.err.println( pb.environment() );
 		if( workingdir != null ) {
-			//System.err.println( "blblblbl " + workingdir.toFile() );
 			pb.directory( workingdir.toFile() );
 		}
 		
@@ -690,7 +683,7 @@ public class NativeRun {
 									//	startProcess( where, commandsList.subList(0, k), workingdir, input, output, ta, false );
 									//	startProcess( where, commandsList.subList(k+1, commandsList.size()), workingdir, input, output, ta, false );
 									//} else {
-									boolean blist = startProcess( where, commandsList, workingdir, input, output, ta, false );
+									boolean blist = startProcess( /*where*/ new ArrayList<String>(), commandsList, workingdir, input, output, ta, false );
 									//}
 									
 									//if( !blist ) break;

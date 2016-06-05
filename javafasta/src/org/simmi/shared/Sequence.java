@@ -716,7 +716,7 @@ public class Sequence implements Comparable<Sequence> {
 				if( selspec.startsWith("JQLJ") ) ret = "Thermus_scotoductus_KI2";
 				
 				if( selspec.startsWith("JPSL") ) ret = "Thermus_filiformis_Wai33_A1";
-				if( selspec.startsWith("JTJB") ) ret = "Thermus_sp_29";
+				if( selspec.startsWith("JTJB") ) ret = "Thermus_sp_2.9";
 				
 				if( selspec.startsWith("AUIW") ) ret = "Thermus_antranikianii_HN3-7";
 				if( selspec.startsWith("ATXJ") ) ret = "Thermus_islandicus_PRI_3838";
@@ -728,8 +728,8 @@ public class Sequence implements Comparable<Sequence> {
 				if( selspec.startsWith("AQWU") ) ret = "Thermus_igniterrae_ATCC_700962";
 				if( selspec.startsWith("AIJQ") ) ret = "Thermus_parvatiensis";
 				
-				if( selspec.startsWith("LHCI") ) ret = "Thermus_aquaticus";
-				if( selspec.startsWith("LJJR") ) ret = "Thermus_scotoductus";
+				if( selspec.startsWith("LHCI") ) ret = "Thermus_aquaticus_YT1";
+				if( selspec.startsWith("LJJR") ) ret = "Thermus_scotoductus_K1";
 				
 				if( selspec.startsWith("BBBL") ) ret = "Thermus_kawarayensis_JCM_12314";
 				if( selspec.startsWith("BBBN") ) ret = "Thermus_sp_JCM_17653";
