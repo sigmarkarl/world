@@ -91,6 +91,11 @@ public class Cog {
 		cogchar.put( "Intracellular trafficking and secretion", 'U' );
 		cogchar.put( "Coenzyme metabolism", 'H' );
 		cogchar.put( "Secondary metabolites biosynthesis, transport and catabolism", 'Q' );
+		cogchar.put( "acyl-carrier-protein", 'I' );
+		cogchar.put( "acyl-carrier protein", 'I' );
+		cogchar.put( "acyl carrier protein", 'I' );
+		cogchar.put( "3-hydroxymyristoyl", 'M' );
+		cogchar.put( "Signal transduction", 'T');
 		//cogchar.put( "acetolactate synthase, pyruvate dehydrogenase (cytochrome), glyoxylate carboligase, phosphonopyruvate decarboxylase", 'Æ' );
 	}
 	
