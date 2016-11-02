@@ -2,7 +2,7 @@ package org.simmi.shared;
 
 import org.ejml.data.DenseMatrix64F;
 import org.ejml.factory.DecompositionFactory;
-import org.ejml.factory.SingularValueDecomposition;
+import org.ejml.interfaces.decomposition.SingularValueDecomposition;
 import org.ejml.ops.CommonOps;
 import org.ejml.ops.NormOps;
 import org.ejml.ops.SingularOps;
@@ -182,7 +182,7 @@ public class PrincipleComponentAnalysis {
         DenseMatrix64F s = new DenseMatrix64F(A.getNumCols(),1,true,sampleData);
         DenseMatrix64F r = new DenseMatrix64F(numComponents,1);
 
-        CommonOps.sub(s,mean,s);
+        CommonOps.subtract(s,mean,s);
 
         CommonOps.mult(V_t,s,r);
 
