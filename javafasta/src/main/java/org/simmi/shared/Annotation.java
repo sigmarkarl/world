@@ -328,8 +328,10 @@ public class Annotation implements Comparable<Object> {
 
 	@Override
 	public int compareTo(Object o) {
-		if( o == null ) return -1;
-		int val = start - ((Annotation)o).start;
+		if( o == null ) {
+			return -1;
+		}
+		int val = Integer.compare(start, ((Annotation)o).start);
 		//if( val == 0 && start == 0 ) return this.hashCode();
 		return val;
 	}

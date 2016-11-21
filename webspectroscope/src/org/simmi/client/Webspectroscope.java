@@ -28,6 +28,8 @@ import elemental.html.AudioSourceNode;
 import elemental.html.Float32Array;
 import elemental.html.JavaScriptAudioNode;
 import elemental.html.Navigator;
+import elemental.html.NavigatorUserMediaError;
+import elemental.html.NavigatorUserMediaErrorCallback;
 import elemental.html.NavigatorUserMediaSuccessCallback;
 import elemental.html.RealtimeAnalyserNode;
 import elemental.util.Mappable;
@@ -53,6 +55,50 @@ public class Webspectroscope implements EntryPoint {
 	
 	public native AudioSourceNode createMediaStreamSource( AudioContext acontext, LocalMediaStream stream ) /*-{
 		return acontext.createMediaStreamSource( stream );
+	}-*/;
+	
+	public native void startRendering( AudioContext acontext, Canvas canvas ) /*-{
+		return acontext.startRendering();
+		//.then(function(renderedBuffer) {
+		//	this.@org.simmi.client.Webspectroscope::then(Lcom/google/gwt/canvas/client/Canvas;Lelemental/html/AudioBuffer;)( canvas, renderedBuffer );
+		//});
+	}-*/;
+	
+	public void then( Canvas canvas, AudioBuffer ab ) {
+		final Context2d 		context2d = canvas.getContext2d();
+		
+		int w = canvas.getCoordinateSpaceWidth();
+		int h = canvas.getCoordinateSpaceHeight();
+		context2d.clearRect(0, 0, w, h);
+								
+		//AudioProcessingEvent	ape = (AudioProcessingEvent)evt;
+		//AudioBuffer				ab = ape.getInputBuffer();
+		
+		//rtan.getFloatFrequencyData( fael );
+		
+		Float32Array 			farray = ab.getChannelData( 0 );
+		int len = farray.length();
+		
+		final elemental.html.Window 		wnd = Browser.getWindow();
+		wnd.getConsole().log( farray.length() + "eeeerm " + ab.getChannelData(0).numberAt(0) + " channel " + ab.getChannelData(0).numberAt(4000) );
+		
+		context2d.setStrokeStyle("#00aa00");
+		context2d.beginPath();
+		context2d.moveTo(0, 240);
+		for( int i = 0; i < len; i++ ) {
+			double val = farray.numberAt(i); //.get(i);
+			context2d.lineTo( i*w/len, 240+val*200 );
+		}
+		//context2d.closePath();
+		context2d.stroke();
+	}
+	
+	public native JavaScriptAudioNode createScriptProcessor( AudioContext acontext, int bufferSize, int nInputNodes, int nOutputNodes ) /*-{
+		return acontext.createScriptProcessor( bufferSize, nInputNodes, nOutputNodes );
+	}-*/;
+	
+	public native AudioContext newAudioContext(int numChannels, int length, int sampleRate) /*-{
+		return new (window.AudioContext || window.webkitAudioContext)();//new OfflineAudioContext(numChannels, length, sampleRate);
 	}-*/;
 	
 	public native Mappable audio() /*-{
@@ -121,54 +167,20 @@ public class Webspectroscope implements EntryPoint {
 				//stuff( ael, stream );
 				//MediaElementAudioSourceNode microphone = acontext.createMediaElementSource( ael );
 				
-				final AudioContext 				acontext = wnd.newAudioContext();
+				//final OfflineAudioContext 				oacontext = new OfflineAudioContext();
+				//AudioContext	acontext = (AudioContext)oacontext;
+				AudioContext 					acontext = newAudioContext(1,2048,44100);
 				final AudioSourceNode 			microphone = createMediaStreamSource(acontext, stream);
 				final AudioDestinationNode		output = acontext.getDestination();
 				
-				final Float32ArrayNative		fa = Float32ArrayNative.create(2048);
+				final Float32ArrayNative		fa = Float32ArrayNative.create(4096);
 				final Float32Array				fael = ok( fa );
 				
 				final RealtimeAnalyserNode 		rtan = acontext.createAnalyser();
-				final JavaScriptAudioNode 		jsan = acontext.createJavaScriptNode(2048, 1);
-				rtan.setFftSize( 2048 );
+				rtan.setFftSize( 4096 );
 				
 				microphone.connect( rtan, 0, 0 );
 				rtan.connect( output, 0, 0 );
-				//jsan.connect( output, 0, 0 );
-				
-				//final AudioBufferSourceNode 	buffer = acontext.createBufferSource();
-				//asn.setLooping( true );
-				//asn.connect(jsan, 0, 0);
-				jsan.setOnaudioprocess( new EventListener() {
-					@Override
-					public void handleEvent(Event evt) {
-						int w = canvas.getCoordinateSpaceWidth();
-						int h = canvas.getCoordinateSpaceHeight();
-						context2d.clearRect(0, 0, w, h);
-												
-						AudioProcessingEvent	ape = (AudioProcessingEvent)evt;
-						AudioBuffer				ab = ape.getInputBuffer();
-						
-						//rtan.getFloatFrequencyData( fael );
-						
-						Float32Array 			farray = ab.getChannelData( 0 );
-						int len = farray.length();
-						//wnd.getConsole().log( ab.getChannelData(0).numberAt(0) + "  " + ab.getChannelData(0).numberAt(4000) );
-						
-						context2d.setStrokeStyle("#00aa00");
-						context2d.beginPath();
-						context2d.moveTo(0, 240);
-						for( int i = 0; i < len; i++ ) {
-							double val = farray.numberAt(i); //.get(i);
-							context2d.lineTo( i*w/len, 240+val*200 );
-						}
-						//context2d.closePath();
-						context2d.stroke();
-						
-						//asn.setBuffer( ab );
-					}
-				});
-				acontext.startRendering();
 				
 				/*JavaScriptAudioNode analyser = acontext.createJavaScriptNode(4096);
 				analyser.setOnaudioprocess( new EventListener() {
@@ -188,11 +200,11 @@ public class Webspectroscope implements EntryPoint {
 				//rtan.connect(analyser, 0,0);
 		        //rtan.connect(acontext.getDestination(), 0, 0);
 				
-				int w = Window.getClientWidth();
+				/*int w = Window.getClientWidth();
 				int h = Window.getClientHeight();
 				context2d.clearRect(0, 0, w, h);
 				context2d.setFillStyle("#00ff00");
-				context2d.fillRect(10.0, 10.0, 100.0, 100.0 );
+				context2d.fillRect(10.0, 10.0, 100.0, 100.0 );*/
 				ra = new RequestAnimationFrameCallback() {
 					@Override
 					public boolean onRequestAnimationFrameCallback(double time) {
@@ -211,13 +223,17 @@ public class Webspectroscope implements EntryPoint {
 							context2d.drawImage( canvas.getCanvasElement(), 1.0, 0.0, w-1.0, h, 0.0, 0.0, w-1.0, h );
 							//ImageData imd = context2d.getImageData(w-1, 0, 1, h);
 							
-							for( int i = 0; i < h; i++ ) {
+							for( int i = 0; i < fa.length()/2; i++ ) {
 								double val = fa.get(i);
 								int green = Math.min( 255, Math.max(0, -(int)(10*val+500)));
 								
 								String gg = green < 16 ? "0"+Integer.toString( green, 16 ) : Integer.toString( green, 16 );
-								context2d.setFillStyle(gg+"ff"+gg);
-								context2d.fillRect(w-1.0, 500.0*Math.log10(i+100.0)-1000.0, 1.0, 1.0);
+								String color = "#"+gg+"ff"+gg;
+								context2d.setFillStyle(color);
+								
+								//double hloc = i*480*2/fa.length();
+								double hloc = 500.0*Math.log10(i+100.0)-1000.0;
+								context2d.fillRect(w-1.0, hloc, 1.0, 1.0);
 							}
 							/*for( int i = 0; i < h; i++ ) {
 								double val = fa.get(i);
@@ -236,7 +252,6 @@ public class Webspectroscope implements EntryPoint {
 							//context2d.closePath();
 							context2d.stroke();*/
 							
-							//wnd.getConsole().log(" m "+fa.get(1023) );
 							wnd.webkitRequestAnimationFrame( ra );
 							return true;
 						}
@@ -245,6 +260,11 @@ public class Webspectroscope implements EntryPoint {
 				};
 		        wnd.webkitRequestAnimationFrame( ra );
 				
+				return false;
+			}
+		}, new NavigatorUserMediaErrorCallback() {
+			public boolean onNavigatorUserMediaErrorCallback(NavigatorUserMediaError error) {
+				wnd.getConsole().log( error.toString() + "  " + error.getCode() );
 				return false;
 			}
 		});

@@ -206,36 +206,34 @@ public class Tegeval extends Annotation implements Teg {
 
 	@Override
 	public int compareTo(Object o) {
-		if( o instanceof Tegeval ) {
-			Tegeval tv = (Tegeval)o;
-			if( locsort ) {
-				int ret = getContshort().compareTo(tv.getContshort());
-				/*
-				 * if( o.contshort != null || o.contshort.length() < 2 ) { ret =
-				 * contshort.compareTo(o.contshort); } else {
-				 * System.err.println(); }
-				 */
-				return ret == 0 ? super.compareTo(o) : ret;
-			} else {
-				int comp = Double.compare(eval, tv.eval);
-				return comp == 0 ? teg.compareTo(tv.teg) : comp;
-			}
-		} else if( o instanceof Teginfo ) {
+		/*if( o != null ) return this.getGene().toString().compareTo(o.toString());
+		else return 1;*/
+
+		if( o == null || o instanceof Teginfo ) {
+			return compareTo((Teginfo)o);
+		} else if( o instanceof Tegeval ) {
+			//System.err.println("comparing "+this+" with tegval: "+);
+			return compareTo((Tegeval) o);
+		} else if( o instanceof Teg ) {
+			//System.err.println("comparing "+this+" with empty: 1");
 			return 1;
 		} else {
 			return super.compareTo(o);
 		}
 	}
 	
-	/*public int compareTo(Tegeval tv) {
+	public int compareTo(Tegeval tv) {
 		if( locsort ) {
-			int ret = contshort.compareTo(tv.contshort);
-			/*
-			 * if( o.contshort != null || o.contshort.length() < 2 ) { ret =
-			 * contshort.compareTo(o.contshort); } else {
-			 * System.err.println(); }
-			 *
-			return ret == 0 ? start - tv.start : ret;
+			int ret = getContshort().compareTo(tv.getContshort());
+				/*
+				 * if( o.contshort != null || o.contshort.length() < 2 ) { ret =
+				 * contshort.compareTo(o.contshort); } else {
+				 * System.err.println(); }
+				 */
+
+			int val = ret == 0 ? super.compareTo(tv) : ret;
+			//System.err.println("comparing "+this+" with "+tv + ": "+val);
+			return val;
 		} else {
 			int comp = Double.compare(eval, tv.eval);
 			return comp == 0 ? teg.compareTo(tv.teg) : comp;
@@ -244,5 +242,5 @@ public class Tegeval extends Annotation implements Teg {
 	
 	public int compareTo(Teginfo ti) {
 		return 1;
-	}*/
+	}
 }

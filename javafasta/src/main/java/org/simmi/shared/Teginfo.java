@@ -25,14 +25,20 @@ public class Teginfo implements Teg {
 				ret += " " + tv.toString();
 			}
 			i++;
-			if( i > 10 ) break;
+			if( i > 10 || ret.length() > 50 ) break;
 		}
 		return ret;
 	}
 
 	@Override
 	public int compareTo(Object o) {
-		if( o instanceof Teginfo ) return best.compareTo(((Teginfo)o).best);
-		return -1;
+		if( o instanceof Teginfo ) {
+			return best.compareTo(((Teginfo)o).best);
+		} else if( o instanceof Tegeval ) {
+			return -1;
+		} else if( o instanceof Teg ) {
+			return 1;
+		}
+		return 0;
 	}
 }
