@@ -58,6 +58,11 @@ public class Gene {
 		w.write( ">"+id+"\n" );
 		w.write( tegeval.getSequence()+"\n" );
 	}
+
+	public void writeGeneIdAAFasta( Writer w ) throws IOException {
+		w.write( ">"+id+"\n" );
+		w.write( tegeval.getProteinSequence().getStringBuilder()+"\n" );
+	}
 	
 	public Contig getContig() {
 		return tegeval.getContshort();
@@ -269,6 +274,7 @@ public class Gene {
 	public String refid;
 	public String idstr;
 	public Cog cog;
+	public Cog pfam;
 	public Set<String> allids;
 	public String genid;
 	public String uniid;

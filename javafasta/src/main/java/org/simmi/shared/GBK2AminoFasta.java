@@ -40,7 +40,7 @@ public class GBK2AminoFasta {
 	};
 	
 	public static List<Sequence> handleText( Map<String,StringBuilder> filetextmap, Map<String,Path> annoset, Writer allout, Path path, String replace ) throws IOException {
-		List<Sequence>	lseq = new ArrayList<Sequence>();
+		List<Sequence>	lseq = new ArrayList<>();
 		
 		//List<Anno>	annolist = new ArrayList<Anno>();
 		for( String tag : filetextmap.keySet() ) {
@@ -61,7 +61,7 @@ public class GBK2AminoFasta {
 			//if( k == -1 ) k = filename.length();
 			String spec = replace != null ? replace : tag.replace(".gbk", ""); //filename.substring(0, k);
 			
-			Set<String>	xref = new TreeSet<String>();
+			Set<String>	xref = new TreeSet<>();
 			//int contignum = 0;
 			Sequence	strbuf = new Sequence();
 			while( line!= null ) {
@@ -71,6 +71,8 @@ public class GBK2AminoFasta {
 					
 					if( trimline.startsWith("LOCUS") ) {
 						locus = trimline.split("[ \t]+")[1];
+					} else if( trimline.startsWith("SOURCE") ) {
+						spec = trimline.substring(7).trim().replace(' ','_');
 					}
 					//String[] split = trimline.split("[\t ]+");
 					
@@ -168,11 +170,12 @@ public class GBK2AminoFasta {
 									} else {
 										System.err.println( nsplit[0] + " n " + nsplit[nsplit.length-1] );
 										anno = null;
+										break;
 									}
 								}
 								
 								if( anno != null && anno.stop-anno.start > 10000 ) {
-									System.err.println();
+									anno = null;
 								}
 							} else {
 								String[] nsplit;
@@ -205,7 +208,6 @@ public class GBK2AminoFasta {
 					} else if( trimline.startsWith("/product") ) {
 						if( anno != null ) {
 							if( trimline.length() > 10 ) {
-								//System.err.println("badlfjalkdjalksdj");
 								int i = trimline.indexOf('"', 10);
 								while( i == -1 ) {
 									int k = filetext.indexOf("\n", ind+1);
@@ -223,6 +225,8 @@ public class GBK2AminoFasta {
 								if( ecind != -1 ) {
 									anno.name = anno.name.substring(0,ecind).trim();
 								}
+								anno.name = anno.name.replace("(","");
+								anno.name = anno.name.replace(")","");
 							}
 							//annolist.add( anno );
 							//anno = null;
@@ -300,7 +304,6 @@ public class GBK2AminoFasta {
 							a.spec += "_contig1";
 						}
 					}*/
-					
 					//contignum++;
 					
 					k = filetext.indexOf("\n", ind+1);
@@ -310,9 +313,7 @@ public class GBK2AminoFasta {
 					}
 					ind = k;
 				}
-				
 				//if( contignum > 0 && anno != null && anno.spec != null ) anno.spec += "_contig"+contignum;;
-				
 				//allout.write( ">" + spec + (contignum > 0 ? "_contig"+contignum+"\n" : "\n") );
 				
 				if( allout != null ) {
@@ -329,8 +330,8 @@ public class GBK2AminoFasta {
 			}
 		}
 		
-		Map<String,String> nameMap = new HashMap<String,String>();
-		Map<Path,Writer>	urifile = new HashMap<Path,Writer>();
+		Map<String,String> nameMap = new HashMap<>();
+		Map<Path,Writer>	urifile = new HashMap<>();
 		for( Sequence seq : lseq ) {
 			List<Annotation> annset = seq.getAnnotations();
 			if( annset != null ) for( Annotation ao : annset ) {
@@ -348,11 +349,7 @@ public class GBK2AminoFasta {
 						} else {
 							out = urifile.get( uri );
 						}
-						
-						/*if( out == null ) {
-							System.err.println();
-						}*/
-						
+
 						boolean amino = ao.getType().contains("CDS");
 						if( ao.id != null && ao.group != null && !ao.id.contains("..") ) nameMap.put(ao.id, ao.group);
 						
@@ -433,12 +430,14 @@ public class GBK2AminoFasta {
 		if( path != null ) {
 			Path p = path.getParent().resolve(path.getFileName()+".namemap"); //new File( new URI(path+".namemap") );
 			//FileWriter mfw = new FileWriter( f );
-			Writer mfw = Files.newBufferedWriter( p );
-			for( String a : nameMap.keySet() ) {
-				String gene = nameMap.get(a);
-				mfw.write( a + "\t" + gene + "\n" );
+			if( !Files.exists(p) ) {
+				Writer mfw = Files.newBufferedWriter(p);
+				for (String a : nameMap.keySet()) {
+					String gene = nameMap.get(a);
+					mfw.write(a + "\t" + gene + "\n");
+				}
+				mfw.close();
 			}
-			mfw.close();
 		}
 		
 		for( Path uri : urifile.keySet() ) {
@@ -479,7 +478,7 @@ public class GBK2AminoFasta {
 			e.printStackTrace();
 		}*/
 		//ftpExtract();
-/* catch (IOException e) {
+		/* catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}*/
@@ -508,7 +507,7 @@ public class GBK2AminoFasta {
 				boolean amino = false;
 				String[] annoarray = {"tRNA", "rRNA"};//{"CDS", "tRNA", "rRNA", "mRNA"};
 				//Arrays.asList( annoarray )
-				Map<String,URI>	map = new HashMap<String,URI>();
+				Map<String,URI>	map = new HashMap<>();
 				map.put( "tRNA", null );
 				map.put( "rRNA", null );
 				

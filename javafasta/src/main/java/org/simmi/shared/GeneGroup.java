@@ -16,7 +16,8 @@ public class GeneGroup {
 	//int			groupGeneCount;
 	Map<String,String> 				ko2name;
 	Map<String,Cog>					cogmap;
-	Map<String,Set<String>>				biosystemsmap;
+	Map<String,Cog>					pfammap;
+	Map<String,Set<String>>			biosystemsmap;
 
 	public String toString() {
 		return this.getName() + " " + genes.size() + "  " + this.getMaxLength();
@@ -365,6 +366,36 @@ public class GeneGroup {
 		Cog cog = getCog( cogmap );
 		return cog != null ? cog.genesymbol : null;
 	}
+
+	public Cog getPfam( Map<String,Cog> pfammap ) {
+		for( Gene g : genes ) {
+			if( pfammap.containsKey( g.id ) ) return pfammap.get( g.id );
+		}
+		for( Gene g : genes ) {
+			if( g.cog != null ) return g.cog;
+		}
+		return null;
+	}
+
+	public String getPfamname() {
+		Cog pfam = getPfam( pfammap );
+		return pfam != null ? pfam.name : null;
+	}
+
+	public String getPfam() {
+		Cog pfam = getCog( pfammap );
+		return pfam != null ? pfam.id : null;
+	}
+
+	public String getPfamanno() {
+		Cog pfam = getCog( pfammap );
+		return pfam != null ? pfam.annotation : null;
+	}
+
+	public String getPfamsymbol() {
+		Cog pfam = getPfam( pfammap );
+		return pfam != null ? pfam.genesymbol : null;
+	}
 	
 	public int getPresentin() {
 		return getSpecies().size();
@@ -577,7 +608,7 @@ public class GeneGroup {
 		this.species.addAll( species );
 	}*/
 	
-	public GeneGroup( int i, Map<Set<String>,ShareNum> specset, Map<String,Cog> cogmap, Map<String,String> konamemap, Map<String,Set<String>> biosystemsmap ) {
+	public GeneGroup( int i, Map<Set<String>,ShareNum> specset, Map<String,Cog> cogmap, Map<String,Cog> pfammap, Map<String,String> konamemap, Map<String,Set<String>> biosystemsmap ) {
 		this.groupIndex = i;
 		this.specset = specset;
 		this.cogmap = cogmap;
@@ -586,7 +617,7 @@ public class GeneGroup {
 	}
 
 	public GeneGroup() {
-		this( -1, null, null, null, null );
+		this( -1, null, null, null, null, null );
 	}
 	
 	public int getGroupIndex() {

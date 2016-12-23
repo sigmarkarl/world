@@ -1852,7 +1852,7 @@ public class Sequence implements Comparable<Sequence> {
 		} else if( start < sb.length() ) {
 			int u = Math.max(0,start);
 			int e = Math.min(sb.length(),end);
-			return sb.substring( u, e );
+			if( e > u ) return sb.substring( u, e );
 		}
 		//}
 		return "";

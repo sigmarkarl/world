@@ -8736,10 +8736,13 @@ public class JavaFasta extends JApplet {
 					Map<String,Integer> msti = typeRepeat.get(crispr);
 					for( String rep : msti.keySet() ) {
 						int count = msti.get(rep);
-						Cell cell = nullrow.get(++l).createCell(j);
-						cell.setCellValue(count+"-"+rep);
-						CellStyle cs = repeatColor.get(rep);
-						if( cs != null ) cell.setCellStyle(cs);
+						l++;
+						if( l < nullrow.size() ) {
+							Cell cell = nullrow.get(l).createCell(j);
+							cell.setCellValue(count + "-" + rep);
+							CellStyle cs = repeatColor.get(rep);
+							if (cs != null) cell.setCellStyle(cs);
+						}
 					}
 					
 					j++;

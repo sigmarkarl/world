@@ -201,7 +201,7 @@ public class Annotation implements Comparable<Object> {
 	}
 	
 	public void addDbRef( String val ) {
-		if( dbref == null ) dbref = new HashSet<String>();
+		if( dbref == null ) dbref = new HashSet<>();
 		dbref.add( val );
 	}
 	
