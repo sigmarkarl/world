@@ -18,13 +18,7 @@ import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.StringSelection;
 import java.awt.datatransfer.Transferable;
 import java.awt.datatransfer.UnsupportedFlavorException;
-import java.awt.event.ActionEvent;
-import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
-import java.awt.event.MouseMotionListener;
+import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -191,33 +185,35 @@ public class JavaFasta extends JApplet {
 	
 	public static Map<String,Integer> getBlosumMap( boolean includeDash ) {
 		Map<String,Integer> blosumap = new HashMap<>();
-		InputStream is = JavaFasta.class.getResourceAsStream("BLOSUM62");
-		InputStreamReader 	ir = new InputStreamReader( is );
-		BufferedReader		br = new BufferedReader( ir );
-		String[] abet = null;
-		//int i = 0;
-		try {
-			String line = br.readLine();
-			while( line != null ) {
-				if( line.charAt(0) != '#' ) {
-					String[] split = line.trim().split("[ ]+");
-					char chr = line.charAt(0);
-					if( chr == ' ' ) {
-						abet = split;
-						abet[abet.length-1] = "-";
-					} else {
-						if( includeDash && chr == '*' ) chr = '-';
-						int k = 0;
-						for( String a : abet ) {
-							blosumap.put( chr+a, Integer.parseInt(split[++k]) );
+		InputStream is = JavaFasta.class.getResourceAsStream("/BLOSUM62");
+		if( is != null ) {
+			InputStreamReader ir = new InputStreamReader(is);
+			BufferedReader br = new BufferedReader(ir);
+			String[] abet = null;
+			//int i = 0;
+			try {
+				String line = br.readLine();
+				while (line != null) {
+					if (line.charAt(0) != '#') {
+						String[] split = line.trim().split("[ ]+");
+						char chr = line.charAt(0);
+						if (chr == ' ') {
+							abet = split;
+							abet[abet.length - 1] = "-";
+						} else {
+							if (includeDash && chr == '*') chr = '-';
+							int k = 0;
+							for (String a : abet) {
+								blosumap.put(chr + a, Integer.parseInt(split[++k]));
+							}
 						}
 					}
+					line = br.readLine();
 				}
-				line = br.readLine();
+				br.close();
+			} catch (IOException e) {
+				e.printStackTrace();
 			}
-			br.close();
-		} catch (IOException e) {
-			e.printStackTrace();
 		}
 		
 		return blosumap;
@@ -231,7 +227,7 @@ public class JavaFasta extends JApplet {
 		ByteArrayOutputStream	baos = new ByteArrayOutputStream();
 		OutputStreamWriter osw = new OutputStreamWriter( baos );
 		
-		List<Sequence> selseqs = new ArrayList<Sequence>();
+		List<Sequence> selseqs = new ArrayList<>();
 		int[] rr = table.getSelectedRows();
 		for( int r : rr ) {
 			int i = table.convertRowIndexToModel(r);
@@ -294,7 +290,7 @@ public class JavaFasta extends JApplet {
 	public JavaFasta( Serifier serifier ) { this.serifier = serifier; }
 	
 	public List<Sequence> getEditedSequences() {
-		List<Sequence>	es = new ArrayList<Sequence>();
+		List<Sequence>	es = new ArrayList<>();
 		for( Sequence s : serifier.lseq ) {
 			if( s.isEdited() ) es.add( s );
 		}
@@ -696,7 +692,7 @@ public class JavaFasta extends JApplet {
 								}
 								return a.gene.getName();
 							}
-							return a.name;
+							return a.getName();
 						}
 					}
 				}
@@ -1398,7 +1394,7 @@ public class JavaFasta extends JApplet {
 	}
 	
 	public Map<String,String> importRenameFile( InputStream is ) throws IOException {
-		Map<String,String> or = new HashMap<String,String>();
+		Map<String,String> or = new HashMap<>();
 	
 		BufferedReader br = new BufferedReader( new InputStreamReader(is) );
 		String line = br.readLine();
@@ -1464,7 +1460,7 @@ public class JavaFasta extends JApplet {
          //ByteArrayOutputStream baos = new ByteArrayOutputStream();
          //OutputStreamWriter	osw = new OutputStreamWriter( baos );
     	 
-         List<Sequence> seqlist = new ArrayList<Sequence>();
+         List<Sequence> seqlist = new ArrayList<>();
     	 int[] rr = table.getSelectedRows();
     	 for( int r : rr ) {
     		 int i = table.convertRowIndexToModel( r );
@@ -1635,7 +1631,7 @@ public class JavaFasta extends JApplet {
 	   	for( int r : rr ) {
 	   		int i = table.convertRowIndexToModel( r );
 	   		Annotation ann = tlann.get(i);
-	   		osw.write( ">" + ann.name + "\n" );
+	   		osw.write( ">" + ann.getName() + "\n" );
 	   		int val = ann.start;
 	   		while( val < ann.stop ) {
 	   			osw.write( ann.seq.sb.substring( val, Math.min( ann.stop, val+70 )) + "\n" );
@@ -1771,8 +1767,8 @@ public class JavaFasta extends JApplet {
 	public void delete() {
 		edited = true;
 		
-		Set<Sequence>	delset = new HashSet<Sequence>();
-		Set<Annotation>	adelset = new HashSet<Annotation>();
+		Set<Sequence>	delset = new HashSet<>();
+		Set<Annotation>	adelset = new HashSet<>();
 		int[] rr = table.getSelectedRows();
 		for( int r : rr ) {
 			int i = table.convertRowIndexToModel(r);
@@ -3093,13 +3089,13 @@ public class JavaFasta extends JApplet {
 							System.err.println();
 						}*/
 						
-						int val = inanno.name.length();
+						int val = inanno.getName().length();
 						int bil = (inanno.stop*2400)/maxseqlen - (inanno.start*2400)/maxseqlen;
-						String str = inanno.name.substring(0,Math.min(val, inanno.name.length()));
+						String str = inanno.getName().substring(0,Math.min(val, inanno.getName().length()));
 						strw = g2.getFontMetrics().stringWidth(str);
 						while( strw > bil ) {
 							val--;
-							str = inanno.name.substring(0,Math.min(val, inanno.name.length()));
+							str = inanno.getName().substring(0,Math.min(val, inanno.getName().length()));
 							strw = g2.getFontMetrics().stringWidth(str);
 						}
 						//if( str.contains("hypo") ) {
@@ -3392,14 +3388,11 @@ public class JavaFasta extends JApplet {
 			public void removeTableModelListener(TableModelListener l) {}
 		});
 		
-		table.getRowSorter().addRowSorterListener( new RowSorterListener() {
-			@Override
-			public void sorterChanged(RowSorterEvent e) {
-				c.repaint();
-				overview.reval();
-				overview.repaint();
-			}
-		});
+		table.getRowSorter().addRowSorterListener(e -> {
+            c.repaint();
+            overview.reval();
+            overview.repaint();
+        });
 		
 		splitpane = new JSplitPane();
 		splitpane.setDividerLocation(0.7);
@@ -4020,10 +4013,10 @@ public class JavaFasta extends JApplet {
 	    							if( a.stop > start && a.start < end ) {
 		    							int cnt = start;
 		    							
-		    							if( seq.getName().contains("teng") && a.name.contains("Cas6") ) {
+		    							if( seq.getName().contains("teng") && a.getName().contains("Cas6") ) {
 		    								System.err.println();
 		    							}
-		    							System.err.println(  seq.getName() + " bleh2 " + a.name );
+		    							System.err.println(  seq.getName() + " bleh2 " + a.getName() );
 		    							
 		    							int bil = a.stop-a.start;
 		    							int newstart = a.start;
@@ -5300,21 +5293,18 @@ public class JavaFasta extends JApplet {
 				cmds.add( new Object[] {sw.toString().getBytes(), baos, null} );
 				cmds.add( commandsList );
 				
-				Runnable run = new Runnable() {
-					@Override
-					public void run() {
-						String res = baos.toString();
-						
-						JTextArea ta = new JTextArea( res );
-						JScrollPane	sp = new JScrollPane( ta );
-						ta.setFont( new Font("monospaced", Font.PLAIN, 12) );
-						JFrame frame = new JFrame();
-						frame.setDefaultCloseOperation( JFrame.DISPOSE_ON_CLOSE );
-						frame.setSize(800, 600);
-						frame.add( sp );
-						frame.setVisible(true);
-					}
-				};
+				Runnable run = () -> {
+                    String res = baos.toString();
+
+                    JTextArea ta = new JTextArea( res );
+                    JScrollPane	sp = new JScrollPane( ta );
+                    ta.setFont( new Font("monospaced", Font.PLAIN, 12) );
+                    JFrame frame = new JFrame();
+                    frame.setDefaultCloseOperation( JFrame.DISPOSE_ON_CLOSE );
+                    frame.setSize(800, 600);
+                    frame.add( sp );
+                    frame.setVisible(true);
+                };
 				NativeRun nrun = new NativeRun( run );
 				Object[] cont = new Object[] {null, null, null};
 				try {
@@ -5439,7 +5429,7 @@ public class JavaFasta extends JApplet {
 									
 									if( stop - start > 8 ) {
 										Repeat r = new Repeat();
-										r.name = sequence.getName()+"_repeat_"+i;
+										r.setName( sequence.getName()+"_repeat_"+i );
 										
 										r.seq = sequence;
 										r.start = start;
@@ -5675,7 +5665,7 @@ public class JavaFasta extends JApplet {
 				JavaFasta	jf = new JavaFasta();
 				jf.initGui( frame );
 				
-				Map<Sequence,List<Annotation>> mann = new HashMap<Sequence,List<Annotation>>();
+				Map<Sequence,List<Annotation>> mann = new HashMap<>();
 				int[] rr = atable.getSelectedRows();
 				for( int r : rr ) {
 					int i = atable.convertRowIndexToModel(r);
@@ -5688,7 +5678,7 @@ public class JavaFasta extends JApplet {
 					if( mann.containsKey(ann.seq) ) {
 						alist = mann.get( ann.seq );
 					} else {
-						alist = new ArrayList<Annotation>();
+						alist = new ArrayList<>();
 						mann.put(ann.seq, alist);
 					}
 					alist.add( ann );
@@ -5697,7 +5687,7 @@ public class JavaFasta extends JApplet {
 				for( Sequence seq : mann.keySet() ) {
 					List<Annotation> alist = mann.get(seq);
 					Collections.sort( alist );
-					List<Annotation> spacerlist = new ArrayList<Annotation>();
+					List<Annotation> spacerlist = new ArrayList<>();
 					for( int i = 0; i < alist.size()-1; i++ ) {
 						Annotation a = alist.get(i);
 						Annotation na = alist.get(i+1);
@@ -7506,7 +7496,7 @@ public class JavaFasta extends JApplet {
 				Annotation a = serifier.lann.get(i);
 				
 				if( a.desc != null ) return a.desc.toString();
-				return a.name;
+				return a.getName();
 			}
 		};
 		atable.setDragEnabled( true );
@@ -7859,8 +7849,8 @@ public class JavaFasta extends JApplet {
 						
 						if( first.stop-first.start < 50 && second.stop-second.start < 50 && second.start-first.stop > 15 && second.start-first.stop < 50 ) {
 							boolean similar = false;
-							String minna = first.name.length() < second.name.length() ? first.name : second.name;
-							String meira = minna == first.name ? second.name : first.name;
+							String minna = first.getName().length() < second.getName().length() ? first.getName() : second.getName();
+							String meira = minna == first.getName() ? second.getName() : first.getName();
 							
 							minna = minna.toUpperCase();
 							meira = meira.toUpperCase();
@@ -7920,8 +7910,8 @@ public class JavaFasta extends JApplet {
 				for( Sequence seq : serifier.lseq ) {
 					List<Annotation> lann = seq.getAnnotations();
 					if( lann != null ) {
-						Set<Annotation>	allrem = new HashSet<Annotation>();
-						Set<Annotation> remann = new HashSet<Annotation>();
+						Set<Annotation>	allrem = new HashSet<>();
+						Set<Annotation> remann = new HashSet<>();
 						int phagemummer = 0;
 						for( Annotation ann : lann ) {
 							if( phagemummer > 0 && ann != null && ann.type != null && ann.type.contains("mummer") ) {
@@ -7951,17 +7941,17 @@ public class JavaFasta extends JApplet {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				//Map<String,Map<String,Map<String,List<Sequence>>>> whatf = new HashMap<String,Map<String,Map<String,List<Sequence>>>>();
-				Map<String, Map<String,List<Annotation>>>	tann = new LinkedHashMap<String,Map<String,List<Annotation>>>();
-				Map<String, List<Annotation>> 			mann = new TreeMap<String, List<Annotation>>();
+				Map<String, Map<String,List<Annotation>>>	tann = new LinkedHashMap<>();
+				Map<String, List<Annotation>> 			mann = new TreeMap<>();
 				for( Annotation ann : serifier.lann ) {
 					if( ann != null && ann.type != null && ann.type.contains("mummer") ) {
-						ann.name = ann.name.toUpperCase();
+						ann.setName( ann.getName().toUpperCase() );
 						
 						List<Annotation> lann;
 						if( mann.containsKey(ann.seq.getName()) ) {
 							lann = mann.get(ann.seq.getName());
 						} else {
-							lann = new ArrayList<Annotation>();
+							lann = new ArrayList<>();
 							System.err.println();
 							mann.put( ann.seq.getName(), lann );
 						}
@@ -7972,12 +7962,9 @@ public class JavaFasta extends JApplet {
 				}
 				
 				int maxcount = 14;
-				Set<String> specset = new TreeSet<String>();
+				Set<String> specset = new TreeSet<>();
 				for( String seq : mann.keySet() ) {
 					List<Annotation> lann = mann.get( seq );
-					/*if( lann == null ) {
-						System.err.println();
-					}*/
 					Collections.sort(lann);
 					
 					String spec = Sequence.getSpec( seq );
@@ -7988,7 +7975,7 @@ public class JavaFasta extends JApplet {
 					
 					for( int i = 0; i < lann.size(); i++ ) {
 						Annotation ann = lann.get(i);
-						String annname = ann.name;
+						String annname = ann.getName();
 						int idx = annname.indexOf('-');
 						if( idx != -1 ) annname = annname.substring(idx+1).toUpperCase();
 						
@@ -8107,13 +8094,10 @@ public class JavaFasta extends JApplet {
 						if( similar != null && tann.containsKey(similar) ) {
 							Map<String,List<Annotation>> lanm = tann.get( similar );
 							String aspec = ann.seq.getSpec();
-							/*if( !aspec.equals(spec) ) {
-								System.err.println("no");
-							}*/
 							if( lanm.containsKey(spec) ) {
 								lan = lanm.get( spec );
 							} else {
-								lan = new ArrayList<Annotation>();
+								lan = new ArrayList<>();
 								lanm.put( spec, lan );
 							}
 							
@@ -8123,8 +8107,8 @@ public class JavaFasta extends JApplet {
 							
 							//System.err.println( "blubbbbbi " + ann.seq.name );
 						} else {
-							Map<String,List<Annotation>> lanm = new HashMap<String,List<Annotation>>();
-							lan = new ArrayList<Annotation>();
+							Map<String,List<Annotation>> lanm = new HashMap<>();
+							lan = new ArrayList<>();
 							lanm.put( ann.seq.getSpec(), lan );
 							tann.put( annname, lanm );
 							
@@ -8134,17 +8118,17 @@ public class JavaFasta extends JApplet {
 					}
 				}
 				
-				Map<String,CellStyle>	repeatColor = new HashMap<String,CellStyle>();
+				Map<String,CellStyle>	repeatColor = new HashMap<>();
 				
-				List<RepeatNum>	lrn = new ArrayList<RepeatNum>();
-				Map<String,String>	commonRepeatMap = new HashMap<String,String>();
+				List<RepeatNum>	lrn = new ArrayList<>();
+				Map<String,String>	commonRepeatMap = new HashMap<>();
 				for( String rep : tann.keySet() ) {
 					Map<String,List<Annotation>>	lanm = tann.get(rep);
 					
 					int sum = 0;
 					for( String spec : lanm.keySet() ) {
 						List<Annotation> slann = lanm.get(spec);
-						for( Annotation a : slann ) commonRepeatMap.put(a.name, rep);
+						for( Annotation a : slann ) commonRepeatMap.put(a.getName(), rep);
 						
 						sum += slann.size();
 					}
@@ -8207,19 +8191,19 @@ public class JavaFasta extends JApplet {
 					}
 				}
 				
-				Map<String,Row> hrow = new HashMap<String,Row>();
-				Map<String,Integer> hcell = new HashMap<String,Integer>();
+				Map<String,Row> hrow = new HashMap<>();
+				Map<String,Integer> hcell = new HashMap<>();
 				hcell.put("Csh2", 1);
 				hcell.put("Csm2", 2);
 				hcell.put("Cse2", 3);
 				hcell.put("Csd2", 4);
 				hcell.put("Cmr3", 5);
 				
-				Map<String,Map<String,Integer>> typeRepeat = new HashMap<String,Map<String,Integer>>();
+				Map<String,Map<String,Integer>> typeRepeat = new HashMap<>();
 				
 				//hcell.put();
 				
-				Map<String,Integer> hcell2 = new HashMap<String,Integer>();
+				Map<String,Integer> hcell2 = new HashMap<>();
 				//hcell.put("Csh2", 1);
 				hcell2.put("III-A", 2);
 				hcell2.put("I-E", 3);
@@ -8227,7 +8211,7 @@ public class JavaFasta extends JApplet {
 				hcell2.put("III-B", 5);
 				
 				i = 0;
-				List<Row> nullrow = new ArrayList<Row>();
+				List<Row> nullrow = new ArrayList<>();
 				Row rw = sh.createRow(i++);
 				nullrow.add( rw );
 				for( String crispr : hcell.keySet() ) {
@@ -8353,13 +8337,13 @@ public class JavaFasta extends JApplet {
 								lann.addAll( repeats );
 								Collections.sort( lann );
 								
-								Map<String,Integer> lastrepeats = new HashMap<String,Integer>();
+								Map<String,Integer> lastrepeats = new HashMap<>();
 								
 								int onlycas = -1;
 								String name = null;
 								String lastname = null;
 								for( Annotation ann : lann ) {
-									name = ann.name;
+									name = ann.getName();
 									if( ann instanceof Tegeval ) {
 										Tegeval tv = (Tegeval)ann;
 										GeneGroup gg = tv.getGene().getGeneGroup();
@@ -8387,7 +8371,7 @@ public class JavaFasta extends JApplet {
 											}
 										}
 										onlycas = 0;
-										String rep = commonRepeatMap.get(ann.name); //null;
+										String rep = commonRepeatMap.get(ann.getName()); //null;
 										
 										if( lastrepeats.containsKey(rep) ) {
 											lastrepeats.put( rep, lastrepeats.get(rep)+1 );
@@ -8864,7 +8848,7 @@ public class JavaFasta extends JApplet {
 							GeneGroup gg = tv.getGene().getGeneGroup();
 							if( gg != null ) return gg.getName();
 						}
-						return ann.name;
+						return ann.getName();
 					}
 					else if( columnIndex == 1 ) return ann.seq != null ? ann.seq.getName() : "";
 					else if( columnIndex == 2 ) return ann.type+"_"+ann.ori;

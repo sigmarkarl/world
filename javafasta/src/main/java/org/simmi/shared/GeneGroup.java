@@ -142,6 +142,10 @@ public class GeneGroup {
 		}
 		return gc/count;
 	}
+
+	public double getAvggcp() {
+		return getAvgGCPerc();
+	}
 	
 	public double getStddevGCPerc( double avggc ) {
 		double gc = 0.0;
@@ -231,7 +235,7 @@ public class GeneGroup {
 	
 	public String getCommonNamespace() {
 		String ret = "";
-		Set<String>	included = new HashSet<String>();
+		Set<String>	included = new HashSet<>();
 		for( Gene g : genes ) {
 			if( g.funcentries != null ) for( Function f : g.funcentries ) {
 				//Function f = funcmap.get( go );

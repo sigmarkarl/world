@@ -24,18 +24,18 @@ public class Tegeval extends Annotation implements Teg {
 	public void append( String a ) {
 		Sequence alignedsequence = getAlignedSequence();
 		if( alignedsequence == null ) {
-			alignedsequence = new Sequence( name + " # " + start + " # " + stop + " # " + ori, null );
+			alignedsequence = new Sequence( getName() + " # " + start + " # " + stop + " # " + ori, null );
 			setAlignedSequence( alignedsequence );
 		}
 		alignedsequence.append( a );
 	}
 	
 	public void init( String contig, Sequence shortcontig, String locontig, int sta, int sto, int orient ) {
-		name = contig;
+		setName( contig );
 		
 		Sequence alignedsequence = getAlignedSequence();
 		if( alignedsequence != null ) {
-			String seqname = name + " # " + sta + " # " + sto + " # " + orient;
+			String seqname = getName() + " # " + sta + " # " + sto + " # " + orient;
 			alignedsequence.setName( seqname );
 		}
 		
@@ -45,10 +45,6 @@ public class Tegeval extends Annotation implements Teg {
 		stop = sto;
 		ori = orient;
 		num = -1;
-		
-		/*if( shortcontig == null ) {
-			System.err.println();
-		}*/
 
 		gc = gcPerc(); //(double)gcCount()/(double)(stop-start);
 		gcskew = gcSkew();
@@ -82,7 +78,7 @@ public class Tegeval extends Annotation implements Teg {
 	}
 	
 	public String getContigName() {
-		return name;
+		return getName();
 	}
 	
 	/*public Tegeval setNext( Tegeval next ) {
@@ -112,15 +108,10 @@ public class Tegeval extends Annotation implements Teg {
 	}
 	
 	public void unresolvedGap( int i ) {
-		//int ret = 0;
-		
-		if( this.getGene().id.startsWith("t") ) {
-			if( this.getGene().id.contains("thermophilus791_scaffold00005_42") ) {
-				System.err.println();
-			}
+		if( i >= getContshort().getAnnotations().size() ) {
+			int icheck = getContshort().getAnnotations().indexOf(this);
+			System.err.println("whataf " + icheck);
 		}
-		
-		//int i = contshort.tlist.indexOf(this);
 		if( i == 0 ) {
 			Tegeval tv = (Tegeval)getContshort().getAnnotation(i);
 			for( int m = 0; m < tv.start; m++ ) {

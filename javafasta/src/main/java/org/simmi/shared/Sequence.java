@@ -34,12 +34,12 @@ public class Sequence implements Comparable<Sequence> {
 	public static ArrayList<Annotation>	lann = new ArrayList<Annotation>();
 	public static Map<String,Annotation>	mann = new HashMap<String,Annotation>();*/
 	
-	public static Map<Character, Color> aacolor = new HashMap<Character, Color>();
-	static Map<Character, Character> 	sidechainpolarity = new HashMap<Character, Character>();
-	static Map<Character, Integer> 		sidechaincharge = new HashMap<Character, Integer>();
-	static Map<Character, Double> 		hydropathyindex = new HashMap<Character, Double>();
-	static Map<Character, Double> 		aamass = new HashMap<Character, Double>();
-	static Map<Character, Double> 		isoelectricpoint = new HashMap<Character, Double>();
+	public static Map<Character, Color> aacolor = new HashMap<>();
+	static Map<Character, Character> 	sidechainpolarity = new HashMap<>();
+	static Map<Character, Integer> 		sidechaincharge = new HashMap<>();
+	static Map<Character, Double> 		hydropathyindex = new HashMap<>();
+	static Map<Character, Double> 		aamass = new HashMap<>();
+	static Map<Character, Double> 		isoelectricpoint = new HashMap<>();
 
 	public static Color[] colorCodes = new Color[9];
 	public boolean			plasmid;
@@ -48,15 +48,15 @@ public class Sequence implements Comparable<Sequence> {
 	// size
 	// sortcoeff
 
-	public static List<Erm> uff = new ArrayList<Erm>();
-	public static List<Erm> uff2 = new ArrayList<Erm>();
-	public static List<Erm> uff3 = new ArrayList<Erm>();
-	public static List<Erm> mass = new ArrayList<Erm>();
-	public static List<Erm> isoel = new ArrayList<Erm>();
+	public static List<Erm> uff = new ArrayList<>();
+	public static List<Erm> uff2 = new ArrayList<>();
+	public static List<Erm> uff3 = new ArrayList<>();
+	public static List<Erm> mass = new ArrayList<>();
+	public static List<Erm> isoel = new ArrayList<>();
 	
-	public static Map<String,Character>				amimap = new HashMap<String,Character>();
-	public static Map<String,String>				revcom = new HashMap<String,String>();
-	public static Map<Character,Character>	rc = new HashMap<Character,Character>();
+	public static Map<String,Character>				amimap = new HashMap<>();
+	public static Map<String,String>				revcom = new HashMap<>();
+	public static Map<Character,Character>	rc = new HashMap<>();
 	static {
 		amimap.put("TTT",'F');
 		amimap.put("TTC",'F');
@@ -775,10 +775,9 @@ public class Sequence implements Comparable<Sequence> {
 			i = parseSpec( name );
 			if( i == -1 ) {
 				i = name.lastIndexOf('_')+1;
-				//System.err.println( name );
 			}
 			if( i <= 0 ) {
-				spec = name.substring(0,4);
+				spec = name;
 			} else spec = name.substring(0, i-1);
 		} else {
 			i = name.indexOf("_", i+1);
@@ -1385,7 +1384,7 @@ public class Sequence implements Comparable<Sequence> {
 	
 	public boolean addAnnotation( int i, Annotation a ) {
 		if( annset == null ) {
-			annset = new ArrayList<Annotation>();
+			annset = new ArrayList<>();
 		} else for( Annotation an : annset ) {
 			if( an.start == a.start && a.start > 0 ) return true;
 		}
@@ -1399,7 +1398,7 @@ public class Sequence implements Comparable<Sequence> {
 	
 	public boolean addAnnotation( Annotation a ) {
 		if( annset == null ) {
-			annset = new ArrayList<Annotation>();
+			annset = new ArrayList<>();
 		} else for( Annotation an : annset ) {
 			if( an.start == a.start && a.start > 0 ) return true;
 		}

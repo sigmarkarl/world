@@ -36,7 +36,7 @@ public class Gene {
 	public void getFasta( Appendable w, boolean id ) throws IOException {
 		Sequence ps = tegeval.getProteinSequence();
 		if( id ) ps.setName( this.getId() ); //w.append(">" + this.getId() + "\n");
-		else ps.setName( this.tegeval.name ); //w.append(">" + this.tegeval.name + "\n"); //this.getId() + " " + this.getName() + (this.idstr != null ? " (" + this.idstr + ") [" : " [") + this.tegeval.name + "]" +" # " + this.tegeval.start + " # " + this.tegeval.stop + " # " + this.tegeval.ori + " #" + "\n");
+		else ps.setName( this.tegeval.getName() ); //w.append(">" + this.tegeval.name + "\n"); //this.getId() + " " + this.getName() + (this.idstr != null ? " (" + this.idstr + ") [" : " [") + this.tegeval.name + "]" +" # " + this.tegeval.start + " # " + this.tegeval.stop + " # " + this.tegeval.ori + " #" + "\n");
 		
 		ps.writeSequence(w);
 		/*for (int i = 0; i < ps.length(); i += 70) {
@@ -208,7 +208,13 @@ public class Gene {
 			String origin;
 			if( u == -1 ) {
 				u = Serifier.contigIndex( contigstr );
-				origin = contigstr.substring(0, u-1);
+				if( u > 0 ) {
+					origin = contigstr.substring(0, u - 1);
+				} else {
+					u = contigstr.indexOf('_');
+					if( u == -1 ) u = contigstr.length();
+					origin = contigstr.substring(0, u);
+				}
 				//contloc = contigstr.substring(u, contigstr.length());
 			} else {
 				n = contigstr.indexOf("_", u+1);
@@ -237,13 +243,13 @@ public class Gene {
 	
 	public String getSpecies() {
 		if( species == null ) {
-			species = parseSpecies( tegeval.name );
+			species = parseSpecies( tegeval.getName() );
 			if( species == null || species.length() < 4 ) {	
 				System.err.println();
 			}
 			if( species == null ) {
 				if( tegeval.seq == null ) {
-					System.err.println( tegeval.name );
+					System.err.println( tegeval.getName() );
 				} else {
 					species = tegeval.seq.getSpec();
 				}

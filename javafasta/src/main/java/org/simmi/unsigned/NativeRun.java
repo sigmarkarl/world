@@ -202,53 +202,47 @@ public class NativeRun {
 			if( input != null ) {
 				if( input instanceof Path ) {
 					final Path inp = (Path)input;
-					new Thread() {
-						public void run() {
-							try {
-								OutputStream os = p.getOutputStream();
-								//os.write( "simmi".getBytes() );
-								Files.copy(inp, os);
-								os.close();
-							} catch( Exception e ) {
-								e.printStackTrace();
-							}
-						}
-					}.start();
+					new Thread(() -> {
+                        try {
+                            OutputStream os1 = p.getOutputStream();
+                            //os.write( "simmi".getBytes() );
+                            Files.copy(inp, os1);
+                            os1.close();
+                        } catch( Exception e ) {
+                            e.printStackTrace();
+                        }
+                    }).start();
 				} else {
 					final byte[] binput = (byte[])input;
-					new Thread() {
-						public void run() {
-							try {
-								os.write( binput );
-								os.close();
-							} catch( Exception e ) {
-								e.printStackTrace();
-							}
-						}
-					}.start();
+					new Thread(() -> {
+                        try {
+                            os.write( binput );
+                            os.close();
+                        } catch( Exception e ) {
+                            e.printStackTrace();
+                        }
+                    }).start();
 				}
 			}
 			
-			new Thread() {
-				public void run() {
-					try {
-						InputStream os = p.getErrorStream();
-						BufferedReader br = new BufferedReader( new InputStreamReader(os) );
-						String line = br.readLine();
-						while( line != null ) {
-							//while( os.read() != -1 ) ;
-							//os.write( binput );
-							if( ta != null ) ta.append( line+"\n" );
-							else System.err.println( line );
-							
-							line = br.readLine();
-						}
-						os.close();
-					} catch( Exception e ) {
-						e.printStackTrace();
-					}
-				}
-			}.start();
+			new Thread(() -> {
+                try {
+                    InputStream os12 = p.getErrorStream();
+                    BufferedReader br = new BufferedReader( new InputStreamReader(os12) );
+                    String line = br.readLine();
+                    while( line != null ) {
+                        //while( os.read() != -1 ) ;
+                        //os.write( binput );
+                        if( ta != null ) ta.append( line+"\n" );
+                        else System.err.println( line );
+
+                        line = br.readLine();
+                    }
+                    os12.close();
+                } catch( Exception e ) {
+                    e.printStackTrace();
+                }
+            }).start();
 			
 			if( output != null ) {
 				if( output instanceof Path ) {
@@ -289,7 +283,7 @@ public class NativeRun {
 									k++;
 									if( k % 10000 == 0 ) {
 										String str = k + " lines done";
-										if( ta != null ) ta.append( str+"\n" );
+										if( ta != null && k <= 10000000 ) ta.append( str+"\n" );
 										else System.out.println( str );
 									}
 									bw.write(line+"\n");

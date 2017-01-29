@@ -9,7 +9,7 @@ import java.util.Set;
 
 public class Annotation implements Comparable<Object> {
 	public Sequence			seq;
-	public String			name;
+	private String			name;
 	public String			id;
 	public StringBuilder	desc;
 	public String			type;
@@ -197,7 +197,13 @@ public class Annotation implements Comparable<Object> {
 	}
 	
 	public Sequence getProteinSequence() {
-		return seq == null ? null : seq.getProteinSequence(start, stop, ori);
+		Sequence ret = seq == null ? null : seq.getProteinSequence(start, stop, ori);
+		if( ret != null && this.name != null ) {
+			int i = this.name.indexOf(' ');
+			if( i != -1 ) ret.setName( this.name.substring(0,i) + " # " + this.start + " # " + this.stop + " # " + this.ori + " #" );
+			else ret.setName( this.name );
+		}
+		return ret;
 	}
 	
 	public void addDbRef( String val ) {

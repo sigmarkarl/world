@@ -186,22 +186,20 @@ public class Serifier {
 			baoss.close();
 			
 			InputStream err = p.getErrorStream();
-			Thread t = new Thread() {
-				public void run() {
-					ByteArrayOutputStream baos = new ByteArrayOutputStream();
-					try {
-						int r = err.read();
-						while( r != -1 ) {
-							baos.write(r);
-							r = err.read();
-						}
-						baos.close();
-						System.err.println( baos.toString() );
-					} catch (IOException e) {
-						e.printStackTrace();
-					}
-				}
-			};
+			Thread t = new Thread(() -> {
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                try {
+                    int r = err.read();
+                    while( r != -1 ) {
+                        baos.write(r);
+                        r = err.read();
+                    }
+                    baos.close();
+                    System.err.println( baos.toString() );
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            });
 			t.start();
 			
 			InputStream is = p.getInputStream();
@@ -309,7 +307,7 @@ public class Serifier {
 				evalue = null;
 				System.err.println( cont );
 			} else if( line.startsWith(">") ) {
-				if( ann != null && ann.name == null ) {
+				if( ann != null && ann.getName() == null ) {
 					String hit = line.substring(1);
 					if( hit.startsWith(">") ) {
 						hit = hit.substring(1).trim();
@@ -320,13 +318,13 @@ public class Serifier {
 							line = br.readLine();
 						}
 					}
-					ann.name = hit;
+					ann.setName( hit );
 					
 					if( line.startsWith("Query") ) continue;
 				}
 			} else if( line.contains("No hits") ) {
-				if( ann != null && ann.name == null ) {
-					ann.name = line;
+				if( ann != null && ann.getName() == null ) {
+					ann.setName( line );
 				}
 			} /*else if( line.startsWith(" Score =") ) {
 				int u = line.indexOf("Expect =");
@@ -378,7 +376,7 @@ public class Serifier {
 						for( int i = lann.size()-1; i >= 0; i-- ) {
 							Annotation annn = lann.get(i);
 							
-							if( annn.name != null && !annn.name.contains("No hits") ) {
+							if( annn.getName() != null && !annn.getName().contains("No hits") ) {
 								String locstr = ((sbld.length()-annn.stop))+".."+((sbld.length()-annn.start));
 								String id = annn.id;
 								
@@ -401,7 +399,7 @@ public class Serifier {
 								if( annn.dbref != null ) for( String val : annn.dbref ) {
 									addon += "("+val+")";
 								}
-								fw.write( "                     /product=\""+annn.name+addon+"\"\n" );
+								fw.write( "                     /product=\""+annn.getName()+addon+"\"\n" );
 								if( translations ) {
 									fw.write( "                     /translation=\"" );
 									Sequence aa = annn.getProteinSequence();
@@ -421,7 +419,7 @@ public class Serifier {
 						}
 					} else {
 						for( Annotation annn : lann ) {
-							if( annn.name != null && !annn.name.contains("No hits") ) {
+							if( annn.getName() != null && !annn.getName().contains("No hits") ) {
 								String locstr = (annn.start)+".."+(annn.stop);
 								String id = annn.id;
 								
@@ -441,7 +439,7 @@ public class Serifier {
 								if( annn.dbref != null ) for( String val : annn.dbref ) {
 									addon += "("+val+")";
 								}
-								fw.write( "                     /product=\""+annn.name+addon+"\"\n" );
+								fw.write( "                     /product=\""+annn.getName()+addon+"\"\n" );
 								if( translations ) {
 									fw.write( "                     /translation=\"" );
 									Sequence aa = annn.getProteinSequence();
@@ -542,7 +540,7 @@ public class Serifier {
 								addon += "("+val+")";
 							}
 							
-							fw.write( "                     /product=\""+annn.name+addon+"\"\n" );
+							fw.write( "                     /product=\""+annn.getName()+addon+"\"\n" );
 							if( annn.dbref != null ) for( String val : annn.dbref ) {
 								fw.write( "                     /db_xref=\""+val+"\"\n" );
 							}
@@ -581,7 +579,7 @@ public class Serifier {
 								addon += "("+val+")";
 							}
 							
-							fw.write( "                     /product=\""+annn.name+addon+"\"\n" );
+							fw.write( "                     /product=\""+annn.getName()+addon+"\"\n" );
 							if( annn.dbref != null ) for( String val : annn.dbref ) {
 								fw.write( "                     /db_xref=\""+val+"\"\n" );
 							}
@@ -738,7 +736,7 @@ public class Serifier {
 					if( mapan.containsKey(cont) ) {
 						lann = mapan.get( cont );
 					} else {
-						lann = new ArrayList<Annotation>();
+						lann = new ArrayList<>();
 						mapan.put(cont, lann);
 					}
 					
@@ -791,7 +789,7 @@ public class Serifier {
 				List<Annotation> lannn = mapan.get( key );
 				if( lannn != null ) {
 					for( Annotation a : lannn ) {
-						if( a.name.contains( phage ) ) {
+						if( a.getName().contains( phage ) ) {
 							empty = false;
 							break;
 						}
@@ -829,12 +827,12 @@ public class Serifier {
 							List<Annotation> lannn = mapan.get(key);
 							int ac = 1;
 							for( Annotation ann : lannn ) {
-								if( ann.name.contains(phage) ) {
+								if( ann.getName().contains(phage) ) {
 									String locstr = (ann.start+count)+".."+(ann.stop+count);
 									if( ann.isReverse() ) fw.write( "     gene            complement("+locstr+")\n" );
 									else fw.write( "     gene            "+locstr+"\n" );
 									fw.write( "                     /locus_tag=\""+key+"_"+ac+"\"\n" );
-									fw.write( "                     /product=\""+ann.name+"\"\n" );
+									fw.write( "                     /product=\""+ann.getName()+"\"\n" );
 									ac++;
 								}
 							}
@@ -979,10 +977,10 @@ public class Serifier {
 	}
 	
 	public static Map<Set<String>, Set<Map<String, Set<String>>>> initClusterNew(Collection<Set<String>> total, Set<String> species, Map<String,String> idspec) {
-		Map<Set<String>, Set<Map<String, Set<String>>>> clusterMap = new HashMap<Set<String>, Set<Map<String, Set<String>>>>();
+		Map<Set<String>, Set<Map<String, Set<String>>>> clusterMap = new HashMap<>();
 
 		for (Set<String> t : total) {
-			Set<String> teg = new HashSet<String>();
+			Set<String> teg = new HashSet<>();
 			for (String e : t) {
 				if( idspec != null ) {
 					int k = e.indexOf(' ');
@@ -1001,10 +999,8 @@ public class Serifier {
 						
 						if( u == -1 ) {
 							u = contigIndex(str);
-							if( u-1 >= str.length() ) {
-								System.err.println();
-							}
-							spec = str.substring( 0, u-1 );
+							if( u <= 0 ) spec = str;
+							else spec = str.substring( 0, u-1 );
 						} else {
 							int l = str.indexOf('_', u+1);
 							spec = str.substring( 0, l );
@@ -1032,11 +1028,11 @@ public class Serifier {
 			if (clusterMap.containsKey(teg)) {
 				setmap = clusterMap.get(teg);
 			} else {
-				setmap = new HashSet<Map<String, Set<String>>>();
+				setmap = new HashSet<>();
 				clusterMap.put(teg, setmap);
 			}
 
-			Map<String, Set<String>> submap = new HashMap<String, Set<String>>();
+			Map<String, Set<String>> submap = new HashMap<>();
 			setmap.add(submap);
 
 			for (String e : t) {
@@ -1059,21 +1055,23 @@ public class Serifier {
 						
 						if( u == -1 ) {
 							u = contigIndex( str );
-							spec = str.substring( 0, u-1 );
+							if( u <= 0 ) spec = str;
+							else spec = str.substring( 0, u-1 );
 						} else {
 							int l = str.indexOf('_', u+1);
 							spec = str.substring( 0, l );
 						}
 					} else {
 						i = contigIndex(e);
-						spec = i == -1 ? "Unknown" : e.substring(0, i-1);
+						if( i <= 0 ) spec = e;
+						else spec = e.substring(0, i-1);
 					}
 				}
 				Set<String> set;
 				if (submap.containsKey(spec)) {
 					set = submap.get(spec);
 				} else {
-					set = new HashSet<String>();
+					set = new HashSet<>();
 					submap.put(spec, set);
 				}
 				set.add( e ); // id );

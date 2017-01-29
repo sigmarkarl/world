@@ -87,11 +87,13 @@ public class GBK2AminoFasta {
 						if( anno != null ) {
 							if( anno.id == null || anno.id.length() == 0 ) anno.id = anno.ori == -1 ? "comp("+anno.start+".."+anno.stop+")" : anno.start+".."+anno.stop;
 							if( xref.size() > 0 ) {
-								anno.name += "(";
+								String annoname = anno.getName();
+								annoname += "(";
 								for( String xr : xref ) {
-									anno.name += xr;
+									annoname += xr;
 								}
-								anno.name += ")";
+								annoname += ")";
+								anno.setName( annoname );
 								xref.clear();
 							}
 							
@@ -99,7 +101,7 @@ public class GBK2AminoFasta {
 								anno.start--;
 								anno.stop--;
 							}*/
-							System.err.println( strbuf.getName() + " mumu " + anno.name );
+							System.err.println( strbuf.getName() + " mumu " + anno.getName() );
 							strbuf.addAnnotation( anno );
 						}
 						anno = null;
@@ -220,13 +222,13 @@ public class GBK2AminoFasta {
 										i = trimline.indexOf('"', 10);
 									} else i = trimline.length()-1;
 								}
-								anno.name = trimline.substring(10,i);
-								int ecind = Math.max( anno.name.indexOf("(EC"), anno.name.indexOf("(COG") );
+								anno.setName( trimline.substring(10,i) );
+								int ecind = Math.max( anno.getName().indexOf("(EC"), anno.getName().indexOf("(COG") );
 								if( ecind != -1 ) {
-									anno.name = anno.name.substring(0,ecind).trim();
+									anno.setName( anno.getName().substring(0,ecind).trim() );
 								}
-								anno.name = anno.name.replace("(","");
-								anno.name = anno.name.replace(")","");
+								anno.setName( anno.getName().replace("(","") );
+								anno.setName( anno.getName().replace(")","") );
 							}
 							//annolist.add( anno );
 							//anno = null;
@@ -257,11 +259,13 @@ public class GBK2AminoFasta {
 						if( anno != null ) {
 							if( anno.id == null || anno.id.length() == 0 ) anno.id = anno.ori == -1 ? "comp("+anno.start+".."+anno.stop+")" : anno.start+".."+anno.stop;
 							if( xref.size() > 0 ) {
-								anno.name += "(";
+								String annoname = anno.getName();
+								annoname += "(";
 								for( String xr : xref ) {
-									anno.name += xr;
+									annoname += xr;
 								}
-								anno.name += ")";
+								annoname += ")";
+								anno.setName( annoname );
 								xref.clear();
 							}
 							
@@ -335,7 +339,7 @@ public class GBK2AminoFasta {
 		for( Sequence seq : lseq ) {
 			List<Annotation> annset = seq.getAnnotations();
 			if( annset != null ) for( Annotation ao : annset ) {
-				if( ao.name != null ) {
+				if( ao.getName() != null ) {
 					Sequence	strbuf = ao.seq;
 					Path uri = annoset.get( ao.getType() );
 					
@@ -360,7 +364,7 @@ public class GBK2AminoFasta {
 								out.write( ">"+ao.id + " " + ao.name + " [" + rep + "]" + end );
 							} else {*/
 							System.err.println(strbuf.getName() + " lebbi " + ao.getName());
-							out.write( ">"+ao.id + " " + ao.name + " [" + ao.seq.getName() + "]" + end );
+							out.write( ">"+ao.id + " " + ao.getName() + " [" + ao.seq.getName() + "]" + end );
 							//}
 						}
 						//strbuf.
