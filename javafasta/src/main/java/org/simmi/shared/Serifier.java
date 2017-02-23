@@ -998,7 +998,7 @@ public class Serifier {
 						int u = Contig.specCheck( str );
 						
 						if( u == -1 ) {
-							u = contigIndex(str);
+							u = Sequence.parseSpec(str);
 							if( u <= 0 ) spec = str;
 							else spec = str.substring( 0, u-1 );
 						} else {
@@ -1010,7 +1010,7 @@ public class Serifier {
 						 */
 						teg.add(spec);
 					} else {
-						i = contigIndex(e);
+						i = Sequence.parseSpec(e);
 						/*i = e.indexOf("contig");
 						if( i == -1 ) i = e.indexOf("scaffold");
 						if( i == -1 ) i = e.lastIndexOf('_')+1;*/
@@ -1054,7 +1054,7 @@ public class Serifier {
 						int u = Contig.specCheck( str );
 						
 						if( u == -1 ) {
-							u = contigIndex( str );
+							u = Sequence.parseSpec( str );
 							if( u <= 0 ) spec = str;
 							else spec = str.substring( 0, u-1 );
 						} else {
@@ -1062,7 +1062,7 @@ public class Serifier {
 							spec = str.substring( 0, l );
 						}
 					} else {
-						i = contigIndex(e);
+						i = Sequence.parseSpec(e);
 						if( i <= 0 ) spec = e;
 						else spec = e.substring(0, i-1);
 					}
@@ -1081,13 +1081,13 @@ public class Serifier {
 		return clusterMap;
 	}
 	
-	public static int contigIndex( String lname ) {
+	/*public static int contigIndex( String lname ) {
 		int i = lname.indexOf("contig");
 		if( i == -1 ) i = lname.indexOf("scaffold");
 		if( i == -1 ) i = lname.lastIndexOf('_')+1;
 		if( i <= 0 && lname.length() > 5 && (lname.startsWith("J") || lname.startsWith("A") || lname.startsWith("L") || lname.startsWith("B")) && lname.charAt(4) == '0' ) i = 5;
 		return i;
-	}
+	}*/
 	
 	private Map<Set<String>,Set<Map<String,Set<String>>>> initClusterOld( Collection<Set<String>>	total, Set<String> species, Map<String,String> idspec ) {
 		Map<Set<String>,Set<Map<String,Set<String>>>> clusterMap = new HashMap<Set<String>,Set<Map<String,Set<String>>>>();

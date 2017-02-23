@@ -9,22 +9,12 @@ import org.simmi.shared.Contig;
 
 public class Gene {
 	public Gene(GeneGroup gg, String id, String name, String origin) {
-		//super();
-		
-		/*if( origin != null && origin.length() == 2 ) {
-			System.err.println();
-		}*/
-		
 		this.name = name;
-		if( origin == null || origin.length() < 4 ) {
-			System.err.println();
-		}
 		this.species = origin;
 		this.gg = gg;
 		this.refid = id;
 		this.id = id;
 		// this.setAa( aa );
-		
 		//groupIdx = -10;
 	}
 	
@@ -178,8 +168,8 @@ public class Gene {
 		if( i == -1 ) {
 			i = Sequence.parseSpec( lname );
 			
-			if( i == -1 ) {
-				return null;
+			if( i <= 0 ) {
+				return species;
 			}
 			//int u = lname.lastIndexOf('_');
 			//contigstr = lname.substring(0, u);
@@ -207,7 +197,7 @@ public class Gene {
 			
 			String origin;
 			if( u == -1 ) {
-				u = Serifier.contigIndex( contigstr );
+				u = Sequence.parseSpec( contigstr );
 				if( u > 0 ) {
 					origin = contigstr.substring(0, u - 1);
 				} else {
@@ -233,10 +223,6 @@ public class Gene {
 					}
 				}
 			}*/
-			
-			if( origin == null || origin.length() < 4 ) {
-				System.err.println();
-			}
 			return origin;
 		}
 	}
@@ -244,9 +230,6 @@ public class Gene {
 	public String getSpecies() {
 		if( species == null ) {
 			species = parseSpecies( tegeval.getName() );
-			if( species == null || species.length() < 4 ) {	
-				System.err.println();
-			}
 			if( species == null ) {
 				if( tegeval.seq == null ) {
 					System.err.println( tegeval.getName() );

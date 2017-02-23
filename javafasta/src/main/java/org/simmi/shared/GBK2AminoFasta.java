@@ -64,7 +64,7 @@ public class GBK2AminoFasta {
 			Set<String>	xref = new TreeSet<>();
 			//int contignum = 0;
 			Sequence	strbuf = new Sequence();
-			while( line!= null ) {
+			while( line != null && line.length() > 0 ) {
 				lseq.add( strbuf );
 				while( line != null ) {
 					String trimline = line.trim();
@@ -283,16 +283,16 @@ public class GBK2AminoFasta {
 					line = null;
 					if( k > 0 ) {
 						line = filetext.substring(ind+1, k);
+						ind = k;
 					}
-					ind = k;
 				}
 				
 				int k = filetext.indexOf("\n", ind+1);
 				line = null;
 				if( k > 0 ) {
 					line = filetext.substring(ind+1, k);
+					ind = k;
 				}
-				ind = k;
 				while( line != null && !line.startsWith("//") ) {
 					strbuf.append( line.replaceAll("[\t 1234567890/]+", "") );
 					
@@ -314,8 +314,8 @@ public class GBK2AminoFasta {
 					line = null;
 					if( k > 0 ) {
 						line = filetext.substring(ind+1, k);
+						ind = k;
 					}
-					ind = k;
 				}
 				//if( contignum > 0 && anno != null && anno.spec != null ) anno.spec += "_contig"+contignum;;
 				//allout.write( ">" + spec + (contignum > 0 ? "_contig"+contignum+"\n" : "\n") );

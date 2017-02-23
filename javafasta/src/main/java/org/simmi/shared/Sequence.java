@@ -562,7 +562,7 @@ public class Sequence implements Comparable<Sequence> {
 	}
 	
 	public static List<Sequence> readFasta( BufferedReader br, Map<String,Sequence> mseq, boolean shrt ) throws IOException {
-		List<Sequence> lseq = new ArrayList<Sequence>();
+		List<Sequence> lseq = new ArrayList<>();
 		
 		Sequence seq = null;
 		String line = br.readLine();
@@ -614,6 +614,15 @@ public class Sequence implements Comparable<Sequence> {
 	
 	public static int parseSpec( String lname ) {
 		int i = lname.indexOf("contig");
+		if( i == -1 ) {
+			i = lname.indexOf("Contig");
+		}
+		if( i == -1 ) {
+			i = lname.indexOf("CONTIG");
+		}
+		if( i == -1 ) {
+			i = lname.indexOf("_NODE_");
+		}
 		if( i == -1 ) {
 			i = lname.indexOf("scaffold");
 		}
@@ -777,7 +786,7 @@ public class Sequence implements Comparable<Sequence> {
 				i = name.lastIndexOf('_')+1;
 			}
 			if( i <= 0 ) {
-				spec = name;
+				spec = null;
 			} else spec = name.substring(0, i-1);
 		} else {
 			i = name.indexOf("_", i+1);
@@ -847,7 +856,7 @@ public class Sequence implements Comparable<Sequence> {
 	}
 	
 	public String getSpec() {
-		return getSpec( getName() );
+		return group;
 	}
 	
 	public boolean isReverse() {
