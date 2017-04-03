@@ -621,7 +621,7 @@ public class Sequence implements Comparable<Sequence> {
 			i = lname.indexOf("CONTIG");
 		}
 		if( i == -1 ) {
-			i = lname.indexOf("_NODE_");
+			i = lname.indexOf("NODE_");
 		}
 		if( i == -1 ) {
 			i = lname.indexOf("scaffold");

@@ -215,6 +215,8 @@ public class Tegeval extends Annotation implements Teg {
 	
 	public int compareTo(Tegeval tv) {
 		if( locsort ) {
+			if( getContshort() == null ) return 1;
+			if( tv.getContshort() == null ) return -1;
 			int ret = getContshort().compareTo(tv.getContshort());
 				/*
 				 * if( o.contshort != null || o.contshort.length() < 2 ) { ret =
