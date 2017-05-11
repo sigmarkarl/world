@@ -1797,9 +1797,9 @@ public class Sequence implements Comparable<Sequence> {
 		} else {
 			int end = start + 3*((stop-start)/3) - 1;
 			for( int i = start == 0 ? start+2 : start-1; i < end; i+=3 ) {
-				/*if( i < 0 || i+3 >= sb.length() ) {
+				if( i < 0 || i+3 >= sb.length() ) {
 					System.err.println(  );
-				}*/
+				}
 				String aaa = sb.substring(i, i+3).toUpperCase();
 				if( aaa.contains("N") || aaa.contains("n") || aaa.contains("X") || aaa.contains("x") ) {
 					ret.append( "X" );
