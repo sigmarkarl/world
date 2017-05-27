@@ -180,8 +180,11 @@ public class Gene {
 		} else {
 			int n = lname.indexOf(']', i+1);
 			if( n < 0 || n > lname.length() ) {
-				System.err.println();
+				n = lname.length();
 			}
+			/*if( i+1 > n || n > lname.length() ) {
+				System.err.println();
+			}*/
 			String contigstr = lname.substring(i+1, n);
 			int u = lname.indexOf(' ');
 			id = lname.substring(0, u);

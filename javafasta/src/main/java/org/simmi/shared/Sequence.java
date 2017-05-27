@@ -548,6 +548,10 @@ public class Sequence implements Comparable<Sequence> {
 		}
 		return 0;
 	}
+
+	public void clear() {
+		sb.setLength(0);
+	}
 	
 	public static List<Sequence> readFasta( Path p, Map<String,Sequence> mseq ) throws IOException {
 		BufferedReader br = Files.newBufferedReader(p);
