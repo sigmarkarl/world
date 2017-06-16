@@ -1,20 +1,18 @@
 package org.simmi.shared;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.awt.*;
+import java.util.*;
 
 public class Cog {
-	public static Map<Character,String>	charcog = new HashMap<Character,String>();
-	public static Map<String,Character>	cogchar = new HashMap<String,Character>();
-	public static Map<String,Set<Character>> coggroups = new HashMap<String,Set<Character>>();
+	public static Map<Character,String>	charcog = new HashMap<>();
+	public static Map<String,Character>	cogchar = new HashMap<>();
+	public static Map<String,Set<Character>> coggroups = new HashMap<>();
+	public static Map<Character,Color> charcogcol = new HashMap<>();
 	static {
-		coggroups.put( "CELLULAR PROCESSES AND SIGNALING", new HashSet<Character>( Arrays.asList( new Character[] {'D','M','N','O','T','U','V','W','Y','Z'} ) ) );
-		coggroups.put( "INFORMATION STORAGE AND PROCESSING", new HashSet<Character>( Arrays.asList( new Character[] {'A','B','J','K','L'} ) ) );
-		coggroups.put( "METABOLISM", new HashSet<Character>( Arrays.asList( new Character[] {'C','E','F','G','H','I','P','Q'} ) ) );
-		coggroups.put( "POORLY CHARACTERIZED", new HashSet<Character>( Arrays.asList( new Character[] {'R','S'} ) ) );
+		coggroups.put( "CELLULAR PROCESSES AND SIGNALING", new HashSet<>( Arrays.asList( new Character[] {'D','M','N','O','T','U','V','W','Y','Z'} ) ) );
+		coggroups.put( "INFORMATION STORAGE AND PROCESSING", new HashSet<>( Arrays.asList( new Character[] {'A','B','J','K','L'} ) ) );
+		coggroups.put( "METABOLISM", new HashSet<>( Arrays.asList( new Character[] {'C','E','F','G','H','I','P','Q'} ) ) );
+		coggroups.put( "POORLY CHARACTERIZED", new HashSet<>( Arrays.asList( new Character[] {'R','S'} ) ) );
 		
 		/*
 		CELLULAR PROCESSES AND SIGNALING
@@ -74,9 +72,11 @@ public class Cog {
 		//POORLY CHARACTERIZED
 		charcog.put('R', "General function prediction only" );
 		charcog.put('S', "Function unknown" );
-		
+
+		Random r = new Random();
 		for( Character c : charcog.keySet() ) {
 			cogchar.put( charcog.get(c), c );
+			charcogcol.put( c, new Color(r.nextFloat(),r.nextFloat(),r.nextFloat()) );
 		}
 		
 		cogchar.put( "Cell envelope biogenesis, outer membrane", 'M' );
