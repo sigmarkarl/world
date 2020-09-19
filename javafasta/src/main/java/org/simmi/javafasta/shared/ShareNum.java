@@ -20,6 +20,6 @@ public class ShareNum implements Comparable<ShareNum> {
 	}
 
 	public String toString() {
-		return Integer.toString(numshare);
+		return sharenum +"/"+ numshare;
 	}
 };

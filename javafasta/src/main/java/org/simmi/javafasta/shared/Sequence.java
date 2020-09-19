@@ -13,7 +13,7 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class Sequence implements Comparable<Sequence> {
+public class Sequence extends FastaSequence implements Comparable<Sequence> {
 	/*public static int						max = 0;
 	public static int						min = 0;s
 	
@@ -358,6 +358,14 @@ public class Sequence implements Comparable<Sequence> {
 		}
 		Collections.sort(isoel);
 	}
+
+	public StringBuilder getSequence() {
+		return sb;
+	}
+
+	public void setSequence(StringBuilder sb) {
+		this.sb = sb;
+	}
 	
 	public int getNumberOfSubContigs() {
 		int count = 0;
@@ -393,13 +401,13 @@ public class Sequence implements Comparable<Sequence> {
 	
 	public static void writeFasta( OutputStream os, List<Sequence> lseq, boolean italic ) throws IOException {
 		OutputStreamWriter osw = new OutputStreamWriter(os);
-		writeFasta( osw, lseq, italic );
+		writeFasta( osw, lseq, italic, false );
 		osw.close();
 	}
 	
-	public static void writeFasta( Writer osw, List<Sequence> lseq, boolean italic ) throws IOException {
+	public static void writeFasta( Writer osw, List<Sequence> lseq, boolean italic, boolean group ) throws IOException {
 		for( Sequence seq : lseq ) {
-			seq.writeSequence(osw, italic);
+			seq.writeSequence(osw, italic, group);
 		}
 	}
 	
@@ -408,33 +416,11 @@ public class Sequence implements Comparable<Sequence> {
 			seq.writeSequence(osw,start,stop,italic);
 		}
 	}
-	
-	public void writeSequence( Appendable fw, int gap, boolean italic ) throws IOException {
-		if( italic ) fw.append("><i>"+getName()+"</i>\n");
-		else fw.append(">"+getName()+"\n");
-		for( int k = 0; k < sb.length(); k+=gap ) {
-			int m = Math.min(sb.length(), k+gap);
-			String substr = sb.substring(k, m);
-			//(seq.sb.length() == k+70 ? "")
-			fw.append( substr+"\n" );
-		}
-	}
-	
-	public void writeSequence( Writer fw, int gap, boolean italic ) throws IOException {
-		if( italic ) fw.write("><i>"+getName()+"</i>\n");
-		else fw.write(">"+getName()+"\n");
-		for( int k = 0; k < sb.length(); k+=gap ) {
-			int m = Math.min(sb.length(), k+gap);
-			String substr = sb.substring(k, m);
-			//(seq.sb.length() == k+70 ? "")
-			fw.write( substr+"\n" );
-		}
-	}
-	
+
 	public void writeSequence( Writer fw, int gap, int start, int stop, boolean italic ) throws IOException {
 		int val = Math.max( 0, start-getStart() );
 		int end = Math.min( length(), stop-getStart() );
-		
+
 		if( end > val ) {
 			fw.write(">"+getName()+"\n");
 			for( int k = 0; k < sb.length(); k+=gap ) {
@@ -445,36 +431,9 @@ public class Sequence implements Comparable<Sequence> {
 			}
 		}
 	}
-	
+
 	public void writeSequence( Writer fw, int start, int stop, boolean italic ) throws IOException {
 		writeSequence( fw, 70, start, stop, italic );
-	}
-	
-	public void writeSequence( Appendable fw ) throws IOException {
-		writeSequence( fw, 70, false );
-	}
-	
-	public void writeSequence( Writer fw ) throws IOException {
-		writeSequence( fw, 70, false );
-	}
-	
-	public void writeSequence( Writer fw, boolean italic ) throws IOException {
-		writeSequence( fw, 70, italic );
-	}
-	
-	public void writeSplitSequence( Writer fw ) throws IOException {
-		int total = 0;
-		while( total < sb.length() ) {
-			fw.write(">"+getName()+"_"+total+"\n");
-			int end = Math.min(total+1020,sb.length());
-			for( int k = total; k < end; k+=70 ) {
-				int m = Math.min(end, k+70);
-				String substr = sb.substring(k, m);
-				//(seq.sb.length() == k+70 ? "")
-				fw.write( substr+"\n" );
-			}
-			total += 1020;
-		}
 	}
 	
 	public void injectAfter( Annotation cur, Annotation tv ) {
@@ -554,15 +513,13 @@ public class Sequence implements Comparable<Sequence> {
 	}
 	
 	public Sequence				consensus;
-	private String 				name;
-	public String				group;
 	public String				id;
 	public String				definition;
 	public String				version;
 	public String				keywords;
+	public String 				country;
 	Set<Reference> 				refset;
 	String						organism;
-	public StringBuilder	 	sb;
 	public IntBuffer			ib = null;
 	public IntBuffer			rib = null;
 	public int					offset = 0;
@@ -646,7 +603,7 @@ public class Sequence implements Comparable<Sequence> {
 	
 	public void sortLocs() {
 		if( annset != null ) {
-			Collections.sort( annset );
+			Collections.sort(annset);
 			int i = 0;
 			//Tegeval prev = null;
 			for( Annotation tv : annset ) {
@@ -1481,6 +1438,10 @@ public class Sequence implements Comparable<Sequence> {
 	
 	public void setGroup( String name ) {
 		this.group = name;
+	}
+
+	public void setCountry(String country) {
+		this.country = country;
 	}
 	
 	public boolean equals( Object obj ) {			

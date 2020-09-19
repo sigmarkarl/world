@@ -2,10 +2,9 @@ package org.simmi.javafasta.shared;
 
 
 public class Tegeval extends Annotation implements Teg {
-	public Tegeval(Gene gene, String tegund, double evalue, String contig, Sequence shortcontig, int sta, int sto, int orient) {
+	public Tegeval(Gene gene, double evalue, String contig, Sequence shortcontig, int sta, int sto, int orient) {
 		this( contig, shortcontig, sta, sto, orient );
-		
-		teg = tegund;
+
 		eval = evalue;
 		this.setGene( gene );
 		//dna = dnaseq;
@@ -63,7 +62,7 @@ public class Tegeval extends Annotation implements Teg {
 	}
 	
 	public String getContloc() {
-		return this.getContshort().getName();
+		return this.getContshort() != null ? this.getContshort().getName() : "";
 	}
 	
 	public String getContigName() {
@@ -188,14 +187,8 @@ public class Tegeval extends Annotation implements Teg {
 		/*if( o != null ) return this.getGene().toString().compareTo(o.toString());
 		else return 1;*/
 
-		if( o == null || o instanceof Teginfo ) {
-			return compareTo((Teginfo)o);
-		} else if( o instanceof Tegeval ) {
-			//System.err.println("comparing "+this+" with tegval: "+);
+		if( o instanceof Tegeval ) {
 			return compareTo((Tegeval) o);
-		} else if( o instanceof Teg ) {
-			//System.err.println("comparing "+this+" with empty: 1");
-			return 1;
 		} else {
 			return super.compareTo(o);
 		}
@@ -203,25 +196,27 @@ public class Tegeval extends Annotation implements Teg {
 	
 	public int compareTo(Tegeval tv) {
 		if( locsort ) {
-			if( getContshort() == null ) return 1;
-			if( tv.getContshort() == null ) return -1;
-			int ret = getContshort().compareTo(tv.getContshort());
-				/*
-				 * if( o.contshort != null || o.contshort.length() < 2 ) { ret =
-				 * contshort.compareTo(o.contshort); } else {
-				 * System.err.println(); }
-				 */
-
-			int val = ret == 0 ? super.compareTo(tv) : ret;
-			//System.err.println("comparing "+this+" with "+tv + ": "+val);
-			return val;
+			if( getContshort() == null ) {
+				if(tv.getContshort() == null) return 0;
+				return 1;
+			}
+			if( tv.getContshort() == null ) {
+				if( getContshort() == null ) return 0;
+				return -1;
+			}
+			return super.compareTo(tv);
 		} else {
 			int comp = Double.compare(eval, tv.eval);
-			return comp == 0 ? teg.compareTo(tv.teg) : comp;
+			return comp == 0 ? getSpecies().compareTo(tv.getSpecies()) : comp;
 		}
 	}
 	
 	public int compareTo(Teginfo ti) {
 		return 1;
+	}
+
+	@Override
+	public Annotation getBest() {
+		return this;
 	}
 }

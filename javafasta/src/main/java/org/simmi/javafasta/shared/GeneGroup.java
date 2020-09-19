@@ -1,5 +1,8 @@
 package org.simmi.javafasta.shared;
 
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.SimpleBooleanProperty;
+
 import java.io.IOException;
 import java.io.StringWriter;
 import java.io.Writer;
@@ -10,7 +13,7 @@ public class GeneGroup {
 	GenomeSet						geneset;
 	public Set<Gene>           		genes = new HashSet<>();
 	public Map<String, Teginfo>  	species = new TreeMap<>();
-	public int                	 	groupIndex = -10;
+	public int                	 	groupIndex;
 	int                 			groupCount = -1;
 	public int						index;
 	Map<Set<String>, ShareNum> 		specset;
@@ -19,6 +22,7 @@ public class GeneGroup {
 	Map<String,Cog>					cogmap;
 	Map<String,Cog>					pfammap;
 	Map<String,Set<String>>			biosystemsmap;
+	BooleanProperty selected = new SimpleBooleanProperty();
 
 	/*Map<String,String>				cazyaamap;
 	Map<String,String>				cazycemap;
@@ -45,6 +49,18 @@ public class GeneGroup {
 	public void setCazyPLMap( Map<String,String> cazyplmap ) {
 		this.cazyplmap = cazyplmap;
 	}*/
+
+	public boolean isSelected() {
+		return selected.get();
+	}
+
+	public BooleanProperty selectedProperty() {
+		return selected;
+	}
+
+	public void setSelected(boolean selected) {
+		this.selected.set(selected);
+	}
 
 	public String toString() {
 		return this.getName() + " " + genes.size() + "  " + this.getMaxLength();

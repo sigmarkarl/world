@@ -163,14 +163,14 @@ public class Gene {
 		//if( teginfo == null ) teginfo = new Teginfo();
 		//teginfo.add( tegeval );
 	}
-	
-	public String parseSpecies( String lname ) {
+
+	public String parseSpecies(String lname) {
 		int i = lname.lastIndexOf('[');
 		if( i == -1 ) {
 			i = Sequence.parseSpec( lname );
 			
 			if( i <= 0 ) {
-				return getSpecies();
+				return tegeval.getSpecies();
 			}
 			//int u = lname.lastIndexOf('_');
 			//contigstr = lname.substring(0, u);
@@ -234,7 +234,7 @@ public class Gene {
 	}
 	
 	public String getSpecies() {
-		if( tegeval.teg == null ) {
+		if( tegeval.getSpecies() == null ) {
 			String species = parseSpecies( tegeval.getName() );
 			if( species == null ) {
 				if( tegeval.seq == null ) {
@@ -244,14 +244,17 @@ public class Gene {
 				}
 				
 				if( species == null || species.length() < 4 ) {	
-					System.err.println();
+					System.err.println("hey!!");
 				}
 			}
-			if( tegeval.teg == null ) {
-				tegeval.teg = species;
-			}
+			return species;
 		}
-		return tegeval.teg;
+		return tegeval.getSpecies();
+	}
+
+	ShareNum noShareNum = new ShareNum(-1,-1);
+	public ShareNum getSharingNumber() {
+		return gg==null ? noShareNum : gg.getSharingNumber();
 	}
 
 	public String name;

@@ -41,4 +41,9 @@ public class Teginfo implements Teg {
 		}
 		return 0;
 	}
+
+	@Override
+	public Annotation getBest() {
+		return best;
+	}
 }

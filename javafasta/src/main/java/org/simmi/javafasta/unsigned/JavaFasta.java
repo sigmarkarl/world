@@ -61,38 +61,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import javax.imageio.ImageIO;
-import javax.swing.AbstractAction;
-import javax.swing.Action;
-import javax.swing.DefaultRowSorter;
-import javax.swing.ImageIcon;
-import javax.swing.JApplet;
-import javax.swing.JButton;
-import javax.swing.JCheckBox;
-import javax.swing.JCheckBoxMenuItem;
-import javax.swing.JComponent;
-import javax.swing.JDialog;
-import javax.swing.JFileChooser;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JMenu;
-import javax.swing.JMenuBar;
-import javax.swing.JOptionPane;
-import javax.swing.JPopupMenu;
-import javax.swing.JScrollPane;
-import javax.swing.JSpinner;
-import javax.swing.JSplitPane;
-import javax.swing.JTable;
-import javax.swing.JTextArea;
-import javax.swing.JTextField;
-import javax.swing.RowFilter;
-import javax.swing.RowSorter;
-import javax.swing.SpinnerNumberModel;
-import javax.swing.TransferHandler;
-import javax.swing.UIManager;
-import javax.swing.UnsupportedLookAndFeelException;
+import javax.swing.*;
 import javax.swing.border.Border;
 import javax.swing.border.EmptyBorder;
 import javax.swing.event.ListSelectionEvent;
@@ -102,8 +75,19 @@ import javax.swing.event.TableModelListener;
 import javax.swing.table.TableModel;
 import javax.swing.table.TableRowSorter;
 
+import breeze.linalg.DenseMatrix;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.apache.spark.api.java.JavaRDD;
+import org.apache.spark.mllib.linalg.Matrix;
+import org.apache.spark.mllib.linalg.Vector;
+import org.apache.spark.mllib.linalg.Vectors;
+import org.apache.spark.mllib.linalg.distributed.RowMatrix;
+import org.apache.spark.sql.Dataset;
+import org.apache.spark.sql.Encoder;
+import org.apache.spark.sql.Encoders;
+import org.apache.spark.sql.SparkSession;
+import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder;
 import org.simmi.javafasta.shared.Contig;
 import org.simmi.javafasta.shared.Sequence;
 import org.simmi.javafasta.shared.Annotation;
@@ -135,13 +119,13 @@ import javafx.scene.web.WebView;
 import javafx.stage.Stage;
 import netscape.javascript.JSObject;
 
-public class JavaFasta extends JApplet {
+public class JavaFasta extends JPanel {
 
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = 1L;
-	JApplet	parentApplet = JavaFasta.this;
+	JPanel	parentApplet = JavaFasta.this;
 	Container	currentCnt;
 	Serifier	serifier = null;
 	
@@ -226,7 +210,7 @@ public class JavaFasta extends JApplet {
 				int val = 0;
 		   		int end = seq.length();
 		   		 
-		   		if( val <= end ) osw.write( seq.getName() + "\t" + seq.sb + "\n" );
+		   		if( val <= end ) osw.write( seq.getName() + "\t" + seq.getSequence() + "\n" );
 		   		/*while( val < end ) {
 		   			 osw.write( seq.sb.substring(val, Math.min( end, val+70 )) + "\n" );
 		   			 val += 70;
@@ -267,7 +251,7 @@ public class JavaFasta extends JApplet {
 		}
 	}
 	
-	public void setParentApplet( JApplet applet ) {
+	public void setParentApplet( JPanel applet ) {
 		parentApplet = applet;
 	}
 		
@@ -311,13 +295,13 @@ public class JavaFasta extends JApplet {
 	}*/
 	
 	ChatServer cs;
-	public JavaFasta( JApplet parentApplet, Serifier serifier, ChatServer cs ) {
+	public JavaFasta( JPanel parentApplet, Serifier serifier, ChatServer cs ) {
 		this( serifier );
 		if( parentApplet != null ) this.parentApplet = parentApplet;
 		this.cs = cs;
 	}
 	
-	public JavaFasta( JApplet parentApplet, Serifier serifier ) {
+	public JavaFasta( JPanel parentApplet, Serifier serifier ) {
 		this( parentApplet, serifier, null );
 	}
 	
@@ -845,9 +829,9 @@ public class JavaFasta extends JApplet {
 				if( keycode == KeyEvent.VK_LEFT ) {
 					for( Sequence s : seq ) {
 						int i = this.selectedRect.x-s.getStart()-1;
-						if( i >= 0 && i < s.sb.length() ) {
-							s.sb.deleteCharAt( i );
-							s.sb.insert( i+this.selectedRect.width, '-');
+						if( i >= 0 && i < s.getSequence().length() ) {
+							s.getSequence().deleteCharAt( i );
+							s.getSequence().insert( i+this.selectedRect.width, '-');
 							s.edited = true;
 						}
 					}
@@ -856,9 +840,9 @@ public class JavaFasta extends JApplet {
 				} else if( keycode == KeyEvent.VK_RIGHT ) {
 					for( Sequence s : seq ) {
 						int i = this.selectedRect.x-s.getStart();
-						if( i >= 0 && i < s.sb.length() ) {
-							s.sb.insert( i, '-' );
-							s.sb.deleteCharAt( i+this.selectedRect.width+1 );
+						if( i >= 0 && i < s.getSequence().length() ) {
+							s.getSequence().insert( i, '-' );
+							s.getSequence().deleteCharAt( i+this.selectedRect.width+1 );
 							s.edited = true;
 						}
 					}
@@ -866,8 +850,8 @@ public class JavaFasta extends JApplet {
 					c.repaint();
 				} else if( keycode == KeyEvent.VK_DELETE ) {
 					for( Sequence s : seq ) {
-						for( int i = Math.max(0, this.selectedRect.x-s.getStart()); i < Math.min(s.sb.length(),this.selectedRect.x+this.selectedRect.width-s.getStart()); i++ ) { 
-							s.sb.setCharAt(i, '-');
+						for( int i = Math.max(0, this.selectedRect.x-s.getStart()); i < Math.min(s.getSequence().length(),this.selectedRect.x+this.selectedRect.width-s.getStart()); i++ ) {
+							s.getSequence().setCharAt(i, '-');
 							s.edited = true;
 							//s.sb.insert( i+this.selectedRect.width, '-');
 						}
@@ -901,10 +885,10 @@ public class JavaFasta extends JApplet {
 					
 					for( Sequence s : seq ) {
 						start = Math.max(0, this.selectedRect.x-s.getStart() );
-						end = Math.min( s.sb.length(), this.selectedRect.x+this.selectedRect.width-s.getStart() );
+						end = Math.min( s.getSequence().length(), this.selectedRect.x+this.selectedRect.width-s.getStart() );
 						
 						if( end > start ) {
-							s.sb.delete(start, end);
+							s.getSequence().delete(start, end);
 							s.edited = true;
 						}
 						/*Set<Annotation> remset = new HashSet<Annotation>();
@@ -936,8 +920,8 @@ public class JavaFasta extends JApplet {
 						char c = '-';
 						for( Sequence s : seq ) {
 							int i = this.selectedRect.x+serifier.min-s.getStart()+o;
-							if( i >= 0 && i < s.sb.length() ) {
-								c = s.sb.charAt(i);
+							if( i >= 0 && i < s.getSequence().length() ) {
+								c = s.getSequence().charAt(i);
 								if( c != '-' ) break;
 							}
 						}
@@ -950,9 +934,9 @@ public class JavaFasta extends JApplet {
 					
 					for( Sequence s : seq ) {
 						int i = this.selectedRect.x+serifier.min-s.getStart();
-						if( i >= 0 && i < s.sb.length() ) {
-							if( k != -1 ) s.sb.delete(i+k, i+k+1);
-							s.sb.insert( i, '-' );
+						if( i >= 0 && i < s.getSequence().length() ) {
+							if( k != -1 ) s.getSequence().delete(i+k, i+k+1);
+							s.getSequence().insert( i, '-' );
 							s.edited = true;
 						}
 					}
@@ -963,8 +947,8 @@ public class JavaFasta extends JApplet {
 						//System.err.println( s.getName() + "  " + s.getEnd() + "  " + serifier.min );
 						for( int k = this.selectedRect.x; k < this.selectedRect.x+this.selectedRect.width; k++ ) {
 							int i = k+serifier.min-s.getStart();
-							if( i >= 0 && i < s.sb.length() ) {
-								s.sb.replace(i, i+1, Character.toString(keychar) );
+							if( i >= 0 && i < s.getSequence().length() ) {
+								s.getSequence().replace(i, i+1, Character.toString(keychar) );
 								s.edited = true;
 							}
 						}
@@ -1051,11 +1035,11 @@ public class JavaFasta extends JApplet {
 					for( int i = 0; i < sseq.length(); i++ ) {
 						if( sseq.charAt(i) != '-' ) {
 							//if( k+sstart-1 >= s.sb.length() ) break;
-							while( s.sb.length() < k+sstart ) {
-								s.sb.append('-');
+							while( s.getSequence().length() < k+sstart ) {
+								s.getSequence().append('-');
 							}
 							char c = qseq.charAt(i);
-							s.sb.setCharAt(k+sstart-1, c);
+							s.getSequence().setCharAt(k+sstart-1, c);
 							k++;
 						}
 					}
@@ -1064,11 +1048,11 @@ public class JavaFasta extends JApplet {
 					for( int i = 0; i < sseq.length(); i++ ) {
 						if( sseq.charAt(i) != '-' ) {
 							//if( k+sstop-1 >= s.sb.length() ) break;
-							while( s.sb.length() < sstart-k ) {
-								s.sb.append('-');
+							while( s.getSequence().length() < sstart-k ) {
+								s.getSequence().append('-');
 							}
 							char c = qseq.charAt(i);
-							s.sb.setCharAt(sstart-k-1, Sequence.rc.get(c) );
+							s.getSequence().setCharAt(sstart-k-1, Sequence.rc.get(c) );
 							k++;
 						}
 					}
@@ -1465,42 +1449,7 @@ public class JavaFasta extends JApplet {
 	    	 String str = baos.toString();
 	    	 //netscape.javascript.JSObject obj = netscape.javascript.JSObject.getWindow( parentApplet );
 	    	 //obj.call("blobstuff", new Object[] {str, "text/plain"});
-	    	 
-	    	 JSObject window = null;
-	    	 try {
-	    		 window = JSObject.getWindow( parentApplet );
-	    	 } catch( NoSuchMethodError | Exception exc ) {
-	    		 exc.printStackTrace();
-	    	 }
-		
-		 if( window != null ) {
-			try {
-				window.setMember("str", str);
-				window.eval("var b = new Blob( [str], { \"type\" : \"text\\/plain\" } );");
-				window.eval("open( URL.createObjectURL(b), '_blank' )");
-			} catch( Exception exc ) {
-				exc.printStackTrace();
-			}
-		 }/* else {
-		    	 try {
-		    		 fss = (FileSaveService)ServiceManager.lookup("javax.jnlp.FileSaveService");
-		    	 } catch( UnavailableServiceException e ) {
-		    		 fss = null;
-		    	 }
-		}*/
-	    	 
-	    /*if (fss != null) {
-	        	 ByteArrayInputStream bais = new ByteArrayInputStream( baos.toByteArray() );      	 
-             fileContents = fss.saveFileDialog(null, null, bais, "export.fasta");
-             bais.close();
-             
-             OutputStream os = fileContents.getOutputStream(true);
-             osw = new OutputStreamWriter( os );
-             serifier.writeFasta(seqlist, osw, getSelectedRect() );
-             osw.close();
-             //os.write( baos.toByteArray() );
-             os.close();
-         } else {*/
+
         	 JFileChooser jfc = new JFileChooser();
         	 if( jfc.showSaveDialog( parentApplet ) == JFileChooser.APPROVE_OPTION ) {
         		 File f = jfc.getSelectedFile();
@@ -1575,7 +1524,7 @@ public class JavaFasta extends JApplet {
 	   		 
 	   		 if( val < end ) fw.write( ">" + seq.getName() + "\n" );
 	   		 while( val < end ) {
-	   			 fw.write( seq.sb.substring(val, Math.min( end, val+70 )) + "\n" );
+	   			 fw.write( seq.getSequence().substring(val, Math.min( end, val+70 )) + "\n" );
 	   			 val += 70;
 	   		 }
 	   	 }
@@ -1619,7 +1568,7 @@ public class JavaFasta extends JApplet {
 	   		osw.write( ">" + ann.getName() + "\n" );
 	   		int val = ann.start;
 	   		while( val < ann.stop ) {
-	   			osw.write( ann.seq.sb.substring( val, Math.min( ann.stop, val+70 )) + "\n" );
+	   			osw.write( ann.seq.getSequence().substring( val, Math.min( ann.stop, val+70 )) + "\n" );
 	   			val += 70;
 	   		}
 	   	}
@@ -1673,12 +1622,6 @@ public class JavaFasta extends JApplet {
         }*/
 	}
 	
-	public void console( String str ) {
-		JSObject jso = JSObject.getWindow( parentApplet );
-		JSObject console = (JSObject)jso.getMember("console");
-		console.call("log", new Object[] {str});
-	}
-	
 	//Map<String,Sequence>	mseq;
 	//ArrayList<Sequence>		lseq;
 	//ArrayList<Annotation>	lann;
@@ -1718,7 +1661,6 @@ public class JavaFasta extends JApplet {
 	
 	public void addAbiSequence( String name, byte[] bts, int len ) {
 		//byte[] ba = bts.getBytes();
-		console( "in "+bts.length );
 		ByteBuffer bb = ByteBuffer.wrap( bts );
 		try {
 			Ab1Reader abi = new Ab1Reader( bb );
@@ -1728,7 +1670,7 @@ public class JavaFasta extends JApplet {
 			
 			if( s.length() > serifier.getMax() ) serifier.setMax( s.length() );
 		} catch( Exception e ) {
-			console( e.getMessage() );
+			e.printStackTrace();
 		}
 	}
 	
@@ -1779,7 +1721,7 @@ public class JavaFasta extends JApplet {
 		else {
 			int val = x-s.getStart();
 			if( val < s.length() ) {
-				s.sb.setCharAt( val, '-' );
+				s.getSequence().setCharAt( val, '-' );
 			}
 		}
 	}
@@ -1795,7 +1737,7 @@ public class JavaFasta extends JApplet {
 		else {
 			int val = x-s.getStart();
 			if( val < s.length() ) {
-				s.sb.deleteCharAt( val );
+				s.getSequence().deleteCharAt( val );
 			}
 		}
 	}
@@ -1810,7 +1752,7 @@ public class JavaFasta extends JApplet {
 		char c = ' ';
 		if( x >= s.getStart() && x < s.getEnd() ) {
 			int val = x-s.getStart();
-			if( val >= 0 && val < s.length() ) c = s.sb.charAt( val );
+			if( val >= 0 && val < s.length() ) c = s.getSequence().charAt( val );
 		}
 		return c;
 	}
@@ -2060,14 +2002,15 @@ public class JavaFasta extends JApplet {
 			max = Math.max( max, seq.getEnd() );
 		}
 		
-		List<Integer>	indx = new ArrayList<Integer>();
+		List<Integer>	indx = new ArrayList<>();
 		for( int i = min; i < max; i++ ) {
-			Set<Character>	charset = new HashSet<Character>();
+			Set<Character>	charset = new HashSet<>();
 			for( int r : rr ) {
 				char c2 = getCharAt(i, r);
-				if( c2 == '.' || c2 == '-' || c2 == ' ' ) {
-					charset.clear();
-					break;
+				//if( c2 == '.' || c2 == '-' || c2 == ' ' || c2 == 'N' || c2 == 'n' ) {
+				if(c2 != 'a' && c2 != 'c' && c2 != 'g' && c2 != 't') {
+					//charset.clear();
+					//break;
 				} else {
 					charset.add( c2 );
 					
@@ -2089,15 +2032,20 @@ public class JavaFasta extends JApplet {
 			int kr = 0;
 			for( int r : rr ) {
 				char c2 = getCharAt(i, r);
-				if( c == 0 ) c = c2;
+				//if( c2 == '.' || c2 == '-' || c2 == ' ' || c2 == 'N' || c2 == 'n' ) {
+				if(c2 != 'a' && c2 != 'c' && c2 != 'g' && c2 != 't') {
+					X[kr * indx.size() + ki] = 0.0;
+				} else {
+					if (c == 0) c = c2;
 				
 				/*int k = table.convertRowIndexToModel( r );
 				String acc = serifier.lseq.get( k ).getName();
 				if( i == 192 && acc.contains("1940") ) {
 					System.err.println(  i + "  " + c + "  " + c2 + "  " + serifier.lseq.get( k ).getName() );
 				}*/
-				
-				X[ kr*indx.size()+ki ] = c2 == c ? 1.0 : -1.0;
+
+					X[kr * indx.size() + ki] = c2 == c ? 1.0 : -1.0;
+				}
 				kr++;
 			}
 			ki++;
@@ -2384,7 +2332,7 @@ public class JavaFasta extends JApplet {
    		 
    		 if( val < end ) out.append( ">" + seq.getName() + "\n" );
    		 while( val < end ) {
-   			 out.append( seq.sb.substring(val, Math.min( end, val+70 )) + "\n" );
+   			 out.append( seq.getSequence().substring(val, Math.min( end, val+70 )) + "\n" );
    			 val += 70;
    		 }
    	 	}
@@ -3275,7 +3223,7 @@ public class JavaFasta extends JApplet {
 
 			@Override
 			public String getColumnName(int columnIndex) {
-				if( columnIndex == 0 ) return "Name";
+					if( columnIndex == 0 ) return "Name";
 				else if( columnIndex == 1 ) return "Group";
 				
 				else if( columnIndex == 2 ) return "Length";
@@ -3649,15 +3597,15 @@ public class JavaFasta extends JApplet {
 				String restext = Sequence.getPhylip( ls, false );				
 				
 				try {
-					FileWriter fw = new FileWriter("/home/sigmar/ok.txt");
+					FileWriter fw = new FileWriter("/Users/sigmar/ok.txt");
 					fw.write( sb.toString() );
 					fw.close();
 					
-					fw = new FileWriter("/home/sigmar/col.txt");
+					fw = new FileWriter("/Users/sigmar/col.txt");
 					fw.write( col.toString() );
 					fw.close();
 					
-					fw = new FileWriter("/home/sigmar/2state.fasta");
+					fw = new FileWriter("/Users/sigmar/2state.fasta");
 					fw.write( restext );
 					fw.close();
 				} catch (IOException e1) {
@@ -3725,6 +3673,155 @@ public class JavaFasta extends JApplet {
 			 	} while( d > 1.0e-8 );
 				
 				System.err.println( "success after "+count+" iteration" );
+			}
+		});
+		popup.add( new AbstractAction("Spark PCA") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				SparkSession sparkSession = SparkSession.builder().master("local[*]").getOrCreate();
+
+				try {
+					Map<String,String> name2country = Files.lines(Paths.get("/Users/sigmar/Downloads/sequences.csv")).map(s -> s.split(",")).collect(Collectors.toUnmodifiableMap(s -> s[0], s -> s.length >= 2 ? Arrays.stream(s).skip(1).map(String::trim).collect(Collectors.joining("_")) : "Unknown"));
+					int[] rr = table.getSelectedRows();
+					/*rr = Arrays.stream(rr).filter(i -> {
+						int k = table.convertRowIndexToModel( i );
+						Sequence seq = serifier.lseq.get( k );
+						String name = seq.getName().trim();
+						String country = name2country.get(name);
+						return !country.contains("USA: WA");
+					}).toArray();*/
+					double[] X = get2StatePCAMatrix( rr );
+					int isize = X.length/rr.length;
+
+					List<String> names = new ArrayList<>();
+					List<Vector> data = new ArrayList<>();
+					int m = 0;
+					for(int i : rr) {
+						double[] xx = null;
+						try {
+							xx = Arrays.copyOfRange(X,m*isize,m*isize+isize);
+						} catch(Exception iie) {
+							iie.printStackTrace();
+						}
+						Vector vec = Vectors.dense(xx);
+						data.add(vec);
+
+						int k = table.convertRowIndexToModel( i );
+						Sequence seq = serifier.lseq.get( k );
+						names.add(seq.getName().trim());
+
+						m++;
+					}
+
+					Encoder<Vector> enc = Encoders.javaSerialization(Vector.class);
+					Dataset<Vector> rows = sparkSession.createDataset(data, enc);//sparkContext().parallelize(data);
+
+					// Create a RowMatrix from JavaRDD<Vector>.
+					RowMatrix mat = new RowMatrix(rows.rdd());
+
+					// Compute the top 4 principal components.
+					// Principal components are stored in a local dense matrix.
+					Matrix pc = mat.computePrincipalComponents(4);
+
+					// Project the rows to the linear space spanned by the top 4 principal components.
+					RowMatrix projected = mat.multiply(pc);
+
+					DenseMatrix dm = projected.toBreeze();
+
+					Path p = Paths.get("/Users/sigmar/pcares.txt");
+					try(BufferedWriter fw = Files.newBufferedWriter(p)) {
+						for(int i = 0; i < names.size(); i++) {
+							String name = names.get(i);
+							String country = name2country.get(name);
+							fw.write(country.startsWith("\"") ? country.substring(1,country.length()-1) : country);
+							fw.write('\t');
+							fw.write(dm.apply(i, 0).toString());
+							fw.write('\t');
+							fw.write(dm.apply(i, 1).toString());
+							fw.write('\t');
+							fw.write(dm.apply(i, 2).toString());
+							fw.write('\n');
+						}
+					} catch (IOException ioException) {
+						ioException.printStackTrace();
+					}
+
+					System.err.println(dm.toString());
+					System.err.println();
+				} catch (IOException ioException) {
+					ioException.printStackTrace();
+				}
+
+				/*Arrays.asList(
+						Vectors.sparse(5, new int[] {1, 3}, new double[] {1.0, 7.0}),
+						Vectors.dense(2.0, 0.0, 3.0, 4.0, 5.0),
+						Vectors.dense(4.0, 0.0, 0.0, 6.0, 7.0)
+				);*/
+
+				/*Platform.runLater(() -> {
+					WebView webView = new WebView();
+					webView.getEngine().load("http://www.mbl.is");
+					final Stage dialog = new Stage();
+					Scene dialogScene = new Scene(webView, 800, 600);
+					dialog.setScene(dialogScene);
+					dialog.show();
+				});*/
+
+
+
+				/*double[] u = new double[rr.length];
+				double uu = 0.0;
+				for( int i = 0; i < u.length; i++ ) {
+					u[i] = X[i*isize];
+					uu += u[i]*u[i];
+				}
+				double[] uold = new double[rr.length];
+				double d = 0.0;
+
+				int count = 0;
+				do {
+					double[] v = new double[isize];
+					double vv = 0.0;
+					for( int i = 0; i < v.length; i++ ) {
+						double Xv = 0.0;
+						for( int k = 0; k < rr.length; k++ ) {
+							Xv += X[k*isize+i];
+						}
+						v[i] = Xv/uu;
+						vv = v[i]*v[i];
+					}
+					double vlen = Math.sqrt( vv );
+					for( int i = 0; i < v.length; i++ ) {
+						v[i] /= vlen;
+					}
+
+					for( int i = 0; i < u.length; i++ ) {
+						uold[i] = u[i];
+					}
+
+					uu = 0.0;
+					for( int i = 0; i < u.length; i++ ) {
+						u[i] = 0.0;
+						for( int k = 0; k < v.length; k++ ) {
+							u[i] += X[i*v.length+k]*v[k];
+						}
+						u[i] /= vv;
+
+						uu += u[i]*u[i];
+					}
+
+					d = 0.0;
+					for( int i = 0; i < u.length; i++ ) {
+						double ud = uold[i] - u[i];
+						d += ud*ud;
+					}
+					d = Math.sqrt(d);
+
+					System.err.println( d );
+					count++;
+				} while( d > 1.0e-8 );
+
+				System.err.println( "success after "+count+" iteration" );*/
 			}
 		});
 		popup.addSeparator();
@@ -4233,7 +4330,7 @@ public class JavaFasta extends JApplet {
 			    	 
 			    	 for( Sequence s : seqs ) {
 			    		 Sequence ps = serifier.mseq.get( s.getName() );
-			    		 ps.sb.replace( c.selectedRect.x, c.selectedRect.x+c.selectedRect.width, s.sb.toString() );
+			    		 ps.getSequence().replace( c.selectedRect.x, c.selectedRect.x+c.selectedRect.width, s.getSequence().toString() );
 			    	 }
 			    	 
 			    	 table.tableChanged( new TableModelEvent( table.getModel() ) );
@@ -4321,8 +4418,8 @@ public class JavaFasta extends JApplet {
 							allcharset.put( cc, k+1 );
 						}
 						
-						if( charset.size() == 0 ) newseq.sb.append('-');
-						else if( charset.size() == 1 ) newseq.sb.append( charset.keySet().iterator().next() );
+						if( charset.size() == 0 ) newseq.getSequence().append('-');
+						else if( charset.size() == 1 ) newseq.getSequence().append( charset.keySet().iterator().next() );
 						else if( charset.size() > 1 ) {
 							char val = '-';
 							int max = 0;
@@ -4335,8 +4432,8 @@ public class JavaFasta extends JApplet {
 									}
 								}
 							}
-							if( val == ' ' ) newseq.sb.append('-');
-							else newseq.sb.append( val );
+							if( val == ' ' ) newseq.getSequence().append('-');
+							else newseq.getSequence().append( val );
 							
 							/*	newseq.sb.append( charset.iterator().next() );
 							} else if( charset.size() == 3 ) {
@@ -4405,8 +4502,8 @@ public class JavaFasta extends JApplet {
 						charset.put( cc, k+1 );
 					}
 					
-					if( charset.size() == 0 ) newseq.sb.append('-');
-					else if( charset.size() == 1 ) newseq.sb.append( charset.keySet().iterator().next() );
+					if( charset.size() == 0 ) newseq.getSequence().append('-');
+					else if( charset.size() == 1 ) newseq.getSequence().append( charset.keySet().iterator().next() );
 					else if( charset.size() > 1 ) {
 						char val = '-';
 						int max = 0;
@@ -4419,7 +4516,7 @@ public class JavaFasta extends JApplet {
 								}
 							}
 						}
-						newseq.sb.append( val );
+						newseq.getSequence().append( val );
 						
 						/*	newseq.sb.append( charset.iterator().next() );
 						} else if( charset.size() == 3 ) {
@@ -4449,7 +4546,7 @@ public class JavaFasta extends JApplet {
 					int i = table.convertRowIndexToModel(r);
 					Sequence seq = serifier.lseq.get(i);
 					if( gname == null ) gname = seq.getName();
-					if( seq.group != null ) gname = seq.group;
+					if( seq.getGroup() != null ) gname = seq.getGroup();
 					remseq.add( seq );
 				}
 				
@@ -4527,7 +4624,7 @@ public class JavaFasta extends JApplet {
 				
 				for( Sequence seq : serifier.lseq ) {
 					for( int i = seq.length(); i < max; i++ ) {
-						seq.sb.append('-');
+						seq.getSequence().append('-');
 					}
 				}
 			}
@@ -4759,7 +4856,7 @@ public class JavaFasta extends JApplet {
 				for( int r : rr ) {
 					int k = table.convertRowIndexToModel( r );
 					Sequence seq = serifier.lseq.get( k );
-					StringBuilder	sb = seq.sb;
+					StringBuilder	sb = seq.getSequence();
 					for( int i = 0; i < sb.length(); i++ ) {
 						if( sb.charAt(i) == '.' || sb.charAt(i) == '*' ) sb.setCharAt(i, '-');
 					}
@@ -4826,7 +4923,7 @@ public class JavaFasta extends JApplet {
 		edit.add( new AbstractAction("Remove gaps") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				List<Sequence>	seqlist = new ArrayList<Sequence>();
+				List<Sequence>	seqlist = new ArrayList<>();
 				int[] rr = table.getSelectedRows();
 				for( int r : rr ) {
 					int k = table.convertRowIndexToModel( r );
@@ -4881,7 +4978,7 @@ public class JavaFasta extends JApplet {
 							
 							if( dis >= -20.0 ) {
 								for( Sequence seq : seqlist ) {
-									seq.sb.setCharAt( i, seq.sb.charAt(ix-1) );
+									seq.getSequence().setCharAt( i, seq.getSequence().charAt(ix-1) );
 								}
 								i++;
 							}
@@ -4889,7 +4986,7 @@ public class JavaFasta extends JApplet {
 							line = br.readLine();
 						}
 						for( Sequence seq : seqlist ) {
-							seq.sb.delete( i, seq.sb.length() );
+							seq.getSequence().delete( i, seq.getSequence().length() );
 							seq.checkLengths();
 						}
 						br.close();
@@ -4958,6 +5055,60 @@ public class JavaFasta extends JApplet {
 				clearSites( seqset, true );
 			}
 		});
+		edit.add( new AbstractAction("Retain variant sites allow error") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				int min = Integer.MAX_VALUE;
+				int max = Integer.MIN_VALUE;
+				int[] rr = table.getSelectedRows();
+				for( int r : rr ) {
+					int k = table.convertRowIndexToModel( r );
+					Sequence seq = serifier.lseq.get( k );
+					//StringBuilder	sb = seq.sb;
+					//sb.
+					min = Math.min( min, seq.getStart() );
+					max = Math.max( max, seq.getEnd() );
+				}
+
+				for( int r : rr ) {
+					int k = table.convertRowIndexToModel( r );
+					Sequence seq = serifier.lseq.get( k );
+					seq.setStart( seq.getStart()-min );
+				}
+
+				int i = 0;
+				while( i < max-min ) {
+					boolean rem = true;
+					char c = 0;
+					int count = 0;
+					for( int r : rr ) {
+						char c2 = getCharAt(i, r);
+						/*if( c2 != '.' && c2 != '-' && c2 != ' ' ) {
+							rem = false;
+							break;
+						}*/
+						if( c2 != '.' && c2 != '-' && c2 != 'N' && c2 != 'n' ) {
+							if( c != 0 && c2 != c ) {
+								if(count++==2) {
+									rem = false;
+									break;
+								}
+							}
+
+							c = c2;
+						}
+					}
+					if( rem ) {
+						for( int r : rr ) {
+							deletegetCharAt(i, r);
+						}
+						max--;
+					} else i++;
+				}
+
+				c.repaint();
+			}
+		});
 		edit.add( new AbstractAction("Retain variant sites") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -4989,7 +5140,7 @@ public class JavaFasta extends JApplet {
 							rem = false;
 							break;
 						}*/
-						if( c2 != '.' && c2 != '-' ) {
+						if( c2 != '.' && c2 != '-' && c2 != 'N' && c2 != 'n' ) {
 							if( c != 0 && c2 != c ) {
 								rem = false;
 								break;
@@ -5088,7 +5239,7 @@ public class JavaFasta extends JApplet {
 				String username = System.getProperty("user.name");
 				String hostname = host.getText();
 				
-				Map<String,List<Sequence>> mseq = new HashMap<String,List<Sequence>>();
+				Map<String,List<Sequence>> mseq = new HashMap<>();
 				
 				for( Sequence seq : serifier.lseq ) {
 					String spec = seq.getSpec();
@@ -5096,7 +5247,7 @@ public class JavaFasta extends JApplet {
 					if( mseq.containsKey(spec) ) {
 						lseq = mseq.get(spec);
 					} else {
-						lseq = new ArrayList<Sequence>();
+						lseq = new ArrayList<>();
 						mseq.put(spec, lseq);
 					}
 					lseq.add( seq );
@@ -5136,66 +5287,63 @@ public class JavaFasta extends JApplet {
 							e1.printStackTrace();
 						}
 						
-						commandsList = new ArrayList<String>( Arrays.asList( new String[] {"ssh",username+"@"+hostname,"mummer","-maxmatch","-n","-l","25",filename,filename} ) );
+						commandsList = new ArrayList<>(Arrays.asList(new String[]{"ssh", username + "@" + hostname, "mummer", "-maxmatch", "-n", "-l", "25", filename, filename}));
 			    	}
 					
 					final ByteArrayOutputStream baos = new ByteArrayOutputStream();
 					//Path pout = Paths.get("/Users/sigmar/pout.mummer");
-					List cmds = new ArrayList<Object>();
+					List cmds = new ArrayList<>();
 					cmds.add( new Object[] {null, baos, null} );
 					cmds.add( commandsList );
 					
-					Runnable run = new Runnable() {
-						@Override
-						public void run() {
-							String res = baos.toString();
-							
-							String name = null;
-							boolean rev = false;
-							String[] lines = res.split("\n");
-							for( String line : lines ) {
-								if( line.startsWith(">") ) {
-									name = line.substring(1).trim();
-									rev = line.contains("Reverse");
-								} else {
-									String trim = line.trim();
-									String[] split = trim.split("[\t ]+");
-									
-									System.err.println( "serifier min "+serifier.min );
-									
-									if( split.length == 4 ) {
-										if( !split[1].equals(split[2]) ) {
-											String seqname = split[0];
-											int start = Integer.parseInt(split[1])+serifier.min;
-											int len = Integer.parseInt(split[3]);
-											
-											Sequence seq = serifier.mseq.get(seqname);
-											Annotation ann = new Annotation( seq, start, start+len, rev ? -1 : 1, seq == null ? seqname : seq.getSubstring(start, start+len, 1) );
-											ann.type = "mummer";
-											ann.color = rev ? Color.pink : Color.cyan;
-											serifier.lann.add( ann );
+					Runnable run = () -> {
+						String res = baos.toString();
+
+						String name1 = null;
+						boolean rev = false;
+						String[] lines = res.split("\n");
+						for( String line : lines ) {
+							if( line.startsWith(">") ) {
+								name1 = line.substring(1).trim();
+								rev = line.contains("Reverse");
+							} else {
+								String trim = line.trim();
+								String[] split = trim.split("[\t ]+");
+
+								System.err.println( "serifier min "+serifier.min );
+
+								if( split.length == 4 ) {
+									if( !split[1].equals(split[2]) ) {
+										String seqname = split[0];
+										int start = Integer.parseInt(split[1])+serifier.min;
+										int len = Integer.parseInt(split[3]);
+
+										Sequence seq = serifier.mseq.get(seqname);
+										Annotation ann = new Annotation( seq, start, start+len, rev ? -1 : 1, seq == null ? seqname : seq.getSubstring(start, start+len, 1) );
+										ann.type = "mummer";
+										ann.color = rev ? Color.pink : Color.cyan;
+										serifier.lann.add( ann );
+									}
+								} else if( split.length == 3 ) {
+									if( !split[0].equals(split[1]) ) {
+										String seqname = name1;
+										int start = Integer.parseInt(split[0])+serifier.min;
+										int len = Integer.parseInt(split[2]);
+
+										Sequence seq = serifier.mseq.get(seqname);
+										if( seq == null ) {
+											System.err.println();
 										}
-									} else if( split.length == 3 ) {
-										if( !split[0].equals(split[1]) ) {
-											String seqname = name;
-											int start = Integer.parseInt(split[0])+serifier.min;
-											int len = Integer.parseInt(split[2]);
-											
-											Sequence seq = serifier.mseq.get(seqname);
-											if( seq == null ) {
-												System.err.println();
-											}
-											Annotation ann = new Annotation( seq, start, start+len, rev ? -1 : 1, seq == null ? seqname : seq.getSubstring(start, start+len, 1) );
-											ann.type = "mummer";
-											ann.color = rev ? Color.pink : Color.cyan;
-											serifier.lann.add( ann );
-										}
+										Annotation ann = new Annotation( seq, start, start+len, rev ? -1 : 1, seq == null ? seqname : seq.getSubstring(start, start+len, 1) );
+										ann.type = "mummer";
+										ann.color = rev ? Color.pink : Color.cyan;
+										serifier.lann.add( ann );
 									}
 								}
 							}
-							
-							atable.tableChanged( new TableModelEvent( atable.getModel() ) );
 						}
+
+						atable.tableChanged( new TableModelEvent( atable.getModel() ) );
 					};
 					NativeRun nrun = new NativeRun( run );
 					Object[] cont = new Object[] {null, null, null};
@@ -5247,9 +5395,9 @@ public class JavaFasta extends JApplet {
 					}*/
 					
 				List<String> commandsList;
-				if( hostname.equals("localhost") ) commandsList = new ArrayList<String>( Arrays.asList( new String[] {"blastp", "-num_threads", "4"} ) );
+				if( hostname.equals("localhost") ) commandsList = new ArrayList<>(Arrays.asList(new String[]{"blastp", "-num_threads", "4"}));
 				else {
-					commandsList = new ArrayList<String>( Arrays.asList( new String[] {"ssh",username+"@"+hostname,"blastp","-db","/data/nr","-num_threads","32"} ) );
+					commandsList = new ArrayList<>(Arrays.asList(new String[]{"ssh", username + "@" + hostname, "blastp", "-db", "/data/nr", "-num_threads", "32"}));
 		    	}
 				
 				StringWriter sw = new StringWriter();
@@ -5440,7 +5588,7 @@ public class JavaFasta extends JApplet {
 				if( leit != null ) {
 					int i = 0;
 					for( Sequence s : serifier.lseq ) {
-						if( s.sb.indexOf(leit) != -1 || s.sb.indexOf(rcleit) != -1 ) {
+						if( s.getSequence().indexOf(leit) != -1 || s.getSequence().indexOf(rcleit) != -1 ) {
 							//int i = serifier.lseq.indexOf(s);
 							filterset.add( i );
 						}
@@ -5481,8 +5629,8 @@ public class JavaFasta extends JApplet {
 							boolean stopped = false;
 							List<Sequence> lseq = serifier.gseq.get( s.getId() );
 							for( Sequence seq : lseq ) {
-								int ind = seq.sb.indexOf(leit);
-								int rind = seq.sb.indexOf(rcleit);
+								int ind = seq.getSequence().indexOf(leit);
+								int rind = seq.getSequence().indexOf(rcleit);
 								
 								if( !stopped ) {
 									if( ind != -1 ) {
@@ -5507,7 +5655,7 @@ public class JavaFasta extends JApplet {
 										}
 										s.reverseComplement();
 										
-										ind = seq.sb.indexOf(leit);
+										ind = seq.getSequence().indexOf(leit);
 										int val = rect.x+serifier.getMin()-(seq.getStart()+ind);
 										
 										for( Sequence sseq : lseq ) {
@@ -5522,7 +5670,7 @@ public class JavaFasta extends JApplet {
 								}
 								
 								if( ind != -1 || rind != -1 ) {
-									int u = seq.sb.indexOf(leit);
+									int u = seq.getSequence().indexOf(leit);
 									if( u != -1 ) filterset.add( seq.index );
 								}
 							}
@@ -5973,7 +6121,7 @@ public class JavaFasta extends JApplet {
 		phylogeny.add( new AbstractAction("Draw ML tree") {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
-				 List<Sequence> seqlist = new ArrayList<Sequence>();
+				 List<Sequence> seqlist = new ArrayList<>();
 		    	 int[] rr = table.getSelectedRows();
 		    	 for( int r : rr ) {
 		    		 int i = table.convertRowIndexToModel( r );
@@ -5993,57 +6141,41 @@ public class JavaFasta extends JApplet {
 		    	os.write( tree.getBytes() );
 		    	os.close();*/
 		    	 
-		    	boolean succ = true;
-				try {
-					JSObject win = JSObject.getWindow( parentApplet );
-					StringWriter sw = new StringWriter();
-					serifier.writeFasta(serifier.lseq, sw, null);
-					sw.close();
-					
-					String tree = sw.toString();					
-					win.call("fastTree", new Object[] { tree });
-				} catch( NoSuchMethodError | Exception e1 ) {
-					e1.printStackTrace();
-					succ = false;
-				}
-				
-				System.err.println( "nlsucc " + succ );
-				if( !succ ) {
-					String 				tree = serifier.getFastTree( seqlist, user, false );
-					System.err.println( tree );
-					if( cs != null && cs.connections() != null && cs.connections().size() > 0 ) {
-			    		cs.sendToAll( tree );
-			    	} else if( Desktop.isDesktopSupported() && cs != null ) {
-			    		cs.message = tree;
-			    		//String uristr = "http://webconnectron.appspot.com/Treedraw.html?tree="+URLEncoder.encode( tree, "UTF-8" );
-			    		String uristr = "http://webconnectron.appspot.com/Treedraw.html?ws=127.0.0.1:"+cs.getPort();
-						try {
-							Desktop.getDesktop().browse( new URI(uristr) );
-						} catch (IOException | URISyntaxException e1) {
-							e1.printStackTrace();
+
+				String 				tree = serifier.getFastTree( seqlist, user, false );
+				System.err.println( tree );
+				if( cs != null && cs.connections() != null && cs.connections().size() > 0 ) {
+					cs.sendToAll( tree );
+				} else if( Desktop.isDesktopSupported() && cs != null ) {
+					cs.message = tree;
+					//String uristr = "http://webconnectron.appspot.com/Treedraw.html?tree="+URLEncoder.encode( tree, "UTF-8" );
+					String uristr = "http://webconnectron.appspot.com/Treedraw.html?ws=127.0.0.1:"+cs.getPort();
+					try {
+						Desktop.getDesktop().browse( new URI(uristr) );
+					} catch (IOException | URISyntaxException e1) {
+						e1.printStackTrace();
+					}
+				} else {
+					Platform.runLater( new Runnable() {
+						public void run() {
+							WebView webview = new WebView();
+							WebEngine webengine = webview.getEngine();
+							webengine.setUserAgent("AppleWebKit/537.44");
+							webengine.load("http://webconnectron.appspot.com/Treedraw.html");
+
+							webengine.getLoadWorker().stateProperty().addListener(new ChangeListener<State>() {
+								@Override
+								public void changed(ObservableValue<? extends State> observable, State oldValue, State newValue) {
+									webview.getEngine().executeScript("if (!document.getElementById('FirebugLite')){E = document['createElement' + 'NS'] && document.documentElement.namespaceURI;E = E ? document['createElement' + 'NS'](E, 'script') : document['createElement']('script');E['setAttribute']('id', 'FirebugLite');E['setAttribute']('src', 'https://getfirebug.com/' + 'firebug-lite.js' + '#startOpened');E['setAttribute']('FirebugLite', '4');(document['getElementsByTagName']('head')[0] || document['getElementsByTagName']('body')[0]).appendChild(E);E = new Image;E['setAttribute']('src', 'https://getfirebug.com/' + '#startOpened');}");
+								}
+							});
+
+							Stage stage = new Stage();
+							stage.setScene( new Scene(webview) );
+							stage.show();
+							//region.getStyleClass()
 						}
-			    	} else {
-			    		Platform.runLater( new Runnable() {
-							public void run() {
-								WebView webview = new WebView();
-								WebEngine webengine = webview.getEngine();
-								webengine.setUserAgent("AppleWebKit/537.44");
-								webengine.load("http://webconnectron.appspot.com/Treedraw.html");
-								
-								webengine.getLoadWorker().stateProperty().addListener(new ChangeListener<State>() {
-						            @Override
-						            public void changed(ObservableValue<? extends State> observable, State oldValue, State newValue) {
-						            	webview.getEngine().executeScript("if (!document.getElementById('FirebugLite')){E = document['createElement' + 'NS'] && document.documentElement.namespaceURI;E = E ? document['createElement' + 'NS'](E, 'script') : document['createElement']('script');E['setAttribute']('id', 'FirebugLite');E['setAttribute']('src', 'https://getfirebug.com/' + 'firebug-lite.js' + '#startOpened');E['setAttribute']('FirebugLite', '4');(document['getElementsByTagName']('head')[0] || document['getElementsByTagName']('body')[0]).appendChild(E);E = new Image;E['setAttribute']('src', 'https://getfirebug.com/' + '#startOpened');}");
-						            }
-						        });
-							
-								Stage stage = new Stage();
-								stage.setScene( new Scene(webview) );
-								stage.show();
-								//region.getStyleClass()
-							}
-						});
-			    	}
+					});
 				}
 			}
 		});
@@ -6051,17 +6183,12 @@ public class JavaFasta extends JApplet {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				StringBuilder	sb = distanceMatrix( true );
-				JSObject jso = JSObject.getWindow( parentApplet );
-				jso.call("showTree", new Object[] {sb.toString()} );
 			}
 		});
 		phylogeny.add( new AbstractAction("Draw distance matrix") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				StringBuilder	sb = distanceMatrix( true );
-				JSObject jso = JSObject.getWindow( parentApplet );
-				String dist = sb.toString();
-				jso.call("showMatr", new Object[] {dist} );
 			}
 		});
 		
@@ -6112,7 +6239,7 @@ public class JavaFasta extends JApplet {
 				int r = table.getSelectedRow();
 				int i = table.convertRowIndexToModel( r );
 				Sequence s = serifier.lseq.get( i );
-				int k = s.sb.indexOf( tf.getText() );
+				int k = s.getSequence().indexOf( tf.getText() );
 				
 				Rectangle rect = c.getVisibleRect();
 				rect.x = (int)((k+s.offset)*c.cw);
@@ -6150,13 +6277,13 @@ public class JavaFasta extends JApplet {
 				for( int r = 0; r < rr.length; r++ ) {
 					int i = table.convertRowIndexToModel(r);
 					Sequence seq = serifier.lseq.get(i);
-					String seqstr = seq.sb.toString();
+					String seqstr = seq.getSequence().toString();
 					
 					for( int k = r+1; k < rr.length; k++ ) {
 						i = table.convertRowIndexToModel(k);
 						Sequence seq2 = serifier.lseq.get(i);
 						
-						if( seqstr.compareTo( seq2.sb.toString() ) == 0 ) {
+						if( seqstr.compareTo( seq2.getSequence().toString() ) == 0 ) {
 							table.removeRowSelectionInterval(0, table.getRowCount()-1);
 							table.setRowSelectionInterval(r, r);
 							table.addRowSelectionInterval(k, k);
@@ -6255,12 +6382,12 @@ public class JavaFasta extends JApplet {
 					Collection<Integer> removei = new HashSet<Integer>();
 					for( int i : sortseqs ) {
 						Sequence seq = serifier.lseq.get(i);
-						String seqstr = seq.sb.toString();
+						String seqstr = seq.getSequence().toString();
 						
 						for( int n : sortseqs ) {
 							if( n > i ) {
 								Sequence seq2 = serifier.lseq.get(n);
-								String seqstr2 = seq2.sb.toString();
+								String seqstr2 = seq2.getSequence().toString();
 								
 								if( seqstr.compareTo( seqstr2 ) == 0 ) {
 									removee.add( seq2 );
@@ -6699,9 +6826,6 @@ public class JavaFasta extends JApplet {
 						sum += -d[i]+d[i+val];
 					}
 				}
-				
-				JSObject win = JSObject.getWindow( parentApplet );
-				win.call("showShannon", new Object[] {d, command} );
 			}
 		});
 		popup.add( new AbstractAction("Dot plot") {
@@ -7588,7 +7712,7 @@ public class JavaFasta extends JApplet {
 							if( a == sela ) {
 								hit = max-a.start;
 								while( hit > 0 ) {
-									seq.sb.insert(0, '-');
+									seq.getSequence().insert(0, '-');
 									//seq.sb.append('-')
 									hit--;
 								}
@@ -7638,7 +7762,7 @@ public class JavaFasta extends JApplet {
 							if( a == sela ) {
 								hit = max-a.stop;
 								while( hit > 0 ) {
-									seq.sb.insert(a.stop, '-');
+									seq.getSequence().insert(a.stop, '-');
 									//seq.sb.append('-')
 									hit--;
 								}
@@ -7668,7 +7792,7 @@ public class JavaFasta extends JApplet {
 			public void actionPerformed(ActionEvent e) {
 				int[] rr = atable.getSelectedRows();
 				if( rr != null && rr.length > 0 ) {
-					Set<Sequence> sset = new HashSet<Sequence>();
+					Set<Sequence> sset = new HashSet<>();
 					for( int r : rr ) {
 						int i = atable.convertRowIndexToModel(r);
 						Annotation ann = serifier.lann.get(i);
@@ -7946,16 +8070,20 @@ public class JavaFasta extends JApplet {
 				for( Annotation ann : serifier.lann ) {
 					if( ann != null && ann.type != null && ann.type.contains("mummer") ) {
 						ann.setName( ann.getName().toUpperCase() );
-						
-						List<Annotation> lann;
-						if( mann.containsKey(ann.seq.getName()) ) {
-							lann = mann.get(ann.seq.getName());
+
+						if(ann.seq!=null) {
+							List<Annotation> lann;
+							if (mann.containsKey(ann.seq.getName())) {
+								lann = mann.get(ann.seq.getName());
+							} else {
+								lann = new ArrayList<>();
+								System.err.println();
+								mann.put(ann.seq.getName(), lann);
+							}
+							lann.add(ann);
 						} else {
-							lann = new ArrayList<>();
 							System.err.println();
-							mann.put( ann.seq.getName(), lann );
 						}
-						lann.add( ann );
 						//allset.add( ann );
 						//mann.put( ann.seq, ann );
 					}
@@ -8300,13 +8428,10 @@ public class JavaFasta extends JApplet {
 						System.err.print( "\t0" );
 					}
 				}
-				System.err.println();
-				File file = new File("/Users/sigmar/wb2.xlsx");
-				
-				Map<String,CellStyle>	csMap = new HashMap<String,CellStyle>();
+				Map<String,CellStyle>	csMap = new HashMap<>();
 				
 				i++;
-				List<Row> lrow = new ArrayList<Row>();
+				List<Row> lrow = new ArrayList<>();
 				Row hd = sh.createRow(i++);
 				k = 2;
 				for( String spec : specset ) {
@@ -8734,8 +8859,10 @@ public class JavaFasta extends JApplet {
 				
 				
 				try {
-					wb.write( new FileOutputStream(file) );
-					Desktop.getDesktop().open(file);
+					String userhome = System.getProperty("user.home");
+					Path p = userhome != null && userhome.length() > 0 ? Paths.get(userhome).resolve("crispr.xlsx") : Paths.get("crispr.xlsx");
+					wb.write( Files.newOutputStream(p) );
+					Desktop.getDesktop().open(p.toFile());
 				} catch (IOException e1) {
 					e1.printStackTrace();
 				}
@@ -9221,7 +9348,7 @@ public class JavaFasta extends JApplet {
 			Sequence s = serifier.lseq.get(i);
 			int start = Math.max(s.getStart(), r.x+serifier.getMin()) - s.getStart();
 			int end = Math.min(s.getEnd(), r.x+r.width+serifier.getMin()) - s.getStart();
-			if( end > start ) str = s.sb.substring(start, end);
+			if( end > start ) str = s.getSequence().substring(start, end);
 		}
 		return str;
 	}

@@ -273,9 +273,9 @@ public class FlxReader {
 		
 		if( sctgseq != null ) {
 			Annotation a = new Annotation(cseq,sctgseq.getName(),null,cseq.length(),cseq.length()+sctgseq.length(),1,null);
-			cseq.append( sctgseq.sb );
+			cseq.append( sctgseq.getSequence() );
 			cseq.addAnnotation(a);
-			int len = Math.min(sctgseq.sb.length(),10);
+			int len = Math.min(sctgseq.getSequence().length(),10);
 			//System.out.println("appending2 " + sctgseq.getName() + " " + len + " " + sctgseq.sb.substring(0, len) );
 		} else {
 			System.out.println( "   empty " );
@@ -402,17 +402,17 @@ public class FlxReader {
 					boolean rev = nsplit.charAt(n+1) == '3' ? true : false;
 					Sequence nseq = new Sequence( seq, rev );
 					nseq.setName( ctgname+"_"+(rev?"rev":"frw"));
-					nseq.group = lastN != null ? lastN[0] : null;
+					nseq.setGroup(lastN != null ? lastN[0] : null);
 					//serifier.addSequence( nseq );
 					
 					if( nseq.length() > maxlen ) {
 						System.err.println( cseq.length() );
 					}
 					Annotation a = new Annotation(cseq,nseq.getName(),null,cseq.length(),cseq.length()+nseq.length(),rev?-1:1,null);
-					cseq.append( nseq.sb );
+					cseq.append( nseq.getSequence() );
 					cseq.addAnnotation(a);
 					
-					int len = Math.min(nseq.sb.length(),10);
+					int len = Math.min(nseq.getSequence().length(),10);
 					//System.out.println("appending3 " + nseq.getName() + " " + len + " " + nseq.sb.substring(0, len) );
 				} else {
 					System.err.println("errrrror");
@@ -792,7 +792,7 @@ public class FlxReader {
 					}
 					Sequence seq = mseq.get(ctg);
 					touch.add( ctg );
-					seq.group = lastW[0];
+					seq.setGroup(lastW[0]);
 					// lubububu if( seq != null ) serifier.addSequence( seq );
 				}
 				//boolean newscaff = !lastW[0].equals(split[0]);
@@ -906,7 +906,7 @@ public class FlxReader {
 					System.out.println( join(lastW) );
 					Sequence seq = mseq.get(lastW[5]);
 					touch.add( lastW[5] );
-					if( seq != null ) seq.group = lastW[0];
+					if( seq != null ) seq.setGroup(lastW[0]);
 					// lubububu if( seq != null ) serifier.addSequence( seq );
 				}
 				//boolean newscaff = !lastW[0].equals(split[0]);

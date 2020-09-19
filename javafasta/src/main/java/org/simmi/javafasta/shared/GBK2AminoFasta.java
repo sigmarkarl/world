@@ -64,8 +64,9 @@ public class GBK2AminoFasta {
 					if( trimline.startsWith("LOCUS") ) {
 						locus = trimline.split("[ \t]+")[1];
 					} else if( trimline.startsWith("SOURCE") ) {
-						if( trimline.length() > 7 ) spec = trimline.substring(7).trim().replace(' ','_');
-						else spec = tag;
+						//if( trimline.length() > 7 ) spec = trimline.substring(7).trim().replace(' ','_');
+						int it = tag.lastIndexOf('.');
+						spec = it == -1 ? tag : tag.substring(0,it);
 
 						strbuf.setGroup(spec);
 						if( lseq.containsKey(spec) ) {
@@ -75,7 +76,11 @@ public class GBK2AminoFasta {
 							nlseq.add(strbuf);
 							lseq.put(spec, nlseq);
 						}
+					} else if( trimline.startsWith("/country") ) {
+						String country = trimline.substring(10,trimline.length()-1);
+						strbuf.setCountry(country);
 					}
+
 					//String[] split = trimline.split("[\t ]+");
 					
 					String banno = null;
@@ -86,9 +91,13 @@ public class GBK2AminoFasta {
 						}
 					}
 					boolean isCDS = trimline.startsWith("CDS  ");
-					if( isCDS || trimline.startsWith("tRNA  ") || trimline.startsWith("rRNA  ") || trimline.startsWith("mRNA  ") || trimline.startsWith("misc_feature  ") ) {
+					boolean isGene = trimline.startsWith("gene  ");
+					if( isCDS || isGene || trimline.startsWith("tRNA  ") || trimline.startsWith("rRNA  ") || trimline.startsWith("mRNA  ") || trimline.startsWith("misc_feature  ") ) {
 						if( anno != null ) {
-							if( anno.id == null || anno.id.length() == 0 ) anno.id = anno.ori == -1 ? "comp("+anno.start+".."+anno.stop+")" : anno.start+".."+anno.stop;
+							if( anno.tag == null || anno.tag.length() == 0 ) {
+								anno.tag = anno.getSpecies() + "_" + (anno.ori == -1 ? "comp("+anno.start+".."+anno.stop+")" : anno.start+".."+anno.stop);
+							}
+							if( anno.id == null || anno.id.length() == 0 ) anno.id = anno.tag;
 							if( xref.size() > 0 ) {
 								String annoname = anno.getName();
 								annoname += "(";
@@ -109,8 +118,8 @@ public class GBK2AminoFasta {
 						anno.seq = strbuf;
 						
 						//anno.spec = spec + (contignum > 0 ? "_contig"+(contignum+1) : "");
-						if( locus == null ) strbuf.setName( spec );
-						else strbuf.setName( locus.contains(spec) ? locus : spec+ "_"+locus );
+						//if( locus == null ) strbuf.setName( spec );
+						//else strbuf.setName( locus.contains(spec) ? locus : spec+ "_"+locus );
 						
 						String[] split = trimline.split("[\t ]+");
 						if( split.length > 1 ) {
@@ -240,23 +249,26 @@ public class GBK2AminoFasta {
 						}
 					} else if( trimline.startsWith("/locus_tag") ) {
 						if( anno != null ) {
-							if( !anno.getType().equals("tRNA") && !anno.getType().equals("rRNA") && (anno.id == null || anno.id.contains("..") ) ) {
-								anno.id = trimline.substring(12,trimline.length()-1);
-							}
+							//if( !anno.getType().equals("tRNA") && !anno.getType().equals("rRNA") && (anno.id == null || anno.id.contains("..") ) ) {
+								anno.tag = trimline.substring(12,trimline.length()-1);
+							//}
 							//annolist.add( anno );
 							//anno = null;
 						}
 					} else if( trimline.startsWith("ORIGIN") ) {
 						if( anno != null ) {
-							if( anno.id == null || anno.id.length() == 0 ) anno.id = anno.ori == -1 ? "comp("+anno.start+".."+anno.stop+")" : anno.start+".."+anno.stop;
+							if( anno.tag == null || anno.tag.length() == 0 ) {
+								anno.tag = anno.getSpecies() + "_" + (anno.ori == -1 ? "comp("+anno.start+".."+anno.stop+")" : anno.start+".."+anno.stop);
+							}
+							if( anno.id == null || anno.id.length() == 0 ) anno.id = anno.tag; //anno.ori == -1 ? "comp("+anno.start+".."+anno.stop+")" : anno.start+".."+anno.stop;
 							if( xref.size() > 0 ) {
-								String annoname = anno.getName();
-								annoname += "(";
+								StringBuilder annoname = new StringBuilder(anno.getName());
+								annoname.append("(");
 								for( String xr : xref ) {
-									annoname += xr;
+									annoname.append(xr);
 								}
-								annoname += ")";
-								anno.setName( annoname );
+								annoname.append(")");
+								anno.setName(annoname.toString());
 								xref.clear();
 							}
 							
@@ -279,12 +291,18 @@ public class GBK2AminoFasta {
 
 				//if( contignum > 0 && anno != null && anno.spec != null ) anno.spec += "_contig"+contignum;;
 				//allout.write( ">" + spec + (contignum > 0 ? "_contig"+contignum+"\n" : "\n") );
-				
+
+				strbuf.setName( locus );
+				//if( locus == null ) strbuf.setName( spec );
+				//else strbuf.setName( locus.contains(spec) ? locus : spec+ "_"+locus );
+
 				if( allout != null ) {
 					//if( locus.contains(spec) ) allout.write( ">" + locus + "\n" );
 					//else allout.write( ">" + spec + "_" + locus + "\n" );
-					if( locus == null ) strbuf.setName( spec );
-					else strbuf.setName( (locus.contains(spec) ? "" : spec + "_") + locus);
+
+					//if( locus == null ) strbuf.setName( spec );
+					//else strbuf.setName( (locus.contains(spec) ? "" : spec + "_") + locus);
+
 					strbuf.writeSequence( allout );
 					/*for( int i = 0; i < strbuf.length(); i+=70 ) {
 						allout.write( strbuf.getSubstring( i, Math.min( strbuf.length(), i+70 ), 1 ) + "\n" );

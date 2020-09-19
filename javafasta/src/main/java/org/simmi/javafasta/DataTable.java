@@ -75,53 +75,26 @@ import javax.imageio.ImageIO;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
-import javax.swing.AbstractAction;
-import javax.swing.Action;
-import javax.swing.DefaultRowSorter;
-import javax.swing.JApplet;
-import javax.swing.JButton;
-import javax.swing.JCheckBox;
-import javax.swing.JCheckBoxMenuItem;
-import javax.swing.JComponent;
-import javax.swing.JDialog;
-import javax.swing.JFileChooser;
-import javax.swing.JFrame;
-import javax.swing.JMenu;
-import javax.swing.JOptionPane;
-import javax.swing.JPopupMenu;
-import javax.swing.JScrollPane;
-import javax.swing.JSpinner;
-import javax.swing.JTable;
-import javax.swing.JTextArea;
-import javax.swing.ListSelectionModel;
-import javax.swing.RowFilter;
-import javax.swing.SpinnerNumberModel;
-import javax.swing.SwingUtilities;
-import javax.swing.TransferHandler;
-import javax.swing.UIManager;
-import javax.swing.UnsupportedLookAndFeelException;
+import javax.swing.*;
 import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
 import javax.swing.table.TableModel;
 import javax.swing.table.TableRowSorter;
 
-import netscape.javascript.JSObject;
-
 /*import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;*/
+import netscape.javascript.JSObject;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.simmi.javafasta.shared.Annotation;
 import org.simmi.javafasta.shared.Sequence;
 import org.simmi.javafasta.shared.Serifier;
-import org.simmi.treedraw.shared.TreeUtil;
-import org.simmi.treedraw.shared.TreeUtil.Node;
-import org.simmi.treedraw.shared.TreeUtil.NodeSet;
 import org.simmi.javafasta.unsigned.JavaFasta;
+import org.simmi.treedraw.shared.TreeUtil;
 
-public class DataTable extends JApplet implements ClipboardOwner {
+public class DataTable extends JPanel implements ClipboardOwner {
 	/**
 	 * 
 	 */
@@ -409,8 +382,6 @@ public class DataTable extends JApplet implements ClipboardOwner {
 			nm += sind;
 			tree = tree.replace( nm, seq.getName() );
 		}
-		JSObject win = JSObject.getWindow( DataTable.this );
-		win.call( "showTree", new Object[] { tree } );
 	}
 	
     class CopyAction extends AbstractAction {
@@ -1055,33 +1026,15 @@ public class DataTable extends JApplet implements ClipboardOwner {
 		JCheckBox accession = new JCheckBox("Accession");
 		Object[] params = new Object[] {species, country, source, accession};
 		JOptionPane.showMessageDialog(DataTable.this, params, "Select fasta names", JOptionPane.PLAIN_MESSAGE);*/
-		
-		boolean fail = false;
+
 		try {
-			JSObject win = JSObject.getWindow( DataTable.this );
-			StringBuilder include = new StringBuilder();
+			JSONObject jsono = new JSONObject();
 			for( String is : iset ) {
-				if( include.length() == 0 ) include.append( is );
-				else include.append( ","+is );
+				jsono.put(is, (Object)"");
 			}
-			this.ns = namesel;
-			this.ms = metasel;
-			String includes = include.toString();
-			win.call( "fetchSeq", new Object[] { includes } );
-		} catch( Exception e ) {
-			fail = true;
-		}
-		
-		if( fail ) {
-			try {
-				JSONObject jsono = new JSONObject();
-				for( String is : iset ) {
-					jsono.put(is, (Object)"");
-				}
-				loadSequences( jsono.toString(), aligned, namesel, metasel );
-			} catch (JSONException e) {
-				e.printStackTrace();
-			}
+			loadSequences( jsono.toString(), aligned, namesel, metasel );
+		} catch (JSONException e) {
+			e.printStackTrace();
 		}
 	}
 	
@@ -1091,16 +1044,6 @@ public class DataTable extends JApplet implements ClipboardOwner {
 		loadSequences( jsonstr, true, ns, ms );
 		ns = null;
 		ms = null;
-	}
-	
-	public void console( String message ) {
-		try {
-			JSObject win = JSObject.getWindow( DataTable.this );
-			JSObject con = (JSObject)win.getMember("console");
-			con.call("log", new Object[] {message} );
-		} catch( Exception e ) {
-			e.printStackTrace();
-		}
 	}
 	
 	public void loadSequences( String jsonstr, boolean aligned, List<NameSel> namesel, List<NameSel> metasel ) throws JSONException {
@@ -1312,16 +1255,6 @@ public class DataTable extends JApplet implements ClipboardOwner {
 			@Override
 			public void windowClosed(WindowEvent e) {
 				List<Sequence> lseq = jf.getEditedSequences();
-				if( lseq.size() > 0 && JOptionPane.showConfirmDialog(DataTable.this, "Save", "Do you want to save?", JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION ) {
-					JSObject jso = JSObject.getWindow( DataTable.this );
-					Map<String,String>	map = new HashMap<String,String>();
-					for( Sequence s : lseq ) {
-						map.put(s.getId(), s.getStringBuilder().toString());
-					}
-					JSONObject jsono = new JSONObject( map );
-					String savestr = jsono.toString();
-					jso.call("saveSeq2", new Object[] {savestr} );
-				}
 			}
 			
 			@Override
@@ -1974,13 +1907,13 @@ public class DataTable extends JApplet implements ClipboardOwner {
 		}
 	}
 	
-	public static void assignSupportValues( Node n, Map<Set<String>,NodeSet> nmap, boolean copybootstrap ) {
+	public static void assignSupportValues( TreeUtil.Node n, Map<Set<String>,TreeUtil.NodeSet> nmap, boolean copybootstrap ) {
 		if( !n.isLeaf() ) {
-			for( Node cn : n.getNodes() ) {
+			for( TreeUtil.Node cn : n.getNodes() ) {
 				assignSupportValues( cn, nmap, copybootstrap );
 			}
 			Set<String> leavenames = n.getLeaveNames();
-			NodeSet ns = nmap.get( leavenames );
+			TreeUtil.NodeSet ns = nmap.get( leavenames );
 			if( !copybootstrap ) {
 				n.setName( Math.round( (double)(ns.getCount()) / (double)1000.0 ) / 10.0 + "%" );
 			} else {
@@ -1989,65 +1922,65 @@ public class DataTable extends JApplet implements ClipboardOwner {
 		}
 	}
 	
-	public static Node majoRuleConsensus( TreeUtil tu, Map<Set<String>,NodeSet> nmap, Node guideTree, boolean copybootstrap ) {
-		List<NodeSet>	nslist = new ArrayList<NodeSet>();
+	public static TreeUtil.Node majoRuleConsensus( TreeUtil tu, Map<Set<String>,TreeUtil.NodeSet> nmap, TreeUtil.Node guideTree, boolean copybootstrap ) {
+		List<TreeUtil.NodeSet>	nslist = new ArrayList<>();
 		System.err.println( nmap.size() );
 		for( Set<String> nodeset : nmap.keySet() ) {
-			NodeSet count = nmap.get( nodeset );
+			TreeUtil.NodeSet count = nmap.get( nodeset );
 			nslist.add( count );
 		}
 		
 		//Map<Set<String>,NodeSet>	guideMap = new HashMap<Set<String>,NodeSet>();
 		//guideTree.nodeCalcMap( guideMap );
-		
-		Node root;
+
+		TreeUtil.Node root;
 		if( guideTree != null ) {
 			root = guideTree;
 			assignSupportValues( root, nmap, copybootstrap );
 		} else {
 			Collections.sort( nslist );
 			int c = 0;
-			for( NodeSet nodeset : nslist ) {
+			for( TreeUtil.NodeSet nodeset : nslist ) {
 				System.err.println( nodeset.getCount() + "  " + nodeset.getNodes() + "  " + nodeset.getAverageHeight() + "  " + nodeset.getAverageBootstrap() );
 				c++;
 				if( c > 20 ) break;
 			}
 			
 			//Map<Set<String>, Node>	nodemap = new HashMap<Set<String>, Node>();
-			Map<String, Node>		leafmap = new HashMap<String, Node>();
-			NodeSet	allnodes = nslist.get(0);
+			Map<String, TreeUtil.Node>		leafmap = new HashMap<>();
+			TreeUtil.NodeSet	allnodes = nslist.get(0);
 			int total = allnodes.getCount();
 			root = tu.new Node();
 			for( String nname : allnodes.getNodes() ) {
-				Node n = tu.new Node( nname, false );
+				TreeUtil.Node n = tu.new Node( nname, false );
 				root.addNode(n, 1.0);
 				//n.seth( 1.0 );
 				leafmap.put( nname, n );
 			}
 			
 			for( int i = 1; i < Math.min( nslist.size(), 100 ); i++ ) {
-				NodeSet	allsubnodes = nslist.get(i);
-				Node subroot = tu.new Node();
+				TreeUtil.NodeSet allsubnodes = nslist.get(i);
+				TreeUtil.Node subroot = tu.new Node();
 				if( !copybootstrap ) {
 					subroot.setName( Math.round( (double)(allsubnodes.getCount()*1000) / (double)total ) / 10.0 + "%" );
 				} else {
 					subroot.setName( Double.toString( Math.round( (allsubnodes.getAverageBootstrap()*100.0) )/100.0 ) );
 				}
-				
-				Node vn = tu.getValidNode( allsubnodes.getNodes(), root );
+
+				TreeUtil.Node vn = tu.getValidNode( allsubnodes.getNodes(), root );
 				if( tu.isValidSet( allsubnodes.getNodes(), vn ) ) {
 					while( allsubnodes.getNodes().size() > 0 ) {
 						for( String nname : allsubnodes.getNodes() ) {
-							Node leaf = leafmap.get( nname );
-							Node newparent = leaf.getParent();
-							Node current = leaf;
+							TreeUtil.Node leaf = leafmap.get( nname );
+							TreeUtil.Node newparent = leaf.getParent();
+							TreeUtil.Node current = leaf;
 							while( newparent.countLeaves() <= allsubnodes.getNodes().size() ) {
 								current = newparent;
 								newparent = current.getParent();
 							}
 							
 							if( allsubnodes.getNodes().containsAll( current.getLeaveNames() ) ) {
-								Node parent = current.getParent();
+								TreeUtil.Node parent = current.getParent();
 								parent.removeNode( current );
 								
 								double h = allsubnodes.getAverageHeight();
@@ -2078,41 +2011,18 @@ public class DataTable extends JApplet implements ClipboardOwner {
 		return root;
 	}
 	
-	public static void removeNames( Set<String> set, Node node ) {
-		List<Node> subnodes = node.getNodes();
-		if( subnodes != null ) for( Node n : subnodes ) {
+	public static void removeNames( Set<String> set, TreeUtil.Node node ) {
+		List<TreeUtil.Node> subnodes = node.getNodes();
+		if( subnodes != null ) for( TreeUtil.Node n : subnodes ) {
 			removeNames(set, n);
 		}
 		set.remove( node.getName() );
-	}
-	
-	public void start() {
-		super.start();
-		System.err.println( "starting..." );
-		//load();
 	}
 	
 	boolean done = false;
 	public boolean load() {
 		boolean succ = true;
 		if( !done ) {
-			try {
-				//System.err.println( "bleh3erm" );
-				Object obj = JSObject.class;
-				obj = null;
-				//System.err.println( "bleh4" );
-				JSObject erm = (JSObject)obj;
-				//System.err.println( "ble2h"+this );
-				JSObject win = JSObject.getWindow(this);
-				//System.err.println( "about to run loadData" );
-				win.call("loadData", new Object[] {});
-				win.call("reqSavedSel", new Object[] {});
-				//System.err.println( "done loadData" );
-				//win.call("loadMeta", new Object[] {});
-			} catch( NoSuchMethodError | Exception e ) {
-				succ = false;
-				e.printStackTrace();
-			}
 			done = true;
 		}
 		
@@ -2295,13 +2205,6 @@ public class DataTable extends JApplet implements ClipboardOwner {
 				//int r = table.convertRowIndexToModel( rowIndex );
 				Object[] row = rowList.get(rowIndex);
 				row[columnIndex] = aValue;
-				
-				try {
-					JSObject jso = JSObject.getWindow( DataTable.this );
-					jso.call( "saveMeta", new Object[] {row[1], row[11], row[13]} );
-				} catch( Exception e ) {
-					
-				}
 			}
 
 			@Override
@@ -2964,9 +2867,6 @@ public class DataTable extends JApplet implements ClipboardOwner {
 					if( r == rr[0] ) sb.append( (String)o );
 					else sb.append( ","+(String)o );
 				}
-				
-				JSObject win = JSObject.getWindow( DataTable.this );
-				win.call("saveSel", new Object[] {selname, sb.toString()} );
 			}
 		});
 		popup.add( new AbstractAction("Propogate selection") {
@@ -2980,9 +2880,6 @@ public class DataTable extends JApplet implements ClipboardOwner {
 					if( r == rr[0] ) sb.append( val );
 					else sb.append( ","+val );
 				}
-				
-				JSObject win = JSObject.getWindow( DataTable.this );
-				win.call("propSel", new Object[] {sb.toString()} );
 			}
 		});
 		popup.add( selectionMenu );
@@ -3055,13 +2952,13 @@ public class DataTable extends JApplet implements ClipboardOwner {
 							System.err.println( str );
 						}
 						
-						Node n = tu.neighborJoin(corr, corrInd, null, false, true);
+						TreeUtil.Node n = tu.neighborJoin(corr, corrInd, null, false, true);
 						if( bootstrap ) {
 							if( majorule ) {
-								Map<Set<String>,NodeSet> nmap = new HashMap<Set<String>,NodeSet>();
+								Map<Set<String>, TreeUtil.NodeSet> nmap = new HashMap<>();
 								for( int i = 0; i < 1000; i++ ) {
 									Sequence.distanceMatrixNumeric( currentserifier.lseq, corr, idxs, true, cantor, ent, null );
-									Node nn = tu.neighborJoin(corr, corrInd, null, false, false);
+									TreeUtil.Node nn = tu.neighborJoin(corr, corrInd, null, false, false);
 									
 									int val = nn.getLeaveNames().size();
 									if( val == 16 ) {
@@ -3089,21 +2986,18 @@ public class DataTable extends JApplet implements ClipboardOwner {
 								
 								n = majoRuleConsensus( tu, nmap, null, false );
 							} else {
-								Comparator<Node>	comp = new Comparator<TreeUtil.Node>() {
-									@Override
-									public int compare(Node o1, Node o2) {
-										String c1 = o1.toStringWoLengths();
-										String c2 = o2.toStringWoLengths();
-										
-										return c1.compareTo( c2 );
-									}
+								Comparator<TreeUtil.Node>	comp = (o1, o2) -> {
+									String c1 = o1.toStringWoLengths();
+									String c2 = o2.toStringWoLengths();
+
+									return c1.compareTo( c2 );
 								};
 								tu.arrange( n, comp );
 								tree = n.toStringWoLengths();
 								
 								for( int i = 0; i < 1000; i++ ) {
 									Sequence.distanceMatrixNumeric( currentserifier.lseq, corr, idxs, true, cantor, ent, null );
-									Node nn = tu.neighborJoin(corr, corrInd, null, false, true);
+									TreeUtil.Node nn = tu.neighborJoin(corr, corrInd, null, false, true);
 									tu.arrange( nn, comp );
 									tu.compareTrees( tree, n, nn );
 									
@@ -3130,19 +3024,6 @@ public class DataTable extends JApplet implements ClipboardOwner {
 						
 						boolean scc = true;
 						if( tree.length() > 0 ) {
-							try {
-								JSObject win = JSObject.getWindow( DataTable.this );
-								Object[] objs = { tree };
-								System.err.println( "fuck you" + tree );
-								console( "sko hey what the fuck" + tree );
-								win.call("showTree", objs);
-							} catch( Exception e1 ) {
-								scc = false;
-								console( e1.getMessage() );
-								console( tree );
-							}
-							
-							if( !scc ) {
 								JTextArea	text = new JTextArea();
 								text.setText( tree );
 								JFrame frame = new JFrame();
@@ -3152,7 +3033,6 @@ public class DataTable extends JApplet implements ClipboardOwner {
 								JScrollPane	scrollpane = new JScrollPane( text );
 								frame.add( scrollpane );
 								frame.setVisible(true);
-							}
 						}
 					}
 				};
@@ -3279,10 +3159,10 @@ public class DataTable extends JApplet implements ClipboardOwner {
 				List<String>	corrInd = currentjavafasta.getNames();
 				
 				TreeUtil	tu = new TreeUtil();
-				Node n = tu.neighborJoin(corr, corrInd, null, false, true);
+				TreeUtil.Node n = tu.neighborJoin(corr, corrInd, null, false, true);
 				
 				if( bootstrap ) {
-					Comparator<Node>	comp = (o1, o2) -> {
+					Comparator<TreeUtil.Node>	comp = (o1, o2) -> {
                         String c1 = o1.toStringWoLengths();
                         String c2 = o2.toStringWoLengths();
 
@@ -3293,7 +3173,7 @@ public class DataTable extends JApplet implements ClipboardOwner {
 					
 					for( int i = 0; i < 1000; i++ ) {
 						Sequence.distanceMatrixNumeric( currentserifier.lseq, corr, null, true, cantor, ent, null );
-						Node nn = tu.neighborJoin(corr, corrInd, null, false, true);
+						TreeUtil.Node nn = tu.neighborJoin(corr, corrInd, null, false, true);
 						tu.arrange( nn, comp );
 						tu.compareTrees( tree, n, nn );
 						
@@ -3304,8 +3184,6 @@ public class DataTable extends JApplet implements ClipboardOwner {
 				}
 				
 				Object[] objs = { n.toString() };
-				JSObject win = JSObject.getWindow( DataTable.this );
-				win.call("showTree", objs);
 			}
 		});
 		
@@ -3325,11 +3203,6 @@ public class DataTable extends JApplet implements ClipboardOwner {
 				String t2 = tree.substring(tree.length()/2, tree.length());
 				
 				int tlen = tree.length()+1;
-				JSObject win = JSObject.getWindow( DataTable.this );
-				Object[] objs1 = { t1, tlen };
-				win.call( "postModuleMessage", objs1 );
-				Object[] objs2 = { t2, tlen };
-				win.call( "postModuleMessage", objs2 );
 				
 				/*Object smod = win.getMember("simmiModule");
 				System.err.println("about to call nacl");
@@ -3345,13 +3218,9 @@ public class DataTable extends JApplet implements ClipboardOwner {
 		fasttreemenu.add( new AbstractAction("FastTree w/o gaps") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				runnable = new Runnable() {
-					public void run() {
-						StringBuilder tree = currentjavafasta.getFastaWoGaps();
-						Object[] objs = { "f"+tree.toString() };
-						JSObject win = JSObject.getWindow( DataTable.this );
-						win.call("fasttree", objs);
-					}
+				runnable = () -> {
+					StringBuilder tree = currentjavafasta.getFastaWoGaps();
+					Object[] objs = { "f"+tree.toString() };
 				};
 				currentserifier = new Serifier();
 				JavaFasta jf = new JavaFasta( DataTable.this, currentserifier );
@@ -3366,8 +3235,6 @@ public class DataTable extends JApplet implements ClipboardOwner {
 			public void actionPerformed(ActionEvent e) {
 				StringBuilder fasta = currentjavafasta.getFasta( currentjavafasta.getSequences() );
 				Object[] objs = { "f"+fasta.toString() };
-				JSObject win = JSObject.getWindow( DataTable.this );
-				win.call("fasttree", objs);
 			}
 		});
 		JMenu	dnaparsmenu = new JMenu("Dnapars");
@@ -3376,14 +3243,9 @@ public class DataTable extends JApplet implements ClipboardOwner {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				//String tree = extractFasta("/thermales.fasta");
-				runnable = new Runnable() {
-					@Override
-					public void run() {
-						String phy = currentjavafasta.getPhylip( true );
-						Object[] objs = { "p"+phy };
-						JSObject win = JSObject.getWindow( DataTable.this );
-						win.call("dnapars", objs);	
-					}
+				runnable = () -> {
+					String phy = currentjavafasta.getPhylip( true );
+					Object[] objs = { "p"+phy };
 				};
 				
 				currentserifier = new Serifier();
@@ -3397,16 +3259,11 @@ public class DataTable extends JApplet implements ClipboardOwner {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				//String tree = extractFasta("/thermales.fasta");
-				runnable = new Runnable() {
-					@Override
-					public void run() {
-						currentserifier.removeGaps( currentjavafasta.getSequences() );
-						String phy = currentjavafasta.getPhylip( true );
-						
-						Object[] objs = { "p"+phy };
-						JSObject win = JSObject.getWindow( DataTable.this );
-						win.call("dnapars", objs);
-					}
+				runnable = () -> {
+					currentserifier.removeGaps( currentjavafasta.getSequences() );
+					String phy = currentjavafasta.getPhylip( true );
+
+					Object[] objs = { "p"+phy };
 				};
 				
 				currentserifier = new Serifier();
@@ -3421,8 +3278,6 @@ public class DataTable extends JApplet implements ClipboardOwner {
 			public void actionPerformed(ActionEvent e) {				
 				String phy = currentjavafasta.getPhylip( true );
 				Object[] objs = { "p"+phy };
-				JSObject win = JSObject.getWindow( DataTable.this );
-				win.call("dnapars", objs);
 			}
 		});
 		JMenu	dnamlmenu = new JMenu("Dnaml");
@@ -3437,8 +3292,6 @@ public class DataTable extends JApplet implements ClipboardOwner {
 					public void run() {
 						String phy = currentjavafasta.getPhylip( true );
 						Object[] objs = { "c"+phy };
-						JSObject win = JSObject.getWindow( DataTable.this );
-						win.call("dnapars", objs);
 					}
 				};
 				
@@ -3459,8 +3312,6 @@ public class DataTable extends JApplet implements ClipboardOwner {
 						String phy = currentjavafasta.getPhylip( true );
 						
 						Object[] objs = { "c"+phy };
-						JSObject win = JSObject.getWindow( DataTable.this );
-						win.call("dnapars", objs);
 					}
 				};
 				
@@ -3475,8 +3326,6 @@ public class DataTable extends JApplet implements ClipboardOwner {
 			public void actionPerformed(ActionEvent e) {
 				String phy = currentjavafasta.getPhylip( true );
 				Object[] objs = { "c"+phy };
-				JSObject win = JSObject.getWindow( DataTable.this );
-				win.call("dnapars", objs);
 			}
 		});
 		dnamlmenu.add( new AbstractAction("Show conserved species sites") {
@@ -3593,16 +3442,16 @@ public class DataTable extends JApplet implements ClipboardOwner {
 					if( doi != null && doi.length() > 0 ) {
 						try {
 							URL url = new URL( "http://dx.doi.org/"+doi );
-							DataTable.this.getAppletContext().showDocument( url );
-						} catch (MalformedURLException e1) {
+							Desktop.getDesktop().browse( url.toURI() );
+						} catch (URISyntaxException | IOException e1) {
 							e1.printStackTrace();
 						}
 					} else {
 						String pubmed = (String)str[6];
 						try {
 							URL url = new URL( "http://www.ncbi.nlm.nih.gov/pubmed/?term="+pubmed );
-							DataTable.this.getAppletContext().showDocument( url );
-						} catch (MalformedURLException e1) {
+							Desktop.getDesktop().browse( url.toURI() );
+						} catch (URISyntaxException | IOException e1) {
 							e1.printStackTrace();
 						}
 					}

@@ -12,6 +12,7 @@ public class Annotation implements Comparable<Object> {
 	public Sequence			seq;
 	private String			name;
 	public String			id;
+	public String			tag;
 	public StringBuilder	desc;
 	public String			type;
 	public String			group;
@@ -25,12 +26,12 @@ public class Annotation implements Comparable<Object> {
 	double					gc;
 	double					gcskew;
 	public boolean			dirty = false;
-	public String 			teg;
 	public double 			eval;
 	public int				num;
 	public boolean			backgap = false;
 	public boolean			frontgap = false;
 	public String	designation;
+	public int indexOf = -1;
 	
 	public boolean isPhage() {
 		return designation != null && designation.contains("phage");
@@ -46,6 +47,11 @@ public class Annotation implements Comparable<Object> {
 	
 	public Annotation() {
 		
+	}
+
+	@Override
+	public String toString() {
+		return "name: "+name+" id: "+id+" tag: "+tag;
 	}
 	
 	public Annotation( Annotation a ) {
@@ -63,7 +69,6 @@ public class Annotation implements Comparable<Object> {
 		desc = new StringBuilder( a.desc );
 		gene = a.gene;
 		designation = a.designation;
-		teg = a.teg;
 		eval = a.eval;
 		num = a.num;
 		color = a.color;
@@ -93,13 +98,12 @@ public class Annotation implements Comparable<Object> {
 		}
 		if( mann != null ) mann.put( name, this );
 	}
-
-	public void setTegund( String teg ) {
-		this.teg = teg;
-	}
 	
 	public String getSpecies() {
-		return teg;
+		if(seq instanceof Contig) {
+			Contig contig = (Contig) seq;
+			return contig.getSpec();
+		} return null;
 	}
 	
 	private Sequence		alignedsequence;
@@ -352,12 +356,42 @@ public class Annotation implements Comparable<Object> {
 
 	@Override
 	public int compareTo(Object o) {
-		if( o == null ) {
+		if(o==null) {
 			return -1;
+		} else if(!(o instanceof Annotation)) {
+			Teg teg = (Teg)o;
+			Annotation a = teg.getBest();
+			Contig cont = getContshort();
+			Contig acont = a.getContshort();
+			int ret = cont.compareTo(acont);
+			return ret == 0 ? Integer.compare(start, a.start) : ret;
+		} else {
+			Annotation a = (Annotation)o;
+			Contig cont = getContshort();
+			Contig acont = a.getContshort();
+			if(acont==null) {
+				return -1;
+			}
+			int ret = cont.compareTo(acont);
+			if(ret == 0) {
+				if(cont.getName().equals("NZ_CP020382")) {
+					if(start==0) {
+						System.err.println();
+					}
+					System.err.println(cont.getName() + "  " + acont.getName() + "  " + start + "   " + a.start);
+				}
+
+				return Integer.compare(start, a.start);
+			}
+			return ret;
 		}
-		int val = Integer.compare(start, ((Annotation)o).start);
-		//if( val == 0 && start == 0 ) return this.hashCode();
-		return val;
+	}
+
+	public int indexOf() {
+		if(indexOf == -1) {
+			indexOf = seq.annset.indexOf(this);
+		}
+		return indexOf;
 	}
 	
 	@Override
@@ -368,7 +402,7 @@ public class Annotation implements Comparable<Object> {
 	public void export(Appendable a, boolean translations, Optional<Sequence.Locus> ol, int ac, String key) throws IOException {
 		if( getName() != null && !getName().contains("No hits") ) {
 			String locstr = (start)+".."+(stop);
-			String tid = ol.isPresent() ?  ol.get().locus_tag+"_"+(ol.get().locus_tag_decformat.length() > 0 ? String.format(ol.get().locus_tag_decformat, ac) : ac) : id;
+			String tid = ol.map(locus -> locus.locus_tag + "_" + (locus.locus_tag_decformat.length() > 0 ? String.format(locus.locus_tag_decformat, ac) : ac)).orElseGet(() -> id);
 
 			a.append( "     "+type );
 			int len = type.length();
