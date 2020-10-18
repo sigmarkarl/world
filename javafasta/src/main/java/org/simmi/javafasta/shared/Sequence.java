@@ -998,7 +998,7 @@ public class Sequence extends FastaSequence implements Comparable<Sequence> {
 		return ret;
 	}
 	
-	public final static void distanceMatrixNumeric( List<Sequence> lseq, double[] dmat, List<Integer> idxs, boolean bootstrap, boolean cantor, double[] ent, Map<String,Integer> blosum ) {		
+	public static void distanceMatrixNumeric(List<Sequence> lseq, double[] dmat, List<Integer> idxs, boolean bootstrap, boolean cantor, double[] ent, Map<String,Integer> blosum ) {
 		int len = lseq.size();
 		//double[] dmat = new double[ len*len ];
 		for( int x = 0; x < len; x++ ) {
@@ -1016,7 +1016,6 @@ public class Sequence extends FastaSequence implements Comparable<Sequence> {
 						double mism = 0;
 						
 						if( ent != null ) {
-							int i = 0;
 							if( bootstrap ) {
 								for( int k : idxs ) {
 									int ir = r.nextInt( idxs.size() );
@@ -1026,7 +1025,6 @@ public class Sequence extends FastaSequence implements Comparable<Sequence> {
 									
 									if( c1 != c2 ) mism += 1.0/ent[u];
 									//count++;
-									i++;
 								}
 							} else {
 								for( int k : idxs ) {
@@ -1034,7 +1032,6 @@ public class Sequence extends FastaSequence implements Comparable<Sequence> {
 									char c2 = seq2.getCharAt( k-seq2.getStart() );
 									
 									if( c1 != c2 ) mism += 1.0/ent[k];
-									i++;
 								}
 							}
 						} else {
@@ -1167,7 +1164,7 @@ public class Sequence extends FastaSequence implements Comparable<Sequence> {
 							}
 						}
 					}
-					double d = count == 0 ? 0.0 : (double)mism/(double)count;
+					double d = count == 0 ? 0.0 : mism /(double)count;
 					if( blosum != null ) d = 1.0-d;
 					if( cantor ) d = -3.0*Math.log( 1.0 - 4.0*d/3.0 )/4.0;
 					
@@ -1183,10 +1180,10 @@ public class Sequence extends FastaSequence implements Comparable<Sequence> {
 	public void reverseComplement() {
 		for( int i = 0; i < length()/2; i++ ) {
 			char c = sb.charAt(i);
-			char cc = rc.containsKey( c ) ? rc.get(c) : c;
+			char cc = rc.getOrDefault(c, c);
 			
 			char nc = sb.charAt(length()-1-i);
-			char ncc = rc.containsKey( nc ) ? rc.get(nc) : nc;
+			char ncc = rc.getOrDefault(nc, nc);
 			
 			sb.setCharAt( i, ncc );
 			sb.setCharAt( length()-1-i, cc );
@@ -1219,10 +1216,10 @@ public class Sequence extends FastaSequence implements Comparable<Sequence> {
 	public void reverseComplement( int start, int end ) {
 		for( int i = start; i < start+(end-start)/2; i++ ) {
 			char c = sb.charAt(i);
-			char cc = rc.containsKey( c ) ? rc.get(c) : c;
+			char cc = rc.getOrDefault(c, c);
 			
 			char nc = sb.charAt(length()-1-i);
-			char ncc = rc.containsKey( nc ) ? rc.get(nc) : nc;
+			char ncc = rc.getOrDefault(nc, nc);
 			
 			sb.setCharAt( i, ncc );
 			sb.setCharAt( length()-1-i, cc );
@@ -1250,7 +1247,7 @@ public class Sequence extends FastaSequence implements Comparable<Sequence> {
 	public void complement( int start, int end ) {
 		for( int i = start; i < end; i++ ) {
 			char c = sb.charAt(i);
-			char cc = rc.containsKey( c ) ? rc.get(c) : c;
+			char cc = rc.getOrDefault(c, c);
 			/*if( c == rc ) {
 				System.err.println();
 			}*/
@@ -1261,7 +1258,7 @@ public class Sequence extends FastaSequence implements Comparable<Sequence> {
 	public void complement() {
 		for( int i = 0; i < length(); i++ ) {
 			char c = sb.charAt(i);
-			char cc = rc.containsKey( c ) ? rc.get(c) : c;
+			char cc = rc.getOrDefault(c, c);
 			/*if( c == rc ) {
 				System.err.println();
 			}*/
@@ -1460,21 +1457,21 @@ public class Sequence extends FastaSequence implements Comparable<Sequence> {
 	}
 
 	public void toGenbank( Appendable genbank, boolean translations ) throws IOException {
-		genbank.append("LOCUS        "+name+"\n");
-		genbank.append("DEFINITION   "+definition+"\n");
-		genbank.append("ACCESSION    "+id+"\n");
-		genbank.append("VERSION      "+version+"\n");
-		genbank.append("KEYWORDS     "+keywords+"\n");
-		genbank.append("SOURCE       "+group+"\n");
-		genbank.append("ORGANISM     "+organism+"\n");
+		genbank.append("LOCUS        ").append(name).append("\n");
+		genbank.append("DEFINITION   ").append(definition).append("\n");
+		genbank.append("ACCESSION    ").append(id).append("\n");
+		genbank.append("VERSION      ").append(version).append("\n");
+		genbank.append("KEYWORDS     ").append(keywords).append("\n");
+		genbank.append("SOURCE       ").append(group).append("\n");
+		genbank.append("ORGANISM     ").append(organism).append("\n");
 		for( Reference ref : refset ) {
-			genbank.append("REFERENCE   "+ref+"\n");
+			genbank.append("REFERENCE   ").append(String.valueOf(ref)).append("\n");
 			ref.export(genbank);
 		}
 		genbank.append("FEATURES     Location/Qualifiers");
 		int k = 0;
 		if( isReverse() ) {
-			for (int i = annset.size(); i>=0; i--) {
+			for (int i = annset.size()-1; i>=0; i--) {
 				Annotation a = annset.get(i);
 				a.export(genbank, translations, Optional.empty(), ++k, getName());
 			}
@@ -1649,7 +1646,7 @@ public class Sequence extends FastaSequence implements Comparable<Sequence> {
 	}*/
 	
 	public interface RunInt {
-		public void run( Sequence s );
+		void run(Sequence s);
 	};
 	
 	public static RunInt runbl = null;
@@ -1822,11 +1819,11 @@ public class Sequence extends FastaSequence implements Comparable<Sequence> {
 			//System.err.println( aa );
 			for( int i = stop-3; i > begin; i-=3 ) {
 				String aaa = sb.substring(i, i+3).toUpperCase();
-				if( aaa.contains("N") || aaa.contains("n") || aaa.contains("X") || aaa.contains("x") ) {
+				if(aaa.contains("N") || aaa.contains("X")) {
 					ret.append( "X" );
 				} else {
 					Character aa = amimap.get( revcom.get(aaa) );
-					if( aa != null ) ret.append( i != stop-3 ? aa : (aa.equals("V") || aa.equals("L") ? 'M' : aa) );
+					if( aa != null ) ret.append( i != stop-3 ? aa : (aa.equals('V') || aa.equals('L') ? 'M' : aa) );
 					//else break;
 				}
 			}
@@ -1837,7 +1834,7 @@ public class Sequence extends FastaSequence implements Comparable<Sequence> {
 					System.err.println(  );
 				}
 				String aaa = sb.substring(i, i+3).toUpperCase();
-				if( aaa.contains("N") || aaa.contains("n") || aaa.contains("X") || aaa.contains("x") ) {
+				if( aaa.contains("N") || aaa.contains("X")) {
 					ret.append( "X" );
 				} else {
 					Character aa = amimap.get( aaa );
@@ -1868,7 +1865,7 @@ public class Sequence extends FastaSequence implements Comparable<Sequence> {
 			int end = Math.min(sb.length(), oend);
 			for( int i = end-1; i >= start; i-- ) {
 				char c = sb.charAt(i);
-				char cc = rc.containsKey(c) ? rc.get( c ) : c;
+				char cc = rc.getOrDefault(c, c);
 				subsb.append( cc );
 			}
 			while( oend > Math.max(sb.length(),ostart) ) {
@@ -1896,7 +1893,7 @@ public class Sequence extends FastaSequence implements Comparable<Sequence> {
 			end = Math.min(sb.length(), end);
 			for( int i = end-1; i >= start; i-- ) {
 				char c = sb.charAt(i);
-				char cc = rc.containsKey(c) ? rc.get( c ) : c;
+				char cc = rc.getOrDefault(c, c);
 				subsb.append( cc );
 			}
 			return subsb.toString();

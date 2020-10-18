@@ -61,6 +61,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -155,7 +156,7 @@ public class JavaFasta extends JPanel {
 	}
 	
 	public static Map<String,Integer> getBlosumMap( boolean includeDash ) {
-		Map<String,Integer> blosumap = new HashMap<>();
+		Map<String,Integer> blosumap = new ConcurrentHashMap<>();
 		InputStream is = JavaFasta.class.getResourceAsStream("/BLOSUM62");
 		if( is != null ) {
 			InputStreamReader ir = new InputStreamReader(is);

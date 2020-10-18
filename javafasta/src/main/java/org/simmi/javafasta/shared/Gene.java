@@ -22,10 +22,13 @@ public class Gene {
 	
 	public void getFasta( Appendable w, boolean id ) throws IOException {
 		Sequence ps = tegeval.getProteinSequence();
-		if( id ) ps.setName( this.getId() ); //w.append(">" + this.getId() + "\n");
-		else ps.setName( this.tegeval.getName() ); //w.append(">" + this.tegeval.name + "\n"); //this.getId() + " " + this.getName() + (this.idstr != null ? " (" + this.idstr + ") [" : " [") + this.tegeval.name + "]" +" # " + this.tegeval.start + " # " + this.tegeval.stop + " # " + this.tegeval.ori + " #" + "\n");
-		
-		ps.writeSequence(w);
+		if(ps!=null) {
+			if (id) ps.setName(this.getId()); //w.append(">" + this.getId() + "\n");
+			else
+				ps.setName(this.tegeval.getName()); //w.append(">" + this.tegeval.name + "\n"); //this.getId() + " " + this.getName() + (this.idstr != null ? " (" + this.idstr + ") [" : " [") + this.tegeval.name + "]" +" # " + this.tegeval.start + " # " + this.tegeval.stop + " # " + this.tegeval.ori + " #" + "\n");
+
+			ps.writeSequence(w);
+		}
 		/*for (int i = 0; i < ps.length(); i += 70) {
 			w.append( ps.substring(i, Math.min(i + 70, ps.length())) + "\n");
 		}*/
