@@ -2974,10 +2974,11 @@ public class JavaFasta extends JPanel {
 					for( Sequence sseq : seqs ) {
 						if( sseq.annset != null ) for( Annotation a : sseq.annset ) {
 							if( i >= a.start && i <= a.stop ) {
-								if( countmap.containsKey(a.group) ) {
-									countmap.put(a.group, countmap.get(a.group)+1);
+								String agroup = a.getGroup();
+								if( countmap.containsKey(agroup) ) {
+									countmap.put(agroup, countmap.get(agroup)+1);
 								} else {
-									countmap.put(a.group, 1);
+									countmap.put(agroup, 1);
 								}
 								break;
 							}
@@ -2991,7 +2992,7 @@ public class JavaFasta extends JPanel {
 						g2.setColor( (Color)inanno.color );
 						//if( inanno.ori == 1 ) g2.drawLine(drawi, y*fasti+5, drawi+1, y*fasti+15);
 						//else g2.drawLine(drawi+1, y*fasti+5, drawi, y*fasti+15);
-						Integer count = countmap.get( inanno.group );
+						Integer count = countmap.get( inanno.getGroup() );
 						large = count != null && count > seqs.size()/2;
 						if( large ) {
 							g2.drawLine(drawi, y*fasti+8, drawi, y*fasti+32);
@@ -8979,7 +8980,7 @@ public class JavaFasta extends JPanel {
 					else if( columnIndex == 1 ) return ann.seq != null ? ann.seq.getName() : "";
 					else if( columnIndex == 2 ) return ann.type+"_"+ann.ori;
 					else if( columnIndex == 3 ) return ann.designation;
-					else if( columnIndex == 4 ) return ann.group;
+					else if( columnIndex == 4 ) return ann.getGroup();
 					else if( columnIndex == 5 ) return ann.start;
 					else if( columnIndex == 6 ) return ann.stop;
 					else if( columnIndex == 7 ) return ann.stop-ann.start;

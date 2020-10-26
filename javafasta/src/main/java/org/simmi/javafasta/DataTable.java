@@ -802,7 +802,7 @@ public class DataTable extends JPanel implements ClipboardOwner {
 				if( seqcache.containsKey( cacheval ) ) {
 					Sequence seq = seqcache.get( cacheval );
 					
-					Object[] obj = tablemap.get( seq.id );
+					Object[] obj = tablemap.get( seq.getId() );
 					if( obj != null ) {
 						String fname = getFastaName( names, metas, obj );
 						String cont = (Integer)obj[4] >= 900 ? fname : "*"+fname;

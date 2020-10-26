@@ -513,7 +513,6 @@ public class Sequence extends FastaSequence implements Comparable<Sequence> {
 	}
 	
 	public Sequence				consensus;
-	public String				id;
 	public String				definition;
 	public String				version;
 	public String				keywords;

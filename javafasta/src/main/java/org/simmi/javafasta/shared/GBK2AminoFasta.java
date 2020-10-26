@@ -241,11 +241,11 @@ public class GBK2AminoFasta {
 						}
 					} else if( trimline.startsWith("/gene=") ) {
 						if( anno != null ) {
-							anno.group = trimline.substring(7,trimline.length()-1);
+							anno.setGroup(trimline.substring(7,trimline.length()-1));
 						}
 					} else if( trimline.startsWith("/gene_synonym") ) {
 						if( anno != null ) {
-							anno.group = trimline.substring(15,trimline.length()-1);
+							anno.setGroup(trimline.substring(15,trimline.length()-1));
 						}
 					} else if( trimline.startsWith("/locus_tag") ) {
 						if( anno != null ) {

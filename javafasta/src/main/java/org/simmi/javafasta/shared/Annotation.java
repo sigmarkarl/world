@@ -10,12 +10,13 @@ import java.util.Set;
 
 public class Annotation implements Comparable<Object> {
 	public Sequence			seq;
+	private Sequence		alignedsequence;
 	private String			name;
 	public String			id;
 	public String			tag;
 	public StringBuilder	desc;
 	public String			type;
-	public String			group;
+	private String			group;
 	public Set<String>		dbref;
 	public int				start;
 	public int				stop;
@@ -105,8 +106,7 @@ public class Annotation implements Comparable<Object> {
 			return contig.getSpec();
 		} return null;
 	}
-	
-	private Sequence		alignedsequence;
+
 	public Sequence getAlignedSequence() {
 		return alignedsequence;
 	}
@@ -115,6 +115,9 @@ public class Annotation implements Comparable<Object> {
 		//if( seq != null ) System.err.println( "set aligned seq " + seq.getName() + "  " + alseq.length() );
 		//else System.err.println( "seq null" );
 		this.alignedsequence = alseq;
+		if(alseq.id == null) alseq.id = id;
+		if(seq != null) alseq.name = seq.getGroup();
+		if(alseq.group == null) alseq.group = group;
 	}
 	
 	public void writeFasta( Writer w ) throws IOException {
@@ -142,10 +145,6 @@ public class Annotation implements Comparable<Object> {
 		//if( i == 0 || i == contshort.tlist.size()-1 ) return Color.blue;
 		//else if( unresolvedGap() > 0 ) return Color.red;
 		return frontgap ? Color.red : Color.lightGray;
-	}
-	
-	public int getSequenceLength() {
-		return alignedsequence == null ? 0 : alignedsequence.length();
 	}
 	
 	public int getProteinLength() {
@@ -336,6 +335,10 @@ public class Annotation implements Comparable<Object> {
 	public void setGroup( String group ) {
 		this.group = group;
 	}
+
+	public String getGroup() {
+		return group;
+	}
 	
 	public void setType( String type ) {
 		this.type = type;
@@ -404,36 +407,36 @@ public class Annotation implements Comparable<Object> {
 			String locstr = (start)+".."+(stop);
 			String tid = ol.map(locus -> locus.locus_tag + "_" + (locus.locus_tag_decformat.length() > 0 ? String.format(locus.locus_tag_decformat, ac) : ac)).orElseGet(() -> id);
 
-			a.append( "     "+type );
+			a.append("     ").append(type);
 			int len = type.length();
 			while( len < 16 ) {
 				a.append(' ');
 				len++;
 			}
-			if( isReverse() ) a.append( "complement("+locstr+")\n" );
-			else a.append( locstr+"\n" );
+			if( isReverse() ) a.append("complement(").append(locstr).append(")\n");
+			else a.append(locstr).append("\n");
 
-			if( tid == null ) a.append( "                     /locus_tag=\""+key+ac+"\"\n" );
-			else a.append( "                     /locus_tag=\""+tid+"\"\n" );
+			if( tid == null ) a.append("                     /locus_tag=\"").append(key).append(String.valueOf(ac)).append("\"\n");
+			else a.append("                     /locus_tag=\"").append(tid).append("\"\n");
 
-			String addon = "";
+			StringBuilder addon = new StringBuilder();
 			if( dbref != null ) for( String val : dbref ) {
-				addon += "("+val+")";
+				addon.append("(").append(val).append(")");
 			}
-			a.append( "                     /product=\""+getName()+addon+"\"\n" );
+			a.append("                     /product=\"").append(getName()).append(String.valueOf(addon)).append("\"\n");
 			if( translations ) {
 				a.append( "                     /translation=\"" );
 				Sequence aa = getProteinSequence();
 				a.append(aa.sb.substring(0, Math.min(46, aa.length())) );
 				for (int k = 46; k < aa.length(); k += 60) {
 					a.append("\n");
-					a.append( "                     "+aa.sb.substring(k, Math.min(k + 60, aa.length())) );
+					a.append("                     ").append(aa.sb.substring(k, Math.min(k + 60, aa.length())));
 				}
 				a.append( "\"\n" );
 			}
 
 			if( dbref != null ) for( String val : dbref ) {
-				a.append( "                     /db_xref=\""+val+"\"\n" );
+				a.append("                     /db_xref=\"").append(val).append("\"\n");
 			}
 		}
 	}
