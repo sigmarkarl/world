@@ -125,7 +125,6 @@ public class Cog {
 		cogchar.put( "acyl carrier protein", 'I' );
 		cogchar.put( "3-hydroxymyristoyl", 'M' );
 		cogchar.put( "Signal transduction", 'T');
-		//cogchar.put( "acetolactate synthase, pyruvate dehydrogenase (cytochrome), glyoxylate carboligase, phosphonopyruvate decarboxylase", 'Æ' );
 	}
 	
 	public Cog( String id, Character symbol, String name, String annotation ) {
