@@ -209,7 +209,12 @@ public class GBK2AminoFasta {
 					} else if( trimline.startsWith("/db_xref") ) {
 						xref.add( trimline.substring(10, trimline.length()-1) );
 					} else if( trimline.startsWith("/EC_number") ) {
-						String ec = "EC"+trimline.substring(12, trimline.length()-1);
+						String ecid = trimline.substring(12, trimline.length()-1);
+						if(anno instanceof Tegeval) {
+							Tegeval tegeval = (Tegeval) anno;
+							tegeval.getGene().ecid = ecid;
+						}
+						String ec = "EC"+ecid;
 						xref.add( ec );
 					} else if( trimline.startsWith("/product") ) {
 						if( anno != null ) {

@@ -4515,9 +4515,9 @@ public class Serifier {
 			}
 		} else {
 	   		if( selectedRect != null && selectedRect.width > 0 ) {
-	   			Sequence.writeFasta(osw, lseq, selectedRect.x+min, selectedRect.x+min+selectedRect.width, italic);
+	   			Sequence.writeFasta(osw, seqlist, selectedRect.x+min, selectedRect.x+min+selectedRect.width, italic);
 	   		} else {
-	   			Sequence.writeFasta(osw, lseq, italic, false); //covid true
+	   			Sequence.writeFasta(osw, seqlist, italic, false); //covid true
 	   		}
 			
 			/*for( Sequence seq : seqlist ) {

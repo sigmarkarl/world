@@ -399,19 +399,19 @@ public class Sequence extends FastaSequence implements Comparable<Sequence> {
 		writeFasta(os, lseq, false);
 	}
 	
-	public static void writeFasta( OutputStream os, List<Sequence> lseq, boolean italic ) throws IOException {
+	public static void writeFasta( OutputStream os, List<? extends Sequence> lseq, boolean italic ) throws IOException {
 		OutputStreamWriter osw = new OutputStreamWriter(os);
 		writeFasta( osw, lseq, italic, false );
 		osw.close();
 	}
 	
-	public static void writeFasta( Writer osw, List<Sequence> lseq, boolean italic, boolean group ) throws IOException {
+	public static void writeFasta( Writer osw, List<? extends Sequence> lseq, boolean italic, boolean group ) throws IOException {
 		for( Sequence seq : lseq ) {
 			seq.writeSequence(osw, italic, group);
 		}
 	}
 	
-	public static void writeFasta( Writer osw, List<Sequence> lseq, int start, int stop, boolean italic ) throws IOException {
+	public static void writeFasta( Writer osw, List<? extends Sequence> lseq, int start, int stop, boolean italic ) throws IOException {
 		for( Sequence seq : lseq ) {
 			seq.writeSequence(osw,start,stop,italic);
 		}
