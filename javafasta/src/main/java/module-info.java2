@@ -1,0 +1,5 @@
+module org.simmi.javafasta {
+    requires java.desktop;
+    requires javafx.graphics;
+    requires javafx.controls;
+}

@@ -33,6 +33,7 @@ public class Annotation implements Comparable<Object> {
 	public boolean			frontgap = false;
 	public String	designation;
 	public int indexOf = -1;
+	public GeneGroup gg;
 	
 	public boolean isPhage() {
 		return designation != null && designation.contains("phage");
@@ -48,6 +49,30 @@ public class Annotation implements Comparable<Object> {
 	
 	public Annotation() {
 		
+	}
+
+	public void setGeneGroup(GeneGroup gg) {
+		this.gg = gg;
+		gg.addGene(this);
+	}
+
+	public GeneGroup getGeneGroup() {
+		return gg;
+	}
+
+	public int getGroupIndex() {
+		if( gg != null ) return gg.groupIndex;
+		return -10;
+	}
+
+	public int getGroupCoverage() {
+		if( gg != null ) return gg.getGroupCoverage();
+		return -1;
+	}
+
+	public int getGroupCount() {
+		if( gg != null ) return gg.getGroupCount();
+		return -1;
 	}
 
 	@Override

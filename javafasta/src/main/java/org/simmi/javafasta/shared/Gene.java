@@ -8,7 +8,7 @@ import java.util.Set;
 public class Gene {
 	public Gene(GeneGroup gg, String id, String name) {
 		this.name = name;
-		this.gg = gg;
+		this.tegeval.gg = gg;
 		this.refid = id;
 		this.id = id;
 	}
@@ -88,34 +88,27 @@ public class Gene {
 		return aac;
 	}
 	
-	public void setGeneGroup( GeneGroup gg ) {
-		this.gg = gg;
-		
-		gg.addGene( this );
-		//gg.addSpecies( this.species );	
-	}
-	
 	public GeneGroup getGeneGroup() {
-		return gg;
+		return tegeval.gg;
 	}
 	
 	public int getGroupIndex() {
-		if( gg != null ) return gg.groupIndex;
+		if( tegeval.gg != null ) return tegeval.gg.groupIndex;
 		return -10;
 	}
 	
 	public int getGroupCoverage() {
-		if( gg != null ) return gg.getGroupCoverage();
+		if( tegeval.gg != null ) return tegeval.gg.getGroupCoverage();
 		return -1;
 	}
 	
 	public int getGroupCount() {
-		if( gg != null ) return gg.getGroupCount();
+		if( tegeval.gg != null ) return tegeval.gg.getGroupCount();
 		return -1;
 	}
 	
 	public int getGroupGenCount() {
-		if( gg != null ) return gg.getGroupGeneCount();
+		if( tegeval.gg != null ) return tegeval.gg.getGroupGeneCount();
 		return -1;
 	}
 	
@@ -257,7 +250,7 @@ public class Gene {
 
 	ShareNum noShareNum = new ShareNum(-1,-1);
 	public ShareNum getSharingNumber() {
-		return gg==null ? noShareNum : gg.getSharingNumber();
+		return tegeval.gg==null ? noShareNum : tegeval.gg.getSharingNumber();
 	}
 
 	public String name;
@@ -286,8 +279,6 @@ public class Gene {
 	public int index;
 	public boolean signalp = false;
 	public boolean transm = false;
-
-	GeneGroup	gg;
 	// Set<String> group;
 	//int groupGenCount;
 	//int groupCoverage;

@@ -1297,7 +1297,7 @@ public class Serifier {
 		return fos;
 	}
 	
-	public List<Set<String>> makeBlastCluster( final Path osf, final List<Path> blastfiles, int clustermap, float id, float len, Map<String,String> idspec, List<Set<String>> total, Map<String,Gene> refmap ) throws IOException {
+	public List<Set<String>> makeBlastCluster( final Path osf, final List<Path> blastfiles, int clustermap, float id, float len, Map<String,String> idspec, List<Set<String>> total, Map<String,Annotation> refmap ) throws IOException {
 		try(BufferedWriter fos = getClusterWriter(osf)) {
 			for (Path blastfile : blastfiles) {
 				BufferedReader is = null;
@@ -1340,7 +1340,7 @@ public class Serifier {
 		return total;
 	}
 	
-	public void makeBlastCluster( final BufferedReader is, final BufferedWriter fos, int clustermap, float id, float len, Map<String,String> idspec, List<Set<String>> total, Map<String,Gene> refmap ) throws IOException {
+	public void makeBlastCluster( final BufferedReader is, final BufferedWriter fos, int clustermap, float id, float len, Map<String,String> idspec, List<Set<String>> total, Map<String,Annotation> refmap ) throws IOException {
 		Path userhome = Paths.get( System.getProperty("user.home") );
 		if( is != null ) {
 			if( clustermap%2 == 0 ) {
@@ -1418,7 +1418,7 @@ public class Serifier {
 		}*/
 	}
 	
-	public void joinBlastSetsThermus( BufferedReader br, Path write, boolean union, List<Set<String>> total, float id, float cmplen, Map<String,Gene> refmap ) throws IOException {		
+	public void joinBlastSetsThermus( BufferedReader br, Path write, boolean union, List<Set<String>> total, float id, float cmplen, Map<String,Annotation> refmap ) throws IOException {
 		//File file = null;
 		BufferedWriter fw = null;
 		if( write != null ) {
@@ -1460,7 +1460,7 @@ public class Serifier {
 					}
 				}
 				
-				Gene g = refmap.get( astr );
+				Gene g = refmap.get( astr ).getGene();
 				if( g != null ) {
 					/*String spec;
 					int u = Contig.specCheck( astr );
@@ -1532,7 +1532,7 @@ public class Serifier {
 									}
 								}
 								
-								Gene g = refmap.get( astr );
+								Gene g = refmap.get( astr ).getGene();
 								if( g != null ) {
 									astr = g.getLongName();
 								}/* else {

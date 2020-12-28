@@ -114,7 +114,7 @@ public class GBK2AminoFasta {
 						anno = null;
 					}
 					if( banno != null ) { //|| trimline.startsWith("gene ") ) {
-						anno = banno.equals("CDS") ? new Tegeval( "gene" ) : new Annotation( "gene" );
+						anno = banno.equals("CDS") ? new Tegeval( "gene" ) : new Annotation( banno );
 						anno.seq = strbuf;
 						
 						//anno.spec = spec + (contignum > 0 ? "_contig"+(contignum+1) : "");
