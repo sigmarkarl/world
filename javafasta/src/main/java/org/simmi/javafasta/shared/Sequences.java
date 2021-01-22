@@ -42,6 +42,14 @@ public class Sequences implements Comparable<Sequences> {
 	public void setNSeq( int count ) {
 		nseq = count;
 	}
+
+	public String getMetadata() {
+		return metadata;
+	}
+
+	public void setMetadata(String metadata) {
+		this.metadata = metadata;
+	}
 	
 	public String user;
 	public String name;
@@ -49,6 +57,7 @@ public class Sequences implements Comparable<Sequences> {
 	public Path 	path;
 	public Integer nseq;
 	public String _key;
+	public String metadata;
 	
 	@Override
 	public int compareTo(Sequences o) {

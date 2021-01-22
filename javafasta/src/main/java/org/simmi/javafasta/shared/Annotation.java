@@ -397,17 +397,17 @@ public class Annotation implements Comparable<Object> {
 			Annotation a = (Annotation)o;
 			Contig cont = getContshort();
 			Contig acont = a.getContshort();
-			if(acont==null) {
+			if(cont==null||acont==null) {
 				return -1;
 			}
 			int ret = cont.compareTo(acont);
 			if(ret == 0) {
-				if(cont.getName().equals("NZ_CP020382")) {
+				/*if(cont.getName().equals("NZ_CP020382")) {
 					if(start==0) {
 						System.err.println();
 					}
 					System.err.println(cont.getName() + "  " + acont.getName() + "  " + start + "   " + a.start);
-				}
+				}*/
 
 				return Integer.compare(start, a.start);
 			}

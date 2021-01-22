@@ -96,64 +96,66 @@ public class Tegeval extends Annotation implements Teg {
 	}
 	
 	public void unresolvedGap( int i ) {
-		if( i >= getContshort().getAnnotations().size() ) {
-			int icheck = getContshort().getAnnotations().indexOf(this);
-			System.err.println("whataf " + icheck);
+		Contig contig = getContshort();
+		if(contig != null) {
+			if (i >= contig.getAnnotations().size()) {
+				int icheck = contig.getAnnotations().indexOf(this);
+				System.err.println("whataf " + icheck);
+			}
+			if (i == 0) {
+				Annotation tv = contig.getAnnotation(i);
+				for (int m = 0; m < tv.start; m++) {
+					char c = seq.getCharAt(m);
+					if (c == 'n' || c == 'N') {
+						//ret |= 1;
+						if (this.ori == -1) frontgap = true;
+						else backgap = true;
+
+						break;
+					}
+				}
+			} else {
+				Annotation tv = contig.getAnnotation(i);
+				Annotation tvp = contig.getAnnotation(i - 1);
+				for (int m = tvp.stop; m < tv.start; m++) {
+					char c = seq.getCharAt(m);
+					if (c == 'n' || c == 'N') {
+						//ret |= 1;
+						if (this.ori == -1) frontgap = true;
+						else backgap = true;
+
+						break;
+					}
+				}
+			}
+
+			if (i == contig.getAnnotations().size() - 1) {
+				Annotation tv = contig.getAnnotation(i);
+				for (int m = tv.stop; m < seq.length(); m++) {
+					char c = seq.getCharAt(m);
+					if (c == 'n' || c == 'N') {
+						//ret |= 2;
+						if (this.ori == -1) backgap = true;
+						else frontgap = true;
+
+						break;
+					}
+				}
+			} else {
+				Annotation tv = contig.getAnnotation(i);
+				Annotation tvn = contig.getAnnotation(i + 1);
+				for (int m = tv.stop; m < tvn.start; m++) {
+					char c = seq.getCharAt(m);
+					if (c == 'n' || c == 'N') {
+						//ret |= 2;
+						if (this.ori == -1) backgap = true;
+						else frontgap = true;
+
+						break;
+					}
+				}
+			}
 		}
-		if( i == 0 ) {
-			Annotation tv = getContshort().getAnnotation(i);
-			for( int m = 0; m < tv.start; m++ ) {
-				char c = seq.getCharAt(m);
-				if( c == 'n' || c == 'N' ) {
-					//ret |= 1;
-					if( this.ori == -1 ) frontgap = true;
-					else backgap = true;
-					
-					break;
-				}
-			}
-		} else {
-			Annotation tv = getContshort().getAnnotation(i);
-			Annotation tvp = getContshort().getAnnotation(i-1);
-			for( int m = tvp.stop; m < tv.start; m++ ) {
-				char c = seq.getCharAt(m);
-				if( c == 'n' || c == 'N' ) {
-					//ret |= 1;
-					if( this.ori == -1 ) frontgap = true;
-					else backgap = true;
-					
-					break;
-				}
-			}
-		}
-		
-		if( i == getContshort().getAnnotations().size()-1 ) {
-			Annotation tv = getContshort().getAnnotation(i);
-			for( int m = tv.stop; m < seq.length(); m++ ) {
-				char c = seq.getCharAt(m);
-				if( c == 'n' || c == 'N' ) {
-					//ret |= 2;
-					if( this.ori == -1 ) backgap = true;
-					else frontgap = true;
-					
-					break;
-				}
-			}
-		} else {
-			Annotation tv = getContshort().getAnnotation(i);
-			Annotation tvn = getContshort().getAnnotation(i+1);
-			for( int m = tv.stop; m < tvn.start; m++ ) {
-				char c = seq.getCharAt(m);
-				if( c == 'n' || c == 'N' ) {
-					//ret |= 2;
-					if( this.ori == -1 ) backgap = true;
-					else frontgap = true;
-					
-					break;
-				}
-			}
-		}
-		
 		//return ret;
 	}
 	

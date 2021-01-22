@@ -294,8 +294,11 @@ public class GeneGroup {
 	public String getOrigin() {
 		String ret = null;
 		for( Annotation a : genes ) {
-			ret = a.getGene().getSpecies();
-			break;
+			Gene g = a.getGene();
+			if(g != null) {
+				ret = a.getGene().getSpecies();
+				break;
+			}
 		}
 		
 		return ret;
@@ -303,8 +306,11 @@ public class GeneGroup {
 	
 	public String getCommonTag() {
 		for( Annotation a : genes ) {
-			String tag = a.getGene().getTag();
-			if( tag != null ) return tag;
+			Gene g = a.getGene();
+			if(g != null) {
+				String tag = g.getTag();
+				if (tag != null) return tag;
+			}
 		}
 		return null;
 	}
@@ -612,7 +618,7 @@ public class GeneGroup {
 		StringBuilder ret = new StringBuilder();
 		for( Annotation a : genes ) {
 			Gene g = a.getGene();
-			if( g.keggid != null ) {
+			if( g != null && g.keggid != null ) {
 				if( ret.length() == 0 ) ret.append(g.keggid);
 				else ret.append(" ").append(g.keggid);
 			}

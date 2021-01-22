@@ -8,7 +8,7 @@ import java.util.Set;
 public class Gene {
 	public Gene(GeneGroup gg, String id, String name) {
 		this.name = name;
-		this.tegeval.gg = gg;
+		//this.tegeval.setGeneGroup(gg);
 		this.refid = id;
 		this.id = id;
 	}
