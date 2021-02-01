@@ -124,26 +124,66 @@ public class GBK2AminoFasta {
 						String[] split = trimline.split("[\t ]+");
 						if( split.length > 1 ) {
 							if( split[1].startsWith("compl") ) {
-								int iof = split[1].indexOf(")");
+								int iof = split[1].lastIndexOf(")");
 								while( iof == -1 ) {
 									line = fileit.next();
 									trimline = trimline+line.trim();
 									split = trimline.split("[\t ]+");
-									iof = split[1].indexOf(")");
+									iof = split[1].lastIndexOf(")");
 								}
-								int osv = split[1].lastIndexOf('(');
+								int osv = split[1].indexOf('(');
 								String substr = split[1].substring(osv+1, iof);
-								String[] nsplit = substr.split("\\.\\.");
-								//if( !nsplit[0].startsWith("join")  ) {
-								char c = nsplit[0].charAt(0);
-								char c2 = nsplit[nsplit.length-1].charAt(0);
-								if( c >= '0' && c <= '9' && c2 >= '0' && c2 <= '9' ) {
-									anno.start = Integer.parseInt( nsplit[0] );
-									anno.stop = Integer.parseInt( nsplit[nsplit.length-1] );
-									anno.ori = -1;
+								if( !substr.startsWith("join") ) {
+									iof = substr.lastIndexOf(")");
+									while( iof == -1 ) {
+										line = fileit.next();
+										trimline = trimline+line.trim();
+										split = trimline.split("[\t ]+");
+										substr = split[1];
+										iof = substr.lastIndexOf(")");
+									}
+									osv = substr.indexOf('(');
+									
+									if( iof < osv+1 ) {
+										System.err.println();
+									}
+									
+									substr = substr.substring(osv+1, iof);
+									String[] sepstr = substr.split(",");
+
+									anno.start = Integer.MAX_VALUE;
+									anno.stop = Integer.MIN_VALUE;
+									for( String sp : sepstr ) {
+										String[] nsplit = sp.split("\\.\\.");
+										//if( !nsplit[0].startsWith("join")  ) {
+										char c = nsplit[0].charAt(0);
+										char c2 = nsplit[nsplit.length-1].charAt(0);
+										if( c >= '0' && c <= '9' && c2 >= '0' && c2 <= '9' ) {
+											anno.start = Math.min( anno.start, Integer.parseInt( nsplit[0] ) );
+											anno.stop = Math.max( anno.stop, Integer.parseInt( nsplit[nsplit.length-1] ) );
+											anno.ori = -1;
+										} else {
+											System.err.println( nsplit[0] + " n " + nsplit[nsplit.length-1] );
+											anno = null;
+											break;
+										}
+									}
+									
+									if( anno != null && anno.stop-anno.start > 10000 ) {
+										anno = null;
+									}
 								} else {
-									System.err.println( nsplit[0] + " n " + nsplit[nsplit.length-1] );
-									anno = null;
+									String[] nsplit = substr.split("\\.\\.");
+									char c = nsplit[0].charAt(0);
+									char c2 = nsplit[nsplit.length-1].charAt(0);
+									if( c >= '0' && c <= '9' && c2 >= '0' && c2 <= '9' ) {
+										anno.start = Integer.parseInt( nsplit[0] );
+										anno.stop = Integer.parseInt( nsplit[nsplit.length-1] );
+										anno.ori = -1;
+									} else {
+										System.err.println( nsplit[0] + " n " + nsplit[nsplit.length-1] );
+										anno = null;
+									}
 								}
 							} else if( split[1].startsWith("join") ) {
 								int iof = split[1].lastIndexOf(")");
@@ -172,7 +212,7 @@ public class GBK2AminoFasta {
 									if( c >= '0' && c <= '9' && c2 >= '0' && c2 <= '9' ) {
 										anno.start = Math.min( anno.start, Integer.parseInt( nsplit[0] ) );
 										anno.stop = Math.max( anno.stop, Integer.parseInt( nsplit[nsplit.length-1] ) );
-										anno.ori = -1;
+										anno.ori = 1;
 									} else {
 										System.err.println( nsplit[0] + " n " + nsplit[nsplit.length-1] );
 										anno = null;
