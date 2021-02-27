@@ -322,9 +322,9 @@ public class GeneGroup {
 			if( ret == null ) ret = id;
 			else {
 				boolean jsome = (ret.startsWith("J") || ret.startsWith("A") || ret.startsWith("L") || ret.startsWith("B")) && ret.charAt(4) == '0';
-				boolean isome = (id.startsWith("J") || id.startsWith("A") || id.startsWith("L") || id.startsWith("B")) && id.charAt(4) == '0';
+				boolean isome = id != null && (id.startsWith("J") || id.startsWith("A") || id.startsWith("L") || id.startsWith("B")) && id.charAt(4) == '0';
 				if( ((jsome || ret.contains("contig") || ret.contains("scaffold") || ret.contains("uid")) && !ret.contains(":")) || 
-						!(isome || id.contains("contig") || id.contains("scaffold") || id.contains("uid") || id.contains("unnamed") || id.contains("hypot")) ) ret = id;
+						(id != null && !(isome || id.contains("contig") || id.contains("scaffold") || id.contains("uid") || id.contains("unnamed") || id.contains("hypot")) )) ret = id;
 			}
 		}
 		return ret;
@@ -391,7 +391,9 @@ public class GeneGroup {
 	
 	public Cog getCog( Map<String,Cog> cogmap ) {
 		for( Annotation a : genes ) {
-			if( cogmap.containsKey( a.id ) ) return cogmap.get( a.id );
+			if( cogmap.containsKey( a.id ) ) {
+				return cogmap.get( a.id );
+			}
 		}
 		for( Annotation a : genes ) {
 			Gene g = a.getGene();
