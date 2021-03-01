@@ -661,7 +661,11 @@ public class Sequence extends FastaSequence implements Comparable<Sequence> {
 		
 		return i;
 	}
-	
+
+	public static String nameFix( String selspec ) {
+		return nameFix(selspec, true);
+	}
+
 	public static String nameFix( String selspec, boolean isthermus ) {
 		String ret = selspec;
 		if( isthermus ) {

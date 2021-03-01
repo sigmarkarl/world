@@ -258,7 +258,8 @@ public class GeneGroup {
 	
 	public boolean isOnAnyPlasmid() {
 		for( Annotation a : genes ) {
-			if( a.getContshort().isPlasmid() ) return true;
+			Contig ctg = a.getContshort();
+			if( ctg!=null && ctg.isPlasmid() ) return true;
 		}
 		
 		return false;
