@@ -423,6 +423,11 @@ public class GeneGroup {
 		return cog != null ? cog.genesymbol : null;
 	}
 
+	public String getOldsymbol() {
+		Cog cog = getCog( cogmap );
+		return cog != null ? cog.cogsymbol : null;
+	}
+
 	public Cog getPfam( Map<String,Cog> pfammap ) {
 		for( Annotation a : genes ) {
 			if( pfammap.containsKey( a.id ) ) return pfammap.get( a.id );

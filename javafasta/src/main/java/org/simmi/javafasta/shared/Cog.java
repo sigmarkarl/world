@@ -1,18 +1,29 @@
 package org.simmi.javafasta.shared;
 
 import java.awt.*;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class Cog {
 	public static Map<String,String>	charcog = new HashMap<>();
 	public static Map<String,String>	cogchar = new HashMap<>();
 	public static Map<String,Set<String>> coggroups = new HashMap<>();
 	public static Map<String,Color> charcogcol = new HashMap<>();
+	public static Map<String,String> mapToCog;
 	static {
+		try {
+			mapToCog = Files.lines(Paths.get("/Users/sigmar/cog-20.def2.tab")).map(s -> s.split("\t")).collect(Collectors.toMap(s -> s[0],s -> s[1]));
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
 		coggroups.put( "CELLULAR PROCESSES AND SIGNALING", new HashSet<>( Arrays.asList( new String[] {"D","M","N","O","T","U","V","W","Y","Z"} ) ) );
 		coggroups.put( "INFORMATION STORAGE AND PROCESSING", new HashSet<>( Arrays.asList( new String[] {"A","B","J","K","L"} ) ) );
 		coggroups.put( "METABOLISM", new HashSet<>( Arrays.asList( new String[] {"C","E","F","G","H","I","P","Q"} ) ) );
-		coggroups.put( "POORLY CHARACTERIZED", new HashSet<>( Arrays.asList( new String[] {"R","S"} ) ) );
+		coggroups.put( "POORLY CHARACTERIZED", new HashSet<>( Arrays.asList( new String[] {"R","S","-"} ) ) );
 		
 		/*
 		CELLULAR PROCESSES AND SIGNALING
@@ -72,6 +83,7 @@ public class Cog {
 		//POORLY CHARACTERIZED
 		charcog.put("R", "General function prediction only" );
 		charcog.put("S", "Function unknown" );
+		charcog.put("-", "No annotation" );
 
 		for( String c : charcog.keySet() ) {
 			cogchar.put( charcog.get(c), c );
@@ -107,6 +119,7 @@ public class Cog {
 		charcogcol.put("Q", Color.decode("#BCCCFC"));
 		charcogcol.put("R", Color.decode("#E0E0E0"));
 		charcogcol.put("S", Color.decode("#CCCCCC"));
+		charcogcol.put("-", Color.decode("#000000"));
 		
 		cogchar.put( "Cell envelope biogenesis, outer membrane", "M" );
 		cogchar.put( "Cell wall", "M" );
@@ -128,7 +141,8 @@ public class Cog {
 	}
 	
 	public Cog( String id, String symbol, String name, String annotation ) {
-		this.id = id;
+		int idx = id.indexOf('@');
+		this.id = id.substring(0,idx==-1?id.length():idx);
 		this.symbol = symbol;
 		this.name = name;
 		if( annotation != null ) {
@@ -138,10 +152,12 @@ public class Cog {
 				this.annotation = annotation.substring(i+1);
 			} else this.annotation = annotation;
 		}
+		cogsymbol = mapToCog.getOrDefault(this.id, symbol.equals("-") ? "S" : symbol);
 	}
 	
 	public String	id;
-	public String symbol;
+	public String 	symbol;
+	public String	cogsymbol;
 	public String	annotation;
 	public String	genesymbol;
 	public String	name;

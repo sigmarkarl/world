@@ -4,7 +4,7 @@ plugins {
 }
 
 javafx {
-    version = '16-ea+6'
+    version = '17-ea+3'
     modules = [ 'javafx.base', 'javafx.graphics', 'javafx.controls', 'javafx.fxml', 'javafx.swing', 'javafx.web' ]
 }
 
@@ -16,8 +16,8 @@ dependencies {
     compile group: 'com.github.samtools', name: 'htsjdk', version: '2.23.0'
     compile group: 'com.googlecode.json-simple', name: 'json-simple', version: '1.1'
     compile group: 'org.json', name: 'json', version: '20190722'
-    compile group: 'org.apache.spark', name: 'spark-core_2.12', version: '3.0.1'
-    compile group: 'org.apache.spark', name: 'spark-mllib_2.12', version: '3.0.1'
-    compile group: 'org.apache.spark', name: 'spark-kubernetes_2.12', version: '3.0.1'
+    compile group: 'org.apache.spark', name: 'spark-core_2.12', version: '3.1.1'
+    compile group: 'org.apache.spark', name: 'spark-mllib_2.12', version: '3.1.1'
+    compile group: 'org.apache.spark', name: 'spark-kubernetes_2.12', version: '3.1.1'
     //compile group: 'org.scalanlp', name: 'breeze_2.13', version: '1.1'
 }

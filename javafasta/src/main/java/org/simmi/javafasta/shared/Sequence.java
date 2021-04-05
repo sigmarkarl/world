@@ -730,7 +730,7 @@ public class Sequence extends FastaSequence implements Comparable<Sequence> {
 						}
 					}
 				}
-			} else if( (selspec.charAt(0) == 'J' || selspec.charAt(0) == 'A' || selspec.charAt(0) == 'L' || selspec.charAt(0) == 'B') && (selspec.length() == 4 || selspec.charAt(4) == '0') ) {
+			} /*else if( (selspec.charAt(0) == 'J' || selspec.charAt(0) == 'A' || selspec.charAt(0) == 'L' || selspec.charAt(0) == 'B') && (selspec.length() == 4 || selspec.charAt(4) == '0') ) {
 				if( selspec.startsWith("JQNC") ) ret = "Thermus_caliditerrae_YIM_77777";
 				if( selspec.startsWith("JQMV") ) ret = "Thermus_amyloliquefaciens_YIM_77409";
 				if( selspec.startsWith("JQLK") ) ret = "Thermus_tengchongensis_YIM_77401";
@@ -754,7 +754,7 @@ public class Sequence extends FastaSequence implements Comparable<Sequence> {
 				
 				if( selspec.startsWith("BBBL") ) ret = "Thermus_kawarayensis_JCM_12314";
 				if( selspec.startsWith("BBBN") ) ret = "Thermus_sp_JCM_17653";
-			} else if( selspec.contains("GenBank") || selspec.contains("MAT") ) {
+			}*/ else if( selspec.contains("GenBank") || selspec.contains("MAT") ) {
 				
 			} else {
 				if( selspec.contains("islandicus") ) ret = "Thermus_islandicus_MAT_3838";

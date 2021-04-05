@@ -269,6 +269,7 @@ public class Gene {
 	public String keggpathway;
 	public String pdbid;
 	public String koid;
+	public String goid;
 	public String koname;
 	public String ecid;
 	public String blastspec;

@@ -70,8 +70,8 @@ public class Function {
 	
 	public void addGeneentries( Collection<Gene> ge ) {
 		if( geneentries == null ) {
-			geneentries = new HashSet<Gene>();
-			groupentries = new HashSet<GeneGroup>();
+			geneentries = new HashSet<>();
+			groupentries = new HashSet<>();
 		}
 		geneentries.addAll( ge );
 		for( Gene g : ge ) {
@@ -80,12 +80,12 @@ public class Function {
 	}
 	
 	public void addGroupentry( GeneGroup gg ) {
-		if( groupentries == null ) groupentries = new HashSet<GeneGroup>();
+		if( groupentries == null ) groupentries = new HashSet<>();
 		groupentries.add( gg );
 	}
 	
 	public void addGroupentries( Collection<GeneGroup> ge ) {
-		if( groupentries == null ) groupentries = new HashSet<GeneGroup>();
+		if( groupentries == null ) groupentries = new HashSet<>();
 		groupentries.addAll( ge );
 	}
 	
