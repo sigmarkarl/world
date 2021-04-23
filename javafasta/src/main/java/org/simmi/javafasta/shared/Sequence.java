@@ -384,7 +384,7 @@ public class Sequence extends FastaSequence implements Comparable<Sequence> {
 	
 	public void deleteAfter( Annotation cur ) {
 		int i = annset.indexOf( cur );
-		if( i != -1 && i < annset.size() && ((Tegeval)annset.get(i+1)).getGene() == null ) {
+		if( i != -1 && i < annset.size() && annset.get(i+1).getGene() == null ) {
 			annset.remove( i+1 );
 		}
 	}
