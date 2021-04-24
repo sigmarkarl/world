@@ -10,7 +10,8 @@ import java.util.stream.Collectors;
 public class Cog {
 	public static Map<String,String>	charcog = new HashMap<>();
 	public static Map<String,String>	cogchar = new HashMap<>();
-	public static Map<String,Set<String>> coggroups = new HashMap<>();
+	public static Map<String,Set<String>> coggroups = new TreeMap<>();
+	public static Map<String,String> coggroupshort = new HashMap<>();
 	public static Map<String,Color> charcogcol = new HashMap<>();
 	public static Map<String,String> mapToCog;
 	static {
@@ -20,10 +21,15 @@ public class Cog {
 			e.printStackTrace();
 		}
 
-		coggroups.put( "CELLULAR PROCESSES AND SIGNALING", new HashSet<>( Arrays.asList( new String[] {"D","M","N","O","T","U","V","W","Y","Z"} ) ) );
+		coggroups.put( "CELLULAR PROCESSES AND SIGNALING", new HashSet<>( Arrays.asList( new String[] {"D","M","N","O","T","U","V","W","X","Y","Z"} ) ) );
 		coggroups.put( "INFORMATION STORAGE AND PROCESSING", new HashSet<>( Arrays.asList( new String[] {"A","B","J","K","L"} ) ) );
 		coggroups.put( "METABOLISM", new HashSet<>( Arrays.asList( new String[] {"C","E","F","G","H","I","P","Q"} ) ) );
 		coggroups.put( "POORLY CHARACTERIZED", new HashSet<>( Arrays.asList( new String[] {"R","S","-"} ) ) );
+
+		coggroupshort.put("CELLULAR PROCESSES AND SIGNALING","CP");
+		coggroupshort.put("INFORMATION STORAGE AND PROCESSING","IS");
+		coggroupshort.put("METABOLISM","MB");
+		coggroupshort.put("POORLY CHARACTERIZED","PC");
 		
 		/*
 		CELLULAR PROCESSES AND SIGNALING
@@ -64,6 +70,7 @@ public class Cog {
 		charcog.put("V", "Defense mechanisms" );
 		charcog.put("W", "Extracellular structures" );
 		charcog.put("Y", "Nuclear structure" );
+		charcog.put("X", "Mobilome, prophages and transposons" );
 		charcog.put("Z", "Cytoskeleton" );
 		//INFORMATION STORAGE AND PROCESSING
 		charcog.put("A", "RNA processing and modification" );
@@ -103,6 +110,7 @@ public class Cog {
 		charcogcol.put("U", Color.decode("#ACFCAC"));
 		charcogcol.put("V", Color.decode("#FCFCBC"));
 		charcogcol.put("W", Color.decode("#BCFCAC"));
+		charcogcol.put("X", Color.decode("#555555"));
 		charcogcol.put("Y", Color.decode("#FCFCCC"));
 		charcogcol.put("Z", Color.decode("#CCFCAC"));
 		charcogcol.put("A", Color.decode("#FCDCFC"));
