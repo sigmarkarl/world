@@ -1287,7 +1287,7 @@ public class Serifier {
 		if (Files.isDirectory(osf)) {
 			if (sequences.size() > 0) {
 				Sequences seqs = sequences.get(0);
-				appendSequenceInJavaFasta(seqs, null, true);
+				appendSequenceInJavaFasta(seqs, true);
 
 				System.err.println(mseq.size());
 			}
@@ -2137,7 +2137,8 @@ public class Serifier {
 		return nseq;
 	}
 	
-	public void appendSequenceInJavaFasta( Sequences seqs, Map<String,Sequence> contset, boolean namefix ) {
+	public Map<String,Sequence> appendSequenceInJavaFasta( Sequences seqs, boolean namefix ) {
+		Map<String,Sequence> contset = new HashMap<String,Sequence>();
 		StringBuilder	dna = new StringBuilder();
 		//Map<String,String>	idmap = new HashMap<String,String>();
 		try {
@@ -2161,7 +2162,7 @@ public class Serifier {
 						addSequence(seq);
 						if (seq.getAnnotations() != null)
 							Collections.sort(seq.getAnnotations());
-						if( contset != null ) contset.put(cont, seq);
+						contset.put(cont, seq);
 					}
 					//System.err.println( seqs.getName() );
 					if( /*rr.length == 1*/ namefix ) {
@@ -2184,7 +2185,7 @@ public class Serifier {
 				addSequence(seq);
 				if (seq.getAnnotations() != null)
 					Collections.sort(seq.getAnnotations());
-				if( contset != null ) contset.put(cont, seq);
+				contset.put(cont, seq);
 			}
 			br.close();
 		} catch (IOException e1) {
@@ -2195,7 +2196,7 @@ public class Serifier {
 			Sequence s = mseq.get( m );
 			System.err.println( m + "    " + s.getName() );
 		}
-		//return idmap;
+		return contset;
 	}
 	
 	public void nameReplace( String one, String two ) {
@@ -2324,10 +2325,9 @@ public class Serifier {
 		//JavaFasta jf = new JavaFasta( null, this );
 		//jf.initDataStructures();
 		
-		List<Sequences>	retlseq = new ArrayList<Sequences>();
+		List<Sequences>	retlseq = new ArrayList<>();
 		for( Sequences seqs : lseqs ) {
-			Map<String,Sequence> contset = new HashMap<String,Sequence>();
-			appendSequenceInJavaFasta( seqs, contset, true );
+			Map<String,Sequence> contset = appendSequenceInJavaFasta( seqs, true );
 		
 			/*for (String contig : contset.keySet()) {
 				Sequence seq = contset.get(contig);
@@ -3026,7 +3026,7 @@ public class Serifier {
 		i = arglist.indexOf("-removegaps");
 		if( i >= 0 ) {
 			for( Sequences seqs : this.sequences ) {
-				appendSequenceInJavaFasta( seqs, null, true);
+				appendSequenceInJavaFasta( seqs, true);
 			}
 			removeGaps( lseq );
 			writeFasta( lseq, new FileWriter( outf ), null );
@@ -3035,7 +3035,7 @@ public class Serifier {
 		i = arglist.indexOf("-removeallgaps");
 		if( i >= 0 ) {
 			for( Sequences seqs : this.sequences ) {
-				appendSequenceInJavaFasta( seqs, null, true);
+				appendSequenceInJavaFasta( seqs,  true);
 			}
 			removeAllGaps( lseq );
 			writeFasta( lseq, new FileWriter( outf ), null );
@@ -3047,7 +3047,7 @@ public class Serifier {
 			int cutval = Integer.parseInt(args[i+2]);
 			
 			for( Sequences seqs : this.sequences ) {
-				appendSequenceInJavaFasta( seqs, null, true);
+				appendSequenceInJavaFasta( seqs, true);
 			}
 			FileWriter w = new FileWriter( outf );
 			writeFasta( lseq, w, new Rectangle(cutstart,0,cutval,0) );
@@ -3066,7 +3066,7 @@ public class Serifier {
 				index = Integer.parseInt(args[i+1]);
 			}
 			
-			appendSequenceInJavaFasta(this.sequences.get(0), null, true);
+			appendSequenceInJavaFasta(this.sequences.get(0), true);
 			for( Sequence seq : this.lseq ) {
 				seq.setName( seq.getName().split("[\t _]+")[index] );
 			}
@@ -3147,7 +3147,7 @@ public class Serifier {
 		if( i >= 0 ) {
 			int smplnum = Integer.parseInt( args[i+1] );
 			
-			appendSequenceInJavaFasta( this.sequences.get(0), null, true);
+			appendSequenceInJavaFasta( this.sequences.get(0), true);
 			List<Sequence> retseq = subsample( lseq, smplnum, true );
 			FileWriter fw = new FileWriter( outf );
 			writeFasta( retseq, fw, null);
@@ -3158,7 +3158,7 @@ public class Serifier {
 		if( i >= 0 ) {
 			int smplnum = Integer.parseInt( args[i+1] );
 			
-			appendSequenceInJavaFasta( this.sequences.get(0), null, true);
+			appendSequenceInJavaFasta( this.sequences.get(0), true);
 			List<Sequence> retseq = subsample( lseq, smplnum, false );
 			FileWriter fw = new FileWriter( outf );
 			writeFasta( retseq, fw, null);
@@ -3169,7 +3169,7 @@ public class Serifier {
 		if( i >= 0 ) {
 			Sequences ret = blastFilter( this.sequences.get(0), args[i+1], outf, false );
 			
-			appendSequenceInJavaFasta(ret, null, true);
+			appendSequenceInJavaFasta(ret, true);
 			FileWriter fw = new FileWriter( outf );
 			writeFasta( lseq, fw, null);
 			fw.close();
@@ -3179,7 +3179,7 @@ public class Serifier {
 		if( i >= 0 ) {
 			Sequences ret = blastRename( this.sequences.get(0), args[i+1], outf, false );
 			
-			appendSequenceInJavaFasta(ret, null, true);
+			appendSequenceInJavaFasta(ret, true);
 			FileWriter fw = new FileWriter( outf );
 			writeFasta( lseq, fw, null);
 			fw.close();
@@ -3189,7 +3189,7 @@ public class Serifier {
 		if( i >= 0 ) {
 			//Sequences ret = blastRename( this.sequences.get(0), args[i+1], outf, false );
 			
-			appendSequenceInJavaFasta(this.sequences.get(0), null, true);
+			appendSequenceInJavaFasta(this.sequences.get(0), true);
 			Map<String,Integer>	countMap = new HashMap<String,Integer>();
 			for( Sequence seq : this.lseq ) {
 				int count = 0;
@@ -3264,7 +3264,7 @@ public class Serifier {
 		if( i >= 0 ) {
 			Sequences ret = blastRename( this.sequences.get(0), args[i+1], outf, false );
 			
-			appendSequenceInJavaFasta(ret, null, true);
+			appendSequenceInJavaFasta(ret, true);
 			FileWriter fw = new FileWriter( outf );
 			writeFasta( lseq, fw, null);
 			fw.close();
@@ -3274,7 +3274,7 @@ public class Serifier {
 		if( i >= 0 ) {
 			Sequences ret = blastRename( this.sequences.get(0), args[i+1], outf, true );
 			
-			appendSequenceInJavaFasta(ret, null, true);
+			appendSequenceInJavaFasta(ret, true);
 			FileWriter fw = new FileWriter( outf );
 			writeFasta( lseq, fw, null);
 			fw.close();
@@ -3284,7 +3284,7 @@ public class Serifier {
 		if( i >= 0 ) {
 			List<Sequences> retlseqs = fastTreePrepare( this.sequences );
 			for( Sequences seqs : retlseqs ) {
-				appendSequenceInJavaFasta( seqs, null, true);
+				appendSequenceInJavaFasta( seqs, true);
 			}
 			FileWriter fw = new FileWriter( outf );
 			writeFasta( lseq, fw, null);
@@ -3470,7 +3470,7 @@ public class Serifier {
 			float id = Float.parseFloat( args[i+3] );//100.0f;
 			float len = Float.parseFloat( args[i+4] );//100.0f;
 			
-			Map<String,String> idspecmap = new HashMap<String,String>();
+			Map<String,String> idspecmap = new HashMap<>();
 			String idspecfile = args[i+5];
 			List<String> lines = Files.readAllLines( Paths.get(idspecfile) );
 			for( String line : lines ) {
@@ -3478,7 +3478,7 @@ public class Serifier {
 				if( split.length > 1 ) idspecmap.put(split[0], split[1]);
 			}
 			
-			List<Set<String>> total = new ArrayList<Set<String>>();
+			List<Set<String>> total = new ArrayList<>();
 			makeBlastCluster( /*inf,*/ outf.toPath(), Collections.singletonList(Paths.get(blastfile)), splnum, id, len, idspecmap, total, null );
 			//for( Sequences seqs : this.sequences ) {
 				//seqs.setNSeq( countSequences( inf ) );
@@ -3499,7 +3499,7 @@ public class Serifier {
 			
 			//makeBlastCluster( /*inf,*/ outf.toPath(), Paths.get(blastfile), splnum );
 			for( Sequences seqs : this.sequences ) {
-				appendSequenceInJavaFasta(seqs, null, true);
+				appendSequenceInJavaFasta(seqs, true);
 				//seqs.setNSeq( countSequences( inf ) );
 				//List<Sequences> retlseqs = splitit( splnum, seqs, outf == null ? new File(".") : outf );
 				/*for( Sequences nseqs : retlseqs ) {
@@ -3522,7 +3522,7 @@ public class Serifier {
 			
 			//makeBlastCluster( /*inf,*/ outf.toPath(), Paths.get(blastfile), splnum );
 			for( Sequences seqs : this.sequences ) {
-				appendSequenceInJavaFasta(seqs, null, true);
+				appendSequenceInJavaFasta(seqs, true);
 				//seqs.setNSeq( countSequences( inf ) );
 				//List<Sequences> retlseqs = splitit( splnum, seqs, outf == null ? new File(".") : outf );
 				/*for( Sequences nseqs : retlseqs ) {
@@ -3544,7 +3544,7 @@ public class Serifier {
 			
 			//makeBlastCluster( /*inf,*/ outf.toPath(), Paths.get(blastfile), splnum );
 			for( Sequences seqs : this.sequences ) {
-				appendSequenceInJavaFasta(seqs, null, false);
+				appendSequenceInJavaFasta(seqs, false);
 				
 				int c = count;
 				while( c > 0 ) {
@@ -3570,7 +3570,7 @@ public class Serifier {
 		i = arglist.indexOf("-utreplace");
 		if( i >= 0 ) {
 			for( Sequences seqs : this.sequences ) {
-				appendSequenceInJavaFasta(seqs, null, true);
+				appendSequenceInJavaFasta(seqs, true);
 				
 				//seqs.setNSeq( countSequences( inf ) );
 				//List<Sequences> retlseqs = splitit( splnum, seqs, outf == null ? new File(".") : outf );
@@ -3631,7 +3631,7 @@ public class Serifier {
 	Map<String,Double>	snaedis8phmap;
 	
 	public void initMaps() {		
-		snaedis1map = new HashMap<String,String>();
+		snaedis1map = new HashMap<>();
 		snaedis1map.put( "770_geysir_north_jardvegur", "ACGAGTGCGT" );
 		snaedis1map.put( "770_geysir_north_vatn", "ACGCTCGACA" );
 		snaedis1map.put( "771_geysir_north_jardvegur", "AGACGCACTC" );
@@ -3643,7 +3643,7 @@ public class Serifier {
 		snaedis1map.put( "774_geysir_west_jardvegur", "TGATACGTCT" );
 		snaedis1map.put( "774_geysir_west_vatn", "TCTCTATGCG" );
 		
-		snaedis2map = new HashMap<String,String>();
+		snaedis2map = new HashMap<>();
 		snaedis2map.put( "775_geysir_west_jardvegur", "ACGAGTGCGT" );
 		snaedis2map.put( "775_geysir_west_vatn", "ACGCTCGACA" );
 		snaedis2map.put( "776_geysir_west_jardvegur", "AGACGCACTC" );
@@ -3655,7 +3655,7 @@ public class Serifier {
 		snaedis2map.put( "779_fludir_jardvegur", "TGATACGTCT" );
 		snaedis2map.put( "779_fludir_vatn", "TCTCTATGCG" );
 		
-		snaedis3map = new HashMap<String,String>();
+		snaedis3map = new HashMap<>();
 		snaedis3map.put( "780_fludir_jardvegur", "ACGAGTGCGT" );
 		snaedis3map.put( "780_fludir_vatn", "ACGCTCGACA" );
 		snaedis3map.put( "781_olkelduhals_vatn", "AGACGCACTC" );
@@ -3667,7 +3667,7 @@ public class Serifier {
 		snaedis3map.put( "808_hrafntinnusker_vatn", "TGATACGTCT" );
 		snaedis3map.put( "808_hrafntinnusker_lifmassi", "TCTCTATGCG" );
 		
-		snaedis4map = new HashMap<String,String>();
+		snaedis4map = new HashMap<>();
 		snaedis4map.put( "809_hrafntinnusker_jardvegur", "ACGAGTGCGT" );
 		snaedis4map.put( "809_hrafntinnusker_vatn", "ACGCTCGACA" );
 		snaedis4map.put( "809_hrafntinnusker_lifmassi", "AGACGCACTC" );
@@ -3679,7 +3679,7 @@ public class Serifier {
 		snaedis4map.put( "811_hrafntinnusker_lifmassi", "TGATACGTCT" );
 		snaedis4map.put( "812_hrafntinnusker_jardvegur", "TCTCTATGCG" );
 	
-		snaedis5map = new HashMap<String,String>();
+		snaedis5map = new HashMap<>();
 		snaedis5map.put( "812_hrafntinnusker_vatn", "ACGAGTGCGT" );
 		snaedis5map.put( "813_hrafntinnusker_jardvegur", "ACGCTCGACA" );
 		snaedis5map.put( "813_hrafntinnusker_vatn", "AGACGCACTC" );
@@ -3691,7 +3691,7 @@ public class Serifier {
 		snaedis5map.put( "816_vondugil_jardvegur", "TGATACGTCT" );
 		snaedis5map.put( "816_vondugil_vatn", "TCTCTATGCG" );
 		
-		snaedis6map = new HashMap<String,String>();
+		snaedis6map = new HashMap<>();
 		snaedis6map.put( "817_vondugil_jardvegur", "ACGAGTGCGT" );
 		snaedis6map.put( "817_vondugil_vatn", "ACGCTCGACA" );
 		snaedis6map.put( "818_vondugil_jardvegur", "AGACGCACTC" );
@@ -3703,7 +3703,7 @@ public class Serifier {
 		snaedis6map.put( "821_vondugil_jardvegur", "TGATACGTCT" );
 		snaedis6map.put( "821_vondugil_vatn", "TCTCTATGCG" );
 		
-		snaedis7map = new HashMap<String,String>();
+		snaedis7map = new HashMap<>();
 		snaedis7map.put( "846_hurdarbak_jardvegur", "ACGAGTGCGT" );
 		snaedis7map.put( "846_hurdarbak_vatn", "ACGCTCGACA" );
 		snaedis7map.put( "846_hurdarbak_lifmassi", "AGACGCACTC" );
@@ -3715,7 +3715,7 @@ public class Serifier {
 		snaedis7map.put( "849_kleppjarnsreykir_jardvegur", "TGATACGTCT" );
 		snaedis7map.put( "849_kleppjarnsreykir_vatn", "TCTCTATGCG" );
 	
-		snaedis8map = new HashMap<String,String>();
+		snaedis8map = new HashMap<>();
 		snaedis8map.put( "849_kleppjarnsreykir_lifmassi", "ACGAGTGCGT" );
 		snaedis8map.put( "850_kleppjarnsreykir_jardvegur", "ACGCTCGACA" );
 		snaedis8map.put( "850_kleppjarnsreykir_vatn", "AGACGCACTC" );
@@ -3727,7 +3727,7 @@ public class Serifier {
 		
 		
 		
-		snaedis1colormap = new HashMap<String,String>();
+		snaedis1colormap = new HashMap<>();
 		snaedis1colormap.put( "770_geysir_north_jardvegur", "0.0\t0.5\t1.0\n" );
 		snaedis1colormap.put( "770_geysir_north_vatn", "0.0\t0.5\t1.0\n" );
 		snaedis1colormap.put( "771_geysir_north_jardvegur", "0.0\t0.5\t1.0\n" );
@@ -3739,7 +3739,7 @@ public class Serifier {
 		snaedis1colormap.put( "774_geysir_west_jardvegur", "0.0\t1.0\t0.5\n" );
 		snaedis1colormap.put( "774_geysir_west_vatn", "0.0\t1.0\t0.5\n" );
 		
-		snaedis1heatmap = new HashMap<String,Double>();
+		snaedis1heatmap = new HashMap<>();
 		snaedis1heatmap.put( "770_geysir_north_jardvegur", 83.0 );
 		snaedis1heatmap.put( "770_geysir_north_vatn", 83.0 );
 		snaedis1heatmap.put( "771_geysir_north_jardvegur", 72.0 );
@@ -3751,7 +3751,7 @@ public class Serifier {
 		snaedis1heatmap.put( "774_geysir_west_jardvegur", 88.0 );
 		snaedis1heatmap.put( "774_geysir_west_vatn", 88.0 );
 		
-		snaedis1phmap = new HashMap<String,Double>();
+		snaedis1phmap = new HashMap<>();
 		snaedis1phmap.put( "770_geysir_north_jardvegur", 6.75 );
 		snaedis1phmap.put( "770_geysir_north_vatn", 6.75 );
 		snaedis1phmap.put( "771_geysir_north_jardvegur", 6.0 );
@@ -3765,7 +3765,7 @@ public class Serifier {
 		
 		
 		
-		snaedis2colormap = new HashMap<String,String>();
+		snaedis2colormap = new HashMap<>();
 		snaedis2colormap.put( "775_geysir_west_jardvegur", "0.0\t1.0\t0.5\n" );
 		snaedis2colormap.put( "775_geysir_west_vatn", "0.0\t1.0\t0.5\n" );
 		snaedis2colormap.put( "776_geysir_west_jardvegur", "0.0\t1.0\t0.5\n" );
@@ -3777,7 +3777,7 @@ public class Serifier {
 		snaedis2colormap.put( "779_fludir_jardvegur", "1.0\t0.0\t1.0\n" );
 		snaedis2colormap.put( "779_fludir_vatn", "1.0\t0.0\t1.0\n" );
 		
-		snaedis2heatmap = new HashMap<String,Double>();
+		snaedis2heatmap = new HashMap<>();
 		snaedis2heatmap.put( "775_geysir_west_jardvegur", 83.0 );
 		snaedis2heatmap.put( "775_geysir_west_vatn", 83.0 );
 		snaedis2heatmap.put( "776_geysir_west_jardvegur", 88.0 );
@@ -3789,7 +3789,7 @@ public class Serifier {
 		snaedis2heatmap.put( "779_fludir_jardvegur", 79.1 );
 		snaedis2heatmap.put( "779_fludir_vatn", 79.1 );
 		
-		snaedis2phmap = new HashMap<String,Double>();
+		snaedis2phmap = new HashMap<>();
 		snaedis2phmap.put( "775_geysir_west_jardvegur", 9.0 );
 		snaedis2phmap.put( "775_geysir_west_vatn", 9.0 );
 		snaedis2phmap.put( "776_geysir_west_jardvegur", 7.0 );
@@ -3803,7 +3803,7 @@ public class Serifier {
 		
 		
 		
-		snaedis3colormap = new HashMap<String,String>();
+		snaedis3colormap = new HashMap<>();
 		snaedis3colormap.put( "780_fludir_jardvegur", "1.0\t0.0\t1.0\n" );
 		snaedis3colormap.put( "780_fludir_vatn", "1.0\t0.0\t1.0\n" );
 		snaedis3colormap.put( "781_olkelduhals_vatn", "1.0\t1.0\t0.0\n" );
@@ -3815,7 +3815,7 @@ public class Serifier {
 		snaedis3colormap.put( "808_hrafntinnusker_vatn", "0.0\t0.0\t1.0\n" );
 		snaedis3colormap.put( "808_hrafntinnusker_lifmassi", "0.0\t0.0\t1.0\n" );
 		
-		snaedis3heatmap = new HashMap<String,Double>();
+		snaedis3heatmap = new HashMap<>();
 		snaedis3heatmap.put( "780_fludir_jardvegur", 87.6 );
 		snaedis3heatmap.put( "780_fludir_vatn", 87.6 );
 		snaedis3heatmap.put( "781_olkelduhals_vatn", 70.0 );
@@ -3827,7 +3827,7 @@ public class Serifier {
 		snaedis3heatmap.put( "808_hrafntinnusker_vatn", 72.0 );
 		snaedis3heatmap.put( "808_hrafntinnusker_lifmassi", 72.0 );
 		
-		snaedis3phmap = new HashMap<String,Double>();
+		snaedis3phmap = new HashMap<>();
 		snaedis3phmap.put( "780_fludir_jardvegur", 8.5 );
 		snaedis3phmap.put( "780_fludir_vatn", 8.5 );
 		snaedis3phmap.put( "781_olkelduhals_vatn", 6.5 );
@@ -3841,7 +3841,7 @@ public class Serifier {
 		
 		
 		
-		snaedis4colormap = new HashMap<String,String>();
+		snaedis4colormap = new HashMap<>();
 		snaedis4colormap.put( "809_hrafntinnusker_jardvegur", "0.0\t0.0\t1.0\n" );
 		snaedis4colormap.put( "809_hrafntinnusker_vatn", "0.0\t0.0\t1.0\n" );
 		snaedis4colormap.put( "809_hrafntinnusker_lifmassi", "0.0\t0.0\t1.0\n" );
@@ -3853,7 +3853,7 @@ public class Serifier {
 		snaedis4colormap.put( "811_hrafntinnusker_lifmassi", "0.0\t0.0\t1.0\n" );
 		snaedis4colormap.put( "812_hrafntinnusker_jardvegur", "0.0\t0.0\t1.0\n" );
 		
-		snaedis4heatmap = new HashMap<String,Double>();
+		snaedis4heatmap = new HashMap<>();
 		snaedis4heatmap.put( "809_hrafntinnusker_jardvegur", 63.5 );
 		snaedis4heatmap.put( "809_hrafntinnusker_vatn", 63.5 );
 		snaedis4heatmap.put( "809_hrafntinnusker_lifmassi", 63.5 );
@@ -3865,7 +3865,7 @@ public class Serifier {
 		snaedis4heatmap.put( "811_hrafntinnusker_lifmassi", 71.1 );
 		snaedis4heatmap.put( "812_hrafntinnusker_jardvegur", 68.3 );
 		
-		snaedis4phmap = new HashMap<String,Double>();
+		snaedis4phmap = new HashMap<>();
 		snaedis4phmap.put( "809_hrafntinnusker_jardvegur", 6.0 );
 		snaedis4phmap.put( "809_hrafntinnusker_vatn", 6.0 );
 		snaedis4phmap.put( "809_hrafntinnusker_lifmassi", 6.0 );
@@ -3879,7 +3879,7 @@ public class Serifier {
 		
 		
 		
-		snaedis5colormap = new HashMap<String,String>();
+		snaedis5colormap = new HashMap<>();
 		snaedis5colormap.put( "812_hrafntinnusker_vatn", "0.0\t0.0\t1.0\n" );
 		snaedis5colormap.put( "813_hrafntinnusker_jardvegur", "0.0\t0.0\t1.0\n" );
 		snaedis5colormap.put( "813_hrafntinnusker_vatn", "0.0\t0.0\t1.0\n" );
@@ -3891,7 +3891,7 @@ public class Serifier {
 		snaedis5colormap.put( "816_vondugil_jardvegur", "1.0\t0.0\t0.0\n" );
 		snaedis5colormap.put( "816_vondugil_vatn", "1.0\t0.0\t0.0\n" );
 	
-		snaedis5heatmap = new HashMap<String,Double>();
+		snaedis5heatmap = new HashMap<>();
 		snaedis5heatmap.put( "812_hrafntinnusker_vatn", 68.3 );
 		snaedis5heatmap.put( "813_hrafntinnusker_jardvegur", 71.5 );
 		snaedis5heatmap.put( "813_hrafntinnusker_vatn", 71.5 );
@@ -3903,7 +3903,7 @@ public class Serifier {
 		snaedis5heatmap.put( "816_vondugil_jardvegur", 78.0 );
 		snaedis5heatmap.put( "816_vondugil_vatn", 78.0 );
 	
-		snaedis5phmap = new HashMap<String,Double>();
+		snaedis5phmap = new HashMap<>();
 		snaedis5phmap.put( "812_hrafntinnusker_vatn", 6.0 );
 		snaedis5phmap.put( "813_hrafntinnusker_jardvegur", 5.75 );
 		snaedis5phmap.put( "813_hrafntinnusker_vatn", 5.75 );
@@ -3917,7 +3917,7 @@ public class Serifier {
 		
 		
 				
-		snaedis6colormap = new HashMap<String,String>();
+		snaedis6colormap = new HashMap<>();
 		snaedis6colormap.put( "817_vondugil_jardvegur", "1.0\t0.0\t0.0\n" );
 		snaedis6colormap.put( "817_vondugil_vatn", "1.0\t0.0\t0.0\n" );
 		snaedis6colormap.put( "818_vondugil_jardvegur", "1.0\t0.0\t0.0\n" );
@@ -3929,7 +3929,7 @@ public class Serifier {
 		snaedis6colormap.put( "821_vondugil_jardvegur", "1.0\t0.0\t0.0\n" );
 		snaedis6colormap.put( "821_vondugil_vatn", "1.0\t0.0\t0.0\n" );
 		
-		snaedis6heatmap = new HashMap<String,Double>();
+		snaedis6heatmap = new HashMap<>();
 		snaedis6heatmap.put( "817_vondugil_jardvegur", 75.7 );
 		snaedis6heatmap.put( "817_vondugil_vatn", 75.7 );
 		snaedis6heatmap.put( "818_vondugil_jardvegur", 78.5 );
@@ -3941,7 +3941,7 @@ public class Serifier {
 		snaedis6heatmap.put( "821_vondugil_jardvegur", 79.0 );
 		snaedis6heatmap.put( "821_vondugil_vatn", 79.0 );
 	
-		snaedis6phmap = new HashMap<String,Double>();
+		snaedis6phmap = new HashMap<>();
 		snaedis6phmap.put( "817_vondugil_jardvegur", 9.0 );
 		snaedis6phmap.put( "817_vondugil_vatn", 9.0 );
 		snaedis6phmap.put( "818_vondugil_jardvegur", 8.5 );
@@ -3955,7 +3955,7 @@ public class Serifier {
 		
 		
 		
-		snaedis7colormap = new HashMap<String,String>();
+		snaedis7colormap = new HashMap<>();
 		snaedis7colormap.put( "846_hurdarbak_jardvegur", "1.0\t0.0\t0.5\n" );
 		snaedis7colormap.put( "846_hurdarbak_vatn", "1.0\t0.0\t0.5\n" );
 		snaedis7colormap.put( "846_hurdarbak_lifmassi", "1.0\t0.0\t0.5\n" );
@@ -3967,7 +3967,7 @@ public class Serifier {
 		snaedis7colormap.put( "849_kleppjarnsreykir_jardvegur", "1.0\t0.5\t0.0\n" );
 		snaedis7colormap.put( "849_kleppjarnsreykir_vatn", "1.0\t0.5\t0.0\n" );
 		
-		snaedis7heatmap = new HashMap<String,Double>();
+		snaedis7heatmap = new HashMap<>();
 		snaedis7heatmap.put( "846_hurdarbak_jardvegur", 80.5 );
 		snaedis7heatmap.put( "846_hurdarbak_vatn", 80.5 );
 		snaedis7heatmap.put( "846_hurdarbak_lifmassi", 80.5 );
@@ -3979,7 +3979,7 @@ public class Serifier {
 		snaedis7heatmap.put( "849_kleppjarnsreykir_jardvegur", 76.8 );
 		snaedis7heatmap.put( "849_kleppjarnsreykir_vatn", 76.8 );
 		
-		snaedis7phmap = new HashMap<String,Double>();
+		snaedis7phmap = new HashMap<>();
 		snaedis7phmap.put( "846_hurdarbak_jardvegur", 8.0 );
 		snaedis7phmap.put( "846_hurdarbak_vatn", 8.0 );
 		snaedis7phmap.put( "846_hurdarbak_lifmassi", 8.0 );
@@ -3993,7 +3993,7 @@ public class Serifier {
 		
 		
 		
-		snaedis8colormap = new HashMap<String,String>();
+		snaedis8colormap = new HashMap<>();
 		snaedis8colormap.put( "849_kleppjarnsreykir_lifmassi", "1.0\t0.5\t0.0\n" );
 		snaedis8colormap.put( "850_kleppjarnsreykir_jardvegur", "1.0\t0.5\t0.0\n" );
 		snaedis8colormap.put( "850_kleppjarnsreykir_vatn", "1.0\t0.5\t0.0\n" );
@@ -4003,7 +4003,7 @@ public class Serifier {
 		snaedis8colormap.put( "852_deildartunguhver_jardvegur", "0.5\t0.0\t0.5\n" );
 		snaedis8colormap.put( "852_deildartunguhver_vatn", "0.5\t0.0\t0.5\n" );
 		
-		snaedis8heatmap = new HashMap<String,Double>();
+		snaedis8heatmap = new HashMap<>();
 		snaedis8heatmap.put( "849_kleppjarnsreykir_lifmassi", 76.8 );
 		snaedis8heatmap.put( "850_kleppjarnsreykir_jardvegur", 65.8 );
 		snaedis8heatmap.put( "850_kleppjarnsreykir_vatn", 65.8 );
@@ -4013,7 +4013,7 @@ public class Serifier {
 		snaedis8heatmap.put( "852_deildartunguhver_jardvegur", 86.1 );
 		snaedis8heatmap.put( "852_deildartunguhver_vatn", 86.1 );
 		
-		snaedis8phmap = new HashMap<String,Double>();
+		snaedis8phmap = new HashMap<>();
 		snaedis8phmap.put( "849_kleppjarnsreykir_lifmassi", 7.5 );
 		snaedis8phmap.put( "850_kleppjarnsreykir_jardvegur", 8.5 );
 		snaedis8phmap.put( "850_kleppjarnsreykir_vatn", 8.5 );
@@ -4023,10 +4023,10 @@ public class Serifier {
 		snaedis8phmap.put( "852_deildartunguhver_jardvegur", 8.5 );
 		snaedis8phmap.put( "852_deildartunguhver_vatn", 8.5 );
 		
-		snaedismap = new HashMap<String,String>();
-		snaediscolormap = new HashMap<String,String>();
-		snaedisphmap = new HashMap<String,Double>();
-		snaedisheatmap = new HashMap<String,Double>();
+		snaedismap = new HashMap<>();
+		snaediscolormap = new HashMap<>();
+		snaedisphmap = new HashMap<>();
+		snaedisheatmap = new HashMap<>();
 		
 		Map[] maps = {snaedis1map,snaedis2map,snaedis3map,snaedis4map,snaedis5map,snaedis6map,snaedis7map,snaedis8map};
 		Map[] heatmaps = {snaedis1heatmap,snaedis2heatmap,snaedis3heatmap,snaedis4heatmap,snaedis5heatmap,snaedis6heatmap,snaedis7heatmap,snaedis8heatmap};

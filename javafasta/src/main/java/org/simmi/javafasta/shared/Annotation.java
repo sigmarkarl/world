@@ -93,7 +93,7 @@ public class Annotation implements Comparable<Object> {
 		id = a.id;
 		group = a.group;
 		desc = new StringBuilder( a.desc );
-		gene = a.gene;
+		gene = a.getGene();
 		designation = a.designation;
 		eval = a.eval;
 		num = a.num;
@@ -221,12 +221,12 @@ public class Annotation implements Comparable<Object> {
 		return new Color( (float)Math.min( 1.0, Math.max( 0.0, 0.5+5.0*gcskew ) ), 0.5f, (float)Math.min( 1.0, Math.max( 0.0, 0.5-5.0*gcskew ) ) );
 	}
 	
-	public void setGene( Gene gene ) {
-		this.gene = gene;
+	public void setGene( Gene gen ) {
+		gene = gen;
 	}
 	
 	public Gene getGene() {
-		return this.gene;
+		return gene;
 	}
 	
 	public Sequence getProteinSequence() {

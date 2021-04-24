@@ -160,7 +160,7 @@ public class Cog {
 				this.annotation = annotation.substring(i+1);
 			} else this.annotation = annotation;
 		}
-		cogsymbol = mapToCog.getOrDefault(this.id, symbol.equals("-") ? "S" : symbol);
+		if(mapToCog!=null) cogsymbol = mapToCog.getOrDefault(this.id, symbol.equals("-") ? "S" : symbol);
 	}
 	
 	public String	id;
