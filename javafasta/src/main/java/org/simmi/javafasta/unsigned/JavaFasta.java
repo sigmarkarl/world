@@ -171,7 +171,7 @@ public class JavaFasta extends JPanel {
 						char chr = line.charAt(0);
 						if (chr == ' ') {
 							abet = split;
-							abet[abet.length - 1] = "-";
+							if (includeDash) abet[abet.length - 1] = "-";
 						} else {
 							if (includeDash && chr == '*') chr = '-';
 							int k = 0;
@@ -187,7 +187,8 @@ public class JavaFasta extends JPanel {
 				e.printStackTrace();
 			}
 		}
-		
+
+		blosumap.remove("--");
 		return blosumap;
 	}
 
