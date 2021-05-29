@@ -24,7 +24,7 @@ public class Tegeval extends Annotation implements Teg {
 		super(type);
 		Gene gene = new Gene();
 		setGene(gene);
-		gene.tegeval = this;
+		gene.setTegeval(this);
 	}
 	
 	public void init( String contig, Sequence shortcontig, int sta, int sto, int orient ) {

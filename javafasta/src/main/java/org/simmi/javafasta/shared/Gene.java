@@ -89,7 +89,11 @@ public class Gene {
 	}
 	
 	public GeneGroup getGeneGroup() {
-		return tegeval.gg;
+		return tegeval.getGeneGroup();
+	}
+
+	public void setGeneGroup(GeneGroup gg) {
+		tegeval.setGeneGroup(gg);
 	}
 	
 	public int getGroupIndex() {
@@ -145,8 +149,12 @@ public class Gene {
 	public double getGCPerc() {
 		return tegeval.getGCPerc();
 	}
-	
-	public void setTegeval( Tegeval tegeval ) {
+
+	public Annotation getTegeval() {
+		return tegeval;
+	}
+
+	public void setTegeval( Annotation tegeval ) {
 		/*Teginfo ti;
 		if( species == null ) species = new HashMap<String,Teginfo>();
 		if( species.containsKey( tegeval.teg ) ) {
@@ -155,7 +163,10 @@ public class Gene {
 			ti = new Teginfo();
 			species.put( tegeval.teg, ti );
 		}*/
-		this.tegeval = tegeval;
+		if(this.tegeval != tegeval) {
+			this.tegeval = tegeval;
+			this.tegeval.setGene(this);
+		}
 		//if( teginfo == null ) teginfo = new Teginfo();
 		//teginfo.add( tegeval );
 	}
@@ -275,7 +286,7 @@ public class Gene {
 	public String blastspec;
 	public Set<Function> funcentries;
 	//Map<String, Teginfo> species;
-	public Annotation tegeval;
+	private Annotation tegeval;
 	private String aac;
 	public int index;
 	public boolean signalp = false;

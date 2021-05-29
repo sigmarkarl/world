@@ -222,7 +222,10 @@ public class Annotation implements Comparable<Object> {
 	}
 	
 	public void setGene( Gene gen ) {
-		gene = gen;
+		if(gene!=gen) {
+			gene = gen;
+			gene.setTegeval(this);
+		}
 	}
 	
 	public Gene getGene() {
