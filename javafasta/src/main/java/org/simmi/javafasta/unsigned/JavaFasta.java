@@ -3960,14 +3960,14 @@ public class JavaFasta extends JPanel {
 		    		
 		    		//"--localpair"
 			    	ProcessBuilder pb;
-			    	if( hostname.contains("localhost") ) pb = new ProcessBuilder("/usr/local/bin/mafft","--thread","4",filename); //, "-in", "tmp.fasta", "-out", "tmpout.fasta");
+			    	if( hostname.contains("localhost") ) pb = new ProcessBuilder("/usr/local/bin/mafft","--thread",Integer.toString(Runtime.getRuntime().availableProcessors()),filename); //, "-in", "tmp.fasta", "-out", "tmpout.fasta");
 			    	else {
 			    		ProcessBuilder pbt = new ProcessBuilder("scp", "-q", filename, username+"@"+hostname+":~/"+filename);
 			    		pbt.directory( tmpdir.toFile() );
 						Process pc = pbt.start();
 						pc.waitFor();
 						
-			    		pb = new ProcessBuilder("ssh",username+"@"+hostname,"mafft","--thread","4",filename);
+			    		pb = new ProcessBuilder("ssh",username+"@"+hostname,"mafft","--thread",Integer.toString(Runtime.getRuntime().availableProcessors()),filename);
 			    	}
 			    	//ProcessBuilder pb = new ProcessBuilder("/usr/local/bin/mafft","--thread","32","--localpair",mafftp.getFileName().toString()); //, "-in", "tmp.fasta", "-out", "tmpout.fasta");
 			    	
@@ -3975,25 +3975,23 @@ public class JavaFasta extends JPanel {
 			    	//pb.redirectErrorStream(true);
 			    	final Process p = pb.start();
 			    	
-			    	Thread t = new Thread() {
-			    		public void run() {
-			    			InputStream is = p.getErrorStream();
-			    			try {
-			    				ByteArrayOutputStream baos = new ByteArrayOutputStream();
-			    				int r = is.read();
-								while( r != -1 ) {
-									baos.write(r);
-									r = is.read();
-								}
-								is.close();
-								baos.close();
-
-								System.err.println( "error " + baos.toString() );
-							} catch (IOException e) {
-								e.printStackTrace();
+			    	Thread t = new Thread(() -> {
+						InputStream is = p.getErrorStream();
+						try {
+							ByteArrayOutputStream baos1 = new ByteArrayOutputStream();
+							int r = is.read();
+							while( r != -1 ) {
+								baos1.write(r);
+								r = is.read();
 							}
-			    		}
-			    	};
+							is.close();
+							baos1.close();
+
+							System.err.println( "error " + baos1);
+						} catch (IOException e) {
+							e.printStackTrace();
+						}
+					});
 			    	t.start();
 			    	
 			    	/*t = new Thread() {
