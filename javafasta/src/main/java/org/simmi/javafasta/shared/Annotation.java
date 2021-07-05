@@ -238,6 +238,7 @@ public class Annotation implements Comparable<Object> {
 			int i = this.name.indexOf(' ');
 			if( i != -1 ) ret.setName( this.name.substring(0,i) + " # " + this.start + " # " + this.stop + " # " + this.ori + " #" );
 			else ret.setName( this.name );
+			ret.setId(this.id);
 		}
 		return ret;
 	}

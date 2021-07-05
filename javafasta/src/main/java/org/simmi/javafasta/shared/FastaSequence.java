@@ -70,6 +70,17 @@ public class FastaSequence {
         }
     }
 
+    public void writeIdSequence( Writer fw, int gap, boolean italic ) throws IOException {
+        if( italic ) fw.write("><i>"+id+"</i>\n");
+        else fw.write(">"+id+"\n");
+        for( int k = 0; k < sb.length(); k+=gap ) {
+            int m = Math.min(sb.length(), k+gap);
+            String substr = sb.substring(k, m);
+            //(seq.sb.length() == k+70 ? "")
+            fw.write( substr+"\n" );
+        }
+    }
+
     public String asFasta() throws IOException {
         StringWriter sw = new StringWriter();
         writeSequence(sw);
@@ -86,6 +97,10 @@ public class FastaSequence {
         StringWriter sw = new StringWriter();
         writeSplitSequence(sw, Optional.empty());
         return sw.toString();
+    }
+
+    public void writeIdSequence( Writer fw ) throws IOException {
+        writeIdSequence( fw, 70, false );
     }
 
     public void writeSequence( Appendable fw ) throws IOException {
