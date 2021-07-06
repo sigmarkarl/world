@@ -273,6 +273,8 @@ public class Gene {
 	public String idstr;
 	public Cog cog;
 	public Cog pfam;
+	public String cazy;
+	public String pfamid;
 	public Set<String> allids;
 	public String genid;
 	public String uniid;

@@ -428,7 +428,7 @@ public class GeneGroup {
 		return cog != null ? cog.cogsymbol : null;
 	}
 
-	public Cog getPfam( Map<String,Cog> pfammap ) {
+	public Cog getPfamId( Map<String,Cog> pfammap ) {
 		for( Annotation a : genes ) {
 			if( pfammap.containsKey( a.id ) ) return pfammap.get( a.id );
 		}
@@ -440,11 +440,11 @@ public class GeneGroup {
 	}
 
 	public String getPfamname() {
-		Cog pfam = getPfam( pfammap );
+		Cog pfam = getPfamId( pfammap );
 		return pfam != null ? pfam.name : null;
 	}
 
-	public String getPfam() {
+	public String getPfamId() {
 		Cog pfam = getCog( pfammap );
 		return pfam != null ? pfam.id : null;
 	}
@@ -455,7 +455,7 @@ public class GeneGroup {
 	}
 
 	public String getPfamsymbol() {
-		Cog pfam = getPfam( pfammap );
+		Cog pfam = getPfamId( pfammap );
 		return pfam != null ? pfam.genesymbol : null;
 	}
 	
@@ -466,6 +466,14 @@ public class GeneGroup {
 	public String getCommonCazy( Map<String,String> cazymap ) {
 		for( Annotation a : genes ) {
 			if( cazymap.containsKey( a.id ) ) return cazymap.get( a.id );
+		}
+		return null;
+	}
+
+	public String getCazy() {
+		for( Annotation a : genes ) {
+			Gene g = a.getGene();
+			if( g != null && g.cazy != null && g.cazy.length() > 0 ) return g.cazy;
 		}
 		return null;
 	}
@@ -605,6 +613,14 @@ public class GeneGroup {
 		}
 		return null;
 	}
+
+	public String getPfam() {
+		for( Annotation a : genes ) {
+			Gene g = a.getGene();
+			if( g != null && g.pfamid != null && g.pfamid.length() > 0 ) return g.pfamid;
+		}
+		return null;
+	}
 	
 	public String getCommonSignalP() {
 		for( Annotation a : genes ) {
@@ -629,6 +645,18 @@ public class GeneGroup {
 			if( g != null && g.keggid != null ) {
 				if( ret.length() == 0 ) ret.append(g.keggid);
 				else ret.append(" ").append(g.keggid);
+			}
+		}
+		return ret.toString();
+	}
+
+	public String getGoid() {
+		StringBuilder ret = new StringBuilder();
+		for( Annotation a : genes ) {
+			Gene g = a.getGene();
+			if( g != null && g.goid != null ) {
+				if( ret.length() == 0 ) ret.append(g.goid);
+				else ret.append(" ").append(g.goid);
 			}
 		}
 		return ret.toString();
