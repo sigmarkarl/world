@@ -4463,7 +4463,7 @@ public class JavaFasta extends JPanel {
 			public void actionPerformed(ActionEvent e) {
 				int[] rr = table.getSelectedRows();
 				String name = "";
-				Set<Sequence>	remseq = new HashSet<Sequence>();
+				Set<Sequence>	remseq = new HashSet<>();
 				for( int r : rr ) {
 					int i = table.convertRowIndexToModel(r);
 					Sequence seq = serifier.lseq.get(i);
@@ -4490,7 +4490,7 @@ public class JavaFasta extends JPanel {
 				}
 				
 				newseq.setStart( start );
-				Map<Character,Integer>	charset = new TreeMap<Character,Integer>();
+				Map<Character,Integer>	charset = new TreeMap<>();
 				for( int i = start; i < end; i++ ) {
 					for( Sequence s : remseq ) {
 						char c = s.getCharAt(i);
@@ -4566,6 +4566,36 @@ public class JavaFasta extends JPanel {
 				serifier.lseq.add( newseq );
 				
 				updateView();
+				overview.reval();
+				overview.repaint();
+			}
+		});
+		edit.add( new AbstractAction("Split NNN's") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				int[] rr = table.getSelectedRows();
+				Set<Sequence>	remseq = new HashSet<>();
+				Set<Sequence>	addseq = new HashSet<>();
+				for( int r : rr ) {
+					int i = table.convertRowIndexToModel(r);
+					Sequence seq = serifier.lseq.get(i);
+					StringBuilder sb = seq.getSequence();
+					String[] split = sb.toString().split("NNN");
+					if (split.length>1) {
+						remseq.add(seq);
+						for (int k = 0; k < split.length; k++) {
+							Sequence newseq = new Sequence(seq.getName()+"_"+k, serifier.mseq);
+							newseq.setSequenceString(split[k]);
+							addseq.add(newseq);
+						}
+					}
+				}
+
+				serifier.lseq.removeAll( remseq );
+				serifier.lseq.addAll( addseq );
+
+				table.tableChanged( new TableModelEvent(table.getModel()) );
+				c.repaint();
 				overview.reval();
 				overview.repaint();
 			}

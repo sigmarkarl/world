@@ -979,11 +979,11 @@ public class Serifier {
 			return super.add( seq );
 		}
 	};
-	public Map<String,Sequence>			mseq = new HashMap<String,Sequence>();
-	public Map<String,List<Sequence>> 	gseq = new HashMap<String,List<Sequence>>();
-	public List<Sequence>				lgseq = new ArrayList<Sequence>();
-	public ArrayList<Annotation>		lann = new ArrayList<Annotation>();
-	public Map<String,Annotation>		mann = new HashMap<String,Annotation>();
+	public Map<String,Sequence>			mseq = new HashMap<>();
+	public Map<String,List<Sequence>> 	gseq = new HashMap<>();
+	public List<Sequence>				lgseq = new ArrayList<>();
+	public ArrayList<Annotation>		lann = new ArrayList<>();
+	public Map<String,Annotation>		mann = new HashMap<>();
 	//int min = Sequence.min;
 	//int max = Sequence.max;
 	
@@ -1642,7 +1642,7 @@ public class Serifier {
 	}
 	
 	public List<Sequences> psplitit( Sequences seqs, Path dir, String suffix ) {
-		List<Sequences>	retlseq = new ArrayList<Sequences>();
+		List<Sequences>	retlseq = new ArrayList<>();
 		
 		try {
 			//File inf = new File( new URI(seqs.getPath() ) );

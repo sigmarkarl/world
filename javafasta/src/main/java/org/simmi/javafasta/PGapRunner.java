@@ -7,13 +7,11 @@ import org.simmi.javafasta.shared.Serifier;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
-public class PGapRunner implements Runnable {
-    Sequences sequences;
+public class PGapRunner {
     Path pgapPath;
     Serifier serifier;
 
@@ -77,13 +75,7 @@ public class PGapRunner implements Runnable {
         this.serifier = serifier;
     }
 
-    public void setSequences(Sequences seqs) {
-        this.sequences = seqs;
-    }
-
-    @Override
-    public void run() {
-        ExecutorService executorService = Executors.newFixedThreadPool(2);
+    public Process run(ExecutorService executorService, Sequences sequences) {
         try {
             Path inputFolder = pgapPath.resolve(sequences.getName());
             Files.createDirectories(inputFolder);
@@ -103,28 +95,28 @@ public class PGapRunner implements Runnable {
             Path submolYaml = inputFolder.resolve("submol.yaml");
             Files.writeString(submolYaml, submolyamlTemplate.replace("${species}", "Thermus brockianus").replace("${accession}", "2978"));
 
-            ProcessBuilder processBuilder = new ProcessBuilder(pgapPath.resolve("scripts/pgap.py").toString(),"-d","-r","-o", sequences.getName()+"_results",inputYaml.toString());
+            ProcessBuilder processBuilder = new ProcessBuilder(pgapPath.resolve("scripts/pgap.py").toString(),"--verbose","-d","-r","-o", sequences.getName()+"_results",inputYaml.toString());
             processBuilder.directory(pgapPath.toFile());
             Process process = processBuilder.start();
-            executorService.submit(() -> {
+            Future<?> err = executorService.submit(() -> {
                 try {
                     process.getErrorStream().transferTo(System.err);
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
             });
-            executorService.submit(() -> {
+            Future<?> out = executorService.submit(() -> {
                 try {
                     process.getInputStream().transferTo(System.out);
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
             });
-            process.waitFor();
-        } catch (IOException | InterruptedException e) {
+            return process;
+            //process.waitFor();
+        } catch (IOException e) {
             e.printStackTrace();
-        } finally {
-            executorService.shutdown();
         }
+        return null;
     }
 }
