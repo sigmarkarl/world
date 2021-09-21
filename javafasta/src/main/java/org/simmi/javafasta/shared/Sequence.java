@@ -1329,18 +1329,6 @@ public class Sequence extends FastaSequence implements Comparable<Sequence> {
 		return edited;
 	}
 	
-	public String getGroup() {
-		return group;
-	}
-	
-	public String getId() {
-		return id;
-	}
-	
-	public void setId( String id ) {
-		this.id = id;
-	}
-	
 	public void setSequenceString( StringBuilder sb ) {
 		this.sb = sb;
 	}
@@ -1426,18 +1414,6 @@ public class Sequence extends FastaSequence implements Comparable<Sequence> {
 		annset.add( a );
 		
 		return false;
-	}
-	
-	public String getName() {
-		return name;
-	}
-	
-	public void setName( String name ) {
-		this.name = name;
-	}
-	
-	public void setGroup( String name ) {
-		this.group = name;
 	}
 
 	public void setCountry(String country) {

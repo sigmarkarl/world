@@ -84,7 +84,7 @@ public class PGapRunner {
             Path inputFasta = inputFolder.resolve("input.fasta");
             var writer = Files.newBufferedWriter(inputFasta);
             Map<String, Sequence> contmap = serifier.appendSequenceInJavaFasta(sequences, false);
-            contmap.entrySet().stream().map(Map.Entry::getValue).filter(v -> v.length() >= 200).forEach(s -> {
+            contmap.values().stream().filter(v -> v.length() >= 200).forEach(s -> {
                 try {
                     s.writeSequence(writer);
                 } catch (IOException e) {
@@ -93,7 +93,7 @@ public class PGapRunner {
             });
 
             Path submolYaml = inputFolder.resolve("submol.yaml");
-            Files.writeString(submolYaml, submolyamlTemplate.replace("${species}", "Thermus brockianus").replace("${accession}", "2978"));
+            Files.writeString(submolYaml, submolyamlTemplate.replace("${species}", "Thermus thermophilus").replace("${accession}", "2978"));
 
             ProcessBuilder processBuilder = new ProcessBuilder(pgapPath.resolve("scripts/pgap.py").toString(),"--verbose","-d","-r","-o", sequences.getName()+"_results",inputYaml.toString());
             processBuilder.directory(pgapPath.toFile());

@@ -478,6 +478,14 @@ public class GeneGroup {
 		return null;
 	}
 
+	public String getDbcan() {
+		for( Annotation a : genes ) {
+			Gene g = a.getGene();
+			if( g != null && g.dbcan != null && g.dbcan.length() > 0 ) return g.dbcan;
+		}
+		return null;
+	}
+
 	public String getCazyAA() {
 		Map<String,String> cazyaamap = geneset.getCazyAAMap();
 		for( Annotation a : genes ) {

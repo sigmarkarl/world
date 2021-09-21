@@ -2170,7 +2170,9 @@ public class Serifier {
 						//int millind = cont.indexOf(' ');
 						//if( millind == -1 ) millind = cont.length();
 						//cont = cont.substring( 0, millind ).trim();
-					} else cont = line.replace( ">", seqs.getName()+"_" );
+					} else {
+						cont = line.substring(1); //line.replace( ">", seqs.getName()+"_" );
+					}
 					dna = new StringBuilder();
 					//dna.append( line.replace( ">", ">"+seqs.getName()+"_" )+"\n" );
 					//nseq++;

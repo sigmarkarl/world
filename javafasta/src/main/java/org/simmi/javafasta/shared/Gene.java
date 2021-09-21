@@ -274,6 +274,7 @@ public class Gene {
 	public Cog cog;
 	public Cog pfam;
 	public String cazy;
+	public String dbcan;
 	public String pfamid;
 	public Set<String> allids;
 	public String genid;
