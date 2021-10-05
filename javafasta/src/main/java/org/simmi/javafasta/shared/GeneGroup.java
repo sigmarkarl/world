@@ -348,14 +348,18 @@ public class GeneGroup {
 						ret = name;
 				}
 			}
-			int k = ret.lastIndexOf('(');
-			if (k != -1) {
-				ret = ret.substring(0, k);
+			if(ret!=null) {
+				int k = ret.lastIndexOf('(');
+				if (k != -1) {
+					ret = ret.substring(0, k);
+				}
+			} else {
+				ret = "Unknown";
 			}
 
 			String genename = ret;
 			if (genename.contains("CRISPR")) {
-				k = genename.indexOf('(');
+				int k = genename.indexOf('(');
 				if (k == -1) k = genename.length();
 				genename = genename.substring(0, k);
 				genename = genename.replace("CRISPR-associated", "");

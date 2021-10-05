@@ -92,10 +92,13 @@ public class PGapRunner {
                 }
             });
 
-            Path submolYaml = inputFolder.resolve("submol.yaml");
-            Files.writeString(submolYaml, submolyamlTemplate.replace("${species}", "Thermus thermophilus").replace("${accession}", "2978"));
+            var seq = sequences.getName();
+            if(seq.endsWith(".fna")) seq = seq.substring(0,seq.length()-4);
 
-            ProcessBuilder processBuilder = new ProcessBuilder(pgapPath.resolve("scripts/pgap.py").toString(),"--verbose","-d","-r","-o", sequences.getName()+"_results",inputYaml.toString());
+            Path submolYaml = inputFolder.resolve("submol.yaml");
+            Files.writeString(submolYaml, submolyamlTemplate.replace("${species}", "Thermus thermophilus").replace("${accession}", "2978").replace("locus_tag_prefix: 'tmp'","locus_tag_prefix: '"+seq+"'"));
+
+            ProcessBuilder processBuilder = new ProcessBuilder(pgapPath.resolve("scripts/pgap.py").toString(),"--verbose","-d","-r","-o", seq+"_results",inputYaml.toString());
             processBuilder.directory(pgapPath.toFile());
             Process process = processBuilder.start();
             Future<?> err = executorService.submit(() -> {
