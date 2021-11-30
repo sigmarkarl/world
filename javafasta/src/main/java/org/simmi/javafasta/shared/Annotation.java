@@ -12,6 +12,7 @@ public class Annotation implements Comparable<Object> {
 	public Sequence			seq;
 	private Sequence		alignedsequence;
 	private String			name;
+	private String			note;
 	public String			id;
 	public String			tag;
 	public StringBuilder	desc;
@@ -290,6 +291,14 @@ public class Annotation implements Comparable<Object> {
 	
 	public void setName( String name ) {
 		this.name = name;
+	}
+
+	public String getNote() {
+		return note;
+	}
+
+	public void setNote( String note ) {
+		this.note = note;
 	}
 	
 	public String getType() {

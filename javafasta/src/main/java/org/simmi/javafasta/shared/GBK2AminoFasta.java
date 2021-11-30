@@ -33,7 +33,46 @@ public class GBK2AminoFasta {
 		int				start;
 		int				stop;
 		boolean 		comp;
-	};
+	}
+
+	public static void oldannos(Annotation anno, Set<String> xref) {
+		if( anno.tag == null || anno.tag.length() == 0 ) {
+			anno.tag = anno.getSpecies() + "_" + (anno.ori == -1 ? "comp("+anno.start+".."+anno.stop+")" : anno.start+".."+anno.stop);
+		}
+		if( anno.id == null || anno.id.length() == 0 ) anno.id = anno.tag;
+		if( xref.size() > 0 ) {
+			String annoname = anno.getName();
+			annoname += "(";
+			for( String xr : xref ) {
+				annoname += xr;
+			}
+			annoname += ")";
+			anno.setName( annoname );
+			xref.clear();
+		}
+		//if( isCDS ) anno.gene.setTag();
+	}
+
+	public static void doAnnoStuff(Annotation anno, Set<String> xref) {
+		if( anno.tag == null || anno.tag.length() == 0 ) {
+			anno.tag = anno.getSpecies() + "_" + (anno.ori == -1 ? "comp("+anno.start+".."+anno.stop+")" : anno.start+".."+anno.stop);
+		}
+		if( anno.id == null || anno.id.length() == 0 ) anno.id = anno.tag; //anno.ori == -1 ? "comp("+anno.start+".."+anno.stop+")" : anno.start+".."+anno.stop;
+		if( anno.getName() == null || anno.getName().length() == 0 ) {
+			if(anno.getNote()!=null&&anno.getNote().length()>0) anno.setName(anno.getNote());
+			else anno.setName(anno.id);
+		}
+		if( xref.size() > 0 ) {
+			StringBuilder annoname = new StringBuilder(anno.getName());
+			annoname.append("(");
+			for( String xr : xref ) {
+				annoname.append(xr);
+			}
+			annoname.append(")");
+			anno.setName(annoname.toString());
+			xref.clear();
+		}
+	}
 	
 	public static Map<String,List<Sequence>> handleText(Map<String,Stream<String>> filetextmap, Map<String,Path> annoset, Writer allout, Path path, String replace, boolean noseq ) throws IOException {
 		Map<String,List<Sequence>>	lseq = new HashMap<>();
@@ -94,21 +133,7 @@ public class GBK2AminoFasta {
 					boolean isGene = trimline.startsWith("gene  ");
 					if( isCDS || isGene || trimline.startsWith("tRNA  ") || trimline.startsWith("rRNA  ") || trimline.startsWith("mRNA  ") || trimline.startsWith("misc_feature  ") ) {
 						if( anno != null ) {
-							if( anno.tag == null || anno.tag.length() == 0 ) {
-								anno.tag = anno.getSpecies() + "_" + (anno.ori == -1 ? "comp("+anno.start+".."+anno.stop+")" : anno.start+".."+anno.stop);
-							}
-							if( anno.id == null || anno.id.length() == 0 ) anno.id = anno.tag;
-							if( xref.size() > 0 ) {
-								String annoname = anno.getName();
-								annoname += "(";
-								for( String xr : xref ) {
-									annoname += xr;
-								}
-								annoname += ")";
-								anno.setName( annoname );
-								xref.clear();
-							}
-							//if( isCDS ) anno.gene.setTag();
+							doAnnoStuff(anno, xref);
 							strbuf.addAnnotation( anno );
 						}
 						anno = null;
@@ -278,6 +303,28 @@ public class GBK2AminoFasta {
 							//annolist.add( anno );
 							//anno = null;
 						}
+					} else if( trimline.startsWith("/note") ) {
+						if( anno != null ) {
+							if( trimline.length() > 7 ) {
+								int i = trimline.indexOf('"', 7);
+								while( i == -1 ) {
+									line = fileit.next();
+									if( line != null ) {
+										trimline += line.trim();
+										i = trimline.indexOf('"', 7);
+									} else i = trimline.length()-1;
+								}
+								anno.setNote( trimline.substring(7,i) );
+								int ecind = Math.max( anno.getNote().indexOf("(EC"), anno.getNote().indexOf("(COG") );
+								if( ecind != -1 ) {
+									anno.setNote( anno.getNote().substring(0,ecind).trim() );
+								}
+								anno.setNote( anno.getNote().replace("(","") );
+								anno.setNote( anno.getNote().replace(")","") );
+							}
+							//annolist.add( anno );
+							//anno = null;
+						}
 					} else if( trimline.startsWith("/protein_id") ) {
 						if( anno != null ) {
 							anno.id = trimline.substring(13,trimline.length()-1);
@@ -302,20 +349,7 @@ public class GBK2AminoFasta {
 						}
 					} else if( trimline.startsWith("ORIGIN") ) {
 						if( anno != null ) {
-							if( anno.tag == null || anno.tag.length() == 0 ) {
-								anno.tag = anno.getSpecies() + "_" + (anno.ori == -1 ? "comp("+anno.start+".."+anno.stop+")" : anno.start+".."+anno.stop);
-							}
-							if( anno.id == null || anno.id.length() == 0 ) anno.id = anno.tag; //anno.ori == -1 ? "comp("+anno.start+".."+anno.stop+")" : anno.start+".."+anno.stop;
-							if( xref.size() > 0 ) {
-								StringBuilder annoname = new StringBuilder(anno.getName());
-								annoname.append("(");
-								for( String xr : xref ) {
-									annoname.append(xr);
-								}
-								annoname.append(")");
-								anno.setName(annoname.toString());
-								xref.clear();
-							}
+							doAnnoStuff(anno, xref);
 							
 							/*if( anno.spec.contains("MAT4699") || anno.spec.contains("MAT4721") || anno.spec.contains("MAT4725") || anno.spec.contains("MAT4726") ) {
 								anno.start--;

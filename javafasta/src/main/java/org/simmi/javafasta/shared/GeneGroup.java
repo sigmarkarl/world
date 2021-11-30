@@ -484,6 +484,14 @@ public class GeneGroup {
 		return null;
 	}
 
+	public String getPhaster() {
+		for( Annotation a : genes ) {
+			Gene g = a.getGene();
+			if( g != null && g.phaster != null && g.phaster.length() > 0 ) return g.phaster;
+		}
+		return null;
+	}
+
 	public String getDbcan() {
 		for( Annotation a : genes ) {
 			Gene g = a.getGene();
