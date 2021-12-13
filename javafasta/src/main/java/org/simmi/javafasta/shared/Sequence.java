@@ -523,6 +523,7 @@ public class Sequence extends FastaSequence implements Comparable<Sequence> {
 	public IntBuffer			rib = null;
 	public int					offset = 0;
 	private int					revcomp = 0;
+	private int					gcat = 0;
 	float						gcp = -1;
 	int							alignedlength = -1;
 	int							unalignedlength = -1;
@@ -873,6 +874,14 @@ public class Sequence extends FastaSequence implements Comparable<Sequence> {
 	
 	public boolean isReverse() {
 		return revcomp == -1;
+	}
+
+	public int getGC() {
+		return gcat;
+	}
+
+	public void setGC(int gc) {
+		gcat = gc;
 	}
 	
 	public void setReverse( boolean rev ) {

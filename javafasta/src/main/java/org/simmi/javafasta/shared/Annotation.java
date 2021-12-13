@@ -3,10 +3,8 @@ package org.simmi.javafasta.shared;
 import java.awt.Color;
 import java.io.IOException;
 import java.io.Writer;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class Annotation implements Comparable<Object> {
 	public Sequence			seq;
@@ -25,8 +23,8 @@ public class Annotation implements Comparable<Object> {
 	public Object			color = Color.green;
 	private Gene			gene;
 	public boolean			selected = false;
-	double					gc;
-	double					gcskew;
+	double					gc = -1.0;
+	private double			gcskew = -1.0;
 	public boolean			dirty = false;
 	public double 			eval;
 	public int				num;
@@ -198,18 +196,94 @@ public class Annotation implements Comparable<Object> {
 	}
 	
 	public double getGCPerc() {
+		if (gc == -1.0) {
+			gc = gcPerc();
+		}
 		return gc;
+	}
+
+	public double calcGcSkew() {
+		int pos = (start+stop)/2;
+		if (seq.getGC()%2 == 1) {
+			int acount = 0;
+			int tcount = 0;
+			for (int k = Math.max(0, pos - 2000); k < Math.min(seq.length(), pos + 2000); k++) {
+				char chr = seq.charAt(k);
+				if (chr == 'a' || chr == 'A') {
+					acount++;
+				} else if (chr == 't' || chr == 'T') {
+					tcount++;
+				}
+				//else if( chr == 'a' || chr == 'A' ) acount++;
+				//else if( chr == 't' || chr == 'T' ) tcount++;
+			}
+
+			if (acount > 0 || tcount > 0) {
+				return (seq.getGC()-2) * (acount - tcount) / (double) (acount + tcount);
+			}
+		} else {
+			int gcount = 0;
+			int ccount = 0;
+			for (int k = Math.max(0, pos - 2000); k < Math.min(seq.length(), pos + 2000); k++) {
+				char chr = seq.charAt(k);
+				if (chr == 'g' || chr == 'G') {
+					gcount++;
+				} else if (chr == 'c' || chr == 'C') {
+					ccount++;
+				}
+				//else if( chr == 'a' || chr == 'A' ) acount++;
+				//else if( chr == 't' || chr == 'T' ) tcount++;
+			}
+
+			if (gcount > 0 || ccount > 0) {
+				return (seq.getGC()-1) * (gcount - ccount) / (double) (gcount + ccount);
+			}
+		}
+		return 0.0;
+	}
+
+	public void setGCSkew(double gcskew) {
+		this.gcskew = gcskew;
 	}
 	
 	public double getGCSkew() {
+		if (gcskew == -1.0) {
+			gcskew = calcGcSkew();
+		}
 		return gcskew;
 	}
-	
-	public Color getGCColor() {
+
+	public double calcMinGC(Collection<Sequence> sequences) {
+		return sequences.parallelStream().flatMapToDouble(s -> s.annset.parallelStream().mapToDouble(Annotation::getGCPerc).min().stream()).min().getAsDouble();
+	}
+
+	public double calcMaxGC(Collection<Sequence> sequences) {
+		return sequences.parallelStream().flatMapToDouble(s -> s.annset.parallelStream().mapToDouble(Annotation::getGCPerc).max().stream()).max().getAsDouble();
+	}
+
+	public Color getGCColor(GeneGroup gg) {
+		var seqlist = gg.genes.parallelStream().flatMap(a -> a.seq.partof.parallelStream()).collect(Collectors.toList());
+		float min = (float)calcMinGC(seqlist);
+		float max = (float)calcMaxGC(seqlist);
+		float diff = max-min;
+
 		if( isDirty() ) return Color.red;
-		double gcp = Math.min( Math.max( 0.5, gc ), 0.8 );
-		return new Color( (float)(0.8-gcp)/0.3f, (float)(gcp-0.5)/0.3f, 1.0f );
+		double gcp = Math.min( Math.max( min, gc ), max );
+		return new Color( (float)(max-gcp)/diff, (float)(gcp-min)/diff, 1.0f );
 		
+		/*double gcp = Math.min( Math.max( 0.35, gc ), 0.55 );
+		return new Color( (float)(0.55-gcp)/0.2f, (float)(gcp-0.35)/0.2f, 1.0f );*/
+	}
+
+	public Color getGCColor() {
+		float min = (float)calcMinGC(seq.partof);
+		float max = (float)calcMaxGC(seq.partof);
+		float diff = max-min;
+
+		if( isDirty() ) return Color.red;
+		double gcp = Math.min( Math.max( min, gc ), max );
+		return new Color( (float)(max-gcp)/diff, (float)(gcp-min)/diff, 1.0f );
+
 		/*double gcp = Math.min( Math.max( 0.35, gc ), 0.55 );
 		return new Color( (float)(0.55-gcp)/0.2f, (float)(gcp-0.35)/0.2f, 1.0f );*/
 	}
@@ -219,7 +293,7 @@ public class Annotation implements Comparable<Object> {
 	}
 	
 	public Color getGCSkewColor() {
-		return new Color( (float)Math.min( 1.0, Math.max( 0.0, 0.5+5.0*gcskew ) ), 0.5f, (float)Math.min( 1.0, Math.max( 0.0, 0.5-5.0*gcskew ) ) );
+		return new Color( (float)Math.min( 1.0, Math.max( 0.0, 0.5+5.0*getGCSkew() ) ), 0.5f, (float)Math.min( 1.0, Math.max( 0.0, 0.5-5.0*getGCSkew() ) ) );
 	}
 	
 	public void setGene( Gene gen ) {

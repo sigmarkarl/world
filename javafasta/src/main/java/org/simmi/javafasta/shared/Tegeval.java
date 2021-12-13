@@ -43,7 +43,7 @@ public class Tegeval extends Annotation implements Teg {
 		num = -1;
 
 		gc = gcPerc(); //(double)gcCount()/(double)(stop-start);
-		gcskew = gcSkew();
+		//gcskew = gcSkew();
 		//else gc = -1.0;
 		
 		numCys = 0;
