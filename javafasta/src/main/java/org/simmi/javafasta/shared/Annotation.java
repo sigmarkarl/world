@@ -105,20 +105,28 @@ public class Annotation implements Comparable<Object> {
 	public Annotation( String type ) {
 		this.type = type;
 	}
-	
+
 	public Annotation( Sequence seq, String name, Object color, int start, int stop, int ori, Map<String,Annotation> mann ) {
-		this( seq, name, color, mann );
+		this(seq,name,color,start,stop,ori,mann,true);
+	}
+
+	public Annotation( Sequence seq, String name, Object color, int start, int stop, int ori, Map<String,Annotation> mann, boolean add ) {
+		this( seq, name, color, mann, add );
 		this.setStart( start );
 		this.setStop( stop );
 		this.setOri( ori );
 	}
-	
+
 	public Annotation( Sequence seq, String name, Object color, Map<String,Annotation>  mann ) {
+		this(seq,name,color,mann,true);
+	}
+
+	public Annotation( Sequence seq, String name, Object color, Map<String,Annotation>  mann, boolean add ) {
 		this.name = name;
 		this.color = color;
 		this.seq = seq;
 		
-		if( seq != null ) {
+		if( add && seq != null ) {
 			seq.addAnnotation( this );
 		}
 		if( mann != null ) mann.put( name, this );

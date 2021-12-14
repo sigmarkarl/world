@@ -10,6 +10,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class GeneGroup {
+	String							name;
 	GenomeSet						geneset;
 	public Set<Annotation>          genes = new HashSet<>();
 	public Map<String, Teginfo>  	species = new TreeMap<>();
@@ -332,68 +333,67 @@ public class GeneGroup {
 	}
 	
 	public String getName() {
-		String ret = "";
-		if(genes.size() > 0) {
-			for (Annotation a : genes) {
-				String name = a.getName();
-				if (name != null) {
-					if (ret.length() == 0) ret = name;
-					else {
-						boolean jsome = (ret.startsWith("J") || ret.startsWith("A") || ret.startsWith("L") || ret.startsWith("B")) && (ret.length() > 4 && ret.charAt(4) == '0');
-						boolean nsome = (name.startsWith("J") || name.startsWith("A") || name.startsWith("L") || name.startsWith("B")) && (name.length() > 4 && name.charAt(4) == '0');
+		if (name==null) {
+			String ret = "";
+			if (genes.size() > 0) {
+				for (Annotation a : genes) {
+					String name = a.getName();
+					if (name != null) {
+						if (ret.length() == 0) ret = name;
+						else {
+							boolean jsome = (ret.startsWith("J") || ret.startsWith("A") || ret.startsWith("L") || ret.startsWith("B")) && (ret.length() > 4 && ret.charAt(4) == '0');
+							boolean nsome = (name.startsWith("J") || name.startsWith("A") || name.startsWith("L") || name.startsWith("B")) && (name.length() > 4 && name.charAt(4) == '0');
 
-						if ((
-								(jsome || ret.startsWith("Consensus") || ret.contains("plasmid") || ret.contains("chromosome") || ret.contains("contig") || ret.contains("scaffold") || ret.contains("uid")) && !ret.contains(":")
-						) ||
-								!(nsome || name.contains("Consensus") || name.contains("plasmid") || name.contains("chromosome") || name.contains("contig") || name.contains("scaffold") || name.contains("uid") || name.contains("unnamed") || (ret.startsWith("Consensus") && name.contains("hypot"))))
-							ret = name;
+							if ((
+									(jsome || ret.startsWith("Consensus") || ret.contains("plasmid") || ret.contains("chromosome") || ret.contains("contig") || ret.contains("scaffold") || ret.contains("uid")) && !ret.contains(":")
+							) ||
+									!(nsome || name.contains("Consensus") || name.contains("plasmid") || name.contains("chromosome") || name.contains("contig") || name.contains("scaffold") || name.contains("uid") || name.contains("unnamed") || (ret.startsWith("Consensus") && name.contains("hypot"))))
+								ret = name;
+						}
 					}
 				}
-			}
-			if(ret!=null) {
 				int k = ret.lastIndexOf('(');
 				if (k != -1) {
 					ret = ret.substring(0, k);
 				}
-			} else {
-				ret = "Unknown";
-			}
 
-			String genename = ret;
-			if (genename.contains("CRISPR")) {
-				int k = genename.indexOf('(');
-				if (k == -1) k = genename.length();
-				genename = genename.substring(0, k);
-				genename = genename.replace("CRISPR-associated", "");
-				genename = genename.replace("CRISPR", "");
-				genename = genename.replace("helicase", "");
-				genename = genename.replace("endonuclease", "");
-				genename = genename.replace("Cas3-HD", "");
-				genename = genename.replace("/", "");
-				genename = genename.replace(",", "");
-				genename = genename.replace("type I-E", "");
-				genename = genename.replace("ECOLI-associated", "");
-				genename = genename.replace("family", "");
-				genename = genename.replace("protein", "");
-				genename = genename.replace("RAMP", "");
-				genename = genename.trim();
-				ret = genename;
+				String genename = ret;
+				if (genename.contains("CRISPR")) {
+					k = genename.indexOf('(');
+					if (k == -1) k = genename.length();
+					genename = genename.substring(0, k);
+					genename = genename.replace("CRISPR-associated", "");
+					genename = genename.replace("CRISPR", "");
+					genename = genename.replace("helicase", "");
+					genename = genename.replace("endonuclease", "");
+					genename = genename.replace("Cas3-HD", "");
+					genename = genename.replace("/", "");
+					genename = genename.replace(",", "");
+					genename = genename.replace("type I-E", "");
+					genename = genename.replace("ECOLI-associated", "");
+					genename = genename.replace("family", "");
+					genename = genename.replace("protein", "");
+					genename = genename.replace("RAMP", "");
+					genename = genename.trim();
+					ret = genename;
+				}
+
+			/*if( ret == null || ret.length() == 0 ) {
+				System.err.println();
+
+				for( Gene g : genes ) {
+					String name = g.getName();
+					if( ret == null ) ret = name;
+					else if( (ret.contains("contig") || ret.contains("scaffold")) || !(name.contains("contig") || name.contains("scaffold") || name.contains("unnamed") || name.contains("hypot")) ) ret = name;
+				}
+			}*/
+			} else {
+				ret = getTegevals().stream().map(Annotation::getName).collect(Collectors.joining(","));
 			}
-		
-		/*if( ret == null || ret.length() == 0 ) {
-			System.err.println();
-			
-			for( Gene g : genes ) {
-				String name = g.getName();
-				if( ret == null ) ret = name;
-				else if( (ret.contains("contig") || ret.contains("scaffold")) || !(name.contains("contig") || name.contains("scaffold") || name.contains("unnamed") || name.contains("hypot")) ) ret = name;
-			}
-		}*/
-		} else {
-			ret = getTegevals().stream().map(Annotation::getName).collect(Collectors.joining(","));
+			name = ret;
 		}
 		
-		return ret;
+		return name;
 	}
 	
 	public Cog getCog( Map<String,Cog> cogmap ) {

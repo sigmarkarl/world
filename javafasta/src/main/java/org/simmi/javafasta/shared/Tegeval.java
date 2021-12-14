@@ -3,7 +3,11 @@ package org.simmi.javafasta.shared;
 
 public class Tegeval extends Annotation implements Teg {
 	public Tegeval(Gene gene, double evalue, String contig, Sequence shortcontig, int sta, int sto, int orient) {
-		this( contig, shortcontig, sta, sto, orient );
+		this( contig, shortcontig, sta, sto, orient, true );
+	}
+
+	public Tegeval(Gene gene, double evalue, String contig, Sequence shortcontig, int sta, int sto, int orient, boolean add) {
+		this( contig, shortcontig, sta, sto, orient, add );
 
 		eval = evalue;
 		this.setGene( gene );
@@ -11,8 +15,8 @@ public class Tegeval extends Annotation implements Teg {
 		//setSequence(sequence);
 	}
 	
-	public Tegeval( String contig, Sequence shortcontig, int sta, int sto, int orient ) {
-		super(shortcontig,contig,null,sta,sto,orient,null);
+	public Tegeval( String contig, Sequence shortcontig, int sta, int sto, int orient, boolean add ) {
+		super(shortcontig,contig,null,sta,sto,orient,null,add);
 		init( contig, shortcontig, sta, sto, orient );
 	}
 	

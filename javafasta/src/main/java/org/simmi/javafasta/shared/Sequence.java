@@ -1406,7 +1406,7 @@ public class Sequence extends FastaSequence implements Comparable<Sequence> {
 		/*if( annset.contains(a) ) {
 			if( a.start == 0 ) annset.add( a );
 		} else*/ 
-		annset.add( i, a );
+ 		annset.add( i, a );
 		
 		return false;
 	}
