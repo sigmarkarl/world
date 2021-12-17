@@ -5076,7 +5076,7 @@ public class JavaFasta extends JPanel {
 		edit.add( new AbstractAction("Clear variant sites") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				Set<Sequence> seqset = new HashSet<Sequence>();
+				Set<Sequence> seqset = new HashSet<>();
 				int[] rr = table.getSelectedRows();
 				for( int r : rr ) {
 					int k = table.convertRowIndexToModel( r );
@@ -5307,7 +5307,7 @@ public class JavaFasta extends JPanel {
 					}*/
 					
 					List<String> commandsList;
-					if( hostname.equals("localhost") ) commandsList = new ArrayList<String>( Arrays.asList( new String[] {"mummer", "-maxmatch", "-n", "-l", "25", pname, pname} ) );
+					if( hostname.equals("localhost") ) commandsList = new ArrayList<>(Arrays.asList("mummer", "-maxmatch", "-n", "-l", "17", pname, pname));
 					else {
 			    		ProcessBuilder pbt = new ProcessBuilder("scp", "-q", filename, username+"@"+hostname+":~/"+filename);
 			    		pbt.directory( tmpdir.toFile() );
@@ -5318,7 +5318,7 @@ public class JavaFasta extends JPanel {
 							e1.printStackTrace();
 						}
 						
-						commandsList = new ArrayList<>(Arrays.asList(new String[]{"ssh", username + "@" + hostname, "mummer", "-maxmatch", "-n", "-l", "25", filename, filename}));
+						commandsList = new ArrayList<>(Arrays.asList("ssh", username + "@" + hostname, "mummer", "-maxmatch", "-n", "-l", "25", filename, filename));
 			    	}
 					
 					final ByteArrayOutputStream baos = new ByteArrayOutputStream();
