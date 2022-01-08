@@ -196,6 +196,19 @@ public class GeneGroup {
 		}
 		return Math.sqrt(gc/count);
 	}
+
+	public String getDesignation() {
+		for( Annotation a : genes ) {
+			if (a.designation==null) {
+				var desmap = geneset.getDesignationMap();
+				a.designation = a.id!=null ? desmap.getOrDefault(a.id, "") : "";
+				return a.designation;
+			} else if (a.designation.length()>0) {
+				return a.designation;
+			}
+		}
+		return "";
+	}
 	
 	public Set<Function> getFunctions() {
 		Set<Function>	funcset = new HashSet();
@@ -345,7 +358,7 @@ public class GeneGroup {
 							boolean nsome = (name.startsWith("J") || name.startsWith("A") || name.startsWith("L") || name.startsWith("B")) && (name.length() > 4 && name.charAt(4) == '0');
 
 							if ((
-									(jsome || ret.startsWith("Consensus") || ret.contains("plasmid") || ret.contains("chromosome") || ret.contains("contig") || ret.contains("scaffold") || ret.contains("uid")) && !ret.contains(":")
+									(jsome || ret.startsWith("Consensus") || ret.contains("plasmid") || ret.contains("chromosome") || ret.contains("contig") || ret.contains("scaffold") || ret.contains("uid") || (ret.startsWith("hypot") && !name.contains("contig"))) && !ret.contains(":")
 							) ||
 									!(nsome || name.contains("Consensus") || name.contains("plasmid") || name.contains("chromosome") || name.contains("contig") || name.contains("scaffold") || name.contains("uid") || name.contains("unnamed") || (ret.startsWith("Consensus") && name.contains("hypot"))))
 								ret = name;
@@ -549,7 +562,8 @@ public class GeneGroup {
 	}
 	
 	public String getRefid() {
-		return genes.stream().map(Annotation::getGene).filter(Objects::nonNull).map(g -> g.refid).filter(refid->refid != null && refid.length() > 0 && !refid.contains("scaffold") && !refid.contains("contig")).collect(Collectors.joining(","));
+		var ret = genes.stream().map(Annotation::getGene).filter(Objects::nonNull).map(Gene::getRefid).filter(refid->refid != null && refid.length() > 0 && !refid.contains("scaffold") && !refid.contains("contig")).collect(Collectors.joining(","));
+		return ret;
 	}
 	
 	public String getUnid() {

@@ -452,7 +452,17 @@ public class Serifier {
 							
 							if( annn.getName() != null && !annn.getName().contains("No hits") ) {
 								String locstr = ((sbld.length()-annn.stop))+".."+((sbld.length()-annn.start));
-								String id = ol.isPresent() ? ol.get().locus_tag+ac : ol.get().locus_tag_decformat.length() > 0 ? String.format(ol.get().locus_tag_decformat, annn.id) : annn.id;
+								String id;
+								if(ol.isPresent()) {
+									var l = ol.get();
+									if(l.locus_tag!=null&&l.locus_tag.length()>0) {
+										id = l.locus_tag+ac;
+									} else {
+										id = l.locus_tag_decformat.length() > 0 ? String.format(ol.get().locus_tag_decformat, annn.id) : annn.id;
+									}
+								} else {
+									id = annn.id;
+								}
 								
 								fw.write( "     "+annn.type );
 								int len = annn.type.length();

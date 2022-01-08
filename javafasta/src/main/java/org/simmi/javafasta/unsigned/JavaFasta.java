@@ -5307,7 +5307,7 @@ public class JavaFasta extends JPanel {
 					}*/
 					
 					List<String> commandsList;
-					if( hostname.equals("localhost") ) commandsList = new ArrayList<>(Arrays.asList("mummer", "-maxmatch", "-n", "-l", "17", pname, pname));
+					if( hostname.equals("localhost") ) commandsList = new ArrayList<>(Arrays.asList("/Users/sigmarkarl/mummer-4.0.0rc1/mummer", "-maxmatch", "-n", "-l", "15", pname, pname));
 					else {
 			    		ProcessBuilder pbt = new ProcessBuilder("scp", "-q", filename, username+"@"+hostname+":~/"+filename);
 			    		pbt.directory( tmpdir.toFile() );

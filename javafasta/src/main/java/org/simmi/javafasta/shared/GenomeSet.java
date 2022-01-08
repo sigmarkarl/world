@@ -11,4 +11,5 @@ public interface GenomeSet {
     Map<String,String> getCazyGHMap();
     Map<String,String> getCazyGTMap();
     Map<String,String> getCazyPLMap();
+    Map<String,String> getDesignationMap();
 }

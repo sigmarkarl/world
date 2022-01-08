@@ -264,12 +264,20 @@ public class Gene {
 		return tegeval.gg==null ? noShareNum : tegeval.gg.getSharingNumber();
 	}
 
+	public void setRefid(String refid) {
+		this.refid = refid;
+	}
+
+	public String getRefid() {
+		return refid;
+	}
+
 	public String name;
 	public String symbol;
 	//String tag;
 	//String origin;
 	public String id;
-	public String refid;
+	private String refid;
 	public String idstr;
 	public Cog cog;
 	public Cog pfam;
