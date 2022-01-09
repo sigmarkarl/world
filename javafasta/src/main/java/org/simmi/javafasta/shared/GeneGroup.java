@@ -201,7 +201,7 @@ public class GeneGroup {
 		for( Annotation a : genes ) {
 			if (a.designation==null) {
 				var desmap = geneset.getDesignationMap();
-				a.designation = a.id!=null ? desmap.getOrDefault(a.id, "") : "";
+				a.designation = a.getId()!=null ? desmap.getOrDefault(a.getId(), "") : "";
 				return a.designation;
 			} else if (a.designation.length()>0) {
 				return a.designation;
@@ -333,7 +333,7 @@ public class GeneGroup {
 	public String getCommonId() {
 		String ret = null;
 		for( Annotation a : genes ) {
-			String id = a.id;
+			String id = a.getId();
 			if( ret == null ) ret = id;
 			else {
 				boolean jsome = (ret.startsWith("J") || ret.startsWith("A") || ret.startsWith("L") || ret.startsWith("B")) && ret.charAt(4) == '0';
@@ -411,8 +411,8 @@ public class GeneGroup {
 	
 	public Cog getCog( Map<String,Cog> cogmap ) {
 		for( Annotation a : genes ) {
-			if( cogmap.containsKey( a.id ) ) {
-				return cogmap.get( a.id );
+			if( cogmap.containsKey( a.getId() ) ) {
+				return cogmap.get( a.getId() );
 			}
 		}
 		for( Annotation a : genes ) {
@@ -449,7 +449,7 @@ public class GeneGroup {
 
 	public Cog getPfamId( Map<String,Cog> pfammap ) {
 		for( Annotation a : genes ) {
-			if( pfammap.containsKey( a.id ) ) return pfammap.get( a.id );
+			if( pfammap.containsKey( a.getId() ) ) return pfammap.get( a.getId() );
 		}
 		for( Annotation a : genes ) {
 			Gene g = a.getGene();
@@ -484,7 +484,7 @@ public class GeneGroup {
 	
 	public String getCommonCazy( Map<String,String> cazymap ) {
 		for( Annotation a : genes ) {
-			if( cazymap.containsKey( a.id ) ) return cazymap.get( a.id );
+			if( cazymap.containsKey( a.getId() ) ) return cazymap.get( a.getId() );
 		}
 		return null;
 	}
@@ -516,7 +516,7 @@ public class GeneGroup {
 	public String getCazyAA() {
 		Map<String,String> cazyaamap = geneset.getCazyAAMap();
 		for( Annotation a : genes ) {
-			if( cazyaamap.containsKey( a.id ) ) return cazyaamap.get( a.id );
+			if( cazyaamap.containsKey( a.getId() ) ) return cazyaamap.get( a.getId() );
 		}
 		return null;
 	}
@@ -524,7 +524,7 @@ public class GeneGroup {
 	public String getCazyCE() {
 		Map<String,String> cazycemap = geneset.getCazyCEMap();
 		for( Annotation a : genes ) {
-			if( cazycemap.containsKey( a.id ) ) return cazycemap.get( a.id );
+			if( cazycemap.containsKey( a.getId() ) ) return cazycemap.get( a.getId() );
 		}
 		return null;
 	}
@@ -532,7 +532,7 @@ public class GeneGroup {
 	public String getCazyGH() {
 		Map<String,String> cazyghmap = geneset.getCazyGHMap();
 		for( Annotation a : genes ) {
-			if( cazyghmap.containsKey( a.id ) ) return cazyghmap.get( a.id );
+			if( cazyghmap.containsKey( a.getId() ) ) return cazyghmap.get( a.getId() );
 		}
 		return null;
 	}
@@ -540,7 +540,7 @@ public class GeneGroup {
 	public String getCazyGT() {
 		Map<String,String> cazygtmap = geneset.getCazyGTMap();
 		for( Annotation a : genes ) {
-			if( cazygtmap.containsKey( a.id ) ) return cazygtmap.get( a.id );
+			if( cazygtmap.containsKey( a.getId() ) ) return cazygtmap.get( a.getId() );
 		}
 		return null;
 	}
@@ -548,7 +548,7 @@ public class GeneGroup {
 	public String getCazyPL() {
 		Map<String,String> cazyplmap = geneset.getCazyPLMap();
 		for( Annotation a : genes ) {
-			if( cazyplmap.containsKey( a.id ) ) return cazyplmap.get( a.id );
+			if( cazyplmap.containsKey( a.getId() ) ) return cazyplmap.get( a.getId() );
 		}
 		return null;
 	}

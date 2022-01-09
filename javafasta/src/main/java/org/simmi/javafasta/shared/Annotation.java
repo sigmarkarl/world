@@ -11,8 +11,8 @@ public class Annotation implements Comparable<Object> {
 	private Sequence		alignedsequence;
 	private String			name;
 	private String			note;
-	public String			id;
-	public String			tag;
+	private String			id;
+	private String			tag;
 	public StringBuilder	desc;
 	public String			type;
 	private String			group;
@@ -33,7 +33,23 @@ public class Annotation implements Comparable<Object> {
 	public String	designation;
 	public int indexOf = -1;
 	public GeneGroup gg;
-	
+
+	public void setId(String id) {
+		this.id = id;
+	}
+
+	public void setTag(String tag) {
+		this.tag = tag;
+	}
+
+	public String getId() {
+		return id;
+	}
+
+	public String getTag() {
+		return tag;
+	}
+
 	public boolean isPhage() {
 		return designation != null && designation.contains("phage");
 	}

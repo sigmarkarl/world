@@ -458,10 +458,10 @@ public class Serifier {
 									if(l.locus_tag!=null&&l.locus_tag.length()>0) {
 										id = l.locus_tag+ac;
 									} else {
-										id = l.locus_tag_decformat.length() > 0 ? String.format(ol.get().locus_tag_decformat, annn.id) : annn.id;
+										id = l.locus_tag_decformat.length() > 0 ? String.format(ol.get().locus_tag_decformat, annn.getId()) : annn.getId();
 									}
 								} else {
-									id = annn.id;
+									id = annn.getId();
 								}
 								
 								fw.write( "     "+annn.type );
@@ -569,7 +569,7 @@ public class Serifier {
 						for( int i = lann.size()-1; i >= 0; i-- ) {
 							Annotation annn = lann.get(i);
 							String locstr = ((sbld.length()-annn.stop)+count)+".."+((sbld.length()-annn.start)+count);
-							String id = annn.id;
+							String id = annn.getId();
 							
 							fw.write( "     "+annn.type );
 							int len = annn.type.length();
@@ -608,7 +608,7 @@ public class Serifier {
 					} else {
 						for( Annotation annn : lann ) {
 							String locstr = (annn.start-1+count)+".."+(annn.stop-1+count);
-							String id = annn.id;
+							String id = annn.getId();
 							
 							fw.write( "     "+annn.type );
 							int len = annn.type.length();

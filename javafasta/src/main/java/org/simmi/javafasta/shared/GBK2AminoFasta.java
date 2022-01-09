@@ -36,10 +36,10 @@ public class GBK2AminoFasta {
 	}
 
 	public static void oldannos(Annotation anno, Set<String> xref) {
-		if( anno.tag == null || anno.tag.length() == 0 ) {
-			anno.tag = anno.getSpecies() + "_" + (anno.ori == -1 ? "comp("+anno.start+".."+anno.stop+")" : anno.start+".."+anno.stop);
+		if( anno.getTag() == null || anno.getTag().length() == 0 ) {
+			anno.setTag(anno.getSpecies() + "_" + (anno.ori == -1 ? "comp("+anno.start+".."+anno.stop+")" : anno.start+".."+anno.stop));
 		}
-		if( anno.id == null || anno.id.length() == 0 ) anno.id = anno.tag;
+		if( anno.getId() == null || anno.getId().length() == 0 ) anno.setId(anno.getTag());
 		if( xref.size() > 0 ) {
 			String annoname = anno.getName();
 			annoname += "(";
@@ -54,13 +54,13 @@ public class GBK2AminoFasta {
 	}
 
 	public static void doAnnoStuff(Annotation anno, Set<String> xref) {
-		if( anno.tag == null || anno.tag.length() == 0 ) {
-			anno.tag = anno.getSpecies() + "_" + (anno.ori == -1 ? "comp("+anno.start+".."+anno.stop+")" : anno.start+".."+anno.stop);
+		if( anno.getTag() == null || anno.getTag().length() == 0 ) {
+			anno.setTag(anno.getSpecies() + "_" + (anno.ori == -1 ? "comp("+anno.start+".."+anno.stop+")" : anno.start+".."+anno.stop));
 		}
-		if( anno.id == null || anno.id.length() == 0 ) anno.id = anno.tag; //anno.ori == -1 ? "comp("+anno.start+".."+anno.stop+")" : anno.start+".."+anno.stop;
+		if( anno.getId() == null || anno.getId().length() == 0 ) anno.setId(anno.getTag()); //anno.ori == -1 ? "comp("+anno.start+".."+anno.stop+")" : anno.start+".."+anno.stop;
 		if( anno.getName() == null || anno.getName().length() == 0 ) {
 			if(anno.getNote()!=null&&anno.getNote().length()>0) anno.setName(anno.getNote());
-			else anno.setName(anno.id);
+			else anno.setName(anno.getId());
 		}
 		if( xref.size() > 0 ) {
 			StringBuilder annoname = new StringBuilder(anno.getName());
@@ -96,9 +96,11 @@ public class GBK2AminoFasta {
 			Sequence	strbuf = new Contig();
 			while( fileit.hasNext() ) {
 				//lseq.add( strbuf );
+				String line = null;
 				do {
-                    String line = fileit.next();
+                    if (line==null) line = fileit.next();
 					String trimline = line.trim();
+					line = null;
 					
 					if( trimline.startsWith("LOCUS") ) {
 						locus = trimline.split("[ \t]+")[1];
@@ -327,7 +329,7 @@ public class GBK2AminoFasta {
 						}
 					} else if( trimline.startsWith("/protein_id") ) {
 						if( anno != null ) {
-							anno.id = trimline.substring(13,trimline.length()-1);
+							anno.setId(trimline.substring(13,trimline.length()-1));
 							//annolist.add( anno );
 							//anno = null;
 						}
@@ -342,7 +344,7 @@ public class GBK2AminoFasta {
 					} else if( trimline.startsWith("/locus_tag") ) {
 						if( anno != null ) {
 							//if( !anno.getType().equals("tRNA") && !anno.getType().equals("rRNA") && (anno.id == null || anno.id.contains("..") ) ) {
-								anno.tag = trimline.substring(12,trimline.length()-1);
+								anno.setTag(trimline.substring(12,trimline.length()-1));
 							//}
 							//annolist.add( anno );
 							//anno = null;
@@ -363,7 +365,7 @@ public class GBK2AminoFasta {
 				} while( fileit.hasNext() );
 
 				while( !noseq && fileit.hasNext() ) {
-					String line = fileit.next();
+					line = fileit.next();
 					if( line.startsWith("//") ) break;
 					strbuf.append( line.replaceAll("[\t 1234567890/]+", "") );
 				}
@@ -557,7 +559,7 @@ public class GBK2AminoFasta {
 				StringBuilder filetext = new StringBuilder();
 				String line = br.readLine();
 				while( line != null ) {
-					filetext.append( line+"\n" );
+					filetext.append(line).append("\n");
 					line = br.readLine();
 				}
 				br.close();
