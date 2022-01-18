@@ -7039,7 +7039,7 @@ public class JavaFasta extends JPanel {
 								}
 							}
 							
-							List<Annotation> lann = new ArrayList<Annotation>();
+							List<Annotation> lann = new ArrayList<>();
 							int[] rr = atable.getSelectedRows();
 							//g2.setColor( Color.green );
 							for( int r : rr ) {
