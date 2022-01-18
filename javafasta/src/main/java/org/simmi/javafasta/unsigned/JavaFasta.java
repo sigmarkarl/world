@@ -2429,7 +2429,7 @@ public class JavaFasta extends JPanel {
 				public Object getTransferData(DataFlavor arg0) throws UnsupportedFlavorException, IOException {					
 					if( arg0.equals( ndf ) ) {
 						int[] rr = currentRowSelection; //table.getSelectedRows();
-						List<Sequence>	selseq = new ArrayList<Sequence>( rr.length );
+						List<Sequence>	selseq = new ArrayList<>(rr.length);
 						for( int r : rr ) {
 							int i = table.convertRowIndexToModel(r);
 							selseq.add( serifier.lgseq.get(i) );
@@ -2500,7 +2500,7 @@ public class JavaFasta extends JPanel {
 							Object obj = support.getTransferable().getTransferData( ndf );
 							ArrayList<Sequence>	seqs = (ArrayList<Sequence>)obj;
 							
-							ArrayList<Sequence> newlist = new ArrayList<Sequence>( serifier.lgseq.size() );
+							ArrayList<Sequence> newlist = new ArrayList<>(serifier.lgseq.size());
 							for( int r = 0; r < table.getRowCount(); r++ ) {
 								int i = table.convertRowIndexToModel(r);
 								newlist.add( serifier.lgseq.get(i) );
@@ -2548,7 +2548,7 @@ public class JavaFasta extends JPanel {
 									BufferedReader br = new BufferedReader( fr );
 									String line = br.readLine();
 									
-									Map<String,Integer>	hitmap = new HashMap<String,Integer>();
+									Map<String,Integer>	hitmap = new HashMap<>();
 									while( line != null ) {
 										if( line.startsWith(">") ) {
 											System.err.println( line );
@@ -2740,9 +2740,7 @@ public class JavaFasta extends JPanel {
 							
 							return true;
 						}
-					} catch (UnsupportedFlavorException e) {
-						e.printStackTrace();
-					} catch (IOException e) {
+					} catch (UnsupportedFlavorException | IOException e) {
 						e.printStackTrace();
 					}
 					return false;
@@ -3342,36 +3340,36 @@ public class JavaFasta extends JPanel {
 			final String charset = df.getParameter("charset");
 			final Transferable transferable = new Transferable() {
 				@Override
-				public Object getTransferData(DataFlavor arg0) throws UnsupportedFlavorException, IOException {					
+				public Object getTransferData(DataFlavor arg0) throws IOException {
 					if( arg0.equals( ndf ) ) {
 						int[] rr = currentRowSelection; //table.getSelectedRows();
-						List<Sequence>	selseq = new ArrayList<Sequence>( rr.length );
+						List<Sequence>	selseq = new ArrayList<>(rr.length);
 						for( int r : rr ) {
 							int i = table.convertRowIndexToModel(r);
 							selseq.add( serifier.lseq.get(i) );
 						}
 						return selseq;
 					} else {
-						String ret = "";//makeCopyString();
+						StringBuilder ret = new StringBuilder();//makeCopyString();
 						for( int r = 0; r < table.getRowCount(); r++ ) {
 							Object o = table.getValueAt(r, 0);
 							if( o != null ) {
-								ret += o.toString();
+								ret.append(o.toString());
 							} else {
-								ret += "";
+								ret.append("");
 							}
 							for( int c = 1; c < table.getColumnCount(); c++ ) {
 								o = table.getValueAt(r, c);
 								if( o != null ) {
-									ret += "\t"+o.toString();
+									ret.append("\t").append(o.toString());
 								} else {
-									ret += "\t";
+									ret.append("\t");
 								}
 							}
-							ret += "\n";
+							ret.append("\n");
 						}
 						//return arg0.getReaderForText( this );
-						return new ByteArrayInputStream( ret.getBytes( charset ) );
+						return new ByteArrayInputStream( ret.toString().getBytes( charset ) );
 					}
 					//return ret;
 				}
@@ -3416,7 +3414,7 @@ public class JavaFasta extends JPanel {
 							Object obj = support.getTransferable().getTransferData( ndf );
 							ArrayList<Sequence>	seqs = (ArrayList<Sequence>)obj;
 							
-							ArrayList<Sequence> newlist = new ArrayList<Sequence>( serifier.lseq.size() );
+							ArrayList<Sequence> newlist = new ArrayList<>(serifier.lseq.size());
 							for( int r = 0; r < table.getRowCount(); r++ ) {
 								int i = table.convertRowIndexToModel(r);
 								newlist.add( serifier.lseq.get(i) );
@@ -3451,7 +3449,7 @@ public class JavaFasta extends JPanel {
 									        if (attr.isSymbolicLink()) {
 									            System.out.format("Symbolic link: %s ", file);
 									        } else if (attr.isRegularFile() && file.getFileName().toString().endsWith(".ab1")) {
-												System.err.println( file.getFileName().toString() + "  " + file.toFile().length() );
+												System.err.println( file.getFileName() + "  " + file.toFile().length() );
 												try {
 													importFile( file.toFile() );
 												} catch (IOException e) {
@@ -7039,7 +7037,7 @@ public class JavaFasta extends JPanel {
 								}
 							}
 							
-							List<Annotation> lann = new ArrayList<Annotation>();
+							List<Annotation> lann = new ArrayList<>();
 							int[] rr = atable.getSelectedRows();
 							//g2.setColor( Color.green );
 							for( int r : rr ) {
@@ -9083,7 +9081,7 @@ public class JavaFasta extends JPanel {
 			@Override
 			public void keyPressed(KeyEvent e) {
 				if( e.getKeyCode() == KeyEvent.VK_DELETE ) {
-					Set<Annotation>	delset = new HashSet<Annotation>();
+					Set<Annotation>	delset = new HashSet<>();
 					int[] rr = atable.getSelectedRows();
 					for( int r : rr ) {
 						int i = atable.convertRowIndexToModel(r);
@@ -9342,9 +9340,7 @@ public class JavaFasta extends JPanel {
 							
 							return true;
 						}
-					} catch (UnsupportedFlavorException e) {
-						e.printStackTrace();
-					} catch (IOException e) {
+					} catch (UnsupportedFlavorException | IOException e) {
 						e.printStackTrace();
 					}
 					return false;
