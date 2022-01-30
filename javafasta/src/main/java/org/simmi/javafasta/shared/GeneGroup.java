@@ -358,9 +358,9 @@ public class GeneGroup {
 							boolean nsome = (name.startsWith("J") || name.startsWith("A") || name.startsWith("L") || name.startsWith("B")) && (name.length() > 4 && name.charAt(4) == '0');
 
 							if ((
-									(jsome || ret.startsWith("Consensus") || ret.contains("plasmid") || ret.contains("chromosome") || ret.contains("contig") || ret.contains("scaffold") || ret.contains("uid") || (ret.startsWith("hypot") && !name.contains("contig"))) /*&& !ret.contains(":")*/
+									(jsome || ret.startsWith("Consensus") || ret.contains("plasmid") || ret.contains("chromosome") || ret.contains("contig") || ret.contains("scaffold ") || ret.contains("uid") || (ret.startsWith("hypot") && !name.contains("contig"))) /*&& !ret.contains(":")*/
 							) ||
-									!(nsome || name.contains("Consensus") || name.contains("plasmid") || name.contains("chromosome") || name.contains("contig") || name.contains("scaffold") || name.contains("uid") || name.contains("unnamed") || (ret.startsWith("Consensus") && name.contains("hypot"))))
+									!(nsome || name.contains("Consensus") || name.contains("plasmid") || name.contains("chromosome") || name.contains("contig") || name.contains("scaffold ") || name.contains("uid") || name.contains("unnamed") || (ret.startsWith("Consensus") && name.contains("hypot"))))
 								ret = name;
 						}
 					}
