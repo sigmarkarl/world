@@ -154,6 +154,17 @@ public class Gene {
 		return tegeval;
 	}
 
+	public String getDesignation() {
+		if (tegeval == null || tegeval.designation==null) {
+			var desmap = getGeneGroup().geneset.getDesignationMap();
+			tegeval.designation = getId()!=null ? desmap.getOrDefault(getId(), "") : "";
+			return tegeval.designation;
+		} else if (tegeval.designation.length()>0) {
+			return tegeval.designation;
+		}
+		return "";
+	}
+
 	public void setTegeval( Annotation tegeval ) {
 		/*Teginfo ti;
 		if( species == null ) species = new HashMap<String,Teginfo>();

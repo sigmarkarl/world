@@ -66,6 +66,17 @@ public class Annotation implements Comparable<Object> {
 		
 	}
 
+	public String getDesignation() {
+		if (designation==null) {
+			var desmap = getGeneGroup().geneset.getDesignationMap();
+			designation = getId()!=null ? desmap.getOrDefault(getId(), "") : "";
+			return designation;
+		} else if (designation.length()>0) {
+			return designation;
+		}
+		return "";
+	}
+
 	public void setGeneGroup(GeneGroup gg) {
 		this.gg = gg;
 		gg.addGene(this);
