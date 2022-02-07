@@ -155,14 +155,15 @@ public class Gene {
 	}
 
 	public String getDesignation() {
-		if (tegeval == null || tegeval.designation==null) {
+		/*if (tegeval == null || tegeval.designation==null) {
 			var desmap = getGeneGroup().geneset.getDesignationMap();
 			tegeval.designation = getId()!=null ? desmap.getOrDefault(getId(), "") : "";
 			return tegeval.designation;
 		} else if (tegeval.designation.length()>0) {
 			return tegeval.designation;
 		}
-		return "";
+		return "";*/
+		return getGeneGroup().getDesignation();
 	}
 
 	public void setTegeval( Annotation tegeval ) {

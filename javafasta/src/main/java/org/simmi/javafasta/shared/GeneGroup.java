@@ -198,16 +198,18 @@ public class GeneGroup {
 	}
 
 	public String getDesignation() {
+		StringBuilder ret = new StringBuilder();
 		for( Annotation a : genes ) {
-			if (a.designation==null) {
+			/*if (a.designation==null) {
 				var desmap = geneset.getDesignationMap();
 				a.designation = a.getId()!=null ? desmap.getOrDefault(a.getId(), "") : "";
 				return a.designation;
-			} else if (a.designation.length()>0) {
-				return a.designation;
+			} else*/ if (a.designation!=null && a.designation.length()>0) {
+				if(ret.length() == 0) ret.append(a.designation);
+				else ret.append(";"+a.designation);
 			}
 		}
-		return "";
+		return ret.toString();
 	}
 	
 	public Set<Function> getFunctions() {
