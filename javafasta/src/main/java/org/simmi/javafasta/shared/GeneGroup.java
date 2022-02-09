@@ -199,17 +199,8 @@ public class GeneGroup {
 
 	public String getDesignation() {
 		StringBuilder ret = new StringBuilder();
-		for( Annotation a : genes ) {
-			/*if (a.designation==null) {
-				var desmap = geneset.getDesignationMap();
-				a.designation = a.getId()!=null ? desmap.getOrDefault(a.getId(), "") : "";
-				return a.designation;
-			} else*/ if (a.designation!=null && a.designation.length()>0) {
-				if(ret.length() == 0) ret.append(a.designation);
-				else ret.append(";"+a.designation);
-			}
-		}
-		return ret.toString();
+		var set = genes.stream().map(a -> a.designation).filter(d -> d!=null && d.length()>0).collect(Collectors.toSet());
+		return set.size() > 0 ? set.toString() : "";
 	}
 	
 	public Set<Function> getFunctions() {
@@ -354,6 +345,9 @@ public class GeneGroup {
 				for (Annotation a : genes) {
 					String name = a.getName();
 					if (name != null) {
+						if(name.contains("terminase small") || name.contains("peptido")) {
+							System.err.println();
+						}
 						if (ret.length() == 0) ret = name;
 						else {
 							boolean jsome = (ret.startsWith("J") || ret.startsWith("A") || ret.startsWith("L") || ret.startsWith("B")) && (ret.length() > 4 && ret.charAt(4) == '0');
@@ -362,7 +356,7 @@ public class GeneGroup {
 							if ((
 									(jsome || ret.startsWith("Consensus") || ret.contains("plasmid") || ret.contains("chromosome") || ret.contains("contig") || ret.contains("scaffold ") || ret.contains("uid") || (ret.startsWith("hypot") && !name.contains("contig"))) /*&& !ret.contains(":")*/
 							) ||
-									!(nsome || name.contains("Consensus") || name.contains("plasmid") || name.contains("chromosome") || name.contains("contig") || name.contains("scaffold ") || name.contains("uid") || name.contains("unnamed") || (ret.startsWith("Consensus") && name.contains("hypot"))))
+									!(nsome || name.contains("Consensus") || name.contains("plasmid") || name.contains("chromosome") || name.contains("contig") || name.contains("scaffold ") || name.contains("uid") || name.contains("unnamed") || (!ret.startsWith("Consensus") && name.contains("hypot"))))
 								ret = name;
 						}
 					}
