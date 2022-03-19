@@ -451,7 +451,7 @@ public class Serifier {
 							Annotation annn = lann.get(i);
 							
 							if( annn.getName() != null && !annn.getName().contains("No hits") ) {
-								String locstr = ((sbld.length()-annn.stop))+".."+((sbld.length()-annn.start));
+								String locstr = ((sbld.length()-annn.stop+1))+".."+((sbld.length()-annn.start+1));
 								String id;
 								if(ol.isPresent()) {
 									var l = ol.get();
@@ -470,7 +470,7 @@ public class Serifier {
 									fw.write(' ');
 									len++;
 								}
-								if( annn.isReverse() ) fw.write( "complement("+locstr+")\n" );
+								if( !annn.isReverse() ) fw.write( "complement("+locstr+")\n" );
 								else fw.write( locstr+"\n" );
 								
 								//if( !annn.isReverse() ) fw.write( "     gene            complement("+locstr+")\n" );
@@ -4485,20 +4485,29 @@ public class Serifier {
 		double corr = covar/( Math.sqrt(varph)*Math.sqrt(vartmp) );
 		System.err.println( corr );
 	}
-	
+
+	public void writeFasta( Writer osw, boolean id ) throws IOException {
+		var annlist = lseq.stream().flatMap(s -> s.annset.stream()).map(Annotation::getProteinSequence).toList();
+		writeFasta(annlist, osw, null, null, false, id);
+	}
+
+	public void writeFasta( Writer osw, Rectangle selectedRect ) throws IOException {
+		writeFasta(lseq, osw, selectedRect, null, false, false);
+	}
+
 	public void writeFasta( List<? extends Sequence> seqlist, Writer osw, Rectangle selectedRect ) throws IOException {
-		writeFasta(seqlist, osw, selectedRect, null, false);
+		writeFasta(seqlist, osw, selectedRect, null, false, false);
 	}
 	
 	public void writeFasta( List<? extends Sequence> seqlist, Writer osw, Rectangle selectedRect, Set<Integer> filterset ) throws IOException {
-		writeFasta(seqlist, osw, selectedRect, filterset, false);
+		writeFasta(seqlist, osw, selectedRect, filterset, false, false);
 	}
 	
 	public void writeFasta( List<? extends Sequence> seqlist, Writer osw, Rectangle selectedRect, boolean italic ) throws IOException {
-		writeFasta( seqlist, osw, selectedRect, null, italic );
+		writeFasta( seqlist, osw, selectedRect, null, italic, false );
 	}
 
-	public void writeFasta( List<? extends Sequence> seqlist, Writer osw, Rectangle selectedRect, Set<Integer> filterset, boolean italic) throws IOException {
+	public void writeFasta( List<? extends Sequence> seqlist, Writer osw, Rectangle selectedRect, Set<Integer> filterset, boolean italic, boolean id) throws IOException {
 		if( filterset != null && filterset.size() > 0 ) {
 			for( int i : filterset ) {
 				Sequence seq = seqlist.get(i);
@@ -4528,7 +4537,9 @@ public class Serifier {
 		} else {
 	   		if( selectedRect != null && selectedRect.width > 0 ) {
 	   			Sequence.writeFasta(osw, seqlist, selectedRect.x+min, selectedRect.x+min+selectedRect.width, italic);
-	   		} else {
+	   		} else if(id) {
+				Sequence.writeIdFasta(osw, seqlist); //covid true
+			} else {
 	   			Sequence.writeFasta(osw, seqlist, italic, false); //covid true
 	   		}
 			

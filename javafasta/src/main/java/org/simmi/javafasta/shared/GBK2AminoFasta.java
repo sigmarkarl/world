@@ -196,7 +196,7 @@ public class GBK2AminoFasta {
 										}
 									}
 									
-									if( anno != null && anno.stop-anno.start > 10000 ) {
+									if( anno != null && anno.stop-anno.start > 100000 ) {
 										anno = null;
 									}
 								} else {

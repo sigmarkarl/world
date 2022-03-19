@@ -410,6 +410,12 @@ public class Sequence extends FastaSequence implements Comparable<Sequence> {
 			seq.writeSequence(osw, italic, group);
 		}
 	}
+
+	public static void writeIdFasta( Writer osw, List<? extends Sequence> lseq ) throws IOException {
+		for( Sequence seq : lseq ) {
+			seq.writeIdSequence(osw);
+		}
+	}
 	
 	public static void writeFasta( Writer osw, List<? extends Sequence> lseq, int start, int stop, boolean italic ) throws IOException {
 		for( Sequence seq : lseq ) {
