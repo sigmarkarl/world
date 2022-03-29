@@ -57,7 +57,7 @@ public class ChatServer extends WebSocketServer {
 
 	public static void main( String[] args ) throws InterruptedException , IOException {
 		WebSocketImpl.DEBUG = true;
-		int port = 8887; // 843 flash policy port
+		int port = 5111; // 843 flash policy port
 		try {
 			port = Integer.parseInt( args[ 0 ] );
 		} catch ( Exception ex ) {
@@ -66,11 +66,11 @@ public class ChatServer extends WebSocketServer {
 		s.start();
 		System.out.println( "ChatServer started on port: " + s.getPort() );
 
-		try {
-			Desktop.getDesktop().browse( new URI("http://127.0.0.1:8888/Treedraw.html?ws=127.0.0.1:8887") );
+		/*try {
+			Desktop.getDesktop().browse( new URI("http://127.0.0.1:5111/Treedraw.html?ws=127.0.0.1:8887") );
 		} catch (URISyntaxException e) {
 			e.printStackTrace();
-		}
+		}*/
 		
 		BufferedReader sysin = new BufferedReader( new InputStreamReader( System.in ) );
 		while ( true ) {
