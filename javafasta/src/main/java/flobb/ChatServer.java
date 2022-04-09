@@ -34,7 +34,7 @@ public class ChatServer extends WebSocketServer {
 	public void onOpen( WebSocket conn, ClientHandshake handshake ) {
 		this.sendToAll( "new connection: " + handshake.getResourceDescriptor() );
 		
-		System.err.println( "bleh " + handshake.getResourceDescriptor() + "  " + handshake.toString() );
+		System.err.println( "bleh " + handshake.getResourceDescriptor() + "  " + handshake);
 		Iterator<String> it = handshake.iterateHttpFields();
 		while( it.hasNext() ) {
 			String s = it.next();
