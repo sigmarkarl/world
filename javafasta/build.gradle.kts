@@ -20,4 +20,6 @@ dependencies {
     implementation(group = "org.apache.spark", name = "spark-mllib_2.13", version = "3.2.1")
     implementation(group = "org.apache.spark", name = "spark-kubernetes_2.13", version = "3.2.1")
     //implementation(group = "org.scalanlp", name = "breeze_2.13", version = "1.1")
+
+    implementation("org.java-websocket:Java-WebSocket:1.5.2")
 }

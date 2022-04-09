@@ -6115,7 +6115,7 @@ public class JavaFasta extends JPanel {
 				
 				//if( failed ) {
 				//String 				tree = serifier.getFastTree();
-				if( cs.connections().size() > 0 ) {
+				if( cs.getConnections().size() > 0 ) {
 		    		cs.sendToAll( tree );
 		    	} else if( Desktop.isDesktopSupported() ) {
 		    		cs.message = tree;
@@ -6173,7 +6173,7 @@ public class JavaFasta extends JPanel {
 
 				String 				tree = serifier.getFastTree( seqlist, user, false );
 				System.err.println( tree );
-				if( cs != null && cs.connections() != null && cs.connections().size() > 0 ) {
+				if( cs != null && cs.getConnections() != null && cs.getConnections().size() > 0 ) {
 					cs.sendToAll( tree );
 				} else if( Desktop.isDesktopSupported() && cs != null ) {
 					cs.message = tree;

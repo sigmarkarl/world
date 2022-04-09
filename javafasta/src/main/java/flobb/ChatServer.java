@@ -56,7 +56,7 @@ public class ChatServer extends WebSocketServer {
 	}
 
 	public static void main( String[] args ) throws InterruptedException , IOException {
-		WebSocketImpl.DEBUG = true;
+		//WebSocketImpl.DEBUG = true;
 		int port = 5111; // 843 flash policy port
 		try {
 			port = Integer.parseInt( args[ 0 ] );
@@ -87,6 +87,11 @@ public class ChatServer extends WebSocketServer {
 		}
 	}
 
+	@Override
+	public void onStart() {
+
+	}
+
 	/**
 	 * Sends <var>text</var> to all currently connected WebSocket clients.
 	 * 
@@ -96,7 +101,7 @@ public class ChatServer extends WebSocketServer {
 	 *             When socket related I/O errors occur.
 	 */
 	public void sendToAll( String text ) {
-		Collection<WebSocket> con = connections();
+		Collection<WebSocket> con = getConnections();
 		synchronized ( con ) {
 			for( WebSocket c : con ) {
 				c.send( text );
