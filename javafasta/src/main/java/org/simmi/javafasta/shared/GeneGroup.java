@@ -501,6 +501,14 @@ public class GeneGroup {
 		return null;
 	}
 
+	public String getHhblits() {
+		for( Annotation a : genes ) {
+			Gene g = a.getGene();
+			if( g != null && g.hhblits != null && g.hhblits.length() > 0 ) return g.hhblits;
+		}
+		return null;
+	}
+
 	public String getDbcan() {
 		for( Annotation a : genes ) {
 			Gene g = a.getGene();

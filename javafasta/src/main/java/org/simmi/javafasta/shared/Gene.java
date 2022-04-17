@@ -296,6 +296,7 @@ public class Gene {
 	public String cazy;
 	public String dbcan;
 	public String phaster;
+	public String hhblits;
 	public String pfamid;
 	public Set<String> allids;
 	public String genid;
