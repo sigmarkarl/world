@@ -33,6 +33,10 @@ public class Gene {
 			w.append( ps.substring(i, Math.min(i + 70, ps.length())) + "\n");
 		}*/
 	}
+
+	public String getHhpred() {
+		return hhblits;
+	}
 	
 	public String getFasta( boolean id ) {
 		StringWriter sb = new StringWriter();

@@ -345,9 +345,6 @@ public class GeneGroup {
 				for (Annotation a : genes) {
 					String name = a.getName();
 					if (name != null) {
-						if(name.contains("terminase small") || name.contains("peptido")) {
-							System.err.println();
-						}
 						if (ret.length() == 0) ret = name;
 						else {
 							boolean jsome = (ret.startsWith("J") || ret.startsWith("A") || ret.startsWith("L") || ret.startsWith("B")) && (ret.length() > 4 && ret.charAt(4) == '0');
@@ -399,7 +396,18 @@ public class GeneGroup {
 			} else {
 				ret = getTegevals().stream().map(Annotation::getName).collect(Collectors.joining(","));
 			}
+
 			name = ret;
+			/*if (name.contains("hypoth") || name.contains("-contig0")) {
+				for (Annotation a : genes) {
+					var g = a.getGene();
+					if(g!=null&&g.hhblits!=null&&g.hhblits.length()>0) {
+						var semic = g.hhblits.indexOf(";");
+						name = g.hhblits.substring(0,semic==-1?g.hhblits.length():semic);
+						break;
+					}
+				}
+			}*/
 		}
 		
 		return name;
