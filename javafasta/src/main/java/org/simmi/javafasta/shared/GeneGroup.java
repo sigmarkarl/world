@@ -398,7 +398,7 @@ public class GeneGroup {
 			}
 
 			name = ret;
-			/*if (name.contains("hypoth") || name.contains("-contig0")) {
+			if (name.contains("hypoth") || name.contains("-contig0")) {
 				for (Annotation a : genes) {
 					var g = a.getGene();
 					if(g!=null&&g.hhblits!=null&&g.hhblits.length()>0) {
@@ -407,7 +407,7 @@ public class GeneGroup {
 						break;
 					}
 				}
-			}*/
+			}
 		}
 		
 		return name;

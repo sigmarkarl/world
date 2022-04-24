@@ -359,6 +359,16 @@ public class Sequence extends FastaSequence implements Comparable<Sequence> {
 		Collections.sort(isoel);
 	}
 
+	public void shift(int i) {
+		if (i < 0) {
+			i = sb.length()+i;
+		}
+		var nsb = new StringBuilder(sb.capacity());
+		nsb.append(sb.substring(i));
+		nsb.append(sb.substring(0, i));
+		sb = nsb;
+	}
+
 	public StringBuilder getSequence() {
 		return sb;
 	}

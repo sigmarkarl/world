@@ -63,6 +63,7 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import javax.imageio.ImageIO;
@@ -88,13 +89,9 @@ import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Encoder;
 import org.apache.spark.sql.Encoders;
 import org.apache.spark.sql.SparkSession;
-import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder;
-import org.simmi.javafasta.shared.Contig;
-import org.simmi.javafasta.shared.Sequence;
-import org.simmi.javafasta.shared.Annotation;
-import org.simmi.javafasta.shared.GeneGroup;
-import org.simmi.javafasta.shared.Serifier;
-import org.simmi.javafasta.shared.Tegeval;
+import org.simmi.distann.ANIResult;
+import org.simmi.distann.ANIScore;
+import org.simmi.javafasta.shared.*;
 import org.simmi.treedraw.shared.TreeUtil;
 
 import flobb.ChatServer;
@@ -2090,7 +2087,7 @@ public class JavaFasta extends JPanel {
 		
 		int[] rr = table.getSelectedRows();
 		StringBuilder	text = new StringBuilder();
-		text.append("\t"+rr.length+"\n");
+		text.append("\t").append(rr.length).append("\n");
 		
 		if( rr.length > 0 ) {
 			if( excludeGaps ) {
@@ -2104,7 +2101,7 @@ public class JavaFasta extends JPanel {
 					if( seq.getRealStop() < end ) end = seq.getRealStop();
 				}
 				
-				List<Integer>	idxs = new ArrayList<Integer>();
+				List<Integer>	idxs = new ArrayList<>();
 				for( int x = start; x < end; x++ ) {
 					int i;
 					for( i = 0; i < rr.length; i++ ) {
@@ -3042,6 +3039,254 @@ public class JavaFasta extends JPanel {
 			y++;
 		}
 	}
+
+	public static BufferedImage showRelation(List<String> specset, ANIResult aniResult, boolean inverted ) {
+		BufferedImage bi = new BufferedImage(1, 1, BufferedImage.TYPE_INT_RGB);
+		Graphics2D g2 = (Graphics2D) bi.getGraphics();
+		int mstrw = 0;
+		for (String spec : specset) {
+			String spc = spec;//nameFix( spec );
+			int tstrw = g2.getFontMetrics().stringWidth(spc);
+			if (tstrw > mstrw)
+				mstrw = tstrw;
+		}
+
+		int sss = mstrw + 72 * specset.size() + 10 + 72;
+		bi = new BufferedImage(sss, sss, BufferedImage.TYPE_INT_RGB);
+		g2 = (Graphics2D) bi.getGraphics();
+		g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+		g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+		g2.setColor(Color.white);
+		g2.fillRect(0, 0, sss, sss);
+
+		double[] matrix = aniResult.corrarr;
+		int[] cmatrix = aniResult.countarr;
+		boolean hasCount = Arrays.stream(cmatrix).anyMatch(p -> p > 1);
+
+		int where = 0;
+		for (String spec1 : specset) {
+			int wherex = 0;
+			int w = where; //specset.indexOf( spec1 );
+			//String spc1 = nameFix( spec1 );
+			int strw = g2.getFontMetrics().stringWidth(spec1);
+
+			g2.setColor(Color.black);
+			g2.drawString(spec1, mstrw - strw, mstrw + 47 + where * 72);
+			g2.rotate(Math.PI / 2.0, mstrw + 47 + where * 72, mstrw - strw);
+			g2.drawString(spec1, mstrw + 47 + where * 72, mstrw - strw);
+			g2.rotate(-Math.PI / 2.0, mstrw + 47 + where * 72, mstrw - strw);
+			//String spc1 = nameFix( spec1 );
+			for (String spec2 : specset) {
+				if( where != wherex ) {
+					int wx = specset.indexOf( spec2 );//corrInd.indexOf( spec2 );
+					double ani = inverted ? 1.0-matrix[ w*specset.size()+wx ] : matrix[ w*specset.size()+wx ];
+					int count = cmatrix[ w*specset.size()+wx ];
+
+					//float cval = Math.min( 0.9f, Math.max( 0.0f,4.2f - (float)(4.2*ani) ) );
+					float cval = Math.min( 0.9f, Math.max( 0.0f, 1.2f - (float)(1.2*ani) ) );
+					System.err.println( cval + "  " + ani );
+					Color color = new Color( cval, cval, cval );
+					g2.setColor( color );
+					g2.fillRoundRect(mstrw + 10 + wherex * 72, mstrw + 10 + where * 72, 64, 64, 16, 16);
+
+					g2.setColor( Color.white );
+					String str = String.format("%.1f%s", (float) (ani * 100.0), "%");
+					int nstrw = g2.getFontMetrics().stringWidth(str);
+					g2.drawString(str, mstrw + 42 + wherex * 72 - nstrw / 2, mstrw + 47 + where * 72 + 15);
+
+					if (hasCount) {
+						str = String.format("%d", count);
+						nstrw = g2.getFontMetrics().stringWidth(str);
+						g2.drawString(str, mstrw + 42 + wherex * 72 - nstrw / 2, mstrw + 47 + where * 72 + 2);
+					}
+				}
+				wherex++;
+			}
+			where++;
+		}
+
+		return bi;
+	}
+
+	public static void seqIdent(Sequence seq1, Sequence seq2, boolean all, Map<String, Integer> blosumap, ANIScore aniScore) {
+		int mest = 0;
+		int tmest = 0;
+
+		int start = -1;
+		int stop = -1;
+		for (int i = 0; i < seq1.length(); i++) {
+			int startcheck = 0;
+			if (seq1.getCharAt(i) != '-') {
+				startcheck |= 1;
+			}
+			if (seq2.getCharAt(i) != '-') {
+				startcheck |= 2;
+			}
+
+			if (startcheck == 3) {
+				start = i;
+				break;
+			}
+		}
+
+		for (int i = seq1.length() - 1; i >= 0; i--) {
+			int stopcheck = 0;
+			if (seq1.getCharAt(i) != '-') {
+				stopcheck |= 1;
+			}
+			if (seq2.getCharAt(i) != '-') {
+				stopcheck |= 2;
+			}
+
+			if (stopcheck == 3) {
+				stop = i + 1;
+				break;
+			}
+		}
+		//count += stop-start;
+
+		if(all) {
+			for (int i = 0; i < seq1.length(); i++) {
+				char lc = seq1.getCharAt(i);
+				char lc2 = seq2.getCharAt(i);
+				//char c = Character.toUpperCase(lc);
+				if (lc != '-' && lc2 != '-') {
+					tmest++;
+												/*String comb = c + "" + c;
+												if (blosumap.containsKey(comb)) tmest += blosumap.get(comb);*/
+				}
+			}
+
+			for (int i = 0; i < seq1.length(); i++) {
+				char lc = seq1.getCharAt(i);
+				char c = Character.toUpperCase(lc);
+				char lc2 = seq2.getCharAt(i);
+				char c2 = Character.toUpperCase(lc2);
+
+				if (lc != '-' && lc2 != '-') {
+					if (c == c2) mest++;
+												/*String comb = c + "" + c2;
+												if (blosumap.containsKey(comb)) mest += blosumap.get(comb);*/
+				}
+			}
+		} else {
+			for (int i = start; i < stop; i++) {
+				char lc = seq1.getCharAt(i);
+				char c = Character.toUpperCase(lc);
+				String comb = c + "" + c;
+				if (blosumap.containsKey(comb)) tmest += blosumap.get(comb);
+			}
+
+			for (int i = start; i < stop; i++) {
+				char lc = seq1.getCharAt(i);
+				char c = Character.toUpperCase(lc);
+				char lc2 = seq2.getCharAt(i);
+				char c2 = Character.toUpperCase(lc2);
+				String comb = c + "" + c2;
+				if (blosumap.containsKey(comb)) mest += blosumap.get(comb);
+			}
+		}
+
+		double tani = (double) mest / (double) tmest;
+		if (tani > (double) aniScore.score / (double) aniScore.tscore) {
+			aniScore.score = mest;
+			aniScore.tscore = tmest;
+		}
+		//ret = (double)score/(double)tscore; //int cval = tscore == 0 ? 0 : Math.min( 192, 512-score*512/tscore );
+		//return ret;
+	}
+
+	public static ANIResult corr(List<String> speclist, Collection<GeneGroup> agg, boolean diff, boolean all) {
+		Map<String, Integer> blosumap = getBlosumMap();
+		Collection<GeneGroup> allgg = Collections.synchronizedCollection(agg);
+
+		ANIResult aniResult = new ANIResult(speclist.size());
+		IntStream.range(0,speclist.size()).parallel().forEach(where -> {
+			String spec1 = speclist.get(where);
+			int wherex = 0;
+
+			//String spc1 = geneset.nameFix(spec1);
+			for (String spec2 : speclist) {
+				System.err.println(spec1 + " vs " + spec2);
+				if (where != wherex) {
+					int totalscore = 0;
+					int totaltscore = 1;
+					int count = 0;
+					for (GeneGroup gg : allgg) {
+						Set<String> species = gg.getSpecies();
+						if ( species != null && species.contains(spec1) && species.contains(spec2)) {
+							Teginfo ti1 = gg.species.get(spec1);
+							Teginfo ti2 = gg.species.get(spec2);
+							//if( ti1.tset.size() == 1 && ti2.tset.size() == 1 ) {
+							//double bval = 0.0;
+
+							var aniScore = new ANIScore();
+							for (Annotation tv1 : ti1.tset) {
+								//int maxscore;
+								//int maxtscore;
+								for (Annotation tv2 : ti2.tset) {
+									Sequence seq1 = tv1.getAlignedSequence();
+									Sequence seq2 = tv2.getAlignedSequence();
+									if (seq1 != null && seq2 != null) {
+										seqIdent(seq1, seq2, all, blosumap, aniScore);
+									}
+									//if( where == 0 ) d1.add( gg.getCommonName() );
+									//else d2.add( gg.getCommonName() );
+								}
+							}
+							if(aniScore.score>0) count++;
+							totalscore += aniScore.score;
+							totaltscore += aniScore.tscore;
+
+										/*if( bval > 0 ) {
+											ani += bval;
+											count++;
+										}*/
+							//}
+						}
+					}
+					double ani = (diff ? (double) (totaltscore - totalscore) : totalscore) / (double) totaltscore;
+					aniResult.corrarr[where * speclist.size() + wherex] = ani;
+					aniResult.countarr[where * speclist.size() + wherex] = count;
+				}
+				wherex++;
+			}
+		});
+		System.err.println("done");
+		return aniResult;
+	}
+
+	public static void showAniMatrix(List<String> specList, ANIResult aniResult) {
+		final BufferedImage bi = showRelation( specList, aniResult, false );
+		JFrame f = new JFrame("TNI matrix");
+		f.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+		f.setSize(500, 500);
+
+		var ff = new File("/Users/sigmar/simmi.png");
+		try {
+			ImageIO.write(bi, "PNG", ff);
+			Desktop.getDesktop().open(ff);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+		JComponent comp2 = new JComponent() {
+			public void paintComponent( Graphics g ) {
+				super.paintComponent(g);
+				var g2 = (Graphics2D) g;
+				g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+				g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+				g2.drawImage(bi, 0, 0, bi.getWidth(), bi.getHeight(), 0, 0, bi.getWidth(), bi.getHeight(), this);
+			}
+		};
+		Dimension dim = new Dimension(bi.getWidth(),bi.getHeight());
+		comp2.setPreferredSize(dim);
+		comp2.setSize( dim );
+		JScrollPane scroll = new JScrollPane(comp2);
+		f.add(scroll);
+
+		f.setVisible( true );
+	}
 	
 	static JFrame		fxframe = new JFrame();
 	static JFXPanel		fxp = new JFXPanel();
@@ -3130,7 +3375,7 @@ public class JavaFasta extends JPanel {
 		table.setAutoCreateRowSorter( true );
 		table.setDragEnabled( true );
 		
-		Action action = new CopyAction("Copy", null, "Copy data", new Integer(KeyEvent.VK_CONTROL + KeyEvent.VK_C));
+		Action action = new CopyAction("Copy", null, "Copy data", KeyEvent.VK_CONTROL + KeyEvent.VK_C);
 		table.getActionMap().put("copy", action);
 		
 		/*try {
@@ -3162,7 +3407,7 @@ public class JavaFasta extends JPanel {
 						c.selectedRect.height = (int)((p.y-npy)/c.rh)+1;
 					} else {
 						c.selectedRect.x = (int)(p.x/c.cw);
-						c.selectedRect.y = (int)(p.y/c.rh);
+						c.selectedRect.y = p.y/c.rh;
 						c.selectedRect.width = 1;
 						c.selectedRect.height = 1;
 					}
@@ -3190,9 +3435,9 @@ public class JavaFasta extends JPanel {
 				
 				if( e.isShiftDown() ) {
 					c.selectedRect.x = (int)(p.x/c.cw);
-					c.selectedRect.y = (int)(p.y/c.rh);
+					c.selectedRect.y = p.y/c.rh;
 					c.selectedRect.width = (int)((np.x-p.x)/c.cw)+1;
-					c.selectedRect.height = (int)((np.y-p.y)/c.rh)+1;
+					c.selectedRect.height = ((np.y-p.y)/c.rh) +1;
 					c.repaint();
 				} else {
 					Rectangle r = c.getVisibleRect();
@@ -3354,14 +3599,13 @@ public class JavaFasta extends JPanel {
 						for( int r = 0; r < table.getRowCount(); r++ ) {
 							Object o = table.getValueAt(r, 0);
 							if( o != null ) {
-								ret.append(o.toString());
+								ret.append(o);
 							} else {
-								ret.append("");
 							}
 							for( int c = 1; c < table.getColumnCount(); c++ ) {
 								o = table.getValueAt(r, c);
 								if( o != null ) {
-									ret.append("\t").append(o.toString());
+									ret.append("\t").append(o);
 								} else {
 									ret.append("\t");
 								}
@@ -3958,7 +4202,7 @@ public class JavaFasta extends JPanel {
 		    		
 		    		//"--localpair"
 			    	ProcessBuilder pb;
-			    	if( hostname.contains("localhost") ) pb = new ProcessBuilder("/usr/local/bin/mafft","--thread",Integer.toString(Runtime.getRuntime().availableProcessors()),filename); //, "-in", "tmp.fasta", "-out", "tmpout.fasta");
+			    	if( hostname.contains("localhost") ) pb = new ProcessBuilder("/opt/homebrew/bin/mafft","--thread",Integer.toString(Runtime.getRuntime().availableProcessors()),filename); //, "-in", "tmp.fasta", "-out", "tmpout.fasta");
 			    	else {
 			    		ProcessBuilder pbt = new ProcessBuilder("scp", "-q", filename, username+"@"+hostname+":~/"+filename);
 			    		pbt.directory( tmpdir.toFile() );
@@ -5972,6 +6216,31 @@ public class JavaFasta extends JPanel {
 			}
 		});
 		popup.add( cbmi3 );
+		phylogeny.add( new AbstractAction("Sequence identity matrix") {
+						   @Override
+						   public void actionPerformed(ActionEvent e) {
+							   var diff = false;
+							   var speclist = serifier.lseq.stream().map(FastaSequence::getName).toList();
+							   var aniResult = new ANIResult(speclist.size());
+							   Map<String, Integer> blosumap = getBlosumMap();
+							   int where = 0;
+							   for(Sequence seq1 : serifier.lseq) {
+								   int wherex = 0;
+								   for(Sequence seq2 : serifier.lseq) {
+									   var aniScore = new ANIScore();
+									   seqIdent(seq1, seq2, true, blosumap, aniScore);
+
+									   double ani = (diff ? (double) (aniScore.tscore - aniScore.score) : aniScore.score) / (double) aniScore.tscore;
+									   aniResult.corrarr[where * speclist.size() + wherex] = ani;
+									   aniResult.countarr[where * speclist.size() + wherex] = 1;
+
+									   wherex++;
+								   }
+								   where++;
+							   }
+							   showAniMatrix(speclist, aniResult);
+						   }
+					   });
 		phylogeny.add( new AbstractAction("Dis-mat exclude gaps") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -5980,7 +6249,7 @@ public class JavaFasta extends JPanel {
 				File save = null;
 				try {
 					JFileChooser	fc = new JFileChooser();
-					if( fc.showOpenDialog( parentApplet ) == JFileChooser.APPROVE_OPTION ) {
+					if( fc.showSaveDialog( parentApplet ) == JFileChooser.APPROVE_OPTION ) {
 						save = fc.getSelectedFile();
 					}
 				} catch( Exception e1 ) {
@@ -6013,7 +6282,7 @@ public class JavaFasta extends JPanel {
 				File save = null;
 				try {
 					JFileChooser	fc = new JFileChooser();
-					if( fc.showOpenDialog( parentApplet ) == JFileChooser.APPROVE_OPTION ) {
+					if( fc.showSaveDialog( parentApplet ) == JFileChooser.APPROVE_OPTION ) {
 						save = fc.getSelectedFile();
 					}
 				} catch( Exception e1 ) {
@@ -6021,8 +6290,7 @@ public class JavaFasta extends JPanel {
 				}
 				
 				if( save != null ) {
-					try {
-						FileWriter fw = new FileWriter( save );
+					try(FileWriter fw = new FileWriter( save )) {
 						fw.write( sb.toString() );
 					} catch (IOException e1) {
 						e1.printStackTrace();
@@ -6043,7 +6311,7 @@ public class JavaFasta extends JPanel {
 			public void actionPerformed(ActionEvent e) {
 				Map<String,Integer> blosumap = JavaFasta.getBlosumMap();
 				
-				List<String> names = new ArrayList<String>();
+				List<String> names = new ArrayList<>();
 				for( Sequence seq : serifier.lseq ) {
 					names.add( seq.getName() );
 				}
@@ -6063,10 +6331,8 @@ public class JavaFasta extends JPanel {
 				}
 				
 				if( save != null ) {
-					try {
-						FileWriter fw = new FileWriter( save );
+					try(FileWriter fw = new FileWriter( save )) {
 						fw.write( sb.toString() );
-						fw.close();
 					} catch (IOException e1) {
 						e1.printStackTrace();
 					}
@@ -6217,7 +6483,7 @@ public class JavaFasta extends JPanel {
 		phylogeny.add( new AbstractAction("Draw distance matrix") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				StringBuilder	sb = distanceMatrix( true );
+				StringBuilder sb = distanceMatrix( true );
 			}
 		});
 		
@@ -7705,7 +7971,7 @@ public class JavaFasta extends JPanel {
 			public void actionPerformed(ActionEvent e) {
 				int max = 0;
 				int[] rr = atable.getSelectedRows();
-				Map<Sequence,Annotation> seqs = new HashMap<Sequence,Annotation>();
+				Map<Sequence,Annotation> seqs = new HashMap<>();
 				for( int r : rr ) {
 					int i = atable.convertRowIndexToModel(r);
 					Annotation a = serifier.lann.get(i);
@@ -7716,6 +7982,18 @@ public class JavaFasta extends JPanel {
 				for( Sequence seq : seqs.keySet() ) {
 					Annotation sela = seqs.get(seq);
 					seq.setStart(max-sela.start);
+				}
+			}
+		});
+		apopup.add( new AbstractAction("Rotate to here") {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				int[] rr = atable.getSelectedRows();
+				Map<Sequence,Annotation> seqs = new HashMap<>();
+				for( int r : rr ) {
+					int i = atable.convertRowIndexToModel(r);
+					Annotation a = serifier.lann.get(i);
+					a.getContig().shift(a.start);
 				}
 			}
 		});
