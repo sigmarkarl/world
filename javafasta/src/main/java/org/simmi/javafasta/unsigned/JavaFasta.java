@@ -3150,7 +3150,8 @@ public class JavaFasta extends JPanel {
 				char lc = seq1.getCharAt(i);
 				char lc2 = seq2.getCharAt(i);
 				//char c = Character.toUpperCase(lc);
-				if (lc != '-' && lc2 != '-') {
+				//char c2 = Character.toUpperCase(lc2);
+				if (lc != '-' /*|| lc2 != '-'*/) {
 					tmest++;
 												/*String comb = c + "" + c;
 												if (blosumap.containsKey(comb)) tmest += blosumap.get(comb);*/
@@ -3163,7 +3164,7 @@ public class JavaFasta extends JPanel {
 				char lc2 = seq2.getCharAt(i);
 				char c2 = Character.toUpperCase(lc2);
 
-				if (lc != '-' && lc2 != '-') {
+				if (lc != '-' /*&& lc2 != '-'*/) {
 					if (c == c2) mest++;
 												/*String comb = c + "" + c2;
 												if (blosumap.containsKey(comb)) mest += blosumap.get(comb);*/
