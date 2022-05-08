@@ -745,6 +745,28 @@ public class GeneGroup {
 		}
 	}
 
+	public void mergeAnnotations(Collection<Annotation> genes) {
+		for (Annotation gene : genes) {
+			mergeAnnotation(gene);
+		}
+	}
+
+	public void mergeAnnotation(Annotation gene) {
+		if( gene.getGeneGroup() != this ) {
+			var specstr = gene.getSpecies();
+			if (specstr != null) {
+				if (species.containsKey(specstr)) {
+					var anno = species.get(specstr).best;
+					anno.start = Math.min(anno.start,gene.start);
+					anno.stop = Math.max(anno.stop,gene.stop);
+				} else {
+					species.put(specstr, gene.getGeneGroup().getTes(specstr));
+				}
+			}
+			gene.setGeneGroup( this );
+		}
+	}
+
 	public void addGene( Annotation gene ) {
 		if( gene.getGeneGroup() != this ) gene.setGeneGroup( this );
 		else {

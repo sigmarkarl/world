@@ -3209,6 +3209,7 @@ public class JavaFasta extends JPanel {
 			//String spc1 = geneset.nameFix(spec1);
 			for (String spec2 : speclist) {
 				System.err.println(spec1 + " vs " + spec2);
+				//boolean both = spec1.contains("15-6") && spec2.contains("GBK1");
 				if (where != wherex) {
 					int totalscore = 0;
 					int totaltscore = 1;

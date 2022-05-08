@@ -266,9 +266,9 @@ public class Gene {
 					species = tegeval.seq.getSpec();
 				}
 				
-				if( species == null || species.length() < 4 ) {	
+				/*if( species == null || species.length() < 4 ) {
 					System.err.println("hey!!");
-				}
+				}*/
 			}
 			return species;
 		}

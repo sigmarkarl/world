@@ -831,9 +831,14 @@ public class Sequence extends FastaSequence implements Comparable<Sequence> {
 		if( i != -1 ) {
 			if( isReverse() ) {
 				if( i > 0 ) ret = annset.get( i-1 );
+				else {
+					ret = getPrevContig().getFirst();
+				}
 			} else {
 				 if( i < annset.size()-1 ) {
 					 ret = annset.get( i+1 );
+				 } else {
+					 ret = getNextContig().getFirst();
 				 }
 			}
 		}
@@ -1782,10 +1787,18 @@ public class Sequence extends FastaSequence implements Comparable<Sequence> {
 	}
 	
 	public Sequence getNextContig() {
+		//if (next==null) {
+			var i = partof.indexOf(this);
+			next = this.isReverse() ? partof.get((i+partof.size()-1)%partof.size()) : partof.get((i+1)%partof.size());
+		//}
 		return next;
 	}
 	
 	public Sequence getPrevContig() {
+		//if (prev==null) {
+			var i = partof.indexOf(this);
+			prev = this.isReverse() ? partof.get((i+1)%partof.size()) : partof.get((i+partof.size()-1)%partof.size());
+		//}
 		return prev;
 	}
 
