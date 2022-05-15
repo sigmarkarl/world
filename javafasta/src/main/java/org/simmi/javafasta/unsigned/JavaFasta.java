@@ -89,8 +89,6 @@ import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Encoder;
 import org.apache.spark.sql.Encoders;
 import org.apache.spark.sql.SparkSession;
-import org.simmi.distann.ANIResult;
-import org.simmi.distann.ANIScore;
 import org.simmi.javafasta.shared.*;
 import org.simmi.treedraw.shared.TreeUtil;
 
@@ -115,7 +113,6 @@ import javafx.scene.chart.XYChart;
 import javafx.scene.web.WebEngine;
 import javafx.scene.web.WebView;
 import javafx.stage.Stage;
-import netscape.javascript.JSObject;
 
 public class JavaFasta extends JPanel {
 
