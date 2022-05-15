@@ -16,18 +16,18 @@ public class Teginfo implements Teg {
 	}
 
 	public String toString() {
-		String ret = best.toString();
+		StringBuilder ret = new StringBuilder(best.getId() + ";" + best.toString());
 		String design = best.designation;
-		if( design != null ) ret += " " + design;
 		int i = 0;
 		for (Annotation tv : tset) {
 			if (tv != best) {
-				ret += " " + tv.toString();
+				ret.append("/").append(tv.getId()).append(";").append(tv);
 			}
 			i++;
 			if( i > 10 || ret.length() > 50 ) break;
 		}
-		return ret;
+		if( design != null ) ret.append(" ").append(design);
+		return ret.toString();
 	}
 
 	@Override
