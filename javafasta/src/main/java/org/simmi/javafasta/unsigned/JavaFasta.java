@@ -89,6 +89,8 @@ import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Encoder;
 import org.apache.spark.sql.Encoders;
 import org.apache.spark.sql.SparkSession;
+import org.simmi.distann.ANIResult;
+import org.simmi.distann.ANIScore;
 import org.simmi.javafasta.shared.*;
 import org.simmi.treedraw.shared.TreeUtil;
 
