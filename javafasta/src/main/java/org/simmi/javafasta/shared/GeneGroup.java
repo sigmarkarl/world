@@ -398,12 +398,18 @@ public class GeneGroup {
 			}
 
 			name = ret;
-			if (name.contains("hypoth") || name.contains("-contig0")) {
+			if (name.startsWith("Phage protein") || name.contains("hypoth") || name.contains("-contig0")) {
 				for (Annotation a : genes) {
 					var g = a.getGene();
 					if(g!=null&&g.hhblits!=null&&g.hhblits.length()>0) {
-						var semic = g.hhblits.indexOf(";");
-						name = g.hhblits.substring(0,semic==-1?g.hhblits.length():semic);
+						var bil = g.hhblits.indexOf(' ');
+						var tab = g.hhblits.indexOf('\t');
+						var eix = g.hhblits.indexOf("E-value=",tab+1);
+						//if (eix>0) {
+						//	var evl = Double.parseDouble(g.hhblits.substring(eix + 8).trim());
+							//if (evl < 1.0)
+								name = g.hhblits.substring(bil + 1, tab);
+						//}
 						break;
 					}
 				}
