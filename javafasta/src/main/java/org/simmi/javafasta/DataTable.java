@@ -1401,7 +1401,7 @@ public class DataTable extends JPanel implements ClipboardOwner {
 			}
 		}
 		
-		Set<String>	include = new HashSet<String>();
+		Set<String>	include = new HashSet<>();
 		int[] rr = table.getSelectedRows();
 		for( int r : rr ) {
 			int i = table.convertRowIndexToModel(r);
@@ -1797,7 +1797,7 @@ public class DataTable extends JPanel implements ClipboardOwner {
 					if( specLoc.containsKey( thespec ) ) {
 						cmap = specLoc.get( thespec );
 					} else {
-						cmap = new TreeMap<String,Long>();
+						cmap = new TreeMap<>();
 						specLoc.put( thespec, cmap );
 					}
 					
@@ -1823,7 +1823,7 @@ public class DataTable extends JPanel implements ClipboardOwner {
 					if( locSpec.containsKey( country ) ) {
 						smap = locSpec.get( country );
 					} else {
-						smap = new TreeMap<String,Long>();
+						smap = new TreeMap<>();
 						locSpec.put( country, smap );
 					}
 					if( smap.containsKey(thespec) ) {
@@ -1832,8 +1832,8 @@ public class DataTable extends JPanel implements ClipboardOwner {
 						int oldidlen = (int)(oldidlencount&0xFFFFFFFF);
 						int oldcount = (int)(oldidlencount>>32);
 						
-						int oldid = (int)(oldidlen&0xFFFF);
-						int oldlen = (int)(oldidlen>>16);
+						int oldid = oldidlen&0xFFFF;
+						int oldlen = oldidlen>>16;
 						
 						/*long oldidlen = smap.get(country);
 						int oldid = (int)(oldidlen&0xFFFF);
@@ -1861,9 +1861,9 @@ public class DataTable extends JPanel implements ClipboardOwner {
 		String line = br.readLine();
 		line = br.readLine();
 		
-		Map<String,Set<String>>		accsetMap = new HashMap<String,Set<String>>();
-		Map<String,String>			accountryMap = new HashMap<String,String>();
-		Map<String,String>			accspecMap = new HashMap<String,String>();
+		Map<String,Set<String>>		accsetMap = new HashMap<>();
+		Map<String,String>			accountryMap = new HashMap<>();
+		Map<String,String>			accspecMap = new HashMap<>();
 		//int count = 0;
 		while( line != null ) {
 			String[] split = csvSplit( line ); //line.split(",");
@@ -1874,7 +1874,7 @@ public class DataTable extends JPanel implements ClipboardOwner {
 			if( accsetMap.containsKey( country ) ) {
 				accset = accsetMap.get( country );
 			} else {
-				accset = new HashSet<String>();
+				accset = new HashSet<>();
 				accsetMap.put( country, accset );
 			}
 			accset.add( acc );
@@ -1886,7 +1886,7 @@ public class DataTable extends JPanel implements ClipboardOwner {
 		}
 		br.close();
 		
-		Set<String> finished = new HashSet<String>();
+		Set<String> finished = new HashSet<>();
 		for( Object[] row : rowList ) {
 			String acc = (String)row[1];
 			if( !finished.contains( acc ) ) {
@@ -2925,7 +2925,7 @@ public class DataTable extends JPanel implements ClipboardOwner {
 								if( seq.getRealStop() < end ) end = seq.getRealStop();
 							}
 							
-							idxs = new ArrayList<Integer>();
+							idxs = new ArrayList<>();
 							for( int x = start; x < end; x++ ) {
 								boolean skip = false;
 								for( Sequence seq : currentserifier.lseq ) {

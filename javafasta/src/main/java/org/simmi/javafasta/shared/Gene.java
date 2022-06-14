@@ -3,6 +3,7 @@ package org.simmi.javafasta.shared;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.io.Writer;
+import java.util.Objects;
 import java.util.Set;
 
 public class Gene {
@@ -35,7 +36,19 @@ public class Gene {
 	}
 
 	public String getHhpred() {
-		return hhblits;
+		if (hhblits != null && hhblits.length() > 0) return hhblits;
+		else {
+			var oh = this.getGeneGroup().genes.stream().map(Annotation::getGene).filter(Objects::nonNull).map(g -> g.hhblits).filter(h -> h != null && !h.isEmpty()).findAny();
+			return oh.orElse(null);
+		}
+	}
+
+	public String getHhpreduni() {
+		if (hhblitsuni != null && hhblitsuni.length() > 0) return hhblitsuni;
+		else {
+			var oh = this.getGeneGroup().genes.stream().map(Annotation::getGene).filter(Objects::nonNull).map(g -> g.hhblitsuni).filter(h -> h != null && !h.isEmpty()).findAny();
+			return oh.orElse(null);
+		}
 	}
 	
 	public String getFasta( boolean id ) {
@@ -301,6 +314,7 @@ public class Gene {
 	public String dbcan;
 	public String phaster;
 	public String hhblits;
+	public String hhblitsuni;
 	public String pfamid;
 	public Set<String> allids;
 	public String genid;

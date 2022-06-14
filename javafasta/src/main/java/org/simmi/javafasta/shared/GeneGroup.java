@@ -523,6 +523,14 @@ public class GeneGroup {
 		return null;
 	}
 
+	public String getHhblitsuni() {
+		for( Annotation a : genes ) {
+			Gene g = a.getGene();
+			if( g != null && g.hhblitsuni != null && g.hhblitsuni.length() > 0 ) return g.hhblitsuni;
+		}
+		return null;
+	}
+
 	public String getDbcan() {
 		for( Annotation a : genes ) {
 			Gene g = a.getGene();

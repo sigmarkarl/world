@@ -1,5 +1,13 @@
 module org.simmi.javafasta {
+    exports org.simmi.javafasta.shared;
+    exports org.simmi.javafasta.unsigned;
+    exports org.simmi.javafasta;
+    exports org.simmi.distann;
+    exports org.simmi.ann;
     requires java.desktop;
     requires javafx.graphics;
     requires javafx.controls;
+    requires org.simmi.javafasta;
+    requires poi;
+    requires javafx.swing;
 }
