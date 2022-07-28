@@ -446,6 +446,40 @@ public class Annotation implements Comparable<Object> {
 			return getContig().getPrev( this );
 		return null;
 	}
+
+	public int clearPrefix(int window, List<Annotation> lann) {
+		int ret = 0;
+		/*int c = 0;
+		if (this.getGene()!=null) {
+			var t = this.getPrevious();
+			while (t != null && t.getGene() == null && c < window) {
+				c++;
+				t = t.getPrevious();
+			}
+			if (c == window) {
+				if (getContig().isReverse()) {
+					ret = getContig().deleteAllAfter(this);
+					for (var a : lann) {
+						if (a.getGene() != null) {
+							var ctg = a.getContig();
+							if (ctg.isReverse()) ctg.deleteAllAfter(a);
+							else ctg.deleteAllBefore(a);
+						}
+					}
+				} else {
+					ret = getContig().deleteAllBefore(this);
+					for (var a : lann) {
+						if (a.getGene() != null) {
+							var ctg = a.getContig();
+							if (ctg.isReverse()) ctg.deleteAllAfter(a);
+							else ctg.deleteAllBefore(a);
+						}
+					}
+				}
+			}
+		}*/
+		return ret;
+	}
 	
 	public boolean isReverse() {
 		return ori == -1;

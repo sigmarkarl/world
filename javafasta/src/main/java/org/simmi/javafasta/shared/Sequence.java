@@ -398,11 +398,35 @@ public class Sequence extends FastaSequence implements Comparable<Sequence> {
 			annset.remove( i+1 );
 		}
 	}
+
+	public int deleteAllAfter( Annotation cur ) {
+		int k = 0;
+		int i = annset.indexOf( cur );
+		while( i != -1 && i < annset.size()-1 && annset.get(i+1).getGene() == null ) {
+			annset.remove( i+1 );
+			k++;
+		}
+		return k;
+	}
 	
 	public void deleteBefore( Annotation cur ) {
 		int i = annset.indexOf( cur );
 		if( i > 0 && annset.get(i-1).getGene() == null )
 			annset.remove( i-1 );
+	}
+
+	public int deleteAllBefore( Annotation cur ) {
+		int k = 0;
+		int i = annset.indexOf( cur );
+		while( i > 0 && annset.get(i-1).getGene() == null ) {
+			annset.remove(--i);
+			++k;
+		}
+		return k;
+	}
+
+	public boolean delete(Annotation ann) {
+		return annset.remove(ann);
 	}
 	
 	public static void writeFasta( OutputStream os, List<Sequence> lseq ) throws IOException {
@@ -830,16 +854,17 @@ public class Sequence extends FastaSequence implements Comparable<Sequence> {
 		int i = annset != null ? annset.indexOf( from ) : -1;
 		if( i != -1 ) {
 			if( isReverse() ) {
-				if( i > 0 ) ret = annset.get( i-1 );
-				else {
+				if( i > 0 ) {
+					ret = annset.get( i-1 );
+				} else {
 					ret = getPrevContig().getFirst();
 				}
 			} else {
-				 if( i < annset.size()-1 ) {
-					 ret = annset.get( i+1 );
-				 } else {
-					 ret = getNextContig().getFirst();
-				 }
+				if( i < annset.size()-1 ) {
+					ret = annset.get( i+1 );
+				} else {
+				 	ret = getNextContig().getFirst();
+				}
 			}
 		}
 		
@@ -847,16 +872,26 @@ public class Sequence extends FastaSequence implements Comparable<Sequence> {
 	}
 	
 	public Annotation getPrev( Annotation from ) {
+		Annotation ret = null;
+
 		int i = annset != null ? annset.indexOf( from ) : -1;
 		if( i != -1 ) {
 			if( isReverse() ) {
-				if( i < annset.size()-1  ) return annset.get( i+1 );
+				if( i < annset.size()-1  ) {
+					ret = annset.get( i+1 );
+				} else {
+					ret = getNextContig().getLast();
+				}
 			} else {
-				if( i > 0 ) return annset.get( i-1 );
+				if( i > 0 ) {
+					return annset.get( i-1 );
+				} else {
+					ret = getPrevContig().getLast();
+				}
 			}
 		}
 		//System.err.println( from.getGene().getSpecies() + "  " + from.getGene() );
-		return null;
+		return ret;
 	}
 	
 	public Annotation getEndAnnotation() {

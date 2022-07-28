@@ -6,6 +6,7 @@ import javafx.beans.property.SimpleBooleanProperty;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.io.Writer;
+import java.text.NumberFormat;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -337,7 +338,34 @@ public class GeneGroup {
 		}
 		return ret;
 	}
-	
+
+	@Override
+	public boolean equals(Object ogg) {
+		if (this != ogg) {
+			if (ogg!=null) {
+				var gg = (GeneGroup) ogg;
+				var ggname = gg.getName();
+				var ggnameLow = ggname.toLowerCase();
+				var ggci = ggname.indexOf(',');
+				var ggfixName = ggci == -1 ? ggnameLow : ggnameLow.substring(0, ggci).trim();
+
+				var name = getName();
+				var nameLow = name.toLowerCase();
+				var ci = name.indexOf(',');
+				var fixName = ci == -1 ? nameLow : nameLow.substring(0, ci).trim();
+
+				/*if (ggfixName.startsWith("holin")) {
+					System.err.println();
+				}*/
+				if (!nameLow.contains("hypo") && (fixName.startsWith("holin") || fixName.startsWith("rna poly") || fixName.contains("rad52") || fixName.contains("cbbq")) && (fixName.startsWith(ggfixName) || ggfixName.startsWith(fixName))) {
+					return true;
+				}
+			}
+			return false;
+		}
+		return true;
+	}
+
 	public String getName() {
 		if (name==null) {
 			String ret = "";
@@ -398,22 +426,25 @@ public class GeneGroup {
 			}
 
 			name = ret;
-			if (name.startsWith("Phage protein") || name.contains("hypoth") || name.contains("-contig0")) {
+			//if (name.startsWith("Phage protein") || name.contains("hypoth") || name.contains("-contig0")) {
 				for (Annotation a : genes) {
 					var g = a.getGene();
 					if(g!=null&&g.hhblits!=null&&g.hhblits.length()>0) {
 						var bil = g.hhblits.indexOf(' ');
 						var tab = g.hhblits.indexOf('\t');
 						var eix = g.hhblits.indexOf("E-value=",tab+1);
-						//if (eix>0) {
-						//	var evl = Double.parseDouble(g.hhblits.substring(eix + 8).trim());
-							//if (evl < 1.0)
-								name = g.hhblits.substring(bil + 1, tab);
-						//}
+						if (eix>0) {
+							try {
+								var evl = Double.parseDouble(g.hhblits.substring(eix + 8).trim());
+								if (evl < 1.0) name = g.hhblits.substring(bil + 1, tab);
+							} catch(NumberFormatException ne) {
+
+							}
+						}
 						break;
 					}
 				}
-			}
+			//}
 		}
 		
 		return name;
