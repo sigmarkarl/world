@@ -273,10 +273,10 @@ public class Gene {
 		if( tegeval.getSpecies() == null ) {
 			String species = parseSpecies( tegeval.getName() );
 			if( species == null ) {
-				if( tegeval.seq == null ) {
+				if( tegeval.getSeq() == null ) {
 					System.err.println( tegeval.getName() );
 				} else {
-					species = tegeval.seq.getSpec();
+					species = tegeval.getSeq().getSpec();
 				}
 				
 				/*if( species == null || species.length() < 4 ) {

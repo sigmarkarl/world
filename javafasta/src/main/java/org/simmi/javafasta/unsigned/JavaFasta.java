@@ -1565,7 +1565,7 @@ public class JavaFasta extends JPanel {
 	   		osw.write( ">" + ann.getName() + "\n" );
 	   		int val = ann.start;
 	   		while( val < ann.stop ) {
-	   			osw.write( ann.seq.getSequence().substring( val, Math.min( ann.stop, val+70 )) + "\n" );
+	   			osw.write( ann.getSeq().getSequence().substring( val, Math.min( ann.stop, val+70 )) + "\n" );
 	   			val += 70;
 	   		}
 	   	}
@@ -5824,7 +5824,7 @@ public class JavaFasta extends JPanel {
 										Repeat r = new Repeat();
 										r.setName( sequence.getName()+"_repeat_"+i );
 										
-										r.seq = sequence;
+										r.setSeq(sequence);
 										r.start = start;
 										
 										r.length = i;
@@ -6063,16 +6063,16 @@ public class JavaFasta extends JPanel {
 				for( int r : rr ) {
 					int i = atable.convertRowIndexToModel(r);
 					Annotation ann = serifier.lann.get(i);
-					if( ann.seq == null ) {
+					if( ann.getSeq() == null ) {
 						System.err.println();
 					}
 					
 					List<Annotation> alist;
-					if( mann.containsKey(ann.seq) ) {
-						alist = mann.get( ann.seq );
+					if( mann.containsKey(ann.getSeq()) ) {
+						alist = mann.get( ann.getSeq() );
 					} else {
 						alist = new ArrayList<>();
-						mann.put(ann.seq, alist);
+						mann.put(ann.getSeq(), alist);
 					}
 					alist.add( ann );
 				}
@@ -6089,14 +6089,14 @@ public class JavaFasta extends JPanel {
 						if( a.getName().contains("-") ) type = "-"+a.getName().substring(0,4);
 						else if( na.getName().contains("-") ) type = "-"+na.getName().substring(0,4);
 						
-						String newname = a.seq.getName()+"-CRISPR-"+a.start+type;
+						String newname = a.getSeq().getName()+"-CRISPR-"+a.start+type;
 						Sequence nseq = new Sequence( newname, serifier.mseq );
 						
 						if( a.stop+1 > na.start-1 ) {
 							System.err.println();
 						}
 						
-						String subs = a.seq.getSubstring(a.stop+1, na.start-1, 1);
+						String subs = a.getSeq().getSubstring(a.stop+1, na.start-1, 1);
 						if( na.start - a.stop < 50 && na.start - a.stop > 19 ) {
 							Annotation newa = new Annotation(seq,newname,null,a.stop+1,na.start-1,0,serifier.mann);
 							newa.type = "spacer";
@@ -7959,7 +7959,7 @@ public class JavaFasta extends JPanel {
 					Annotation a = serifier.lann.get(i);
 					remannset.add( a );
 					
-					a.seq.removeAnnotation( a );
+					a.getSeq().removeAnnotation( a );
 				}
 				serifier.lann.removeAll( remannset );
 				atable.tableChanged( new TableModelEvent(atable.getModel() ) );
@@ -7975,7 +7975,7 @@ public class JavaFasta extends JPanel {
 				for( int r : rr ) {
 					int i = atable.convertRowIndexToModel(r);
 					Annotation a = serifier.lann.get(i);
-					seqs.put( a.seq, a );
+					seqs.put( a.getSeq(), a );
 					max = Math.max(max, a.start);
 				}
 				
@@ -8002,11 +8002,11 @@ public class JavaFasta extends JPanel {
 			public void actionPerformed(ActionEvent e) {
 				int max = 0;
 				int[] rr = atable.getSelectedRows();
-				Map<Sequence,Annotation> seqs = new HashMap<Sequence,Annotation>();
+				Map<Sequence,Annotation> seqs = new HashMap<>();
 				for( int r : rr ) {
 					int i = atable.convertRowIndexToModel(r);
 					Annotation a = serifier.lann.get(i);
-					seqs.put( a.seq, a );
+					seqs.put( a.getSeq(), a );
 					max = Math.max(max, a.start);
 				}
 				
@@ -8044,11 +8044,11 @@ public class JavaFasta extends JPanel {
 			public void actionPerformed(ActionEvent e) {
 				int max = 0;
 				int[] rr = atable.getSelectedRows();
-				Map<Sequence,Annotation> seqs = new HashMap<Sequence,Annotation>();
+				Map<Sequence,Annotation> seqs = new HashMap<>();
 				for( int r : rr ) {
 					int i = atable.convertRowIndexToModel(r);
 					Annotation a = serifier.lann.get(i);
-					seqs.put( a.seq, a );
+					seqs.put( a.getSeq(), a );
 					max = Math.max(max, a.stop);
 				}
 				
@@ -8103,9 +8103,9 @@ public class JavaFasta extends JPanel {
 					for( int r : rr ) {
 						int i = atable.convertRowIndexToModel(r);
 						Annotation ann = serifier.lann.get(i);
-						if( ann.seq != null ) {
-							ann.seq.addAnnotation( ann );
-							sset.add( ann.seq );
+						if( ann.getSeq() != null ) {
+							ann.getSeq().addAnnotation( ann );
+							sset.add( ann.getSeq() );
 						}
 					}
 					
@@ -8118,7 +8118,7 @@ public class JavaFasta extends JPanel {
 		apopup.add( new AbstractAction("CRISPR types") {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				Map<String,Integer> hcell = new HashMap<String,Integer>();
+				Map<String,Integer> hcell = new HashMap<>();
 				hcell.put("Csh2", 1);
 				hcell.put("Csm2", 2);
 				hcell.put("Cse2", 3);
@@ -8224,11 +8224,11 @@ public class JavaFasta extends JPanel {
 						Annotation ann = serifier.lann.get(i);
 					//for( Annotation ann : serifier.lann ) {
 						List<Annotation> lann;
-						if( mann.containsKey(ann.seq) ) {
-							lann = mann.get(ann.seq);
+						if( mann.containsKey(ann.getSeq()) ) {
+							lann = mann.get(ann.getSeq());
 						} else {
 							lann = new ArrayList<>();
-							mann.put( ann.seq, lann );
+							mann.put( ann.getSeq(), lann );
 						}
 						lann.add( ann );
 						allset.add( ann );
@@ -8242,11 +8242,11 @@ public class JavaFasta extends JPanel {
 						}
 						if( ann != null && ann.type != null && ann.type.contains("mummer") ) {
 							List<Annotation> lann;
-							if( mann.containsKey(ann.seq) ) {
-								lann = mann.get(ann.seq);
+							if( mann.containsKey(ann.getSeq()) ) {
+								lann = mann.get(ann.getSeq());
 							} else {
 								lann = new ArrayList<>();
-								mann.put( ann.seq, lann );
+								mann.put( ann.getSeq(), lann );
 							}
 							lann.add( ann );
 							allset.add( ann );
@@ -8378,14 +8378,14 @@ public class JavaFasta extends JPanel {
 					if( ann != null && ann.type != null && ann.type.contains("mummer") ) {
 						ann.setName( ann.getName().toUpperCase() );
 
-						if(ann.seq!=null) {
+						if(ann.getSeq()!=null) {
 							List<Annotation> lann;
-							if (mann.containsKey(ann.seq.getName())) {
-								lann = mann.get(ann.seq.getName());
+							if (mann.containsKey(ann.getSeq().getName())) {
+								lann = mann.get(ann.getSeq().getName());
 							} else {
 								lann = new ArrayList<>();
 								System.err.println();
-								mann.put(ann.seq.getName(), lann);
+								mann.put(ann.getSeq().getName(), lann);
 							}
 							lann.add(ann);
 						} else {
@@ -8528,7 +8528,7 @@ public class JavaFasta extends JPanel {
 						List<Annotation> lan;
 						if( similar != null && tann.containsKey(similar) ) {
 							Map<String,List<Annotation>> lanm = tann.get( similar );
-							String aspec = ann.seq.getSpec();
+							String aspec = ann.getSeq().getSpec();
 							if( lanm.containsKey(spec) ) {
 								lan = lanm.get( spec );
 							} else {
@@ -8544,7 +8544,7 @@ public class JavaFasta extends JPanel {
 						} else {
 							Map<String,List<Annotation>> lanm = new HashMap<>();
 							lan = new ArrayList<>();
-							lanm.put( ann.seq.getSpec(), lan );
+							lanm.put( ann.getSeq().getSpec(), lan );
 							tann.put( annname, lanm );
 							
 							//if( ann.seq.name.contains("2137") ) System.err.println( "reference: " + annname );
@@ -9200,7 +9200,7 @@ public class JavaFasta extends JPanel {
 				for( int r : rr ) {
 					int i = atable.convertRowIndexToModel( r );
 					Annotation a = serifier.lann.get( i );
-					if( a.seq == null ) {
+					if( a.getSeq() == null ) {
 						for( Sequence seq : serifier.lseq ) {
 							int start = Math.max( seq.getRealStart(), a.getCoordStart() );
 							int stop = Math.min( seq.getRealStop(), a.getCoordEnd() );
@@ -9282,7 +9282,7 @@ public class JavaFasta extends JPanel {
 						}
 						return ann.getName();
 					}
-					else if( columnIndex == 1 ) return ann.seq != null ? ann.seq.getName() : "";
+					else if( columnIndex == 1 ) return ann.getSeq() != null ? ann.getSeq().getName() : "";
 					else if( columnIndex == 2 ) return ann.type+"_"+ann.ori;
 					else if( columnIndex == 3 ) return ann.designation;
 					else if( columnIndex == 4 ) return ann.getGroup();
@@ -9316,7 +9316,7 @@ public class JavaFasta extends JPanel {
 					if( i != -1 ) {
 						Annotation a = serifier.lann.get( i );
 						
-						i = serifier.lseq.indexOf( a.seq );
+						i = serifier.lseq.indexOf( a.getSeq() );
 						int m = 0;
 						if( i != -1 ) {
 							m = table.convertRowIndexToView( i );
@@ -9364,7 +9364,7 @@ public class JavaFasta extends JPanel {
 					for( int r : rr ) {
 						int i = atable.convertRowIndexToModel(r);
 						Annotation ann = serifier.lann.get(i);
-						if( ann.seq != null ) ann.seq.removeAnnotation( ann );
+						if( ann.getSeq() != null ) ann.getSeq().removeAnnotation( ann );
 						delset.add( ann );
 					}
 					serifier.lann.removeAll( delset );

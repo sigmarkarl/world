@@ -1,5 +1,7 @@
 package org.simmi.javafasta.shared;
 
+import scala.xml.dtd.impl.Base;
+
 import java.awt.Color;
 import java.io.IOException;
 import java.io.Writer;
@@ -7,7 +9,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class Annotation implements Comparable<Object> {
-	public Sequence			seq;
+	Sequence		seq;
 	private Sequence		alignedsequence;
 	private String			name;
 	private String			note;
@@ -61,9 +63,10 @@ public class Annotation implements Comparable<Object> {
 	public void setSelected( boolean sel ) {
 		this.selected = sel;
 	}
-	
+
+	int i;
 	public Annotation() {
-		
+		i = 0;
 	}
 
 	public String getDesignation() {
@@ -379,6 +382,14 @@ public class Annotation implements Comparable<Object> {
 	
 	public String getSequence() {
 		return seq.getSubstring(start, stop, ori);
+	}
+
+	public Sequence getSeq() {
+		return seq;
+	}
+
+	public void setSeq(Sequence seq) {
+		this.seq = seq;
 	}
 	
 	public Annotation( Sequence seq, int start, int stop, int ori, String name ) {
