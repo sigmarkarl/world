@@ -93,7 +93,25 @@ public class GeneGroup {
 	
 	public void getFasta( Writer w, boolean id ) throws IOException {
 		for( Annotation a : genes ) {
-			a.getGene().getFasta( w, id );
+			var g = a.getGene();
+			if (g != null) g.getFasta( w, id );
+		}
+	}
+
+	public void getAlignedFasta( Writer w, boolean id ) throws IOException {
+		int prev = -1;
+		for( Annotation a : genes ) {
+			var alseq = a.getAlignedSequence();
+			if (alseq!=null) {
+				int len = alseq.writeSequence(w, id ? a.getId() : a.getName());
+				if (prev != -1 && prev != len) {
+					System.err.println();
+				}
+				prev = len;
+			} else {
+				var ps = a.getProteinSequence();
+				if (ps!=null) ps.writeSequence(w, id ? a.getId() : a.getName());
+			}
 		}
 	}
 	
