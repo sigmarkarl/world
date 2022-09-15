@@ -21,4 +21,15 @@
 			<location>/home/sigmar/commons-math3-3.2-src/src/main/java</location>
 		</link>
 	</linkedResources>
+	<filteredResources>
+		<filter>
+			<id>1661547034596</id>
+			<name></name>
+			<type>30</type>
+			<matcher>
+				<id>org.eclipse.core.resources.regexFilterMatcher</id>
+				<arguments>node_modules|.git|__CREATED_BY_JAVA_LANGUAGE_SERVER__</arguments>
+			</matcher>
+		</filter>
+	</filteredResources>
 </projectDescription>
