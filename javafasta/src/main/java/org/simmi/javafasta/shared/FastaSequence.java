@@ -54,12 +54,16 @@ public class FastaSequence {
         }
     }
 
-    public void writeSequence(Writer fw, int gap, boolean italic) throws IOException {
-        writeSequence(fw,gap,italic,false);
+    public int writeSequence(Writer fw, int gap, boolean italic) throws IOException {
+        return writeSequence(fw,gap,italic,false);
     }
 
-    public void writeSequence( Writer fw, int gap, boolean italic, boolean group ) throws IOException {
+    public int writeSequence( Writer fw, int gap, boolean italic, boolean group ) throws IOException {
         String name = group && getGroup()!=null ? getName()+"|"+getGroup() : getName();
+        return writeSequence(fw, gap, italic, group, name);
+    }
+
+    public int writeSequence( Writer fw, int gap, boolean italic, boolean group, String name ) throws IOException {
         if( italic ) fw.write("><i>"+name+"</i>\n");
         else fw.write(">"+name+"\n");
         for( int k = 0; k < sb.length(); k+=gap ) {
@@ -68,6 +72,7 @@ public class FastaSequence {
             //(seq.sb.length() == k+70 ? "")
             fw.write( substr+"\n" );
         }
+        return sb.length();
     }
 
     public void writeIdSequence( Writer fw, int gap, boolean italic ) throws IOException {
@@ -107,8 +112,12 @@ public class FastaSequence {
         writeSequence( fw, 70, false );
     }
 
-    public void writeSequence( Writer fw ) throws IOException {
-        writeSequence( fw, 70, false );
+    public int writeSequence( Writer fw ) throws IOException {
+        return writeSequence( fw, 70, false );
+    }
+
+    public int writeSequence( Writer fw, String name ) throws IOException {
+        return writeSequence( fw, 70, false, false, name );
     }
 
     public void writeSequence(Writer fw, boolean italic) throws IOException {

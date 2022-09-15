@@ -50,6 +50,14 @@ public class Gene {
 			return oh.orElse(null);
 		}
 	}
+
+	public String getHhpredphrog() {
+		if (hhblitsphrog != null && hhblitsphrog.length() > 0) return hhblitsphrog;
+		else {
+			var oh = this.getGeneGroup().genes.stream().map(Annotation::getGene).filter(Objects::nonNull).map(g -> g.hhblitsphrog).filter(h -> h != null && !h.isEmpty()).findAny();
+			return oh.orElse(null);
+		}
+	}
 	
 	public String getFasta( boolean id ) {
 		StringWriter sb = new StringWriter();
@@ -315,6 +323,7 @@ public class Gene {
 	public String phaster;
 	public String hhblits;
 	public String hhblitsuni;
+	public String hhblitsphrog;
 	public String pfamid;
 	public Set<String> allids;
 	public String genid;
