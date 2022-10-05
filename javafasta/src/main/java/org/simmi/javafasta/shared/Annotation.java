@@ -292,15 +292,15 @@ public class Annotation implements Comparable<Object> {
 	}
 
 	public double calcMinGC(Collection<Sequence> sequences) {
-		return sequences.parallelStream().flatMapToDouble(s -> s.annset.parallelStream().mapToDouble(Annotation::getGCPerc).min().stream()).min().getAsDouble();
+		return sequences.parallelStream().map(s -> s.annset).filter(Objects::nonNull).flatMapToDouble(as -> as.parallelStream().mapToDouble(Annotation::getGCPerc).min().stream()).min().getAsDouble();
 	}
 
 	public double calcMaxGC(Collection<Sequence> sequences) {
-		return sequences.parallelStream().flatMapToDouble(s -> s.annset.parallelStream().mapToDouble(Annotation::getGCPerc).max().stream()).max().getAsDouble();
+		return sequences.parallelStream().map(s -> s.annset).filter(Objects::nonNull).flatMapToDouble(as -> as.parallelStream().mapToDouble(Annotation::getGCPerc).max().stream()).max().getAsDouble();
 	}
 
 	public Color getGCColor(GeneGroup gg) {
-		var seqlist = gg.genes.parallelStream().flatMap(a -> a.seq.partof.parallelStream()).collect(Collectors.toList());
+		var seqlist = gg.genes.parallelStream().map(Annotation::getSeq).filter(Objects::nonNull).flatMap(s -> s.partof.parallelStream()).collect(Collectors.toList());
 		float min = (float)calcMinGC(seqlist);
 		float max = (float)calcMaxGC(seqlist);
 		float diff = max-min;

@@ -309,6 +309,14 @@ public class Gene {
 		return refid;
 	}
 
+	public void setPhrog(String phrog) {
+		hhblitsphrog = phrog;
+	}
+
+	public String getPhrog() {
+		return hhblitsphrog;
+	}
+
 	public String name;
 	public String symbol;
 	//String tag;
@@ -323,7 +331,7 @@ public class Gene {
 	public String phaster;
 	public String hhblits;
 	public String hhblitsuni;
-	public String hhblitsphrog;
+	private String hhblitsphrog;
 	public String pfamid;
 	public Set<String> allids;
 	public String genid;

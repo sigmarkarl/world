@@ -564,6 +564,14 @@ public class GeneGroup {
 		return null;
 	}
 
+	public String getPhrog() {
+		for( Annotation a : genes ) {
+			Gene g = a.getGene();
+			if( g != null && g.getPhrog() != null && g.getPhrog().length() > 0 ) return g.getPhrog();
+		}
+		return null;
+	}
+
 	public String getHhblits() {
 		for( Annotation a : genes ) {
 			Gene g = a.getGene();
