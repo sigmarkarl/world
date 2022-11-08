@@ -10,9 +10,9 @@ import java.text.NumberFormat;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class GeneGroup {
+public class GeneGroup extends BaseGeneGroup {
 	String							name;
-	GenomeSet						geneset;
+	transient GenomeSet						geneset;
 	public Set<Annotation>          genes = new HashSet<>();
 	public Map<String, Teginfo>  	species = new TreeMap<>();
 	public int                	 	groupIndex;
@@ -24,7 +24,7 @@ public class GeneGroup {
 	Map<String,Cog>					cogmap;
 	Map<String,Cog>					pfammap;
 	Map<String,Set<String>>			biosystemsmap;
-	BooleanProperty selected = new SimpleBooleanProperty();
+	transient BooleanProperty selected = new SimpleBooleanProperty();
 
 	/*Map<String,String>				cazyaamap;
 	Map<String,String>				cazycemap;
@@ -444,7 +444,7 @@ public class GeneGroup {
 			}
 
 			name = ret;
-			//if (name.startsWith("Phage protein") || name.contains("hypoth") || name.contains("-contig0")) {
+			if (name.startsWith("Phage protein") || name.contains("hypoth") || name.contains("-contig0")) {
 				for (Annotation a : genes) {
 					var g = a.getGene();
 					if(g!=null&&g.hhblits!=null&&g.hhblits.length()>0) {
@@ -462,7 +462,7 @@ public class GeneGroup {
 						break;
 					}
 				}
-			//}
+			}
 		}
 		
 		return name;

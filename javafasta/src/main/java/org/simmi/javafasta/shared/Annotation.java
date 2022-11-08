@@ -344,6 +344,10 @@ public class Annotation implements Comparable<Object> {
 	public Gene getGene() {
 		return gene;
 	}
+
+	public boolean isPseudo() {
+		return getGene() == null && start == 0;
+	}
 	
 	public Sequence getProteinSequence() {
 		Sequence ret = seq == null ? null : seq.getProteinSequence(start, stop, ori);
